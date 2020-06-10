@@ -64,6 +64,7 @@ class CarlaAckermannControlWrapper
         ros::Publisher robot_status_pub_;
         ros::Publisher vehicle_info_pub_;
         ros::Publisher vehicle_status_pub_;
+        ros::Publisher driver_status_pub_;
         
         // delegate logic implementation to worker class
         CarlaAckermannControlWrapperWorker worker_;
@@ -75,9 +76,7 @@ class CarlaAckermannControlWrapper
         void pose_cb(const geometry_msgs::PoseStampedConstPtr& msg);
         void twist_cd(const geometry_msgs::TwistStampedConstPtr& msg);
         void vehicle_cmd_cb(const autoware_msgs::VehicleCmd::ConstPtr& vehicle_cmd);
-
-        // process the latest carla enabled status message and publish as robot status topic
-        void publish_robot_status(const cav_msgs::CarlaEnabledConstPtr& msg);
+        void robot_status_cb(const cav_msgs::CarlaEnabledConstPtr& msg);
 
         // check controller health status
         void update_controller_health_status();
