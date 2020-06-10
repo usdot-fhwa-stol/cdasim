@@ -34,39 +34,10 @@ void CarlaAckermannControlWrapper::init()
 
     // Set driver type
     driver_status_.controller = true;
-
-    // Initialize all subscribers
-    vehicle_cmd_sub_ = nh_.subscribe("vehicle_cmd", 1, &CarlaAckermannControlWrapper::vehicle_cmd_cb, this);
-    carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::publish_robot_status, this);
-    pose_sub_ = nh_.subscribe("current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
-    twist_sub_ = nh_.subscribe("current_velocity", 1, &CarlaAckermannControlWrapper::twist_cd, this);
-
-    // Initialize all publishers
-    ackermanndrive_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleControl>("ackermann_cmd", 1);
-    robot_status_pub_ = nh_.advertise<cav_msgs::RobotEnabled>("controller/robot_status", 1);
-    vehicle_info_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleInfo>("carla_ego_info", 1);
-    vehicle_status_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
-
-    // Publish ego vehicle info
-    ego_info_.rolename = "ego_vehicle";
-    for (auto wheel : ego_info_.wheels){
-        wheel.max_steer_angle = max_steer_angle_;
-        ego_info_.wheels.push_back(wheel);
-    }
-    ego_info_.max_speed = max_speed_;
-    ego_info_.max_acceleration = max_accel_;
-    ego_info_.max_deceleration = max_decel_;
-    ego_info_.mass = vehicle_mass_;
-    vehicle_info_pub_.publish(ego_info_);
-
-    // Publish ego vehicle status
-    ego_status_.velocity = current_speed_;
-    ego_status_.orientation = pose_msg_->pose.orientation;
-    vehicle_status_pub_.publish(ego_status_);
 }
 
 // Publish robotic status
-void CarlaAckermannControlWrapper::publish_robot_status(const cav_msgs::CarlaEnabledConstPtr& msg)
+void CarlaAckermannControlWrapper::robot_status_cb(const cav_msgs::CarlaEnabledConstPtr& msg)
 {
     robotic_status_.robot_active = msg->carla_enabled;
     robot_status_pub_.publish(robotic_status_);
@@ -81,6 +52,7 @@ void CarlaAckermannControlWrapper::update_controller_health_status()
     } else {
         driver_status_.status = cav_msgs::DriverStatus::OFF;
     }
+    driver_status_pub_.publish(driver_status_);
 }
 
 void CarlaAckermannControlWrapper::pose_cb(const geometry_msgs::PoseStampedConstPtr& msg)
@@ -103,7 +75,36 @@ void CarlaAckermannControlWrapper::vehicle_cmd_cb(const autoware_msgs::VehicleCm
 int CarlaAckermannControlWrapper::run()
 {
     init();
-    ROS_INFO("Successfully launched node.");
+
+     // Initialize all subscribers
+    vehicle_cmd_sub_ = nh_.subscribe("vehicle_cmd", 1, &CarlaAckermannControlWrapper::vehicle_cmd_cb, this);
+    carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::robot_status_cb, this);
+    pose_sub_ = nh_.subscribe("current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
+    twist_sub_ = nh_.subscribe("current_velocity", 1, &CarlaAckermannControlWrapper::twist_cd, this);
+
+    // Initialize all publishers
+    ackermanndrive_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleControl>("ackermann_cmd", 1);
+    robot_status_pub_ = nh_.advertise<cav_msgs::RobotEnabled>("controller/robot_status", 1);
+    vehicle_info_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleInfo>("carla_ego_info", 1);
+    vehicle_status_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
+    driver_status_pub_ = nh_.advertise<cav_msgs::DriverStatus>("driver_discovery",1);
+
+    // Publish ego vehicle info
+    ego_info_.rolename = "ego_vehicle";
+    for (auto wheel : ego_info_.wheels){
+        wheel.max_steer_angle = max_steer_angle_;
+        ego_info_.wheels.push_back(wheel);
+    }
+    ego_info_.max_speed = max_speed_;
+    ego_info_.max_acceleration = max_accel_;
+    ego_info_.max_deceleration = max_decel_;
+    ego_info_.mass = vehicle_mass_;
+    vehicle_info_pub_.publish(ego_info_);
+
+    // Publish ego vehicle status
+    ego_status_.velocity = current_speed_;
+    ego_status_.orientation = pose_msg_->pose.orientation;
+    vehicle_status_pub_.publish(ego_status_);
 
     return 0;
 }

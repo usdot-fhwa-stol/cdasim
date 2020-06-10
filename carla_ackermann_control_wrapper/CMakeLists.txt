@@ -122,4 +122,8 @@ install(DIRECTORY
 
 catkin_add_gmock(${PROJECT_NAME}-test
   test/test_main.cpp
+  test/test_carla_control_wrapper_worker.cpp
 )
+
+target_link_libraries(${PROJECT_NAME}-test 
+carla_ackermann_control_wrapper_worker ${catkin_LIBRARIES})
