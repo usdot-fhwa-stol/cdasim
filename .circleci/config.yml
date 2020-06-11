@@ -68,6 +68,7 @@ jobs:
       - run:
           name: Run Sonar Scanner
           command: |
+            set -x
             source ${INIT_ENV}
             if [ -z "${CIRCLE_PULL_REQUEST}" ]; then
               echo "Non-PR Build Detected. Running analysis on ${CIRCLE_BRANCH}"
