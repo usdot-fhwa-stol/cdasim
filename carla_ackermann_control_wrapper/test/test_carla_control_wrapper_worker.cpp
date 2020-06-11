@@ -19,7 +19,7 @@
 
 namespace carla_ackermann_control_wrapper
 {
-    Test(CarlaAckermannControlWrapperWorkerTest, testAckermannDriveConvertion)
+    Test(CarlaAckermannControlWrapperWorkerTest, testAckermannDriveConversion)
     {
         CarlaAckermannControlWrapperWorker worker;
 
