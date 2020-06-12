@@ -83,10 +83,10 @@ int CarlaAckermannControlWrapper::run()
     twist_sub_ = nh_.subscribe("current_velocity", 1, &CarlaAckermannControlWrapper::twist_cd, this);
 
     // Initialize all publishers
-    ackermanndrive_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleControl>("ackermann_cmd", 1);
+    ackermanndrive_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleControl>("ackermann_cmd", 1);
     robot_status_pub_ = nh_.advertise<cav_msgs::RobotEnabled>("controller/robot_status", 1);
-    vehicle_info_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleInfo>("carla_ego_info", 1);
-    vehicle_status_pub_ = nh_.advertise<cav_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
+    vehicle_info_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleInfo>("carla_ego_info", 1);
+    vehicle_status_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
     driver_status_pub_ = nh_.advertise<cav_msgs::DriverStatus>("driver_discovery",1);
 
     // Publish ego vehicle info
@@ -95,9 +95,7 @@ int CarlaAckermannControlWrapper::run()
         wheel.max_steer_angle = max_steer_angle_;
         ego_info_.wheels.push_back(wheel);
     }
-    ego_info_.max_speed = max_speed_;
-    ego_info_.max_acceleration = max_accel_;
-    ego_info_.max_deceleration = max_decel_;
+    
     ego_info_.mass = vehicle_mass_;
     vehicle_info_pub_.publish(ego_info_);
 

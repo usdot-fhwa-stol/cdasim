@@ -23,11 +23,11 @@
 #include <cav_msgs/DriverStatus.h>
 #include <cav_msgs/RobotEnabled.h>
 #include <cav_msgs/CarlaEnabled.h>
-#include <cav_msgs/AckermannDrive.h>
-#include <cav_msgs/CarlaEgoVehicleControl.h>
-#include <cav_msgs/CarlaEgoVehicleInfo.h>
-#include <cav_msgs/CarlaEgoVehicleStatus.h>
-#include <cav_msgs/CarlaEgoVehicleInfoWheel.h>
+#include <ackermann_msgs/AckermannDrive.h>
+#include <carla_msgs/CarlaEgoVehicleControl.h>
+#include <carla_msgs/CarlaEgoVehicleInfo.h>
+#include <carla_msgs/CarlaEgoVehicleStatus.h>
+#include <carla_msgs/CarlaEgoVehicleInfoWheel.h>
 #include <cav_srvs/SetEnableRobotic.h>
 #include <autoware_msgs/VehicleCmd.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -83,12 +83,12 @@ class CarlaAckermannControlWrapper
 
         // local variables
         autoware_msgs::VehicleCmd vehicle_cmd_;
-        cav_msgs::AckermannDrive ackermann_drive_;
+        ackermann_msgs::AckermannDrive ackermann_drive_;
         cav_msgs::CarlaEnabled carla_status_;
         cav_msgs::RobotEnabled robotic_status_;
         cav_msgs::DriverStatus driver_status_;
-        cav_msgs::CarlaEgoVehicleInfo ego_info_;
-        cav_msgs::CarlaEgoVehicleStatus ego_status_;
+        carla_msgs::CarlaEgoVehicleInfo ego_info_;
+        carla_msgs::CarlaEgoVehicleStatus ego_status_;
         boost::shared_ptr<geometry_msgs::PoseStamped const> pose_msg_;
 
         double wheel_base_;

@@ -28,7 +28,7 @@ namespace carla_ackermann_control_wrapper {
     }      
 
     // convert the Twist message from Autoware to an AckermannDrive message
-    cav_msgs::AckermannDrive CarlaAckermannControlWrapperWorker::update_ackermanndrive_cmd(const autoware_msgs::VehicleCmd& msg, const double wheel_base){
+    ackermann_msgs::AckermannDrive CarlaAckermannControlWrapperWorker::update_ackermanndrive_cmd(const autoware_msgs::VehicleCmd& msg, const double wheel_base){
         ackermann_drive_.speed = msg.twist_cmd.twist.linear.x;
         ackermann_drive_.steering_angle = convert_trans_rot_vel_to_steering_angle(msg.twist_cmd.twist.linear.x, msg.twist_cmd.twist.angular.z, wheel_base);
         return ackermann_drive_;

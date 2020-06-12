@@ -16,7 +16,7 @@
  * the License.
  */
 #include <math.h>
-#include <cav_msgs/AckermannDrive.h>
+#include <ackermann_msgs/AckermannDrive.h>
 #include <autoware_msgs/VehicleCmd.h>
 
 namespace carla_ackermann_control_wrapper {
@@ -26,7 +26,7 @@ class CarlaAckermannControlWrapperWorker {
     public:
 
         // convert the Twist message from Autoware to an AckermannDrive message
-        cav_msgs::AckermannDrive update_ackermanndrive_cmd(const autoware_msgs::VehicleCmd& msg, const double wheel_base);
+        ackermann_msgs::AckermannDrive update_ackermanndrive_cmd(const autoware_msgs::VehicleCmd& msg, const double wheel_base);
 
     private:
 
@@ -34,6 +34,6 @@ class CarlaAckermannControlWrapperWorker {
 
         // local variables
         autoware_msgs::VehicleCmd vehicle_cmd_;
-        cav_msgs::AckermannDrive ackermann_drive_;
+        ackermann_msgs::AckermannDrive ackermann_drive_;
 };
 }
