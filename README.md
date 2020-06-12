@@ -1,5 +1,8 @@
 # CARMASimulation
+CARMA Simulation is a CARMA execution environment that integrates the CARLA vehicle simulator and the CARMA Platform vehicle on-board software (hereinafter referred to simply as CARMA) for the simulation of vehicle dynamics and feedback control (in CARMA) and the environment in which the subject vehicle runs. 
 
+# carla_ackermann_control
+The carla_ackermann_control package is under MIT license and te orginal repository can be found [here](https://github.com/carla-simulator/ros-bridge.git).
 
 # CARMAPlatform
 The primary CARMAPlatform repository can be found [here](https://github.com/usdot-fhwa-stol/carma-platform) and is part of the [USDOT FHWA STOL](https://github.com/usdot-fhwa-stol/)
