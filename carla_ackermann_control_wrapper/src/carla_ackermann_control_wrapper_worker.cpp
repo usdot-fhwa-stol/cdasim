@@ -19,7 +19,8 @@
 namespace carla_ackermann_control_wrapper {
 
      double CarlaAckermannControlWrapperWorker::convert_trans_rot_vel_to_steering_angle(const float speed, const float omega, const double wheel_base){
-        if (speed == 0 || omega == 0) {
+        double epsilon = 0.001;
+        if (speed < epsilon || omega < epsilon) {
             return 0;
         } else {
             float radius = speed / omega;
