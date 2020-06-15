@@ -35,6 +35,9 @@ void CarlaAckermannControlWrapper::init()
     
     // Set driver type
     driver_status_.controller = true;
+
+    // Publish controller status
+    update_controller_health_status();
 }
 
 // Publish robotic status
@@ -42,17 +45,11 @@ void CarlaAckermannControlWrapper::robot_status_cb(const cav_msgs::CarlaEnabledC
 {
     robotic_status_.robot_active = msg->carla_enabled;
     robot_status_pub_.publish(robotic_status_);
-    update_controller_health_status();
 }
 
 void CarlaAckermannControlWrapper::update_controller_health_status()
 {
-    if (robotic_status_.robot_active)
-    {
-        driver_status_.status = cav_msgs::DriverStatus::OPERATIONAL;
-    } else {
-        driver_status_.status = cav_msgs::DriverStatus::OFF;
-    }
+    driver_status_.status = cav_msgs::DriverStatus::OPERATIONAL;
     driver_status_pub_.publish(driver_status_);
 }
 
