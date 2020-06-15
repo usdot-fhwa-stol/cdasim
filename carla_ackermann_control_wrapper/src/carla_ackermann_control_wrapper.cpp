@@ -24,14 +24,15 @@ void CarlaAckermannControlWrapper::init()
 {
     ROS_INFO("Initalizing carla ackermann control wrapper node...");
 
-    // Load parameters
-    wheel_base_ = pnh_.param<double>("vehicle_wheel_base", 2.79);
-    max_steer_angle_ = pnh_.param<double>("max_steer_angle", 29.2);
+    // Load parameters from config/parametrs.yaml
     max_speed_ = pnh_.param<double>("max_speed", 50);
     vehicle_mass_ = pnh_.param<double>("vehicle_weight", 1500);
-    max_accel_ = pnh_.param<double>("acceleration_limit", 3.0);
-    max_decel_ = pnh_.param<double>("deceleration_limit", 6.0);
-
+    // Load parameters from carma-config/VehicleConfigParams.yaml
+    pnh_.getParam("vehicle_wheel_base", wheel_base_);
+    pnh_.getParam("vehicle_steer_lim_deg", max_steer_angle_);
+    pnh_.getParam("vehicle_acceleration_limit", max_accel_);
+    pnh_.getParam("vehicle_deceleration_limit", max_decel_);
+    
     // Set driver type
     driver_status_.controller = true;
 }

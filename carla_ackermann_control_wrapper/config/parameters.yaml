@@ -8,19 +8,3 @@ max_speed: 50
 # Unit: Kilogram
 vehicle_weight: 1500.0
 
-# Double: Distance from front axel to rear axel
-# Units: Meters
-vehicle_wheel_base: 2.79
-
-# Acceleration limit
-# Units: m/s^2
-acceleration_limit: 3.0
-
-# Deceleration limit
-# Units: m/s^2
-deceleration_limit: 6.0
-
-# Maximum steering angle
-# Unit: deg
-max_steer_angle: 29.2
-

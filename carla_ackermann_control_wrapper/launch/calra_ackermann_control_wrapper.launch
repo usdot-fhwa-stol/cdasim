@@ -14,8 +14,14 @@
   This file is used to launch the CARMA3 Cost Plugin System node
 -->
 <launch>
+    <!-- Handle global parameters for variables-->
+    <remap from="~vehicle_wheel_base" to="/vehicle_wheel_base"/> 
+    <remap from="~vehicle_acceleration_limit" to="/vehicle_acceleration_limit"/>
+    <remap from="~vehicle_deceleration_limit" to="/vehicle_deceleration_limit"/>
+    <remap from="~vehicle_steer_lim_deg" to="/vehicle_steer_lim_deg"/> 
+
+    <!--carla_ackermann_control_wrapper node-->
     <node name="carla_ackermann_control_wrapper" pkg="carla_ackermann_control_wrapper" type="node">
         <rosparam command="load" file="$(find carla_ackermann_control_wrapper)/config/parameters.yaml"/>
     </node>
 </launch>
-
