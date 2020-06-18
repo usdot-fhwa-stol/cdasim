@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+  Copyright (C) 2018-2020 LEIDOS.
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations under
+  the License.
+-->
+<!--
+	Launch file for launching the nodes in the CARMA environmental perception stack
+-->
+<launch>
+  <arg name="vehicle_calibration_dir" default="/opt/carma/vehicle/calibration" doc="The directory continaing vehicle calibration type parameters"/>	
+
+  <arg name="vector_map_file" default="vector_map.osm" doc="Path to the map osm file if using the noupdate load type"/>
+  
+	<!-- vector map loader -->
+  <node pkg="map_file" type="lanelet2_map_loader" name="lanelet2_map_loader"  args="$(arg vector_map_file)">
+    <remap from="/lanelet_map_bin" to="base_map"/>
+  </node>  
+
+  <!-- vector map visualization -->
+  <node pkg="map_file" type="lanelet2_map_visualization" name="lanelet2_map_visualization">
+    <remap from="/lanelet_map_bin" to="semantic_map"/>
+  </node>
+
+  <!-- World Model Updater -->
+  <include file="$(find carma_wm_ctrl)/launch/carma_wm_broadcaster.launch"/>
+
+  <!-- Object Tracking and World Model -->
+
+  <!-- CARMA External Object Node -->
+  <include file="$(find object_detection_tracking)/launch/external_object.launch"/>
+
+  <!-- CARMA Roadway Objects Node -->
+  <include file="$(find roadway_objects)/launch/roadway_objects.launch"/>
+
+</launch>
