@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   carla_msgs
   roslaunch
+  message_generation
 )
 
 catkin_python_setup()
