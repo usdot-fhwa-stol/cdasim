@@ -45,6 +45,12 @@ jobs:
             mkdir carma-simulation
       - checkout:
           path: src/carma-simulation
+      - run: 
+          name: Pull Deps
+          command: |
+            source ${INIT_ENV}
+            ./src/CARMAPlatform/docker/checkout.sh -r ${PWD}
+            cd ${PWD}
       - run:
           name: Build Driver
           command: |
