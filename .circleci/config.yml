@@ -49,7 +49,7 @@ jobs:
           name: Pull Deps
           command: |
             source ${INIT_ENV}
-            ./src/CARMAPlatform/docker/checkout.sh -r ${PWD}
+            ./src/carma-simulation/docker/checkout.sh -r ${PWD}
       - run:
           name: Build Driver
           command: |
