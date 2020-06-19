@@ -42,7 +42,3 @@ else
       git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch develop --depth 1
       git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch develop --depth 1
 fi
-
-# Required to build the ackermann_msgs and carla_msgs.
-git clone https://github.com/ros-drivers/ackermann_msgs.git ${dir}/src/ackermann_msgs --branch master --depth 1
-git clone https://github.com/carla-simulator/ros-carla-msgs.git ${dir}/src/carla_msgs --branch master --depth 1
