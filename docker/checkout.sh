@@ -36,13 +36,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$BRANCH" = "develop" ]]; then
-      git clone https://github.com/usdot-fhwa-stol/CARMAMsgs.git ~/src/CARMAMsgs --branch $BRANCH --depth 1
-      git clone https://github.com/usdot-fhwa-stol/CARMAUtils.git ~/src/CARMAUtils --branch $BRANCH --depth 1    
+      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ~/src/carma-msgs --branch $BRANCH --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ~/src/carma-utils --branch $BRANCH --depth 1    
 else
-      git clone https://github.com/usdot-fhwa-stol/CARMAMsgs.git ${dir}/src/CARMAMsgs --branch CARMAMsgs_1.3.0 --depth 1
-      git clone https://github.com/usdot-fhwa-stol/CARMAUtils.git ${dir}/src/CARMAUtils --branch CARMAUtils_1.3.0 --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch develop --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch develop --depth 1
 fi
-
-# Required to build the ackermann_msgs and carla_msgs.
-git clone https://github.com/ros-drivers/ackermann_msgs.git ${dir}/src/ackermann_msgs --branch master --depth 1
-git clone https://github.com/carla-simulator/ros-carla-msgs.git ${dir}/src/carla_msgs --branch master --depth 1
