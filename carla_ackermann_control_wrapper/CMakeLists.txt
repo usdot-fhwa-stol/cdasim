@@ -132,5 +132,6 @@ catkin_add_gmock(${PROJECT_NAME}-test
   test/test_carla_control_wrapper_worker.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}-test 
-carla_ackermann_control_wrapper_worker ${catkin_LIBRARIES})
+if(TARGET ${PROJECT_NAME}-test)
+  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}_lib ${catkin_LIBRARIES})
+endif()
