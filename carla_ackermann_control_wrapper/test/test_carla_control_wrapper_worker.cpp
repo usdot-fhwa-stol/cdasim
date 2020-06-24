@@ -26,7 +26,6 @@ namespace carla_ackermann_control_wrapper
         double wheel_base = 3.0;
 
         autoware_msgs::VehicleCmd vehicle_cmd;
-        vehicle_cmd.header.stamp = ros::Time::now();
         vehicle_cmd.twist_cmd.twist.linear.x = 5.0;
         vehicle_cmd.twist_cmd.twist.angular.z = 0.785;
         vehicle_cmd.ctrl_cmd.linear_velocity = 4.0;
