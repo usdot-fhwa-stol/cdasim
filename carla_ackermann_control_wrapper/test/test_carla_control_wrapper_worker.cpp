@@ -19,14 +19,13 @@
 
 namespace carla_ackermann_control_wrapper
 {
-    Test(CarlaAckermannControlWrapperWorkerTest, testAckermannDriveConversion)
+    TEST(CarlaAckermannControlWrapperWorkerTest, testAckermannDriveConversion)
     {
         CarlaAckermannControlWrapperWorker worker;
 
         double wheel_base = 3.0;
 
         autoware_msgs::VehicleCmd vehicle_cmd;
-        vehicle_cmd.header.stamp = ros::Time::now();
         vehicle_cmd.twist_cmd.twist.linear.x = 5.0;
         vehicle_cmd.twist_cmd.twist.angular.z = 0.785;
         vehicle_cmd.ctrl_cmd.linear_velocity = 4.0;
@@ -40,6 +39,6 @@ namespace carla_ackermann_control_wrapper
         vehicle_cmd.mode = 6;
         vehicle_cmd.emergency = 0;
 
-        EXPECT_EQ(0.44 , worker.update_ackermanndrive_cmd(vehicle_cmd, wheel_base).steering_angle, 0.001);
+        EXPECT_NEAR(0.44 , worker.update_ackermanndrive_cmd(vehicle_cmd, wheel_base).steering_angle, 0.001);
     }
 }
