@@ -19,7 +19,7 @@
 
 namespace carla_ackermann_control_wrapper
 {
-    Test(CarlaAckermannControlWrapperWorkerTest, testAckermannDriveConversion)
+    TEST(CarlaAckermannControlWrapperWorkerTest, testAckermannDriveConversion)
     {
         CarlaAckermannControlWrapperWorker worker;
 
@@ -40,6 +40,6 @@ namespace carla_ackermann_control_wrapper
         vehicle_cmd.mode = 6;
         vehicle_cmd.emergency = 0;
 
-        EXPECT_EQ(0.44 , worker.update_ackermanndrive_cmd(vehicle_cmd, wheel_base).steering_angle, 0.001);
+        EXPECT_NEAR(0.44 , worker.update_ackermanndrive_cmd(vehicle_cmd, wheel_base).steering_angle, 0.001);
     }
 }
