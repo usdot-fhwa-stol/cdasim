@@ -35,9 +35,6 @@ void CarlaAckermannControlWrapper::init()
     
     // Set driver type
     driver_status_.controller = true;
-
-    // Publish controller status
-    update_controller_health_status();
 }
 
 // Publish robotic status
@@ -55,7 +52,10 @@ void CarlaAckermannControlWrapper::update_controller_health_status()
 
 void CarlaAckermannControlWrapper::pose_cb(const geometry_msgs::PoseStampedConstPtr& msg)
 {
-    pose_msg_ = msg;
+    // Publish ego vehicle status
+    ego_status_.velocity = current_speed_;
+    ego_status_.orientation = msg->pose.orientation;
+    vehicle_status_pub_.publish(ego_status_);
 }
 
 void CarlaAckermannControlWrapper::twist_cd(const geometry_msgs::TwistStampedConstPtr& msg)
@@ -87,6 +87,9 @@ int CarlaAckermannControlWrapper::run()
     vehicle_status_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
     driver_status_pub_ = nh_.advertise<cav_msgs::DriverStatus>("driver_discovery",1);
 
+    // Publish controller status
+    update_controller_health_status();
+
     // Publish ego vehicle info
     ego_info_.rolename = "ego_vehicle";
     for (auto wheel : ego_info_.wheels){
@@ -96,11 +99,6 @@ int CarlaAckermannControlWrapper::run()
     
     ego_info_.mass = vehicle_mass_;
     vehicle_info_pub_.publish(ego_info_);
-
-    // Publish ego vehicle status
-    ego_status_.velocity = current_speed_;
-    ego_status_.orientation = pose_msg_->pose.orientation;
-    vehicle_status_pub_.publish(ego_status_);
 
     return 0;
 }

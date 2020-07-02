@@ -49,8 +49,7 @@ class CarlaAckermannControlWrapper
          */
         int run();
 
-    private:
-        // node handles
+         // node handles
         ros::CARMANodeHandle nh_, pnh_;
 
         // topic subscribers
@@ -65,7 +64,9 @@ class CarlaAckermannControlWrapper
         ros::Publisher vehicle_info_pub_;
         ros::Publisher vehicle_status_pub_;
         ros::Publisher driver_status_pub_;
-        
+
+    private:
+       
         // delegate logic implementation to worker class
         CarlaAckermannControlWrapperWorker worker_;
 
@@ -89,7 +90,6 @@ class CarlaAckermannControlWrapper
         cav_msgs::DriverStatus driver_status_;
         carla_msgs::CarlaEgoVehicleInfo ego_info_;
         carla_msgs::CarlaEgoVehicleStatus ego_status_;
-        boost::shared_ptr<geometry_msgs::PoseStamped const> pose_msg_;
 
         double wheel_base_;
         double max_steer_angle_;
