@@ -75,12 +75,15 @@ class CarlaAckermannControlWrapper
 
         // message/service callbacks
         void pose_cb(const geometry_msgs::PoseStampedConstPtr& msg);
-        void twist_cd(const geometry_msgs::TwistStampedConstPtr& msg);
+        void twist_cb(const geometry_msgs::TwistStampedConstPtr& msg);
         void vehicle_cmd_cb(const autoware_msgs::VehicleCmd::ConstPtr& vehicle_cmd);
         void robot_status_cb(const cav_msgs::CarlaEnabledConstPtr& msg);
 
         // check controller health status
         void update_controller_health_status();
+        
+        // publish ego vehicle info
+        void publish_ego_veh_info();
 
         // local variables
         autoware_msgs::VehicleCmd vehicle_cmd_;
