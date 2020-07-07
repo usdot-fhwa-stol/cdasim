@@ -81,7 +81,7 @@ int CarlaAckermannControlWrapper::run()
     twist_sub_ = nh_.subscribe("current_velocity", 1, &CarlaAckermannControlWrapper::twist_cd, this);
 
     // Initialize all publishers
-    ackermanndrive_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleControl>("ackermann_cmd", 1);
+    ackermanndrive_pub_ = nh_.advertise<ackermann_msgs::AckermannDrive>("ackermann_cmd", 1);
     robot_status_pub_ = nh_.advertise<cav_msgs::RobotEnabled>("controller/robot_status", 1);
     vehicle_info_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleInfo>("carla_ego_info", 1);
     vehicle_status_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
@@ -99,6 +99,9 @@ int CarlaAckermannControlWrapper::run()
     
     ego_info_.mass = vehicle_mass_;
     vehicle_info_pub_.publish(ego_info_);
+
+    nh_.setSpinRate(10); //Spin rate in Hz. Normally we use 10, 20 or 50 depending on the application.
+    nh_.spin();
 
     return 0;
 }
