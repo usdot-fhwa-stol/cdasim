@@ -1,0 +1,3 @@
+<launch>
+	<node name="CARLA_server" pkg="carla_carma" type="CARLA_server_interface.py" output="screen" />
+</launch>
