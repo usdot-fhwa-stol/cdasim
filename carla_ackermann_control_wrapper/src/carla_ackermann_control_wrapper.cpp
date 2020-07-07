@@ -90,10 +90,10 @@ int CarlaAckermannControlWrapper::run()
     init();
 
     // Initialize all publishers
-    ackermanndrive_pub_ = nh_.advertise<ackermann_msgs::AckermannDrive>("ackermann_cmd", 1);
+    ackermanndrive_pub_ = nh_.advertise<ackermann_msgs::AckermannDrive>("/carla/ego_vehicle/ackermann_cmd", 1);
     robot_status_pub_ = nh_.advertise<cav_msgs::RobotEnabled>("controller/robot_status", 1);
-    vehicle_info_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleInfo>("carla_ego_info", 1);
-    vehicle_status_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleStatus>("carla_ego_status", 1);
+    vehicle_info_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleInfo>("/carla/ego_vehicle/vehicle_info", 1);
+    vehicle_status_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleStatus>("/carla/ego_vehicle/vehicle_status", 1);
     driver_status_pub_ = nh_.advertise<cav_msgs::DriverStatus>("driver_discovery",1);
 
     // Publish controller status
