@@ -55,13 +55,13 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-#    ExternalObject.msg
-#    ExternalObjectList.msg
+    ExternalObject.msg
+    ExternalObjectList.msg
     CarlaEgoVehicleControl.msg
     CarmaInit.msg
     VehicleStatus.msg
-#    CarlaEnabled.msg
-#    RobotEnabled.msg
+    CarlaEnabled.msg
+    RobotEnabled.msg
 )
 
 ## Generate services in the 'srv' folder

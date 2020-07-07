@@ -50,9 +50,9 @@ def send_init_message_2_CARMA(carla_2_carma_init):
 def receive_init_message_from_CARMA():
     # Listen to subscribed topic message from CARMA
     print('Receiving init message from CARMA')
-    data = rospy.wait_for_message('RobotEnabled_Topic', Bool) 
+    data = rospy.wait_for_message('controller/robot_status', RobotEnabled) 
     #data = rospy.wait_for_message('IsReady_Topic', Bool)
-    return data.data
+    return data.robot_active
 
 # callback function, data will be a CarlaEgoVehicleControl message
 # currently NOT used, as we wait for CARMA data in main loop instead of using callback interrupts
@@ -68,7 +68,7 @@ def receive_data_from_CARMA_callback(data):
 def receive_data_from_CARMA():
     # Listen to subscribed topic message from CARMA
     print('Receiving from CARMA')
-    data = rospy.wait_for_message('CarlaEgoVehicleControl_Topic', CarlaEgoVehicleControl)
+    data = rospy.wait_for_message('/carla/ego_vehicle/ackermann_cmd', CarlaEgoVehicleControl)
     return data.throttle, data.brake, data.steer
 
 # helper function to convert given yaw pitch roll to quaternion
@@ -168,11 +168,11 @@ rospy.init_node('CARMA_Interface')
 # UNCOMMENT line below for constant listening
 # sub=rospy.Subscriber('CarlaEgoVehicleControl_Topic', CarlaEgoVehicleControl, receive_data_from_CARMA_callback)
 # #publish messages to a topic using rospy.Publisher class
-pub_vs=rospy.Publisher('VehicleStatus_Topic', VehicleStatus, queue_size=1)
-pub_pose=rospy.Publisher('PoseStamped_Topic', PoseStamped, queue_size=1)
-pub_eol=rospy.Publisher('ExternalObjectList_Topic', ExternalObjectList, queue_size=1)
+pub_vs=rospy.Publisher('vehicle_status', VehicleStatus, queue_size=1)
+pub_pose=rospy.Publisher('current_pose', PoseStamped, queue_size=1)
+pub_eol=rospy.Publisher('external_objects', ExternalObjectList, queue_size=1)
 pub_init=rospy.Publisher('CarmaInit_Topic', CarmaInit, queue_size=1)
-pub_ce=rospy.Publisher('CarlaEnabled_Topic',CarlaEnabled,queue_size=1)
+pub_ce=rospy.Publisher('carla_enabled',CarlaEnabled,queue_size=1)
 # Initialization stage
 ego_vehicle_id = -1
 init_carma_response = {"ego_id": ego_vehicle_id, "isReady": False}
