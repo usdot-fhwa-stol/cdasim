@@ -6,6 +6,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   carla_msgs
+  autoware_msgs
+  cav_msgs
   roslaunch
   message_generation
 )
@@ -15,13 +17,6 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
  add_message_files(
     FILES
-    ExternalObject.msg
-    ExternalObjectList.msg
-    CarlaEgoVehicleControl.msg
-    CarmaInit.msg
-    VehicleStatus.msg
-    CarlaEnabled.msg
-    RobotEnabled.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -29,6 +24,8 @@ catkin_python_setup()
     DEPENDENCIES
     std_msgs
     carla_msgs
+    autoware_msgs
+    cav_msgs
 )
 
 roslaunch_add_file_check(launch)
