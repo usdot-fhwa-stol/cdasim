@@ -18,31 +18,12 @@ from math import cos, sin
 #from carma_carla_comm import ExternalObjectList, CarlaEgoVehicleControl, CarmaInit
 #from carma_carla_comm import ExternalObject
 #from carma_carla_comm import VehicleStatus
-from carla_carma.msg import VehicleStatus, CarmaInit, CarlaEgoVehicleControl
-from cav_msgs.msg import ExternalObjectList, RobotEnabled, CarlaEnabled 
+from carla_msgs.msg import CarlaEgoVehicleControl
+from autoware_msgs.msg import VehicleStatus
+from cav_msgs.msg import ExternalObjectList, ExternalObject, RobotEnabled, CarlaEnabled 
 
 def send_init_message_2_CARMA(carla_2_carma_init):
     # Publish initialization data from CARLA to CARMA topic
-#    print('Sending init message to CARMA')
-    ci = CarmaInit()
-    ci.size = Vector3()
-    ci.size.x = float(carla_2_carma_init["ego_info"]["x_length"])
-    ci.size.y = float(carla_2_carma_init["ego_info"]["y_length"])
-    ci.size.z = float(carla_2_carma_init["ego_info"]["z_length"])
-#    ci.mass = float(carla_2_carma_init["ego_info"]["mass"])
-    ci.pose = Pose()
-    ci.pose.position = Point()
-    state = carla_2_carma_init["ego_state"]
-    ci.pose.position.x = float(state["x_pose"])
-    ci.pose.position.y = float(state["y_pose"])
-    ci.pose.position.z = float(state["z_pose"])
-    yaw = float(state["yaw"])
-    pitch = float(state["pitch"])
-    roll = float(state["roll"])
-    ci.pose.orientation = ypr_to_quaternion(yaw, pitch, roll)
-    ci.id = int(carla_2_carma_init["ego_id"])
-    ci.map_id = int(carla_2_carma_init["map_id"])
-    pub_init.publish(ci)
     ce = CarlaEnabled()
     ce.carla_enabled = True
     pub_ce.publish(ce) 
@@ -52,6 +33,7 @@ def receive_init_message_from_CARMA():
     print('Receiving init message from CARMA')
     data = rospy.wait_for_message('controller/robot_status', RobotEnabled) 
     #data = rospy.wait_for_message('IsReady_Topic', Bool)
+    print(data.robot_active)
     return data.robot_active
 
 # callback function, data will be a CarlaEgoVehicleControl message
@@ -68,7 +50,7 @@ def receive_data_from_CARMA_callback(data):
 def receive_data_from_CARMA():
     # Listen to subscribed topic message from CARMA
     print('Receiving from CARMA')
-    data = rospy.wait_for_message('/carla/ego_vehicle/ackermann_cmd', CarlaEgoVehicleControl)
+    data = rospy.wait_for_message('/carla/ego_vehicle/vehicle_control_cmd', CarlaEgoVehicleControl)
     return data.throttle, data.brake, data.steer
 
 # helper function to convert given yaw pitch roll to quaternion
@@ -171,7 +153,6 @@ rospy.init_node('CARMA_Interface')
 pub_vs=rospy.Publisher('vehicle_status', VehicleStatus, queue_size=1)
 pub_pose=rospy.Publisher('current_pose', PoseStamped, queue_size=1)
 pub_eol=rospy.Publisher('external_objects', ExternalObjectList, queue_size=1)
-pub_init=rospy.Publisher('CarmaInit_Topic', CarmaInit, queue_size=1)
 pub_ce=rospy.Publisher('carla_enabled',CarlaEnabled,queue_size=1)
 # Initialization stage
 ego_vehicle_id = -1
