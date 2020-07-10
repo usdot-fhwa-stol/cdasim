@@ -23,9 +23,6 @@ catkin_python_setup()
  generate_messages(
     DEPENDENCIES
     std_msgs
-    carla_msgs
-    autoware_msgs
-    cav_msgs
 )
 
 roslaunch_add_file_check(launch)
