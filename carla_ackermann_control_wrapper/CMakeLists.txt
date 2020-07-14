@@ -28,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   cav_msgs
   cav_srvs
   roscpp
+  geometry_msgs
   autoware_msgs
   ackermann_msgs
   carla_msgs
@@ -53,7 +54,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    INCLUDE_DIRS include
-   CATKIN_DEPENDS carma_utils cav_msgs cav_srvs roscpp autoware_msgs ackermann_msgs carla_msgs
+   CATKIN_DEPENDS carma_utils geometry_msgs cav_msgs cav_srvs roscpp autoware_msgs ackermann_msgs carla_msgs
 )
 
 ###########

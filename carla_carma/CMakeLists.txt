@@ -5,6 +5,7 @@ project(carla_carma)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  geometry_msgs
   carla_msgs
   autoware_msgs
   cav_msgs
