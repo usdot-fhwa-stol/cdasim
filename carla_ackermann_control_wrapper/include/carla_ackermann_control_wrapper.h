@@ -85,6 +85,8 @@ class CarlaAckermannControlWrapper
         // publish ego vehicle info
         void publish_ego_veh_info();
 
+        bool spin_cb();
+
         // local variables
         autoware_msgs::VehicleCmd vehicle_cmd_;
         ackermann_msgs::AckermannDrive ackermann_drive_;
