@@ -16,5 +16,6 @@
 
 source /opt/ros/kinetic/setup.bash
 cd ~/
-catkin_make install
+export ROS_LANG_DISABLE=genjava # Disable genjava
+catkin_make install -DCATKIN_BLACKLIST_PACKAGES="rosjava_utils"
 chmod -R ugo+x ~/install
