@@ -20,12 +20,6 @@ COPY --chown=carma . /home/carma/src/
 RUN ~/src/docker/checkout.sh
 RUN ~/src/docker/install.sh
 
-FROM deps
-
-RUN mkdir ~/src
-COPY --chown=carma . /home/carma/src/
-RUN ~/src/docker/checkout.sh
-RUN ~/src/docker/install.sh
 
 FROM deps
 
@@ -43,6 +37,6 @@ LABEL org.label-schema.vcs-url="https://github.com/usdot-fhwa-stol/carma-simulat
 LABEL org.label-schema.vcs-ref=${VCS_REF}
 LABEL org.label-schema.build-date=${BUILD_DATE}
 
-COPY --from=setup /home/carma/install /opt/carma/install
+COPY --from=deps /home/carma/install /opt/carma/install
 
 CMD [ "wait-for-it.sh", "localhost:11311", "--", "roslaunch", "carla_ackermann_control", "carla_ackermann_control_wrapper.launch"]
