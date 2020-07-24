@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>carla_ackermann_control</name>
   <version>0.0.0</version>
   <description>The carla_ackermann_control package</description>

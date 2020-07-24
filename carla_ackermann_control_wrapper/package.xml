@@ -16,7 +16,7 @@
  the License.
 -->
 
-<package format="2">
+<package format="3">
   <name>carla_ackermann_control_wrapper</name>
   <version>3.2.0</version>
   <description>The wrapper for Carla Ackermann Controller</description>
