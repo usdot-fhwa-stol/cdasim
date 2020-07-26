@@ -10,21 +10,10 @@ find_package(catkin REQUIRED COMPONENTS
   autoware_msgs
   cav_msgs
   roslaunch
-  message_generation
+  rosgraph_msgs
 )
 
 catkin_python_setup()
-
-## Generate messages in the 'msg' folder
- add_message_files(
-    FILES
-)
-
-## Generate added messages and services with any dependencies listed here
- generate_messages(
-    DEPENDENCIES
-    std_msgs
-)
 
 roslaunch_add_file_check(launch)
 
