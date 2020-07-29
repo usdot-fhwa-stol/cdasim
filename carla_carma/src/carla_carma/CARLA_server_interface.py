@@ -340,24 +340,37 @@ def main():
         print('Waiting for CARMA to connect')
         conn, addr = serv.accept()
         print('Connection established with CARMA client')
+        
         is_carma_ready = False
+        count = 0
         while is_carma_ready is False:
+            print('Waiting for CARMA to be ready')
+
+            print('The count is:', count)
+            count = count + 1
+
+            clock.tick()
+            world.tick()
+            world_snapshot = world.get_snapshot()
+            timestamp = world_snapshot.timestamp
+            init_dict["timestamp"] = timestamp.elapsed_seconds
+
             carma_init_message = conn.recv(4096)
             msg = carma_init_message.decode('utf-8')
             print(msg)
             carma_init_dict = json.loads(msg)
             try:
                 is_carma_ready = carma_init_dict["isReady"]
-                if is_carma_ready:
-                    continue
+                # if is_carma_ready:
+                #     continue
             except:
                 print('Something is wrong with the message')
-            print('Waiting for CARMA to be ready')
             data_tx = json.dumps(init_dict).encode('utf-8')
             conn.sendall(data_tx)
-            time.sleep(1)
+            print(data_tx)
+            time.sleep(0.1)
 
-        time.sleep(5)
+        # time.sleep(5)
 
         dict_veh_list = {k: [] for k in range(len(vehicles_list))}
         ego_veh_data = {}
@@ -365,10 +378,11 @@ def main():
         while True:
             if should_quit():
                 return
-            clock.tick()
-            world.tick()
-            world_snapshot = world.get_snapshot()
+            # clock.tick()
+            # world.tick()
+            # world_snapshot = world.get_snapshot()
             timestamp = world_snapshot.timestamp
+            print("timestamp: %s", timestamp)
             JSON_dict = {}
             JSON_dict["timestamp"] = timestamp.elapsed_seconds
             veh_data = {}
@@ -388,24 +402,35 @@ def main():
             json_to_send = {}
             try:
                 json_to_send = json.dumps(JSON_dict)
-                # print('Tx: '+json_to_send)
+                print('Tx: '+json_to_send)
                 data = conn.recv(4096)
                 data_tx = json.dumps(json_to_send).encode('utf-8')
                 conn.sendall(data_tx)
+                print("***data_tx**** ")
+                print(data_tx)
+                print(" ***data_tx****DONE")
+                print("***data**** ")
                 print(data)
+                print(" ***data****DONE")
                 rx_msg = data
                 CARMA_control = json.loads(rx_msg.decode('utf-8'))
+                print("***CARMA_control**** ")
+                print(CARMA_control)
 
                 # time.sleep(0.05)
-            except:
-                print('Could not generate JSON')
+            except Exception as e:
+                print('Could not generate JSON', e)
 
             ego_vehicle.apply_control(carla.VehicleControl(throttle=CARMA_control["throttle"],
                                                            steer=CARMA_control["steering"],
                                                            brake=CARMA_control["brake"]))
+            print("CARMA_control[throttle]: ")
+            print(CARMA_control["throttle"])
             i = i+1
             draw_image(display, array_image)
             display.blit(font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)), (8, 10))
+            print("clock.get_fps(): ")
+            print(clock.get_fps())
             pygame.display.flip()
 
 
