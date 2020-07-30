@@ -70,9 +70,9 @@ class CARMAInterface(object):
         self.vs_pub = rospy.Publisher(
             'vehicle_status', VehicleStatus, queue_size=1)
         self.pose_pub = rospy.Publisher(
-            'current_pose', PoseStamped, queue_size=1)
+            '/localization/current_pose', PoseStamped, queue_size=1)
         self.eol_pub = rospy.Publisher(
-            'external_objects', ExternalObjectList, queue_size=1)
+            '/environment/external_objects', ExternalObjectList, queue_size=1)
 
     def destroy(self):
         """
@@ -98,6 +98,7 @@ class CARMAInterface(object):
         self.last_timestamp = self.ros_timestamp
         self.ros_timestamp = rospy.Time.from_sec(carla_timestamp)
         self.sim_time_pub.publish(Clock(self.ros_timestamp))
+        rospy.loginfo("last_timestamp: %s ros_timestamp: %s", self.last_timestamp, self.ros_timestamp)
 
     def carla_init_update(self):
         init_carma_response = {
@@ -111,7 +112,8 @@ class CARMAInterface(object):
         carla_init_dict = json.loads(rx_data.decode('utf-8'))
         self.ego_vehicle_id = carla_init_dict["ego_id"]
         self.last_timestamp = self.ros_timestamp
-        self.ros_timestamp = carla_init_dict["timestamp"]
+        self.ros_timestamp = rospy.Time.from_sec(float(carla_init_dict["timestamp"]))
+        rospy.loginfo("(init) last_timestamp: %s ros_timestamp: %s", self.last_timestamp, self.ros_timestamp)
 
     def carla_enabled_publish(self):
         # Publish initialization data from CARLA to CARMA topic
@@ -216,7 +218,6 @@ class CARMAInterface(object):
         rospy.loginfo('Sending to carla: carla_2_carma_dict')
         self.s.sendall(json.dumps(carla_2_carma_dict).encode('utf-8'))
         rospy.loginfo(carla_2_carma_dict)
-        
 
     def receive_data_from_CARLA(self):
         decoded_string = bytes(b'')
@@ -259,7 +260,8 @@ class CARMAInterface(object):
             while self.re.robot_active is False:
                 # rospy.sleep(0.1)
                 self.carla_init_update()
-                self.update_clock(self.ros_timestamp)
+                # self.update_clock(self.ros_timestamp)
+                self.sim_time_pub.publish(Clock(self.ros_timestamp))
 
             self.carla_init_update()
 
@@ -267,11 +269,13 @@ class CARMAInterface(object):
                         "brake": 0, "steering": 0, "drive_mode": "cruise"}
             self.send_CARMA_data_2_CARLA(dataDict)
             CARLA_data_dict = self.receive_data_from_CARLA()
+            rospy.loginfo("self.last_timestamp: %s",
+                          self.last_timestamp)
             rospy.loginfo("CARLA_data_dict: %s",
                           CARLA_data_dict["timestamp"])
 
             # Publish /clock topic
-            if self.last_timestamp.to_sec < float(CARLA_data_dict["timestamp"]):
+            if self.last_timestamp < rospy.Time.from_sec(float(CARLA_data_dict["timestamp"])):
                 self.update_clock(float(CARLA_data_dict["timestamp"]))
                 rospy.loginfo(self.ros_timestamp)
 

@@ -62,6 +62,9 @@ void CarlaAckermannControlWrapper::robot_status_cb(const cav_msgs::CarlaEnabledC
 {
     robotic_status_.robot_active = msg->carla_enabled;
     robot_status_pub_.publish(robotic_status_);
+    // driver_status_.status = cav_msgs::DriverStatus::OPERATIONAL;
+    // driver_status_pub_.publish(driver_status_);
+    publish_ego_veh_info();
 }
 
 // Publish ego vehicle status 
@@ -88,8 +91,6 @@ void CarlaAckermannControlWrapper::vehicle_cmd_cb(const autoware_msgs::VehicleCm
 bool CarlaAckermannControlWrapper::spin_cb()
 {
     update_controller_health_status();
-    publish_ego_veh_info();
-
     return true;
 }
 
