@@ -98,7 +98,8 @@ class CARMAInterface(object):
         self.last_timestamp = self.ros_timestamp
         self.ros_timestamp = rospy.Time.from_sec(carla_timestamp)
         self.sim_time_pub.publish(Clock(self.ros_timestamp))
-        rospy.loginfo("last_timestamp: %s ros_timestamp: %s", self.last_timestamp, self.ros_timestamp)
+        rospy.loginfo("last_timestamp: %s ros_timestamp: %s",
+                      self.last_timestamp, self.ros_timestamp)
 
     def carla_init_update(self):
         init_carma_response = {
@@ -112,8 +113,10 @@ class CARMAInterface(object):
         carla_init_dict = json.loads(rx_data.decode('utf-8'))
         self.ego_vehicle_id = carla_init_dict["ego_id"]
         self.last_timestamp = self.ros_timestamp
-        self.ros_timestamp = rospy.Time.from_sec(float(carla_init_dict["timestamp"]))
-        rospy.loginfo("(init) last_timestamp: %s ros_timestamp: %s", self.last_timestamp, self.ros_timestamp)
+        self.ros_timestamp = rospy.Time.from_sec(
+            float(carla_init_dict["timestamp"]))
+        rospy.loginfo("(init) last_timestamp: %s ros_timestamp: %s",
+                      self.last_timestamp, self.ros_timestamp)
 
     def carla_enabled_publish(self):
         # Publish initialization data from CARLA to CARMA topic
@@ -265,27 +268,22 @@ class CARMAInterface(object):
 
             self.carla_init_update()
 
-            dataDict = {"ego_id": self.ego_vehicle_id, "throttle": 0,
-                        "brake": 0, "steering": 0, "drive_mode": "cruise"}
-            self.send_CARMA_data_2_CARLA(dataDict)
-            CARLA_data_dict = self.receive_data_from_CARLA()
-            rospy.loginfo("self.last_timestamp: %s",
-                          self.last_timestamp)
-            rospy.loginfo("CARLA_data_dict: %s",
-                          CARLA_data_dict["timestamp"])
-
-            # Publish /clock topic
-            if self.last_timestamp < rospy.Time.from_sec(float(CARLA_data_dict["timestamp"])):
-                self.update_clock(float(CARLA_data_dict["timestamp"]))
-                rospy.loginfo(self.ros_timestamp)
-
-                # update_clock(CARLA_data_dict["timestamp"])
-                self.send_data_2_CARMA(CARLA_data_dict)
-                rospy.loginfo(CARLA_data_dict)
-
+        
+            while True:
                 dataDict = {"ego_id": self.ego_vehicle_id, "throttle": self.throttle_cmd,
                             "brake": self.brake_cmd, "steering": self.steering_cmd, "drive_mode": "cruise"}
                 self.send_CARMA_data_2_CARLA(dataDict)
+                CARLA_data_dict = self.receive_data_from_CARLA()
+                rospy.loginfo("self.last_timestamp: %s",
+                            self.last_timestamp)
+                rospy.loginfo("ros_timestamp: %s",
+                            self.ros_timestamp)
+                rospy.loginfo("CARLA_data_dict: %s",
+                            CARLA_data_dict["timestamp"])
+
+                self.update_clock(float(CARLA_data_dict["timestamp"]))
+
+                self.send_data_2_CARMA(CARLA_data_dict)
 
             rospy.spin()
 
