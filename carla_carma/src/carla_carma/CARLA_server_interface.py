@@ -378,11 +378,11 @@ def main():
         while True:
             if should_quit():
                 return
-            # clock.tick()
-            # world.tick()
-            # world_snapshot = world.get_snapshot()
+            clock.tick()
+            world.tick()
+            world_snapshot = world.get_snapshot()
             timestamp = world_snapshot.timestamp
-            print("timestamp: %s", timestamp)
+            print("-----------------------------------------timestamp: %s", timestamp)
             JSON_dict = {}
             JSON_dict["timestamp"] = timestamp.elapsed_seconds
             veh_data = {}
@@ -402,12 +402,12 @@ def main():
             json_to_send = {}
             try:
                 json_to_send = json.dumps(JSON_dict)
-                print('Tx: '+json_to_send)
+                # print('Tx: '+json_to_send)
                 data = conn.recv(4096)
                 data_tx = json.dumps(json_to_send).encode('utf-8')
                 conn.sendall(data_tx)
-                print("***data_tx**** ")
-                print(data_tx)
+                # print("***data_tx**** ")
+                # print(data_tx)
                 print(" ***data_tx****DONE")
                 print("***data**** ")
                 print(data)
@@ -429,8 +429,6 @@ def main():
             i = i+1
             draw_image(display, array_image)
             display.blit(font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)), (8, 10))
-            print("clock.get_fps(): ")
-            print(clock.get_fps())
             pygame.display.flip()
 
 
