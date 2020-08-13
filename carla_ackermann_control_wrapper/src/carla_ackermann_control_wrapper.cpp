@@ -35,7 +35,7 @@ void CarlaAckermannControlWrapper::init()
     
     // Set driver type
     driver_status_.controller = true;
-    driver_status_.name = "controller";
+    driver_status_.name = "/hardware_interface/carla_ackermann_control_wrapper";
 }
 
 // Publish ego vehicle info
@@ -109,8 +109,8 @@ int CarlaAckermannControlWrapper::run()
     // Initialize all subscribers
     vehicle_cmd_sub_ = nh_.subscribe("vehicle_cmd", 1, &CarlaAckermannControlWrapper::vehicle_cmd_cb, this);
     carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::robot_status_cb, this);
-    pose_sub_ = nh_.subscribe("current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
-    twist_sub_ = nh_.subscribe("current_velocity", 1, &CarlaAckermannControlWrapper::twist_cb, this);
+    pose_sub_ = nh_.subscribe("/localization/current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
+    twist_sub_ = nh_.subscribe("vehicle/twist", 1, &CarlaAckermannControlWrapper::twist_cb, this);
 
     nh_.setSpinCallback(std::bind(&CarlaAckermannControlWrapper::spin_cb, this));
     nh_.setSpinRate(10); //Spin rate in Hz. Normally we use 10, 20 or 50 depending on the application.
