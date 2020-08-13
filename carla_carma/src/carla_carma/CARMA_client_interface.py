@@ -34,7 +34,7 @@ class CARMAInterface(object):
         # Socket handling
         rospy.loginfo("starting init**************")
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.settimeout(5)   # 5 seconds
+        self.s.settimeout(1000)   # 1000 seconds
 
         self.ros_timestamp = 0
         self.last_timestamp = 0
@@ -219,8 +219,8 @@ class CARMAInterface(object):
             cur_eo.velocity.twist.linear = Vector3()
             cur_eo.velocity.twist.linear.x = CARLA_data_dict["veh_array"][cur_veh]["long_speed"]
             eols.append(cur_eo)
-            rospy.loginfo("cur_eo.velocity.twist.linear.x: %s",
-                          cur_eo.velocity.twist.linear.x)
+            # rospy.loginfo("cur_eo.velocity.twist.linear.x: %s",
+            #               cur_eo.velocity.twist.linear.x)
         self.current_external_objects.objects = eols
         self.eol_pub.publish(self.current_external_objects)
 
@@ -245,7 +245,7 @@ class CARMAInterface(object):
         while True:
             rx_data = self.s.recv(4096)
             received_string.extend(rx_data)
-            rospy.loginfo("received_string rx_data: %s", received_string)
+            # rospy.loginfo("received_string rx_data: %s", received_string)
             try:
                 decoded_string = eval(received_string.decode('utf-8'))
                 received_string = bytearray('', 'utf-8')
@@ -302,7 +302,6 @@ class CARMAInterface(object):
                 self.send_data_2_CARMA(CARLA_data_dict)
 
             rospy.spin()
-
 
 def main():
     """

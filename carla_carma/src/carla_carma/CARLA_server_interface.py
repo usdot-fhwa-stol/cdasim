@@ -145,6 +145,7 @@ def main():
     client.set_timeout(3.0)
 
     serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serv.settimeout(1000)
     #serv.bind(('128.32.234.153', 8080)) # 128.32.234.154
     serv.bind(('127.0.0.1', 8080))
     serv.listen(5)
@@ -221,11 +222,21 @@ def main():
         # -------------
         # some settings
         m = world.get_map()
-        start_pose = random.choice(m.get_spawn_points())
+        # start_pose = random.choice(m.get_spawn_points())
+        start_pose = carla.Transform(carla.Location(75.430031, 191.769989, 1.370000))
+
+        # start_pose = carla.Transform()
+        # start_pose.location.x = 75.430031
+        # start_pose.location.y = 191.769989
+        # start_pose.location.z = 1.370000
+        # start_pose.rotation.yaw = -0.401
 
         ego_vehicle = world.try_spawn_actor(random.choice(blueprint_library.filter('vehicle.tesla.model3')), start_pose)
         batch.append(SpawnActor(blueprint, start_pose).then(SetAutopilot(ego_vehicle, False)))
         ego_vehicle.set_simulate_physics(True)
+
+        print('ego_vehicle start points: ')
+        print(start_pose)
 
         bp_camera = blueprint_library.find('sensor.camera.rgb')
         # Modify the attributes of the blueprint to set image resolution and field of view.
@@ -368,9 +379,9 @@ def main():
             data_tx = json.dumps(init_dict).encode('utf-8')
             conn.sendall(data_tx)
             print(data_tx)
-            time.sleep(0.1)
+            time.sleep(1)
 
-        # time.sleep(5)
+        time.sleep(60)
 
         dict_veh_list = {k: [] for k in range(len(vehicles_list))}
         ego_veh_data = {}
@@ -417,7 +428,8 @@ def main():
                 print("***CARMA_control**** ")
                 print(CARMA_control)
 
-                # time.sleep(0.05)
+                # time.sleep(0.1)
+                
             except Exception as e:
                 print('Could not generate JSON', e)
 
