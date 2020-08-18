@@ -223,20 +223,11 @@ def main():
         # some settings
         m = world.get_map()
         # start_pose = random.choice(m.get_spawn_points())
-        start_pose = carla.Transform(carla.Location(75.430031, 191.769989, 1.370000))
-
-        # start_pose = carla.Transform()
-        # start_pose.location.x = 75.430031
-        # start_pose.location.y = 191.769989
-        # start_pose.location.z = 1.370000
-        # start_pose.rotation.yaw = -0.401
+        start_pose = carla.Transform(carla.Location(35, 302.5, 0.5),carla.Rotation(0,-180,0))
 
         ego_vehicle = world.try_spawn_actor(random.choice(blueprint_library.filter('vehicle.tesla.model3')), start_pose)
         batch.append(SpawnActor(blueprint, start_pose).then(SetAutopilot(ego_vehicle, False)))
         ego_vehicle.set_simulate_physics(True)
-
-        print('ego_vehicle start points: ')
-        print(start_pose)
 
         bp_camera = blueprint_library.find('sensor.camera.rgb')
         # Modify the attributes of the blueprint to set image resolution and field of view.
@@ -353,12 +344,12 @@ def main():
         print('Connection established with CARMA client')
         
         is_carma_ready = False
-        count = 0
+        # count = 0
         while is_carma_ready is False:
             print('Waiting for CARMA to be ready')
 
-            print('The count is:', count)
-            count = count + 1
+            # print('The count is:', count)
+            # count = count + 1
 
             clock.tick()
             world.tick()
@@ -381,7 +372,7 @@ def main():
             print(data_tx)
             time.sleep(1)
 
-        time.sleep(60)
+        time.sleep(10)
 
         dict_veh_list = {k: [] for k in range(len(vehicles_list))}
         ego_veh_data = {}
@@ -393,7 +384,7 @@ def main():
             world.tick()
             world_snapshot = world.get_snapshot()
             timestamp = world_snapshot.timestamp
-            print("-----------------------------------------timestamp: %s", timestamp)
+            # print("-----------------------------------------timestamp: %s", timestamp)
             JSON_dict = {}
             JSON_dict["timestamp"] = timestamp.elapsed_seconds
             veh_data = {}
@@ -419,14 +410,14 @@ def main():
                 conn.sendall(data_tx)
                 # print("***data_tx**** ")
                 # print(data_tx)
-                print(" ***data_tx****DONE")
-                print("***data**** ")
+                # print(" ***data_tx****DONE")
+                # print("***data**** ")
                 print(data)
-                print(" ***data****DONE")
+                # print(" ***data****DONE")
                 rx_msg = data
                 CARMA_control = json.loads(rx_msg.decode('utf-8'))
-                print("***CARMA_control**** ")
-                print(CARMA_control)
+                # print("***CARMA_control**** ")
+                # print(CARMA_control)
 
                 # time.sleep(0.1)
                 
@@ -436,8 +427,8 @@ def main():
             ego_vehicle.apply_control(carla.VehicleControl(throttle=CARMA_control["throttle"],
                                                            steer=CARMA_control["steering"],
                                                            brake=CARMA_control["brake"]))
-            print("CARMA_control[throttle]: ")
-            print(CARMA_control["throttle"])
+            # print("CARMA_control[throttle]: ")
+            # print(CARMA_control["throttle"])
             i = i+1
             draw_image(display, array_image)
             display.blit(font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)), (8, 10))
