@@ -33,6 +33,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include "carla_ackermann_control_wrapper_worker.h"
+#include <ros/console.h>
 
 namespace carla_ackermann_control_wrapper {
 
@@ -77,10 +78,13 @@ class CarlaAckermannControlWrapper
         void pose_cb(const geometry_msgs::PoseStampedConstPtr& msg);
         void twist_cb(const geometry_msgs::TwistStampedConstPtr& msg);
         void vehicle_cmd_cb(const autoware_msgs::VehicleCmd::ConstPtr& vehicle_cmd);
-        void robot_status_cb(const cav_msgs::CarlaEnabledConstPtr& msg);
+        void carla_enabled_cb(const cav_msgs::CarlaEnabledConstPtr& msg);
 
         // check controller health status
         void update_controller_health_status();
+        
+        // update the robot_status
+        void update_robot_status();
         
         // publish ego vehicle info
         void publish_ego_veh_info();

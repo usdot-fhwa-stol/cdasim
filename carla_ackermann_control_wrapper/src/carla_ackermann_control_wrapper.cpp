@@ -36,6 +36,9 @@ void CarlaAckermannControlWrapper::init()
     // Set driver type
     driver_status_.controller = true;
     driver_status_.name = "/hardware_interface/carla_ackermann_control_wrapper";
+
+    robotic_status_.robot_active = false;
+    robotic_status_.robot_enabled = false;
 }
 
 // Publish ego vehicle info
@@ -58,13 +61,17 @@ void CarlaAckermannControlWrapper::update_controller_health_status()
 }
 
 // Publish robotic status
-void CarlaAckermannControlWrapper::robot_status_cb(const cav_msgs::CarlaEnabledConstPtr& msg)
+void CarlaAckermannControlWrapper::carla_enabled_cb(const cav_msgs::CarlaEnabledConstPtr& msg)
 {
     robotic_status_.robot_active = msg->carla_enabled;
-    robot_status_pub_.publish(robotic_status_);
-    // driver_status_.status = cav_msgs::DriverStatus::OPERATIONAL;
-    // driver_status_pub_.publish(driver_status_);
+    robotic_status_.robot_enabled = msg->carla_enabled;
+    update_robot_status();
     publish_ego_veh_info();
+}
+
+void CarlaAckermannControlWrapper::update_robot_status()
+{
+    robot_status_pub_.publish(robotic_status_);
 }
 
 // Publish ego vehicle status 
@@ -91,6 +98,7 @@ void CarlaAckermannControlWrapper::vehicle_cmd_cb(const autoware_msgs::VehicleCm
 bool CarlaAckermannControlWrapper::spin_cb()
 {
     update_controller_health_status();
+    update_robot_status();
     return true;
 }
 
@@ -108,7 +116,7 @@ int CarlaAckermannControlWrapper::run()
 
     // Initialize all subscribers
     vehicle_cmd_sub_ = nh_.subscribe("vehicle_cmd", 1, &CarlaAckermannControlWrapper::vehicle_cmd_cb, this);
-    carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::robot_status_cb, this);
+    carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::carla_enabled_cb, this);
     pose_sub_ = nh_.subscribe("/localization/current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
     twist_sub_ = nh_.subscribe("vehicle/twist", 1, &CarlaAckermannControlWrapper::twist_cb, this);
 
