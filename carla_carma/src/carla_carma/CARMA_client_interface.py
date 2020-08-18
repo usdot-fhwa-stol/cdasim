@@ -41,7 +41,7 @@ class CARMAInterface(object):
         self.ce = CarlaEnabled()
         self.ce.carla_enabled = False
         self.re = RobotEnabled()
-        self.re.robot_active = False
+        self.re.robot_enabled = False
 
         self.ego_vehicle_id = -1
 
@@ -106,7 +106,7 @@ class CARMAInterface(object):
 
     def carla_init_update(self):
         init_carma_response = {
-            "ego_id": self.ego_vehicle_id, "isReady": self.re.robot_active}
+            "ego_id": self.ego_vehicle_id, "isReady": self.re.robot_enabled}
         self.s.sendall(json.dumps(init_carma_response).encode('utf-8'))
         rospy.loginfo(init_carma_response)
 
@@ -124,8 +124,8 @@ class CARMAInterface(object):
     def robot_status_update(self, carma_robot_enabled):
         # Listen to subscribed topic message from CARMA
         rospy.loginfo('Receiving robot_active message from CARMA')
-        self.re.robot_active = carma_robot_enabled.robot_active
-        rospy.loginfo(self.re.robot_active)
+        self.re.robot_enabled = carma_robot_enabled.robot_enabled
+        rospy.loginfo(self.re.robot_enabled)
     
     def carla_enabled_publish(self):
         # Publish initialization data from CARLA to CARMA topic
@@ -277,7 +277,7 @@ class CARMAInterface(object):
 
         while not rospy.is_shutdown():
 
-            while self.re.robot_active is False:
+            while self.re.robot_enabled is False:
                 # rospy.sleep(0.1)
                 self.carla_init_update()
                 # self.update_clock(self.ros_timestamp)

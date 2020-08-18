@@ -23,6 +23,7 @@
 #include <cav_msgs/DriverStatus.h>
 #include <cav_msgs/RobotEnabled.h>
 #include <cav_msgs/CarlaEnabled.h>
+#include <cav_msgs/GuidanceState.h>
 #include <ackermann_msgs/AckermannDrive.h>
 #include <carla_msgs/CarlaEgoVehicleControl.h>
 #include <carla_msgs/CarlaEgoVehicleInfo.h>
@@ -58,6 +59,7 @@ class CarlaAckermannControlWrapper
         ros::Subscriber pose_sub_;
         ros::Subscriber twist_sub_;
         ros::Subscriber carla_enabled_sub_;
+        ros::Subscriber guidance_state_sub_;
 
         // topic publishers
         ros::Publisher ackermanndrive_pub_;
@@ -79,6 +81,7 @@ class CarlaAckermannControlWrapper
         void twist_cb(const geometry_msgs::TwistStampedConstPtr& msg);
         void vehicle_cmd_cb(const autoware_msgs::VehicleCmd::ConstPtr& vehicle_cmd);
         void carla_enabled_cb(const cav_msgs::CarlaEnabledConstPtr& msg);
+        void guidance_state_cb(const cav_msgs::GuidanceStateConstPtr& msg);
 
         // check controller health status
         void update_controller_health_status();

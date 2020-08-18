@@ -60,18 +60,23 @@ void CarlaAckermannControlWrapper::update_controller_health_status()
     driver_status_pub_.publish(driver_status_);
 }
 
+void CarlaAckermannControlWrapper::update_robot_status()
+{
+    robot_status_pub_.publish(robotic_status_);
+}
+
 // Publish robotic status
 void CarlaAckermannControlWrapper::carla_enabled_cb(const cav_msgs::CarlaEnabledConstPtr& msg)
 {
-    robotic_status_.robot_active = msg->carla_enabled;
     robotic_status_.robot_enabled = msg->carla_enabled;
     update_robot_status();
     publish_ego_veh_info();
 }
 
-void CarlaAckermannControlWrapper::update_robot_status()
+void CarlaAckermannControlWrapper::guidance_state_cb(const cav_msgs::GuidanceStateConstPtr& msg)
 {
-    robot_status_pub_.publish(robotic_status_);
+    robotic_status_.robot_active = (msg->state == cav_msgs::GuidanceState::ACTIVE || msg->state == cav_msgs::GuidanceState::ENGAGED);
+    update_robot_status();
 }
 
 // Publish ego vehicle status 
@@ -119,6 +124,7 @@ int CarlaAckermannControlWrapper::run()
     carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::carla_enabled_cb, this);
     pose_sub_ = nh_.subscribe("/localization/current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
     twist_sub_ = nh_.subscribe("vehicle/twist", 1, &CarlaAckermannControlWrapper::twist_cb, this);
+    guidance_state_sub_ = nh_.subscribe("/guidance/state", 1, &CarlaAckermannControlWrapper::guidance_state_cb, this);
 
     nh_.setSpinCallback(std::bind(&CarlaAckermannControlWrapper::spin_cb, this));
     nh_.setSpinRate(10); //Spin rate in Hz. Normally we use 10, 20 or 50 depending on the application.
