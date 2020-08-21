@@ -101,8 +101,8 @@ class CARMAInterface(object):
         self.last_timestamp = self.ros_timestamp
         self.ros_timestamp = rospy.Time.from_sec(carla_timestamp)
         self.sim_time_pub.publish(Clock(self.ros_timestamp))
-        rospy.loginfo("last_timestamp: %s ros_timestamp: %s",
-                      self.last_timestamp, self.ros_timestamp)
+        # rospy.loginfo("last_timestamp: %s ros_timestamp: %s",
+        #               self.last_timestamp, self.ros_timestamp)
 
     def carla_init_update(self):
         init_carma_response = {
@@ -118,8 +118,8 @@ class CARMAInterface(object):
         self.last_timestamp = self.ros_timestamp
         self.ros_timestamp = rospy.Time.from_sec(
             float(carla_init_dict["timestamp"]))
-        rospy.loginfo("(init) last_timestamp: %s ros_timestamp: %s",
-                      self.last_timestamp, self.ros_timestamp)
+        # rospy.loginfo("(init) last_timestamp: %s ros_timestamp: %s",
+        #               self.last_timestamp, self.ros_timestamp)
 
     def robot_status_update(self, carma_robot_enabled):
         # Listen to subscribed topic message from CARMA
@@ -165,9 +165,9 @@ class CARMAInterface(object):
         p.position.x = float(state["global_x"])
         p.position.y = float(state["global_y"])
         p.position.z = float(state["global_z"])
-        yaw = float(state["global_yaw"])
-        pitch = float(state["global_pitch"])
-        roll = float(state["global_roll"])
+        yaw = float(state["rotation_yaw"])
+        pitch = float(state["rotation_pitch"])
+        roll = float(state["rotation_roll"])
         p.orientation = self.ypr_to_quaternion(yaw, pitch, roll)
         return p
 
@@ -176,7 +176,7 @@ class CARMAInterface(object):
     def vehilce_status_publish(self, CARLA_data_dict, h):
         self.current_veh_status.header = h
         self.current_veh_status.speed = float(
-            CARLA_data_dict["ego_state"]["long_speed"])
+            CARLA_data_dict["ego_state"]["velocity_x"])
         rospy.loginfo("vs.speed: %s", self.current_veh_status.speed)
         self.vs_pub.publish(self.current_veh_status)
 
@@ -187,11 +187,19 @@ class CARMAInterface(object):
 
         self.current_twist.header = h
         self.current_twist.twist.linear.x = float(
-            CARLA_data_dict["ego_state"]["long_speed"])
+            CARLA_data_dict["ego_state"]["velocity_x"])
+        self.current_twist.twist.linear.y = float(
+            CARLA_data_dict["ego_state"]["velocity_y"])
+        self.current_twist.twist.linear.z = float(
+            CARLA_data_dict["ego_state"]["velocity_z"])
+        self.current_twist.twist.angular.x = float(
+            CARLA_data_dict["ego_state"]["angular_x"])
+        self.current_twist.twist.angular.y = float(
+            CARLA_data_dict["ego_state"]["angular_y"])
         self.current_twist.twist.angular.z = float(
-            CARLA_data_dict["ego_state"]["yaw_rate"])
+            CARLA_data_dict["ego_state"]["angular_z"])
         self.current_twist_pub.publish(self.current_twist)
-        rospy.loginfo("current_twist: %s", self.current_twist.twist.angular.z)
+        # rospy.loginfo("current_twist: %s", self.current_twist.twist.angular.z)
 
     # helper function to publish PoseStamped
 
@@ -217,7 +225,7 @@ class CARMAInterface(object):
             cur_eo.velocity = TwistWithCovariance()
             cur_eo.velocity.twist = Twist()
             cur_eo.velocity.twist.linear = Vector3()
-            cur_eo.velocity.twist.linear.x = CARLA_data_dict["veh_array"][cur_veh]["long_speed"]
+            cur_eo.velocity.twist.linear.x = CARLA_data_dict["veh_array"][cur_veh]["velocity_x"]
             eols.append(cur_eo)
             # rospy.loginfo("cur_eo.velocity.twist.linear.x: %s",
             #               cur_eo.velocity.twist.linear.x)
@@ -290,12 +298,11 @@ class CARMAInterface(object):
                             "brake": self.brake_cmd, "steering": self.steering_cmd, "drive_mode": "cruise"}
                 self.send_CARMA_data_2_CARLA(dataDict)
                 CARLA_data_dict = self.receive_data_from_CARLA()
-                rospy.loginfo("self.last_timestamp: %s",
-                              self.last_timestamp)
-                rospy.loginfo("ros_timestamp: %s",
-                              self.ros_timestamp)
-                rospy.loginfo("CARLA_data_dict: %s",
-                              CARLA_data_dict["timestamp"])
+                # rospy.loginfo("self.last_timestamp: %s",
+                #               self.last_timestamp)
+                # rospy.loginfo("ros_timestamp: %s",
+                #               self.ros_timestamp)
+                rospy.loginfo(CARLA_data_dict)
 
                 self.update_clock(float(CARLA_data_dict["timestamp"]))
 
