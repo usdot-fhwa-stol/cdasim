@@ -45,19 +45,19 @@ def parseSnapshot_2_dictionary(id, snapshot, isEgo):
     veh_data["global_x"] = snapshot.get_transform().location.x
     veh_data["global_y"] = snapshot.get_transform().location.y
     veh_data["global_z"] = snapshot.get_transform().location.z
-    veh_data["global_roll"] = snapshot.get_transform().rotation.roll
-    veh_data["global_pitch"] = snapshot.get_transform().rotation.pitch
-    veh_data["global_yaw"] = snapshot.get_transform().rotation.yaw
-    veh_data["long_speed"] = snapshot.get_velocity().x
+    veh_data["rotation_roll"] = snapshot.get_transform().rotation.roll
+    veh_data["rotation_pitch"] = snapshot.get_transform().rotation.pitch
+    veh_data["rotation_yaw"] = snapshot.get_transform().rotation.yaw
+    veh_data["velocity_x"] = snapshot.get_velocity().x
     if isEgo:
-        veh_data["lat_speed"] = snapshot.get_velocity().y
-        veh_data["vert_speed"] = snapshot.get_velocity().z
-        veh_data["yaw_rate"] = snapshot.get_angular_velocity().z
-        veh_data["pitch_rate"] = snapshot.get_angular_velocity().y
-        veh_data["roll_rate"] = snapshot.get_angular_velocity().x
-        veh_data["long_acc"] = snapshot.get_acceleration().x
-        veh_data["lat_acc"] = snapshot.get_acceleration().y
-        veh_data["vert_acc"] = snapshot.get_acceleration().z
+        veh_data["velocity_y"] = snapshot.get_velocity().y
+        veh_data["velocity_z"] = snapshot.get_velocity().z
+        veh_data["angular_z"] = snapshot.get_angular_velocity().z
+        veh_data["angular_y"] = snapshot.get_angular_velocity().y
+        veh_data["angular_x"] = snapshot.get_angular_velocity().x
+        veh_data["accel_x"] = snapshot.get_acceleration().x
+        veh_data["accel_y"] = snapshot.get_acceleration().y
+        veh_data["accel_z"] = snapshot.get_acceleration().z
     return veh_data
 
 def draw_image(surface, array):
@@ -72,7 +72,6 @@ def should_quit():
             if event.key == pygame.K_ESCAPE:
                 return True
     return False
-
 
 def main():
     argparser = argparse.ArgumentParser(
@@ -222,7 +221,6 @@ def main():
         # -------------
         # some settings
         m = world.get_map()
-        # start_pose = random.choice(m.get_spawn_points())
         start_pose = carla.Transform(carla.Location(35, 302.5, 0.5),carla.Rotation(0,-180,0))
 
         ego_vehicle = world.try_spawn_actor(random.choice(blueprint_library.filter('vehicle.tesla.model3')), start_pose)
@@ -372,7 +370,7 @@ def main():
             print(data_tx)
             time.sleep(1)
 
-        time.sleep(10)
+        time.sleep(30)
 
         dict_veh_list = {k: [] for k in range(len(vehicles_list))}
         ego_veh_data = {}
