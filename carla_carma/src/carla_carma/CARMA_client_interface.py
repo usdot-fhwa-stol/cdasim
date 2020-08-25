@@ -19,7 +19,7 @@ from rosgraph_msgs.msg import Clock
 # from carma_carla_comm import ExternalObjectList, CarlaEgoVehicleControl, CarmaInit
 # from carma_carla_comm import ExternalObject
 # from carma_carla_comm import VehicleStatus
-from carla_msgs.msg import CarlaEgoVehicleControl
+from carla_msgs.msg import CarlaEgoVehicleControl, CarlaEgoVehicleStatus
 from autoware_msgs.msg import VehicleStatus
 from cav_msgs.msg import ExternalObjectList, ExternalObject, RobotEnabled, CarlaEnabled
 
@@ -32,7 +32,6 @@ class CARMAInterface(object):
 
         """
         # Socket handling
-        rospy.loginfo("starting init**************")
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.settimeout(1000)   # 1000 seconds
 
@@ -50,6 +49,7 @@ class CARMAInterface(object):
         self.steering_cmd = 0
 
         self.current_veh_status = VehicleStatus()
+        self.current_ego_veh_status = CarlaEgoVehicleStatus()
         self.current_pose = PoseStamped()
         self.current_external_objects = ExternalObjectList()
         self.current_twist = TwistStamped()
@@ -70,6 +70,8 @@ class CARMAInterface(object):
             'carla_enabled', CarlaEnabled, queue_size=1, latch=True)
         self.vs_pub = rospy.Publisher(
             'vehicle_status', VehicleStatus, queue_size=1)
+        self.ego_vs_pub = rospy.Publisher(
+            '/carla/ego_vehicle/vehicle_status', CarlaEgoVehicleStatus, queue_size=1)
         self.pose_pub = rospy.Publisher(
             '/localization/current_pose', PoseStamped, queue_size=1)
         self.eol_pub = rospy.Publisher(
@@ -101,32 +103,23 @@ class CARMAInterface(object):
         self.last_timestamp = self.ros_timestamp
         self.ros_timestamp = rospy.Time.from_sec(carla_timestamp)
         self.sim_time_pub.publish(Clock(self.ros_timestamp))
-        # rospy.loginfo("last_timestamp: %s ros_timestamp: %s",
-        #               self.last_timestamp, self.ros_timestamp)
 
     def carla_init_update(self):
         init_carma_response = {
             "ego_id": self.ego_vehicle_id, "isReady": self.re.robot_enabled}
         self.s.sendall(json.dumps(init_carma_response).encode('utf-8'))
-        rospy.loginfo(init_carma_response)
 
         # Receive init data from Carla
         rx_data = self.s.recv(4096)
-        rospy.loginfo(rx_data)
         carla_init_dict = json.loads(rx_data.decode('utf-8'))
         self.ego_vehicle_id = carla_init_dict["ego_id"]
         self.last_timestamp = self.ros_timestamp
         self.ros_timestamp = rospy.Time.from_sec(
             float(carla_init_dict["timestamp"]))
-        # rospy.loginfo("(init) last_timestamp: %s ros_timestamp: %s",
-        #               self.last_timestamp, self.ros_timestamp)
 
     def robot_status_update(self, carma_robot_enabled):
-        # Listen to subscribed topic message from CARMA
-        rospy.loginfo('Receiving robot_active message from CARMA')
         self.re.robot_enabled = carma_robot_enabled.robot_enabled
-        rospy.loginfo(self.re.robot_enabled)
-    
+
     def carla_enabled_publish(self):
         # Publish initialization data from CARLA to CARMA topic
         self.ce.carla_enabled = True
@@ -176,9 +169,17 @@ class CARMAInterface(object):
     def vehilce_status_publish(self, CARLA_data_dict, h):
         self.current_veh_status.header = h
         self.current_veh_status.speed = float(
-            CARLA_data_dict["ego_state"]["velocity_x"])
-        rospy.loginfo("vs.speed: %s", self.current_veh_status.speed)
+            CARLA_data_dict["ego_state"]["velocity_x"])*3.6
+        # rospy.loginfo("vs.speed: %s", self.current_veh_status.speed)
         self.vs_pub.publish(self.current_veh_status)
+
+    def ego_vehilce_status_publish(self, CARLA_data_dict, h):
+        self.current_ego_veh_status.header = h
+        self.current_ego_veh_status.velocity = float(
+            CARLA_data_dict["ego_state"]["velocity_x"]) * 3.6
+        self.current_ego_veh_status.orientation = self.current_pose.pose.orientation
+        rospy.loginfo("vs.speed: %s", self.current_ego_veh_status.velocity)
+        self.ego_vs_pub.publish(self.current_ego_veh_status)
 
     def current_twist_publish(self, CARLA_data_dict, h):
         # adaptive_gear_ratio_ = max(
@@ -199,15 +200,10 @@ class CARMAInterface(object):
         self.current_twist.twist.angular.z = float(
             CARLA_data_dict["ego_state"]["angular_z"])
         self.current_twist_pub.publish(self.current_twist)
-        # rospy.loginfo("current_twist: %s", self.current_twist.twist.angular.z)
-
-    # helper function to publish PoseStamped
 
     def pose_publish(self, CARLA_data_dict, h):
         self.current_pose.pose = self.get_pose(CARLA_data_dict["ego_state"])
         self.current_pose.header = h
-        rospy.loginfo("ps.pose.position.x: %s",
-                      self.current_pose.pose.position.x)
         self.pose_pub.publish(self.current_pose)
 
     # helper function to publish ExternalObjectList
@@ -227,25 +223,21 @@ class CARMAInterface(object):
             cur_eo.velocity.twist.linear = Vector3()
             cur_eo.velocity.twist.linear.x = CARLA_data_dict["veh_array"][cur_veh]["velocity_x"]
             eols.append(cur_eo)
-            # rospy.loginfo("cur_eo.velocity.twist.linear.x: %s",
-            #               cur_eo.velocity.twist.linear.x)
         self.current_external_objects.objects = eols
         self.eol_pub.publish(self.current_external_objects)
 
     def send_data_2_CARMA(self, CARLA_data_dict):
         # Publish to ROS topic that goes to CARMA
-        rospy.loginfo('Sending to CARMA')
         h = Header()
         h.stamp = rospy.Time.from_sec(float(CARLA_data_dict["timestamp"]))
         self.vehilce_status_publish(CARLA_data_dict, h)
         self.current_twist_publish(CARLA_data_dict, h)
         self.pose_publish(CARLA_data_dict, h)
+        self.ego_vehilce_status_publish(CARLA_data_dict, h)
         self.external_objects_publish(CARLA_data_dict, h)
 
     def send_CARMA_data_2_CARLA(self, carla_2_carma_dict):
-        rospy.loginfo('Sending to carla: carla_2_carma_dict')
         self.s.sendall(json.dumps(carla_2_carma_dict).encode('utf-8'))
-        rospy.loginfo(carla_2_carma_dict)
 
     def receive_data_from_CARLA(self):
         decoded_string = bytes(b'')
@@ -253,7 +245,6 @@ class CARMAInterface(object):
         while True:
             rx_data = self.s.recv(4096)
             received_string.extend(rx_data)
-            # rospy.loginfo("received_string rx_data: %s", received_string)
             try:
                 decoded_string = eval(received_string.decode('utf-8'))
                 received_string = bytearray('', 'utf-8')
@@ -277,11 +268,9 @@ class CARMAInterface(object):
             self.s.connect(('127.0.0.1', 8080))
         except socket.error as exc:
             rospy.logerr("Caught exception socket.error : %s", exc)
-        rospy.loginfo("Socket connected *************")
 
         # Socket with CARLA Interface is connected, publish carla_enabled to carma
         self.carla_enabled_publish()
-        rospy.loginfo("carla_enabled_publish")
 
         while not rospy.is_shutdown():
 
@@ -298,17 +287,11 @@ class CARMAInterface(object):
                             "brake": self.brake_cmd, "steering": self.steering_cmd, "drive_mode": "cruise"}
                 self.send_CARMA_data_2_CARLA(dataDict)
                 CARLA_data_dict = self.receive_data_from_CARLA()
-                # rospy.loginfo("self.last_timestamp: %s",
-                #               self.last_timestamp)
-                # rospy.loginfo("ros_timestamp: %s",
-                #               self.ros_timestamp)
-                rospy.loginfo(CARLA_data_dict)
-
                 self.update_clock(float(CARLA_data_dict["timestamp"]))
-
                 self.send_data_2_CARMA(CARLA_data_dict)
 
             rospy.spin()
+
 
 def main():
     """
