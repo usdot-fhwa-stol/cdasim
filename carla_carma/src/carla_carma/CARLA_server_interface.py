@@ -52,9 +52,9 @@ def parseSnapshot_2_dictionary(id, snapshot, isEgo):
     if isEgo:
         veh_data["velocity_y"] = snapshot.get_velocity().y
         veh_data["velocity_z"] = snapshot.get_velocity().z
-        veh_data["angular_z"] = snapshot.get_angular_velocity().z
-        veh_data["angular_y"] = snapshot.get_angular_velocity().y
         veh_data["angular_x"] = snapshot.get_angular_velocity().x
+        veh_data["angular_y"] = snapshot.get_angular_velocity().y
+        veh_data["angular_z"] = snapshot.get_angular_velocity().z
         veh_data["accel_x"] = snapshot.get_acceleration().x
         veh_data["accel_y"] = snapshot.get_acceleration().y
         veh_data["accel_z"] = snapshot.get_acceleration().z
@@ -164,7 +164,7 @@ def main():
 
         settings = world.get_settings()
         settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 0.05
+        settings.fixed_delta_seconds = 0.1
         world.apply_settings(settings)
 
         blueprint_library = world.get_blueprint_library()
@@ -221,7 +221,8 @@ def main():
         # -------------
         # some settings
         m = world.get_map()
-        start_pose = carla.Transform(carla.Location(35, 302.5, 0.5),carla.Rotation(0,-180,0))
+        # start_pose = carla.Transform(carla.Location(35, 302.5, 0.5),carla.Rotation(0,-180,0))
+        start_pose = carla.Transform(carla.Location(-3, 285, 0.5),carla.Rotation(0.14, -89.7,-0.04))
 
         ego_vehicle = world.try_spawn_actor(random.choice(blueprint_library.filter('vehicle.tesla.model3')), start_pose)
         batch.append(SpawnActor(blueprint, start_pose).then(SetAutopilot(ego_vehicle, False)))
@@ -342,12 +343,8 @@ def main():
         print('Connection established with CARMA client')
         
         is_carma_ready = False
-        # count = 0
         while is_carma_ready is False:
             print('Waiting for CARMA to be ready')
-
-            # print('The count is:', count)
-            # count = count + 1
 
             clock.tick()
             world.tick()
@@ -357,19 +354,15 @@ def main():
 
             carma_init_message = conn.recv(4096)
             msg = carma_init_message.decode('utf-8')
-            print(msg)
             carma_init_dict = json.loads(msg)
             try:
                 is_carma_ready = carma_init_dict["isReady"]
-                # if is_carma_ready:
-                #     continue
             except:
                 print('Something is wrong with the message')
             data_tx = json.dumps(init_dict).encode('utf-8')
             conn.sendall(data_tx)
-            print(data_tx)
             time.sleep(1)
-
+        print('CARMA starts, sleep 30s for others to launch')
         time.sleep(30)
 
         dict_veh_list = {k: [] for k in range(len(vehicles_list))}
@@ -382,7 +375,6 @@ def main():
             world.tick()
             world_snapshot = world.get_snapshot()
             timestamp = world_snapshot.timestamp
-            # print("-----------------------------------------timestamp: %s", timestamp)
             JSON_dict = {}
             JSON_dict["timestamp"] = timestamp.elapsed_seconds
             veh_data = {}
@@ -402,22 +394,12 @@ def main():
             json_to_send = {}
             try:
                 json_to_send = json.dumps(JSON_dict)
-                # print('Tx: '+json_to_send)
                 data = conn.recv(4096)
                 data_tx = json.dumps(json_to_send).encode('utf-8')
                 conn.sendall(data_tx)
-                # print("***data_tx**** ")
-                # print(data_tx)
-                # print(" ***data_tx****DONE")
-                # print("***data**** ")
                 print(data)
-                # print(" ***data****DONE")
                 rx_msg = data
                 CARMA_control = json.loads(rx_msg.decode('utf-8'))
-                # print("***CARMA_control**** ")
-                # print(CARMA_control)
-
-                # time.sleep(0.1)
                 
             except Exception as e:
                 print('Could not generate JSON', e)
@@ -425,8 +407,6 @@ def main():
             ego_vehicle.apply_control(carla.VehicleControl(throttle=CARMA_control["throttle"],
                                                            steer=CARMA_control["steering"],
                                                            brake=CARMA_control["brake"]))
-            # print("CARMA_control[throttle]: ")
-            # print(CARMA_control["throttle"])
             i = i+1
             draw_image(display, array_image)
             display.blit(font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)), (8, 10))
