@@ -79,19 +79,6 @@ void CarlaAckermannControlWrapper::guidance_state_cb(const cav_msgs::GuidanceSta
     update_robot_status();
 }
 
-// Publish ego vehicle status 
-void CarlaAckermannControlWrapper::pose_cb(const geometry_msgs::PoseStampedConstPtr& msg)
-{
-    ego_status_.velocity = current_speed_;
-    ego_status_.orientation = msg->pose.orientation;
-    vehicle_status_pub_.publish(ego_status_);
-}
-
-void CarlaAckermannControlWrapper::twist_cb(const geometry_msgs::TwistStampedConstPtr& msg)
-{
-    current_speed_ = msg->twist.linear.x;
-}
-
 // Publish AckermannDrive
 void CarlaAckermannControlWrapper::vehicle_cmd_cb(const autoware_msgs::VehicleCmd::ConstPtr& vehicle_cmd)
 {
@@ -115,15 +102,11 @@ int CarlaAckermannControlWrapper::run()
     ackermanndrive_pub_ = nh_.advertise<ackermann_msgs::AckermannDrive>("/carla/ego_vehicle/ackermann_cmd", 1);
     robot_status_pub_ = nh_.advertise<cav_msgs::RobotEnabled>("controller/robot_status", 1);
     vehicle_info_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleInfo>("/carla/ego_vehicle/vehicle_info", 1);
-    vehicle_status_pub_ = nh_.advertise<carla_msgs::CarlaEgoVehicleStatus>("/carla/ego_vehicle/vehicle_status", 1);
     driver_status_pub_ = nh_.advertise<cav_msgs::DriverStatus>("driver_discovery",1);
-
 
     // Initialize all subscribers
     vehicle_cmd_sub_ = nh_.subscribe("vehicle_cmd", 1, &CarlaAckermannControlWrapper::vehicle_cmd_cb, this);
     carla_enabled_sub_ = nh_.subscribe("carla_enabled", 1, &CarlaAckermannControlWrapper::carla_enabled_cb, this);
-    pose_sub_ = nh_.subscribe("/localization/current_pose", 1, &CarlaAckermannControlWrapper::pose_cb, this);
-    twist_sub_ = nh_.subscribe("vehicle/twist", 1, &CarlaAckermannControlWrapper::twist_cb, this);
     guidance_state_sub_ = nh_.subscribe("/guidance/state", 1, &CarlaAckermannControlWrapper::guidance_state_cb, this);
 
     nh_.setSpinCallback(std::bind(&CarlaAckermannControlWrapper::spin_cb, this));

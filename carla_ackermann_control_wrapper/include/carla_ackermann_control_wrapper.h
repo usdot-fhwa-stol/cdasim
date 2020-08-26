@@ -56,8 +56,6 @@ class CarlaAckermannControlWrapper
 
         // topic subscribers
         ros::Subscriber vehicle_cmd_sub_;
-        ros::Subscriber pose_sub_;
-        ros::Subscriber twist_sub_;
         ros::Subscriber carla_enabled_sub_;
         ros::Subscriber guidance_state_sub_;
 
@@ -65,7 +63,6 @@ class CarlaAckermannControlWrapper
         ros::Publisher ackermanndrive_pub_;
         ros::Publisher robot_status_pub_;
         ros::Publisher vehicle_info_pub_;
-        ros::Publisher vehicle_status_pub_;
         ros::Publisher driver_status_pub_;
 
     private:
@@ -77,8 +74,6 @@ class CarlaAckermannControlWrapper
         void init();
 
         // message/service callbacks
-        void pose_cb(const geometry_msgs::PoseStampedConstPtr& msg);
-        void twist_cb(const geometry_msgs::TwistStampedConstPtr& msg);
         void vehicle_cmd_cb(const autoware_msgs::VehicleCmd::ConstPtr& vehicle_cmd);
         void carla_enabled_cb(const cav_msgs::CarlaEnabledConstPtr& msg);
         void guidance_state_cb(const cav_msgs::GuidanceStateConstPtr& msg);
@@ -101,7 +96,6 @@ class CarlaAckermannControlWrapper
         cav_msgs::RobotEnabled robotic_status_;
         cav_msgs::DriverStatus driver_status_;
         carla_msgs::CarlaEgoVehicleInfo ego_info_;
-        carla_msgs::CarlaEgoVehicleStatus ego_status_;
 
         double wheel_base_;
         double max_steer_angle_;
@@ -109,6 +103,5 @@ class CarlaAckermannControlWrapper
         double vehicle_mass_;
         double max_accel_;
         double max_decel_;
-        double current_speed_;
 };
 }
