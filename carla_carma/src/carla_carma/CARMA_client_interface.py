@@ -12,13 +12,6 @@ from rosgraph_msgs.msg import Clock
 # When using CARMA_client_interface_updated.py, run CARMA first on the same server.
 # If the interface node and CARMA are on separate computers, set ROS_MASTER_URI variable before rosrun (http://wiki.ros.org/ROS/Tutorials/MultipleMachines).
 
-# TODO: change imports below for where the messages actually are
-# from carma_msgs.msg import ExternalObjectList, CarlaEgoVehicleControl, CarmaInit
-# from cav_msgs.msg import ExternalObject
-# from autoware_msgs.msg import VehicleStatus
-# from carma_carla_comm import ExternalObjectList, CarlaEgoVehicleControl, CarmaInit
-# from carma_carla_comm import ExternalObject
-# from carma_carla_comm import VehicleStatus
 from carla_msgs.msg import CarlaEgoVehicleControl, CarlaEgoVehicleStatus
 from autoware_msgs.msg import VehicleStatus
 from cav_msgs.msg import ExternalObjectList, ExternalObject, RobotEnabled, CarlaEnabled
