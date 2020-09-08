@@ -11,7 +11,7 @@
   the License.
 -->
 <!--
-  This file is used to launch the CARMA3 Cost Plugin System node
+  This file is used to launch the carla_ackermann_control_wrapper_node 
 -->
 <launch>
     <!-- Handle global parameters for variables-->
