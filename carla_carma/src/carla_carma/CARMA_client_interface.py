@@ -28,8 +28,8 @@ class CARMAInterface(object):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.settimeout(1000)   # 1000 seconds
 
-        self.sockert_ip = rospy.get_param('~sockert_ip', '127.0.0.1')
-        self.sockert_port = rospy.get_param('~sockert_port', '8080')
+        self.socket_ip = rospy.get_param('~socket_ip', '127.0.0.1')
+        self.socket_port = rospy.get_param('~socket_port', '8080')
 
         self.ros_timestamp = 0
         self.last_timestamp = 0
@@ -260,9 +260,9 @@ class CARMAInterface(object):
 
         # init
         self.sim_time_pub.publish(Clock(self.ros_timestamp))
-        rospy.loginfo("ip: {}, port: {}".format(self.sockert_ip, int(self.sockert_port)))
+        rospy.loginfo("ip: {}, port: {}".format(self.socket_ip, int(self.socket_port)))
         try:
-            self.s.connect((self.sockert_ip, int(self.sockert_port)))
+            self.s.connect((self.socket_ip, int(self.socket_port)))
         except socket.error as exc:
             rospy.logerr("Caught exception socket.error : %s", exc)
 

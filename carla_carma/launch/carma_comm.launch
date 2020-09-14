@@ -11,7 +11,10 @@
   the License.
 -->
 <launch>
-  <arg name="sockert_ip" default="127.0.0.1" />
-  <arg name="sockert_port" default="8080" />
-	<node name="CARMA_client" pkg="carla_carma" type="CARMA_client_interface.py" output="screen" />
+  <arg name="socket_ip" default="127.0.0.1" />
+  <arg name="socket_port" default="8080" />
+	<node name="CARMA_client" pkg="carla_carma" type="CARMA_client_interface.py" output="screen">
+    <param name="socket_ip" value="$(arg socket_ip)" />
+    <param name="socket_port" value="$(arg socket_port)" />
+  </node>
 </launch>
