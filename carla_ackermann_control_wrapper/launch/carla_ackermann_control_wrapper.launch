@@ -11,7 +11,7 @@
   the License.
 -->
 <!--
-  This file is used to launch the CARMA3 Cost Plugin System node
+  This file is used to launch the carla_ackermann_control_wrapper_node 
 -->
 <launch>
     <!-- Handle global parameters for variables-->
@@ -21,7 +21,7 @@
     <remap from="~vehicle_steer_lim_deg" to="/vehicle_steer_lim_deg"/> 
 
     <!--carla_ackermann_control_wrapper node-->
-    <node name="carla_ackermann_control_wrapper" pkg="carla_ackermann_control_wrapper" type="node">
+    <node name="carla_ackermann_control_wrapper" pkg="carla_ackermann_control_wrapper" type="carla_ackermann_control_wrapper_node">
         <rosparam command="load" file="$(find carla_ackermann_control_wrapper)/config/parameters.yaml"/>
     </node>
 </launch>

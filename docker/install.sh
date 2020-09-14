@@ -14,7 +14,8 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 
-sudo chmod -R +x /opt/carma/install
 source /opt/ros/kinetic/setup.bash
 cd ~/
-catkin_make install -DCMAKE_BUILD_TYPE=Release
+export ROS_LANG_DISABLE=genjava # Disable genjava
+catkin_make install -DCATKIN_BLACKLIST_PACKAGES="rosjava_utils"
+chmod -R ugo+x ~/install

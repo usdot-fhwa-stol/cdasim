@@ -16,20 +16,22 @@
  the License.
 -->
 
-<package format="3">
-  <name>carla_ackermann_control_wrapper</name>
-  <version>3.2.0</version>
-  <description>The wrapper for Carla Ackermann Controller</description>
+<package format="2">
+  <name>carla_carma</name>
+  <version>0.0.0</version>
+  <description>The carma interface for carla simulator</description>
   <maintainer email="fang.zhou@leidos.com">Fang Zhou</maintainer>
   <license>Apache 2.0 License</license>
   <buildtool_depend>catkin</buildtool_depend>
-  <depend>carma_utils</depend>
-  <depend>cav_msgs</depend>
-  <depend>cav_srvs</depend>
-  <depend>roscpp</depend>
-  <depend>std_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>autoware_msgs</depend>
-  <depend>ackermann_msgs</depend>
-  <depend>carla_msgs</depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>carla_msgs</exec_depend>
+  <exec_depend>autoware_msgs</exec_depend>
+  <exec_depend>cav_msgs</exec_depend>
+  <exec_depend>rosgraph_msgs</exec_depend>
 </package>

@@ -14,12 +14,12 @@
 
 FROM usdotfhwastoldev/carma-base:develop as deps
 
-# Install remaining package deps
+FROM deps as setup
+
 RUN mkdir ~/src
 COPY --chown=carma . /home/carma/src/
 RUN ~/src/docker/checkout.sh
 RUN ~/src/docker/install.sh
-
 
 FROM deps
 
@@ -39,4 +39,4 @@ LABEL org.label-schema.build-date=${BUILD_DATE}
 
 COPY --from=deps /home/carma/install /opt/carma/install
 
-CMD [ "wait-for-it.sh", "localhost:11311", "--", "roslaunch", "carla_ackermann_control", "carla_ackermann_control_wrapper.launch"]
+CMD [ "wait-for-it.sh", "localhost:11311", "--", "roslaunch", "carla_ackermann_control_wrapper", "carla_ackermann_control_wrapper.launch"]
