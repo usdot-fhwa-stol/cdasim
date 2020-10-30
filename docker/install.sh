@@ -16,4 +16,7 @@
 
 source /opt/ros/kinetic/setup.bash
 cd ~/
+
+catkin_make install
+
 chmod -R ugo+x ~/install
