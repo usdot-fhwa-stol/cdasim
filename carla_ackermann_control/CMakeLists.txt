@@ -35,7 +35,9 @@ generate_dynamic_reconfigure_options(
 
 roslaunch_add_file_check(launch)
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS message_runtime carla_msgs std_msgs
+)
 
 install(PROGRAMS
   src/carla_ackermann_control/carla_ackermann_control_node.py
