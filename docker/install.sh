@@ -16,7 +16,6 @@
 
 source /opt/ros/kinetic/setup.bash
 cd ~/
-
-catkin_make install
+colcon build  --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 chmod -R ugo+x ~/install
