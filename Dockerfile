@@ -37,6 +37,6 @@ LABEL org.label-schema.vcs-url="https://github.com/usdot-fhwa-stol/carma-simulat
 LABEL org.label-schema.vcs-ref=${VCS_REF}
 LABEL org.label-schema.build-date=${BUILD_DATE}
 
-COPY --from=deps /home/carma/install /opt/carma/install
+COPY --from=setup /home/carma/install /opt/carma/install
 
 CMD [ "wait-for-it.sh", "localhost:11311", "--", "roslaunch", "carla_ackermann_control_wrapper", "carla_ackermann_control_wrapper.launch"]
