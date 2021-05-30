@@ -35,6 +35,7 @@ import java.io.File;
 import java.util.List;
 import java.io.InputStream;
 import javax.annotation.Nonnull;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
@@ -93,6 +94,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private int carlaSimulatorClientPort = -1;
 
     /**
+     * The process for running the connection bridge client
+     */
+    private Process connectionProcess = null;
+
+    /**
      * Creates a new {@link CarlaAmbassador} object.
      *
      * @param ambassadorParameter includes parameters for the CARLA Ambassador.
@@ -135,7 +141,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     public FederateExecutor createFederateExecutor(String host, int port, CLocalHost.OperatingSystem os) {
         // CARLA needs to start the federate by itself, therefore we need to store the
         // federate starter locally and use it later
-        federateExecutor = new ExecutableFederateExecutor(descriptor, getCarlaExecutable(carlaConfig.carlaUE4Executor),
+        federateExecutor = new ExecutableFederateExecutor(descriptor, getCarlaExecutable("CarlaUE4"),
                 getProgramArguments(port));
         this.carlaSimulatorClientPort = port;
         return new NopFederateExecutor();
@@ -156,6 +162,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaHome = System.getenv("CARLA_HOME");
         }
         if (StringUtils.isNotBlank(carlaHome)) {
+            boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+            if (isWindows) {
+                executable += ".exe";
+            } else {
+                executable += ".sh";
+            }
             return carlaHome + File.separator + executable;
         }
         return executable;
@@ -196,13 +208,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     public void connectToFederate(String host, int port) {
         // Start the Carla connection server
         String bridgePath = null;
+        int carlaConnectionPort = 8913;
+        if (carlaConfig.carlaConnectionPort != 0)
+            carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
+
+        // get the connection bridge file
+        if (carlaConfig.bridgePath != null) {
+            bridgePath = carlaConfig.bridgePath;
+            log.info("Use connection bridge path from configuration file: " + carlaConfig.bridgePath);
+        } else {
+            log.error("Could not find connection bridge.");
+            return;
+        }
         if (carlaConnection == null) {
             // start the carla connection
-            int carlaConnectionPort;
-            if (carlaConfig.carlaConnectionPort != 0)
-                carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
-            else
-                carlaConnectionPort = 8913;
+
             carlaConnection = new CarlaConnection("localhost", carlaConnectionPort, this);
             Thread carlaThread = new Thread(carlaConnection);
             carlaThread.start();
@@ -212,17 +232,28 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 log.error("Could not execute Thread.sleep({}). Reason: {}", 3000L, e.getMessage());
             }
 
-            // get the connection bridge file
-            if (carlaConfig.bridgePath != null) {
-                bridgePath = carlaConfig.bridgePath;
-                log.info("Use connection bridge path from configuration file: " + bridgePath);
-            } else {
-                log.error("Could not find connection bridge.");
-            }
         }
+
         try {
-            // start a terminal and connect CARLA simulator and Carla ambassador.
-            Process process = Runtime.getRuntime().exec("cmd /c start " + bridgePath);
+            String[] bridgePathArray = bridgePath.split(";");
+
+            String path = bridgePathArray[0];
+            String command = bridgePathArray[1];
+
+            // check the current operating system
+            boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+
+            if (isWindows) {
+                command = "cmd.exe /c start " + command;
+            } else {
+                command = "sh " + command;
+            }
+            try {
+                Thread.sleep(2000L);
+            } catch (InterruptedException e) {
+                log.error("Could not execute Thread.sleep({}). Reason: {}", 2000L, e.getMessage());
+            }
+            connectionProcess = Runtime.getRuntime().exec(command, null, new File(path));
         } catch (Exception ex) {
             ex.printStackTrace();
             log.warn("Error while connecting to CARLA simulator. Retrying.");
@@ -317,6 +348,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 federateExecutor.stopLocalFederate();
             } catch (FederateExecutor.FederateStarterException e) {
                 log.warn("Could not properly stop federate");
+            }
+        }
+
+        if (connectionProcess != null) {
+            try {
+
+                connectionProcess.waitFor(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                log.warn("Something went wrong when stopping a process", e);
+            } finally {
+                connectionProcess.destroy();
             }
         }
         log.info("Finished simulation");
