@@ -287,6 +287,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         try {
             Process p = federateExecutor.startLocalFederate(dir);
+            // wait CARLA simulator finish loading map
+            try {
+                Thread.sleep(5000L);
+                log.info("wait carla federate finishing loading the map");
+            } catch (InterruptedException e) {
+                log.error("Could not execute Thread.sleep({}). Reason: {}", 5000L, e.getMessage());
+            }
             connectToFederate("localhost", p.getInputStream(), p.getErrorStream());
             // read error output of process in an extra thread
             new ProcessLoggingThread(log, p.getInputStream(), "carla", ProcessLoggingThread.Level.Info).start();
