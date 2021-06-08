@@ -14,7 +14,7 @@ Download the CARLA-SUMO-MOSAIC-1.0.zip bundle and extract it to an arbitrary pat
 
 Download the co-simulation tool code and refer to the Eclipse-MOSAIC build instruction in this [link]( https://github.com/eclipse/mosaic) .
 
-***Note:*** **The source code is in the folder of co-simulation tool rather then the root folder.** To build it, users should first go to the folder of co-simulation tool and then build it.
+***Note:*** **The source code is in the folder of co-simulation tool rather than the root folder.** To build it, users should first go to the folder of co-simulation tool and then build it.
 
 The installation path is referenced as <cosimulation-root>. After the co-simulation tool is installed from source code, the zipped bridge folder needs to be extracted to <cosimulation-root>.
 
