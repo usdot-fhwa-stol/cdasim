@@ -4,19 +4,201 @@
 
 This co-simulation tool is used to run [CARLA simulator](http://carla.org/) and [SUMO simulator](https://www.eclipse.org/sumo/) with [Eclipse MOSAIC framework](https://github.com/eclipse/mosaic). The co-simulation tool can simulate both co-simulation scenarios and original Eclipse MOSAIC scenarios on both Windows systems and Linux systems.  
 
+##  **Prerequisites**
+
+For a successful running of the co-simulation tool, the following software must be installed:
+
+-  CARLA simulator
+-  JAVA 8 or 11 - Recommend using the [Adopt OpenJDK](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot)
+-  Python 3.x - The default python version is 3.7. The python version should be the same as the one used by CARLA Python API. If the users use different version of Python other than 3.7, the users need to copy the CARLA library .egg file to the folder bridge/ PythonAPI /carla/dist. In addition, the package `lxml==4.5.0` needs to be installed using `pip3 install lxml==4.5.0`. 
+-  SUMO 1.8.0 - The environment variable **`SUMO_HOME`** **must be configured to define the installation directory of SUMO**.
+
+Moreover, a high performance computer is needed to run the co-simulation tool. The configuration of a recommended system is in the following.
+
+- Intel i7 gen 9th - 11th / Intel i9 gen 9th - 11th / AMD ryzen 7 / AMD ryzen 9
+- +16 GB RAM memory
+- NVIDIA RTX 2070 / NVIDIA RTX 2080 / NVIDIA RTX 3070, NVIDIA RTX 3080
+
 ## Installation of Co-simulation Tool
 
-**a.**   **Executable bundle file**
+### **a.**   **Executable Bundle File**
 
 Download the CARLA-SUMO-MOSAIC-1.0.zip bundle and extract it to an arbitrary path. 
 
-**b.**   **Installation from source code**
+### **b.**   **Installation from Source Code**
 
-Download the co-simulation tool code and refer to the Eclipse-MOSAIC build instruction in this [link]( https://github.com/eclipse/mosaic) .
+The co-simulation tool has been built successfully on different Operating Systems (OS). The building results are shown in the following table.
 
-***Note:*** **The source code is in the folder of co-simulation tool rather than the root folder.** To build it, users should first go to the folder of co-simulation tool and then build it.
+| Test NO. | OS          | OS Version   | Java JDK                | Maven | SUMO  | Building Results |
+| -------- | ----------- | ------------ | ----------------------- | ----- | ----- | ---------------- |
+| 1        | Win 10 Home | 19041        | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
+| 2        | Win 10 Home | 19041        | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
+| 3        | Win 10 Pro  | 20H2         | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
+| 4        | Win 10 Pro  | 20H2         | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
+| 5        | Linux       | Ubuntu 16.04 | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
+| 6        | Linux       | Ubuntu 16.04 | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
+| 7        | Linux       | Ubuntu 18.04 | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
+| 8        | Linux       | Ubuntu 18.04 | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
+| 9        | Linux       | Ubuntu 20.04 | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
+| 10       | Linux       | Ubuntu 20.04 | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
 
-The installation path is referenced as <cosimulation-root>. After the co-simulation tool is installed from source code, the zipped bridge folder needs to be extracted to <cosimulation-root>.
+For a successfully build the co-simulation tool, you need have the following software installed.
+
+- **Maven 3.1.x** or higher.
+
+- **Java 8 or 11** - Recommend using the [Adopt OpenJDK](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot). The environment  variable **JAVA_HOME** must be configured to the location of JDK.
+
+- **SUMO 1.8.0** -The environment variable **SUMO_HOME** should be configured correctly to define the installation directory of SUMO.
+
+#### Installation of Adopt OpenJDK
+
+**Windows**
+
+- Download prebuilt OpenJDK from this [link](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot).
+
+- Open the package to install it. Follow the instructions and select **Set  JAVA_HOME variable**.
+
+**Linux (Ubuntu)**
+
+- Download prebuilt OpenJDK from this [link](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot).
+
+- Extract the distribution archive to any directory
+
+  ```
+  tar xzvf apache-maven-3.8.1-bin.tar.gz
+  ```
+
+- Set **JAVA_HOME** to the root folder of Java JDK
+
+  ```
+  export JAVA_HOME=path_to_java JDK
+  ```
+
+#### Installation of Maven
+
+- Download the binary distribution archive **apache-maven-3.8.1** from this [link](https://maven.apache.org/download.cgi). 
+
+- Installation extract distribution archive in any directory
+
+  ```
+  unzip apache-maven-3.8.1-bin.zip
+  ```
+
+  or
+
+  ```
+  tar xzvf apache-maven-3.8.1-bin.tar.gz
+  ```
+
+- Add the **bin** directory of the created directory **apache-maven-3.8.1** to the **PATH** environment variable.
+
+  **Windows**
+
+  Add the path to bin directory to the Path in the System variables.
+
+  **Linux (Ubuntu)**
+
+  ```
+  export PATH=path_to_apache_maven-3.8.1/apache-maven-3.8.1/bin:$PATH
+  ```
+
+- Verify the installation by running **mvn -v** in a new terminal. The output should look something like the following. You can check the Java version and maven path.
+
+  ```
+  Maven home: C:\Program Files\apache-maven-3.8.1\bin\..
+  Java version: 16, vendor: Oracle Corporation, runtime: C:\Program Files\Java\jdk-16
+  Default locale: en_US, platform encoding: Cp1252
+  OS name: "windows 10", version: "10.0", arch: "amd64", family: "windows"
+  ```
+
+#### Installation of SUMO-1.8.0
+
+**Windows**
+
+- Download the binaries from this [link](https://sourceforge.net/projects/sumo/files/sumo/version%201.8.0/).
+
+- Open the installer and follow the instruction to install it. Select **set SUMO_HOME.**
+
+- Verify the installation by running sumo-gui in a terminal.
+
+  ```
+  sumo-gui
+  ```
+
+**Linux (Ubuntu)**
+
+- Install the required tools and libraries
+
+  ```
+  sudo apt-get install git cmake python3 g++ libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev libgl2ps-dev
+  ```
+
+- Download the source code SUMO-1.8.0 from this [link](https://github.com/eclipse/sumo/releases/tag/v1_8_0).
+
+- Extract the source code to a folder, for instance, folder *sumo*
+
+- Go to the location of the folder of source code and set the environment variable **SUMO_HOME**
+
+  ```
+  export SUMO_HOME="$PWD/sumo"
+  ```
+
+- Build the SUMO binaries
+
+  ```
+   mkdir sumo/build/cmake-build && cd sumo/build/cmake-build
+   cmake ../..
+   make -j$(nproc)
+  ```
+
+- Installing the SUMO binaries
+
+  ```
+  sudo make install
+  ```
+
+- Adjust **SUMO_HOME** variable to the install directory  (usually /usr/local/share/sumo)
+
+  ```
+  export SUMO_HOME=/usr/local/share/sumo
+  ```
+
+- Verify the installation by running sumo-gui in a terminal.
+
+  ```
+  sumo-gui
+  ```
+
+## Build Co-simulation Tool
+
+- Download zip file of Co-simulation tool or clone the code from this [link](https://github.com/usdot-fhwa-stol/carma-simulation/tree/feature/mosaic-carla-sumo-ambassadors).
+
+  ```
+  git clone https://github.com/usdot-fhwa-stol/carma-simulation.git
+  ```
+
+- If you use git clone the code, you need to use the following command to go to the co-simulation tool branch.
+
+  ```
+  git checkout feature/mosaic-carla-sumo-ambassadors
+  ```
+
+- Go to co-simulation folder and build co-simulation tool using the following command
+
+  ```
+  cd 'co-simulation tool'
+  mvn clean install
+  ```
+
+- The above mvn command executes all tests as well. In order to skip test execution, run the following command:
+
+  ```
+  mvn clean install -DskipTests
+  ```
+
+- After building, go to bundle\target directory, a zip file of co-simulation bundle can be found.
+
+- Extract the bundle to an arbitrary path. The installation path is referenced as `<cosimulation-root>`. The zipped bridge folder needs to be extracted to `<cosimulation-root>`.
 
 ## **Folder Content**
 
@@ -26,13 +208,12 @@ The folder structure of co-simulation tool is described in the following.
 └─ <cosimulation-root>
   ├─ bridge ................ Directory with bridge file for connecting CARLA ambassador and CARLA simulator.
   |  ├─ bridge.bat ......... An example of bridge script for a scenario on Windows systems.
-  |  ├─ bridge.sh .......... An example of bridge Script for a scenario on  Linux systems.      
+  |  ├─ bridge.sh .......... An example of bridge Script for a scenario on Linux systems.      
   ├─ etc
-  |  ├─ hosts.json ......... Configuration of the execution host, e.g. temporary directory.
+  |  ├─ hosts.json ......... Configuration of the execution host, e.g., temporary directory.
   |  ├─ logback.xml ........ Configuration of log files and levels.
-  |  └─ runtime.json ....... Configuration of all Ambassadors and Federates coupled with the MOSAIC
+  |  └─ runtime.json ....... Configuration of all Ambassadors and Federates coupled with the MOSAIC.
   ├─ lib ................... Directory with all Java compiled libraries required for MOSAIC.
-  ├─ logs .................. Directory with log files.
   ├─ scenarios ............. Directory containing all simulation scenarios.
   ├─ tools ................. Additional tools, like the HTML Visualizer.
   ├─ CONTRIBUTING.md 
@@ -41,20 +222,7 @@ The folder structure of co-simulation tool is described in the following.
   └─ mosaic.sh ............. Start script for GNU/Linux systems.
 ```
 
-##  **Prerequisites**
 
-For a successful running of the co-simulation tool, the following software must be installed:
-
--  CARLA simulator 0.9.10
--  JAVA runtime environment (JRE) - JAVA 8 or 11 
--  Python 3.7 - The default python version must be python 3.7 and the package `lxml==4.5.0` needs to be installed using `pip install lxml==4.5.0`. 
--  SUMO 1.8.0 or new - The environment variable **`SUMO_HOME`** **must be configured to define the installation directory of SUMO**.
-
-Moreover, a high performance computer is needed to run the co-simulation tool. The configuration of a recommended system is in the following.
-
-- Intel i7 gen 9th - 11th / Intel i9 gen 9th - 11th / AMD ryzen 7 / AMD ryzen 9
-- +16 GB RAM memory
-- NVIDIA RTX 2070 / NVIDIA RTX 2080 / NVIDIA RTX 3070, NVIDIA RTX 3080
 
 ## **Co-Simulation Scenario**
 
