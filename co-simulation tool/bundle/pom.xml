@@ -211,7 +211,7 @@
                                 <id>mosaic-assembly</id>
                                 <configuration>
                                     <attach>false</attach>
-                                    <finalName>eclipse-mosaic-${project.version}</finalName>
+                                    <finalName>carla-sumo-mosaic-${project.version}</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                     <descriptors>
                                         <descriptor>src/assembly/mosaic-bundle.xml</descriptor>
