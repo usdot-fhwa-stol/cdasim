@@ -8,7 +8,7 @@ This co-simulation tool is used to run [CARLA simulator](http://carla.org/) and 
 
 For a successful running of the co-simulation tool, the following software must be installed:
 
--  CARLA simulator
+-  CARLA simulator 0.9.10
 -  JAVA 8 or 11 - Recommend using the [Adopt OpenJDK](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot)
 -  Python 3.x - The default python version is 3.7. The python version should be the same as the one used by CARLA Python API. If the users use different version of Python other than 3.7, the users need to copy the CARLA library .egg file to the folder bridge/ PythonAPI /carla/dist. In addition, the package `lxml==4.5.0` needs to be installed using `pip3 install lxml==4.5.0`. 
 -  SUMO 1.8.0 - The environment variable **`SUMO_HOME`** **must be configured to define the installation directory of SUMO**.
@@ -60,13 +60,9 @@ For a successfully build the co-simulation tool, you need have the following sof
 
 **Linux (Ubuntu)**
 
-- Download prebuilt OpenJDK from this [link](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot).
+- Download prebuilt OpenJDK from this [link](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot) and select open file using Archive manger
 
 - Extract the distribution archive to any directory
-
-  ```
-  tar xzvf apache-maven-3.8.1-bin.tar.gz
-  ```
 
 - Set **JAVA_HOME** to the root folder of Java JDK
 
@@ -196,13 +192,13 @@ For a successfully build the co-simulation tool, you need have the following sof
   mvn clean install -DskipTests
   ```
 
-- After building, go to bundle\target directory, a zip file of co-simulation bundle can be found.
+- After building, go to bundle\target directory, a zip file of co-simulation bundle "**carla-sumo-mosaic-1.0.zip**" can be found.
 
-- Extract the bundle to an arbitrary path. The installation path is referenced as `<cosimulation-root>`. The zipped bridge folder needs to be extracted to `<cosimulation-root>`.
+- Extract the bundle to an arbitrary path. The installation folder is referenced as `<cosimulation-root>`. The bridge folder in the root of source code needs to be copied to `<cosimulation-root>`.
 
 ## **Folder Content**
 
-The folder structure of co-simulation tool is described in the following.
+The folder structure of  `<cosimulation-root>` is described in the following.
 
 ```
 └─ <cosimulation-root>
@@ -322,8 +318,8 @@ The following table descripts the parameters in the CARLA configuration file.
 
 | Parameters          | **Type** | **Description**                                              | **Required** |
 | ------------------- | -------- | ------------------------------------------------------------ | ------------ |
-| updateInterval      | number   | The Interval after which the CARLA is updated.  The default unit is ms. Define the size  of one simulation step in CARLA. The updateInterval of Carla and Sumo  ambassador must be the same. | Yes          |
-| carlaUE4Path        | string   | Path to CarlaUE4 executable file. If the environment  variable **`CARLA_HOME`** is configured to define  the installation directory of CarlaUE4 executable file, this parameter can be removed from  the configuration file. | No           |
+| updateInterval      | number   | The Interval after which the CARLA is updated.  The default unit is ms. Define the size  of one simulation step in CARLA. The updateInterval of Carla and Sumo  ambassador must be the same.  **Note**: the minimal value of updateInterval is 100ms and the default setting of updateInterval being predefined in the java code is 1000ms for both carla and sumo configuration. | Yes          |
+| carlaUE4Path        | string   | Path to CarlaUE4 executable file (Windows systems: CarlaUE4.exe; Linux systems: CarlaUE4.sh). If the environment  variable **`CARLA_HOME`** is configured to define  the installation directory of CarlaUE4 executable file, this parameter can be removed from  the configuration file. | No           |
 | bridgePath          | string   | This parameter includes two information separated by the  semicolon. The first substring is the path of bridge .sh or .bat. The second  substring is the file name of bridge .sh or .bat. The extension of the bridge file is needed. | Yes          |
 | carlaConnectionPort | number   | The bridge server port . It must be the same as  the bridge server port number in the bridge .sh or .bat file.  If the entry is not used, the default port number is 8913. | No           |
 
@@ -339,7 +335,7 @@ The bridge file (bridge.sh or bridge.bat) is used to run the bridge to connect C
 #x-terminal-emulator
 cd ../../../bridge
 
-python3 carla_mosaic_bridge.py --bridge-server-port 8913 --map Town04 net/Town04.net.xml
+python3.7 carla_mosaic_bridge.py --bridge-server-port 8913 --map Town04 net/Town04.net.xml
 ```
 
  **Windows**
