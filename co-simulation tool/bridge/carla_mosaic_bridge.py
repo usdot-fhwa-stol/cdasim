@@ -29,7 +29,7 @@ try:
                   (sys.version_info.major, sys.version_info.minor,
                    'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
 except IndexError:
-    pass
+    print("Can not find carla library .egg")
 
 # ==================================================================================================
 # -- find traci module -----------------------------------------------------------------------------
@@ -104,9 +104,14 @@ def main(args):
 
     except KeyboardInterrupt:
         logging.info('Cancelled by user.')
+    except traci.exceptions.FatalTraCIError:
+        print("Socket server closed")
 
     finally:
-        synchronization.close()
+        try: 
+            synchronization.close()
+        except:
+            print("Connection closed")
         if "tmpdir" in locals():
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
