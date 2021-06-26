@@ -6,6 +6,9 @@ LABEL Description="Dockerised Simulation of Carla_Sumo_Mosaic"
 ENV SUMO_HOME /usr/share/sumo
 ENV SUMO_USER carla_sumo_mosaic
 
+ENV CARLA_HOME /CARLA_0.9.10/
+RUN export CARLA_HOME
+
 RUN apt-get update && \
     apt-get install -y openjdk-8-jdk && \
     apt-get install -y ant && \
@@ -35,7 +38,7 @@ RUN curl -s https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
     python get-pip.py --force-reinstall && \
     rm get-pip.py
 
-RUN pip install lxml
+RUN pip3.7 install lxml
 
 # Dependencies for glvnd and X11.
 RUN apt-get update \
