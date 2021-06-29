@@ -27,22 +27,7 @@ Download the CARLA-SUMO-MOSAIC-1.0.zip bundle and extract it to an arbitrary pat
 
 ### **b.**   **Installation from Source Code**
 
-The co-simulation tool has been built successfully on different Operating Systems (OS). The building results are shown in the following table.
-
-| Test NO. | OS          | OS Version   | Java JDK                | Maven | SUMO  | Building Results |
-| -------- | ----------- | ------------ | ----------------------- | ----- | ----- | ---------------- |
-| 1        | Win 10 Home | 19041        | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
-| 2        | Win 10 Home | 19041        | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
-| 3        | Win 10 Pro  | 20H2         | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
-| 4        | Win 10 Pro  | 20H2         | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
-| 5        | Linux       | Ubuntu 16.04 | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
-| 6        | Linux       | Ubuntu 16.04 | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
-| 7        | Linux       | Ubuntu 18.04 | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
-| 8        | Linux       | Ubuntu 18.04 | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
-| 9        | Linux       | Ubuntu 20.04 | Adopt OpenJDK 1.8.0_292 | 3.8.1 | 1.8.0 | Success          |
-| 10       | Linux       | Ubuntu 20.04 | Adopt OpenJDK 11.0.11+9 | 3.8.1 | 1.8.0 | Success          |
-
-For a successfully build the co-simulation tool, you need have the following software installed.
+For a successfully build the co-simulation tool, you need to have the following software installed.
 
 - **Maven 3.1.x** or higher.
 
