@@ -179,7 +179,7 @@ For a successfully build the co-simulation tool, you need to have the following 
 
 - After building, go to bundle\target directory, a zip file of co-simulation bundle "**carla-sumo-mosaic-1.0.zip**" can be found.
 
-- Extract the bundle to an arbitrary path. The installation folder is referenced as `<cosimulation-root>`. The bridge folder in the root of source code needs to be copied to `<cosimulation-root>`.
+- Extract the bundle to an arbitrary path. The installation folder is referenced as `<cosimulation-root>`. 
 
 ## **Folder Content**
 

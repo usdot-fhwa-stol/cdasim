@@ -53,6 +53,14 @@
                 <include>NOTICE-THIRD-PARTY.md</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/bridge</directory>
+            <outputDirectory>bridge</outputDirectory>
+            <filtered>false</filtered>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
     </fileSets>
 
     <dependencySets>
