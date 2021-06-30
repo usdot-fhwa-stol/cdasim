@@ -27,10 +27,24 @@ class CarlaSimulation(object):
     CarlaSimulation is responsible for the management of the carla simulation.
     """
     def __init__(self, host, port, step_length):
-        self.client = carla.Client(host, port)
-        self.client.set_timeout(5.0)
 
-        self.world = self.client.get_world()
+        maxConnectionAttempts = 5
+        while maxConnectionAttempts > 0:
+            connected = True
+            maxConnectionAttempts = maxConnectionAttempts - 1
+            try:
+                self.client = carla.Client(host, port)
+                self.client.set_timeout(5.0)
+                self.world = self.client.get_world()
+            except:
+                print("reconnect carla")
+                connected=False
+                if maxConnectionAttempts == 0:
+                    print("Maximum connection attempts reached and connecting to CARLA simulator failed.")
+            if connected:
+                print("CARLA simulator connected")
+                break
+
         self.blueprint_library = self.world.get_blueprint_library()
         self.step_length = step_length
 
