@@ -155,11 +155,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         String carlaHome = null;
         if (System.getenv("CARLA_HOME") != null) {
             carlaHome = System.getenv("CARLA_HOME");
-            log.info("use carla path from environmental variable: "+carlaHome);
-        }else if (carlaConfig.carlaUE4Path != null) {
+            log.info("use carla path from environmental variable: " + carlaHome);
+        } else if (carlaConfig.carlaUE4Path != null) {
             carlaHome = carlaConfig.carlaUE4Path;
             log.info("use carla path from configuration file: " + carlaHome);
-        } 
+        }
         if (StringUtils.isNotBlank(carlaHome)) {
             boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
             if (isWindows) {
@@ -225,44 +225,45 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaConnection = new CarlaConnection("localhost", carlaConnectionPort, this);
             Thread carlaThread = new Thread(carlaConnection);
             carlaThread.start();
-            try {
-                Thread.sleep(3000L);
-            } catch (InterruptedException e) {
-                log.error("Could not execute Thread.sleep({}). Reason: {}", 3000L, e.getMessage());
-            }
-
         }
 
-        try {
-            String[] bridgePathArray = bridgePath.split(";");
+        String[] bridgePathArray = bridgePath.split(";");
 
-            String path = bridgePathArray[0];
-            String command = bridgePathArray[1];
+        String path = bridgePathArray[0];
+        String command = bridgePathArray[1];
 
-            // check the current operating system
-            boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+        // check the current operating system
+        boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
 
-            if (isWindows) {
-                command = "cmd.exe /c start " + command;
-            } else {
-                command = "sh " + command;
-            }
+        if (isWindows) {
+            command = "cmd.exe /c start " + command;
+        } else {
+            command = "sh " + command;
+        }
+        // connect carla client
+        while (connectionAttempts-- > 0) {
+            boolean connected = true;
+
             try {
-                Thread.sleep(2000L);
-            } catch (InterruptedException e) {
-                log.error("Could not execute Thread.sleep({}). Reason: {}", 2000L, e.getMessage());
-            }
-            connectionProcess = Runtime.getRuntime().exec(command, null, new File(path));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            log.warn("Error while connecting to CARLA simulator. Retrying.");
-            if (connectionAttempts-- > 0) {
+                connectionProcess = Runtime.getRuntime().exec(command, null, new File(path));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                if (connectionAttempts == 0) {
+                    log.info("Maximum connection attempts reached and connecting to CARLA simulator failed.");
+                } else {
+                    log.warn("Error while connecting to CARLA simulator. Retrying.");
+                }
+
                 try {
                     Thread.sleep(SLEEP_AFTER_ATTEMPT);
                 } catch (InterruptedException e) {
                     log.error("Could not execute Thread.sleep({}). Reason: {}", SLEEP_AFTER_ATTEMPT, e.getMessage());
                 }
-                connectToFederate(host, port);
+                connected = false;
+            }
+
+            if (connected) {
+                break;
             }
         }
     }
@@ -286,13 +287,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         try {
             Process p = federateExecutor.startLocalFederate(dir);
-            // wait CARLA simulator finish loading map
-            try {
-                Thread.sleep(5000L);
-                log.info("wait carla federate finishing loading the map");
-            } catch (InterruptedException e) {
-                log.error("Could not execute Thread.sleep({}). Reason: {}", 5000L, e.getMessage());
-            }
             connectToFederate("localhost", p.getInputStream(), p.getErrorStream());
             // read error output of process in an extra thread
             new ProcessLoggingThread(log, p.getInputStream(), "carla", ProcessLoggingThread.Level.Info).start();
