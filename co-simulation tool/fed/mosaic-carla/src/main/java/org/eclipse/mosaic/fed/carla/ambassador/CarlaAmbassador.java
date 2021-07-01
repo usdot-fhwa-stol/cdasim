@@ -263,6 +263,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
 
             if (connected) {
+                log.info("Client connected");
                 break;
             }
         }
