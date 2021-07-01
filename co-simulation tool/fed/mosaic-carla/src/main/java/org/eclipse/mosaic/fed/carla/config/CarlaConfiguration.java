@@ -49,9 +49,4 @@ public class CarlaConfiguration implements Serializable {
      */
     public int carlaConnectionPort;
 
-    /**
-     * Carla executable file name
-     */
-    public String carlaUE4Executor;
-
 }
