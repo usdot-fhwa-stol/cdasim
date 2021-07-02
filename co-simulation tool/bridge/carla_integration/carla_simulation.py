@@ -39,11 +39,13 @@ class CarlaSimulation(object):
             except:
                 print("reconnect carla")
                 connected=False
-                if maxConnectionAttempts == 0:
-                    print("Maximum connection attempts reached and connecting to CARLA simulator failed.")
+                
             if connected:
                 print("CARLA simulator connected")
                 break
+            if maxConnectionAttempts == 0 and connected == False:
+                print("Maximum connection attempts reached and connecting to CARLA simulator failed.")
+                raise RuntimeError("Can not connect CARLA server. Check whether CARLA server starts or not.")
 
         self.blueprint_library = self.world.get_blueprint_library()
         self.step_length = step_length
