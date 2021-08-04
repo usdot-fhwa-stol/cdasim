@@ -1,0 +1,34 @@
+<launch>
+
+  <arg name='town' default='Town02'/>
+
+  <arg name='vehicle_length' default='4.54'/>
+  <arg name='vehicle_width' default='2.00'/>
+
+  <arg name='use_ground_truth_localization' default='false'/>
+  <arg name='use_ground_truth_detections' default='false'/>
+  <arg name='use_manual_control' default='false'/>
+
+  <!--
+    # vehicle_model #
+    provides the vehicle_model mesh to rviz
+  -->
+  <include file='$(find vehicle_description)/launch/vehicle_model.launch'>
+    <arg name='offset_x' default='0.0'/>
+    <arg name='model_path' default='$(find vehicle_description)/urdf/prius.urdf'/>
+  </include>
+
+  <!-- 
+    # localization #
+  -->
+  <group if='$(arg use_ground_truth_localization)'>
+    <node pkg='carla_carma_bridge' type='carla_to_autoware_localization' name='carla_to_autoware_localization'/>
+  </group>
+
+  <group unless='$(arg use_ground_truth_localization)'>
+    <include file='$(find carma_carla_agent)/agent/launch/my_localization.launch'>
+    </include>
+  </group>
+
+</launch>
+
