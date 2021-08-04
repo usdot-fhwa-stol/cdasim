@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2020 Intel Corporation
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+"""
+ground truth detections. Publishes the following topics:
+    /environment/external_objects  (cav_msgs::ExternalObjectList)
+"""
+import rospy
+import tf
+
+from derived_object_msgs.msg import ObjectArray
+from visualization_msgs.msg import Marker, MarkerArray
+from cav_msgs.msg import ExternalObjectList
+
+pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+
+
+def callback(data):
+    """
+    callback for current objects
+    """
+    objects_msg = ExternalObjectList()
+    objects_msg.header = data.header
+    for obj in data.objects:
+        object_msg = ExternalObject()
+        object_msg.header = obj.header
+        object_msg.id = obj.id
+        object_msg.pose = obj.pose
+        object_msg.velocity = obj.twist
+
+        objects_msg.objects.append(object_msg)
+
+    if not rospy.is_shutdown():
+        pub.publish(objects_msg)
+
+
+def convert_objects():
+    """
+    main loop
+    """
+    rospy.init_node('carla_to_carma_external_objects', anonymous=True)
+    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    rospy.Subscriber('/carla/{}/objects'.format(role_name), ObjectArray, callback)
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    convert_objects()
