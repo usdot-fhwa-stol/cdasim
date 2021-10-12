@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+"""
+Subscribe from CARLA :nav_msgs::Odometry
+    Topic: /carla/{}/odometry
+
+Publish to CARMA :geometry_msgs::TwistStamped
+    Topic: /hardware_interface/vehicle/twist
+"""
+from os import stat
+import rospy
+from geometry_msgs.msg import TwistStamped
+from nav_msgs.msg import Odometry
+from cav_msgs.msg import GuidanceState
+
+twist_pub = rospy.Publisher('/hardware_interface/vehicle/twist', TwistStamped, queue_size=1)
+gs_state = 0
+
+def guidance_state_callback(data):
+    """
+    callback guidance state
+    """
+    global gs_state
+    gs_state = data.state
+
+def odometry_callback(data):
+    """
+    callback odometry
+    """
+    if gs_state != GuidanceState.ENGAGED:
+        return
+    else:
+        twist = TwistStamped()
+        twist.header = data.header
+        twist.twist.linear = data.twist.twist.linear
+        twist.twist.angular = data.twist.twist.angular
+        twist_pub.publish(twist)
+
+
+def carla_to_carma_twist():
+    """
+    main loop
+    """
+
+    rospy.init_node('carla_to_carma_twist', anonymous=True)
+    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback)
+    rospy.Subscriber('/guidance/state', GuidanceState, guidance_state_callback, queue_size=1)
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    print("carla_to_carma_twist")
+    carla_to_carma_twist()
