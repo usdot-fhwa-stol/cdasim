@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+"""
+Subscribe from CARLA :nav_msgs::Odometry
+    Topic: /carla/{}/odometry
+
+Publish to CARMA :geometry_msgs::PoseStamped
+    Topic: /localization/gnss_pose;
+           /localization/current_pose
+"""
+import rospy
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
+
+gnss_pub = rospy.Publisher('/localization/gnss_pose', PoseStamped, queue_size=1)
+pose_pub = rospy.Publisher('/localization/current_pose', PoseStamped, queue_size=1)
+
+
+def callback(data):
+    """
+    callback for current pose
+    """
+    pose = PoseStamped()
+    pose.header = data.header
+    pose.pose = data.pose.pose
+    pose_pub.publish(pose)
+    gnss_pub.publish(pose)
+
+
+def convert_odometry_to_pose():
+    """
+    main loop
+    """
+    rospy.init_node('carla_to_carma_localization', anonymous=True)
+    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, callback)
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    print("carla_to_carma_localization")
+    convert_odometry_to_pose()
