@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>carla_carma_agent</name>
+  <version>0.0.1</version>
+  <description>The carla_carma_agent package</description>
+  <maintainer email="carma@dot.gov">cheng.yuan</maintainer>
+  <license>Apache 2.0 License</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>carla_carma_bridge</exec_depend>
+</package>
