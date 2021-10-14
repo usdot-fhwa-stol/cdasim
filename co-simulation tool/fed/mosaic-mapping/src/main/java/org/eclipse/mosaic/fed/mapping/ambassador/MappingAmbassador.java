@@ -21,6 +21,7 @@ import org.eclipse.mosaic.fed.mapping.config.CPrototype;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioTrafficLightRegistration;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioVehicleRegistration;
+import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
 import org.eclipse.mosaic.lib.math.RandomNumberGenerator;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -61,7 +62,8 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
     private CMappingAmbassador mappingAmbassadorConfiguration;
 
     /**
-     * Pointer to save the {@link ScenarioTrafficLightRegistration} when it arrives too early.
+     * Pointer to save the {@link ScenarioTrafficLightRegistration} when it arrives
+     * too early.
      */
     private ScenarioTrafficLightRegistration scenarioTrafficLightRegistration;
 
@@ -70,7 +72,8 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
     /**
      * Constructor for the {@link MappingAmbassador}.
      *
-     * @param ambassadorParameter the {@link AmbassadorParameter}s used for the configuration of the ambassador
+     * @param ambassadorParameter the {@link AmbassadorParameter}s used for the
+     *                            configuration of the ambassador
      */
     public MappingAmbassador(AmbassadorParameter ambassadorParameter) {
         super(ambassadorParameter);
@@ -78,8 +81,7 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
         try {
             if (!ambassadorParameter.configuration.exists()) {
                 throw new IllegalStateException(
-                        "Mapping configuration could not be found at " + ambassadorParameter.configuration.getPath()
-                );
+                        "Mapping configuration could not be found at " + ambassadorParameter.configuration.getPath());
             }
             mappingAmbassadorConfiguration = new ObjectInstantiation<>(CMappingAmbassador.class, log)
                     .readFile(ambassadorParameter.configuration);
@@ -98,6 +100,8 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
                 handleInteraction((ScenarioTrafficLightRegistration) interaction);
             } else if (interaction.getTypeId().equals(ScenarioVehicleRegistration.TYPE_ID)) {
                 handleInteraction((ScenarioVehicleRegistration) interaction);
+            } else if (interaction.getTypeId().equals(VehicleFederateAssignment.TYPE_ID)) {
+                handleInteraction((VehicleFederateAssignment) interaction);
             }
         } catch (Exception e) {
             log.error("Exception", e);
@@ -119,9 +123,9 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Extracts the prototype from the {@link ScenarioVehicleRegistration} message and
-     * sends a {@link VehicleRegistration} message with the application list configured
-     * in the prototype.
+     * Extracts the prototype from the {@link ScenarioVehicleRegistration} message
+     * and sends a {@link VehicleRegistration} message with the application list
+     * configured in the prototype.
      */
     private void handleInteraction(ScenarioVehicleRegistration interaction) throws InternalFederateException {
         if (framework != null) {
@@ -129,27 +133,46 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
             if (CPrototype == null) {
                 log.debug(
                         "There is no such CPrototype \"{}\" configured. No application will be mapped for vehicle \"{}\".",
-                        interaction.getVehicleTypeId(),
-                        interaction.getId()
-                );
+                        interaction.getVehicleTypeId(), interaction.getId());
+                return;
+            }
+            List<String> applications = new ArrayList<>();
+            if (randomNumberGenerator.nextDouble() < ObjectUtils.defaultIfNull(CPrototype.weight, 1.0)
+                    && CPrototype.applications != null) {
+                applications = CPrototype.applications;
+            }
+            final VehicleRegistration vehicleRegistration = new VehicleRegistration(interaction.getTime(),
+                    interaction.getName(), CPrototype.group, applications, null,
+                    new VehicleTypeSpawner(CPrototype).convertType());
+            try {
+                rti.triggerInteraction(vehicleRegistration);
+            } catch (Exception e) {
+                throw new InternalFederateException(e);
+            }
+        } else {
+            log.warn("No mapping configuration available. Skipping {}", interaction.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * Extract the prototype from the {@link VehicleFederateAssigment} message and
+     * send a {@link VehicleRegistration} message with the application list
+     * configured in the interaction.
+     */
+    private void handleInteraction(VehicleFederateAssignment interaction) throws InternalFederateException {
+        if (framework != null) {
+            final CPrototype CPrototype = framework.getPrototypeByName(interaction.getVehicleTypeId());
+            if (CPrototype == null) {
+                log.debug(
+                        "There is no such CPrototype \"{}\" configured. No application will be mapped for vehicle \"{}\".",
+                        interaction.getVehicleTypeId(), interaction.getId());
                 return;
             }
 
-            List<String> applications = new ArrayList<>();
-            if (
-                    randomNumberGenerator.nextDouble() < ObjectUtils.defaultIfNull(CPrototype.weight, 1.0)
-                    && CPrototype.applications != null
-            ) {
-                applications = CPrototype.applications;
-            }
-            final VehicleRegistration vehicleRegistration = new VehicleRegistration(
-                    interaction.getTime(),
-                    interaction.getName(),
-                    CPrototype.group,
-                    applications,
-                    null,
-                    new VehicleTypeSpawner(CPrototype).convertType()
-            );
+            final VehicleRegistration vehicleRegistration = new VehicleRegistration(interaction.getTime(),
+                    interaction.getVehicleId(), CPrototype.group, interaction.getVehicleApplications(),
+                    interaction.getVehicleDeparture(), new VehicleTypeSpawner(CPrototype).convertType());
+
             try {
                 rti.triggerInteraction(vehicleRegistration);
             } catch (Exception e) {
@@ -179,7 +202,8 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
 
             // Create the extended framework (a condensed representation,
             // enriched with functionality)
-            framework = new SpawningFramework(mappingAmbassadorConfiguration, scenarioTrafficLightRegistration, rti, randomNumberGenerator);
+            framework = new SpawningFramework(mappingAmbassadorConfiguration, scenarioTrafficLightRegistration, rti,
+                    randomNumberGenerator);
 
             // Send out the VehicleTypesInitialization, publishing information
             // about the different vehicle types in the simulation
@@ -189,8 +213,7 @@ public class MappingAmbassador extends AbstractFederateAmbassador {
             rti.requestAdvanceTime(0);
         } catch (IllegalValueException e) {
             InternalFederateException ex = new InternalFederateException(
-                    "InvalidValueException while sending out VehicleTypesInitialization(after construction!)", e
-            );
+                    "InvalidValueException while sending out VehicleTypesInitialization(after construction!)", e);
             log.error("InvalidValueException while sending out VehicleTypesInitialization(after construction!)", ex);
             throw ex;
         }

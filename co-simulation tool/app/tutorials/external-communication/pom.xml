@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.mosaic</groupId>
+      <artifactId>mosaic-parent</artifactId>
+      <version>1.0</version>
+      <relativePath>../../../pom.xml</relativePath>
+  </parent>
+
+  <groupId>org.eclipse.mosaic.app</groupId>
+  <artifactId>external-communication</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Application for External Message Communication</name>
+  <description>Simple application which processes external messages.</description>
+
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.mosaic</groupId>
+      <artifactId>mosaic-application</artifactId>
+      <version>${mosaic.version}</version>
+    </dependency>
+  </dependencies>
+
+</project>

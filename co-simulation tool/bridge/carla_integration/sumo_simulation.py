@@ -306,6 +306,8 @@ class SumoSimulation(object):
         #first time tick
         self.firstTime = True
 
+        #interval for sending V2X messages
+        self.sendV2xInterval = 0
 
     @property
     def traffic_light_ids(self):
@@ -379,7 +381,7 @@ class SumoSimulation(object):
             :param color: color attribute for this specific actor.
             :return: actor id if the actor is successfully spawned. Otherwise, INVALID_ACTOR_ID.
         """
-        actor_id = 'carla' + str(self._sequential_id)
+        actor_id = 'carla_' + str(self._sequential_id)
         try:
             traci.vehicle.add(actor_id, 'carla_route', typeID=type_id)
         except traci.exceptions.TraCIException as error:
@@ -456,6 +458,19 @@ class SumoSimulation(object):
         # Update data structures for the current frame.
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
         self.destroyed_actors = set(traci.simulation.getArrivedIDList())
+
+        # Show v2x messages received by CARLA vehicles
+        v2xMessageReceived = traci.getV2xMessage()
+        if v2xMessageReceived is not None:
+            for message in v2xMessageReceived:
+                print(message)
+
+         # Send V2x message to CARLA ambassador
+        if self.sendV2xInterval == 10:          
+            traci.setV2xMessage("carla_0; A V2X messages from CARLA simulator.")
+            self.sendV2xInterval = 0
+
+        self.sendV2xInterval += 1
 
     @staticmethod
     def close():

@@ -129,7 +129,16 @@
             <artifactId>mosaic-carla</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-carma</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-infrastructure</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
         <!-- Tutorial Applications -->
 
         <dependency>
@@ -152,6 +161,12 @@
             <artifactId>weather-warning</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic.app</groupId>
+            <artifactId>external-communication</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+
 
 
         <!-- Dependencies -->

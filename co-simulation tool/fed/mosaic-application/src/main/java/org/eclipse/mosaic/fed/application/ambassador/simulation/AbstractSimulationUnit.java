@@ -30,6 +30,7 @@ import org.eclipse.mosaic.fed.application.app.api.Application;
 import org.eclipse.mosaic.fed.application.app.api.CommunicationApplication;
 import org.eclipse.mosaic.fed.application.app.api.MosaicApplication;
 import org.eclipse.mosaic.fed.application.app.api.os.OperatingSystem;
+import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.ItefLogging;
 import org.eclipse.mosaic.interactions.application.SumoTraciRequest;
 import org.eclipse.mosaic.interactions.communication.V2xMessageAcknowledgement;
@@ -68,9 +69,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
 /**
- * This class is to be extended by all units that can be equipped with applications.
- * It supplies all functionality for loading applications, communication with the RTI
- * and the processing of events, etc.
+ * This class is to be extended by all units that can be equipped with
+ * applications. It supplies all functionality for loading applications,
+ * communication with the RTI and the processing of events, etc.
  */
 public abstract class AbstractSimulationUnit implements EventProcessor, OperatingSystem {
 
@@ -137,9 +138,10 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     }
 
     /**
-     * This method processes an event, before the extension of the simulation unit should process an event.
-     * Important: This method should always be called before.
-     * It is used to process certain events that are executed in all units equivalent.
+     * This method processes an event, before the extension of the simulation unit
+     * should process an event. Important: This method should always be called
+     * before. It is used to process certain events that are executed in all units
+     * equivalent.
      *
      * @param event the event to process.
      * @return true if this method has processed the given event
@@ -157,21 +159,21 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
 
         if (event instanceof InterceptedEvent) {
             /*
-             * This should be an intercepted event from an application of this simulation unit.
-             * The operating system intercept all events from the applications and can watch into the events and maybe forward the event.
+             * This should be an intercepted event from an application of this simulation
+             * unit. The operating system intercept all events from the applications and can
+             * watch into the events and maybe forward the event.
              */
             final InterceptedEvent interceptedEvent = (InterceptedEvent) event;
             // cast the resource of the intercepted event, it must be an event
             final Event originalEvent = interceptedEvent.getOriginalEvent();
             if (osLog.isTraceEnabled()) {
-                osLog.trace(
-                        "schedule intercepted event {} at simulation time {} event to processors {}",
-                        interceptedEvent, TIME.format(event.getTime()), originalEvent.getProcessors())
-                ;
+                osLog.trace("schedule intercepted event {} at simulation time {} event to processors {}",
+                        interceptedEvent, TIME.format(event.getTime()), originalEvent.getProcessors());
             }
             final List<EventProcessor> processors = originalEvent.getProcessors();
 
-            // hand written loop 3x faster on ArrayLists: http://developer.android.com/training/articles/perf-tips.html#Loops
+            // hand written loop 3x faster on ArrayLists:
+            // http://developer.android.com/training/articles/perf-tips.html#Loops
             final int size = processors.size();
             for (int i = 0; i < size; ++i) {
                 EventProcessor processor = processors.get(i);
@@ -182,7 +184,8 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
                 try {
                     processor.processEvent(originalEvent);
                 } catch (Exception ex) {
-                    throw new RuntimeException(ErrorRegister.SIMULATION_UNIT_UncaughtExceptionDuringProcessEvent.toString(), ex);
+                    throw new RuntimeException(
+                            ErrorRegister.SIMULATION_UNIT_UncaughtExceptionDuringProcessEvent.toString(), ex);
                 }
             }
 
@@ -194,6 +197,10 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
             } else if (resource instanceof V2xMessageAcknowledgement) {
                 processV2xMessageAcknowledgement((V2xMessageAcknowledgement) resource);
                 return true;
+            } else if (resource instanceof ExternalMessage) {
+                // Call process external message to process the event
+                processExternalMessage((ExternalMessage) resource);
+                return true;
             } else {
                 return false;
             }
@@ -204,7 +211,6 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     public final long getSimulationTime() {
         return SimulationKernel.SimulationKernel.getCurrentSimulationTime();
     }
-
 
     @Override
     public GeoPoint getInitialPosition() {
@@ -228,7 +234,8 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     }
 
     /**
-     * Tears down the simulation unit by tearing down all applications and clearing all its application list.
+     * Tears down the simulation unit by tearing down all applications and clearing
+     * all its application list.
      */
     public void tearDown() {
         osLog.debug("#tearDown at simulation time {}", TIME.format(getSimulationTime()));
@@ -253,12 +260,14 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
      */
     public final void loadApplications(List<String> applicationClassNames) {
 
-        final ClassNameParser classNameParser = new ClassNameParser(osLog, SimulationKernel.SimulationKernel.getClassLoader());
+        final ClassNameParser classNameParser = new ClassNameParser(osLog,
+                SimulationKernel.SimulationKernel.getClassLoader());
 
         // iterate over all class names
         for (final String className : applicationClassNames) {
 
-            Application newApplication = classNameParser.createInstanceFromClassName(className, AbstractApplication.class);
+            Application newApplication = classNameParser.createInstanceFromClassName(className,
+                    AbstractApplication.class);
 
             if (operatingSystemCheck != null) {
                 try {
@@ -267,7 +276,8 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
                     if (mySuperclass instanceof ParameterizedType) {
                         Type[] typeArgs = ((ParameterizedType) mySuperclass).getActualTypeArguments();
                         Type type = typeArgs[typeArgs.length - 1];
-                        boolean typeAssignableFromOs = Class.forName(StringUtils.substringAfter(type.toString(), "interface").trim())
+                        boolean typeAssignableFromOs = Class
+                                .forName(StringUtils.substringAfter(type.toString(), "interface").trim())
                                 .isAssignableFrom(operatingSystemCheck);
                         if (!typeAssignableFromOs) {
                             throw new RuntimeException(ErrorRegister.SIMULATION_UNIT_IsNotAssignableFrom.toString());
@@ -305,12 +315,8 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
 
     @Override
     public final void sendItefLogTuple(long logTupleId, int... values) {
-        ItefLogging itefLogging = new ItefLogging(
-                SimulationKernel.SimulationKernel.getCurrentSimulationTime(),
-                getId(),
-                logTupleId,
-                values
-        );
+        ItefLogging itefLogging = new ItefLogging(SimulationKernel.SimulationKernel.getCurrentSimulationTime(), getId(),
+                logTupleId, values);
         sendInteractionToRti(itefLogging);
     }
 
@@ -318,10 +324,7 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     public final String sendSumoTraciRequest(byte[] command) {
         String requestId = UUID.randomUUID().toString();
         SumoTraciRequest sumoTraciRequest = new SumoTraciRequest(
-                SimulationKernel.SimulationKernel.getCurrentSimulationTime(),
-                requestId,
-                command
-        );
+                SimulationKernel.SimulationKernel.getCurrentSimulationTime(), requestId, command);
         sendInteractionToRti(sumoTraciRequest);
         return requestId;
     }
@@ -338,10 +341,11 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     }
 
     /**
-     * All applications that implement the {@link CommunicationApplication} interface are informed about
-     * the reception of a new V2X-Message.
+     * All applications that implement the {@link CommunicationApplication}
+     * interface are informed about the reception of a new V2X-Message.
      *
-     * @param receivedV2xMessage the {@link Interaction} containing the received V2X-Message
+     * @param receivedV2xMessage the {@link Interaction} containing the received
+     *                           V2X-Message
      */
     private void processReceivedV2xMessage(final ReceivedV2xMessage receivedV2xMessage) {
         // inform all applications about the received message
@@ -351,27 +355,41 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     }
 
     /**
-     * All applications that implement the {@link CommunicationApplication} interface are informed about
-     * whether a V2X-Message was acknowledged or not.
+     * All applications that implement the {@link CommunicationApplication}
+     * interface are informed about the reception of a new external Message.
      *
-     * @param v2xMessageAcknowledgement the acknowledgement {@link Interaction} containing a V2X-Message
-     *                                  and information about acknowledgement
+     * @param externalMessage the {@link Interaction} containing the received
+     *                        external Message
+     */
+    private void processExternalMessage(final ExternalMessage externalMessage) {
+        // inform all applications about the received message
+        for (CommunicationApplication application : getApplicationsIterator(CommunicationApplication.class)) {
+            application.onExternalMessageReceived(externalMessage);
+        }
+    }
+
+    /**
+     * All applications that implement the {@link CommunicationApplication}
+     * interface are informed about whether a V2X-Message was acknowledged or not.
+     *
+     * @param v2xMessageAcknowledgement the acknowledgement {@link Interaction}
+     *                                  containing a V2X-Message and information
+     *                                  about acknowledgement
      */
     private void processV2xMessageAcknowledgement(final V2xMessageAcknowledgement v2xMessageAcknowledgement) {
-        // Unmap the V2XMessage (which was cached and only a V2XMessageGeneralized was sent around)
-        V2xMessage v2xMessage = SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(
-                v2xMessageAcknowledgement.getOriginatingMessageId()
-        );
+        // Unmap the V2XMessage (which was cached and only a V2XMessageGeneralized was
+        // sent around)
+        V2xMessage v2xMessage = SimulationKernel.SimulationKernel.getV2xMessageCache()
+                .getItem(v2xMessageAcknowledgement.getOriginatingMessageId());
 
         if (v2xMessage == null) {
-            osLog.error(
-                    "Could not retrieve V2xMessage with id={} from Message Cache.",
-                    v2xMessageAcknowledgement.getOriginatingMessageId()
-            );
+            osLog.error("Could not retrieve V2xMessage with id={} from Message Cache.",
+                    v2xMessageAcknowledgement.getOriginatingMessageId());
             return;
         }
 
-        ReceivedAcknowledgement acknowledgement = new ReceivedAcknowledgement(v2xMessage, v2xMessageAcknowledgement.getNegativeReasons());
+        ReceivedAcknowledgement acknowledgement = new ReceivedAcknowledgement(v2xMessage,
+                v2xMessageAcknowledgement.getNegativeReasons());
         for (CommunicationApplication application : getApplicationsIterator(CommunicationApplication.class)) {
             application.onAcknowledgementReceived(acknowledgement);
         }
@@ -383,9 +401,9 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
     }
 
     /**
-     * The events are mapped into a map on the type. With multiple events to a
-     * same type, the last event is always taken. However, it should be part of
-     * good form to delete the event you no longer need to save some memory.
+     * The events are mapped into a map on the type. With multiple events to a same
+     * type, the last event is always taken. However, it should be part of good form
+     * to delete the event you no longer need to save some memory.
      */
     public final void cleanPastEnvironmentEvents() {
         // first, create a set to collect all sensor types, which should be deleted.
@@ -413,10 +431,8 @@ public abstract class AbstractSimulationUnit implements EventProcessor, Operatin
         // If an event of this type in the map yet?
         if (event != null) {
             // Is the event time window available at this simulation time?
-            if (
-                    event.from <= SimulationKernel.SimulationKernel.getCurrentSimulationTime()
-                            && event.until >= SimulationKernel.SimulationKernel.getCurrentSimulationTime()
-            ) {
+            if (event.from <= SimulationKernel.SimulationKernel.getCurrentSimulationTime()
+                    && event.until >= SimulationKernel.SimulationKernel.getCurrentSimulationTime()) {
                 return event.strength;
             }
         }

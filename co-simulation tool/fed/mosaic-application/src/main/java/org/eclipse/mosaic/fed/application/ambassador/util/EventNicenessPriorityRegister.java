@@ -34,11 +34,14 @@ public class EventNicenessPriorityRegister {
     // update traffic light
     public final static long updateTrafficLight = -99_999_400;
 
+    // external message
+    public final static long externalMessage = -99_999_300;
 
     // v2x messages
     public final static long v2xMessageAcknowledgement = -99_999_200;
     public final static long v2xMessageReception = -99_999_100;
     public final static long v2xFullMessageReception = -99_999_99;
+
     // charging status
     public final static long chargingRejected = -99_999_000;
 

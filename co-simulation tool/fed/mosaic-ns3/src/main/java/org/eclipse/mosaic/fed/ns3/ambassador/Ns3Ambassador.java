@@ -15,6 +15,7 @@
 
 package org.eclipse.mosaic.fed.ns3.ambassador;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.lib.coupling.AbstractNetworkAmbassador;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
@@ -28,6 +29,8 @@ import org.eclipse.mosaic.rti.api.federatestarter.ExecutableFederateExecutor;
 import org.eclipse.mosaic.rti.api.federatestarter.NopFederateExecutor;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.config.CLocalHost.OperatingSystem;
+
+import java.io.File;
 
 import javax.annotation.Nonnull;
 
@@ -50,7 +53,8 @@ public class Ns3Ambassador extends AbstractNetworkAmbassador {
     public FederateExecutor createFederateExecutor(String host, int port, OperatingSystem os) {
         switch (os) {
             case LINUX:
-                return new ExecutableFederateExecutor(this.descriptor, "./run.sh", Integer.toString(port));
+                return new ExecutableFederateExecutor(this.descriptor, getNS3Executable("run.sh"),
+                        Integer.toString(port));
             case WINDOWS:
             case UNKNOWN:
             default:
@@ -62,25 +66,24 @@ public class Ns3Ambassador extends AbstractNetworkAmbassador {
 
     @Override
     public DockerFederateExecutor createDockerFederateExecutor(String imageName, OperatingSystem os) {
-        this.dockerFederateExecutor = new DockerFederateExecutor(
-                imageName,
-                "ns3/scratch",
-                "/home/mosaic/bin/fed/ns3/scratch"
-        );
+        this.dockerFederateExecutor = new DockerFederateExecutor(imageName, "ns3/scratch",
+                "/home/mosaic/bin/fed/ns3/scratch");
         return dockerFederateExecutor;
     }
 
     @Override
-    protected synchronized void receiveTypedInteraction(AdHocCommunicationConfiguration interaction) throws InternalFederateException {
+    protected synchronized void receiveTypedInteraction(AdHocCommunicationConfiguration interaction)
+            throws InternalFederateException {
 
         AdHocConfiguration conf = interaction.getConfiguration();
         RadioMode radioMode = conf.getRadioMode();
-        //These messages should not occur often so warn if they are incorrect
+        // These messages should not occur often so warn if they are incorrect
         if (radioMode == RadioMode.DUAL) {
             log.warn("The ns-3 federate currently does not support multi radio operation, "
                     + "configuration message will be discarded");
             return;
-        } else if (radioMode == RadioMode.SINGLE && conf.getConf0().getMode() != InterfaceConfiguration.MultiChannelMode.SINGLE) {
+        } else if (radioMode == RadioMode.SINGLE
+                && conf.getConf0().getMode() != InterfaceConfiguration.MultiChannelMode.SINGLE) {
             log.warn("The ns-3 federate currently does not support multi channel operation, "
                     + "configuration message will be discarded");
             return;
@@ -90,5 +93,25 @@ public class Ns3Ambassador extends AbstractNetworkAmbassador {
             return;
         }
         super.receiveTypedInteraction(interaction);
+    }
+
+    /**
+     * Get NS-3 simulator executable file.
+     * 
+     * @param executable The name of NS-3 simulator executable file.
+     * @return The path to NS-3 executable file.
+     */
+    String getNS3Executable(String executable) {
+        String ns3Home = null;
+        if (System.getenv("NS3_HOME") != null) {
+            ns3Home = System.getenv("NS3_HOME");
+
+        }
+        if (StringUtils.isNotBlank(ns3Home)) {
+            log.info("ns3 location is: " + ns3Home + File.separator + executable);
+            return ns3Home + File.separator + executable;
+        }
+        log.info("ns3 location is: " + executable);
+        return executable;
     }
 }

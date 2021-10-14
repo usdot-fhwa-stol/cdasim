@@ -13,36 +13,42 @@
 
 package org.eclipse.mosaic.fed.carla.ambassador;
 
+import java.io.File;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.collect.Lists;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
+import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
+import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
+import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
+import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
+import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
+import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
+import org.eclipse.mosaic.interactions.application.CarlaV2xMessageReception;
+import org.eclipse.mosaic.interactions.application.ExternalMessage;
+import org.eclipse.mosaic.interactions.application.SimulationStep;
+import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.FederateExecutor;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
+import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.federatestarter.ExecutableFederateExecutor;
 import org.eclipse.mosaic.rti.api.federatestarter.NopFederateExecutor;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.config.CLocalHost;
-
-import com.google.common.collect.Lists;
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.File;
-import java.util.List;
-import java.io.InputStream;
-import javax.annotation.Nonnull;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
-import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
-import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
-import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
-import org.eclipse.mosaic.interactions.application.SimulationStep;
-import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
-import org.eclipse.mosaic.rti.api.Interaction;
-import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -95,6 +101,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * The process for running the connection bridge client
      */
     private Process connectionProcess = null;
+
+    /**
+     * Queue for temporary storage of V2X messages that CARLA vehicles receive
+     */
+    private final PriorityBlockingQueue<CarlaV2xMessageReception> carlaV2xInteractionQueue = new PriorityBlockingQueue<>();
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -404,7 +415,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Trigger a new CarlaTraciRequest or SimulationStep interaction
+     * Trigger a new CarlaTraciRequest, SimulationStep or ExternalMessage
+     * interaction
      * 
      * @param length  command length
      * @param command command
@@ -415,10 +427,23 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
                 rti.triggerInteraction(new SimulationStep(this.nextTimeStep));
                 isSimulationStep = true;
-                log.info("trigger simulation step interaction at time: " + this.nextTimeStep);
+                // log.debug("trigger simulation step interaction at time: " +
+                // this.nextTimeStep);
+            } else if (command[5] == 0x0d) {
+                // send received V2X message to CARLA simulator
+                sendReceivedV2xMessageToCarla();
+                // log.debug("Carla ambassador sends V2X messages to bridge client.");
+            } else if (command[5] == 0x2f) {
+                // receive message from CARLA simulator
+                String[] message = processReceivedV2xMessageFromCarla(length, command);
+                if (message != null) {
+                    rti.triggerInteraction(new ExternalMessage(this.nextTimeStep, message[1], message[0]));
+                    // log.debug("received message from CARLA simulator: message is sent by {};
+                    // message: {}", message[0],
+                    // message[1]);
+                }
             } else {
                 rti.triggerInteraction(new CarlaTraciRequest(this.nextTimeStep, length, command));
-                log.info("trigger a new carla request interaction at time: " + this.nextTimeStep);
             }
 
         } catch (IllegalValueException e) {
@@ -444,6 +469,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             this.receiveInteraction((CarlaTraciResponse) interaction);
         } else if (interaction.getTypeId().equals(SimulationStepResponse.TYPE_ID)) {
             this.receiveInteraction((SimulationStepResponse) interaction);
+        } else if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
+            this.receiveInteraction((CarlaV2xMessageReception) interaction);
         }
     }
 
@@ -457,7 +484,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // check the data output stream available
             if (carlaConnection.getDataOutputStream() != null) {
                 carlaConnection.getDataOutputStream().write(interaction.getResult());
-                log.info("message sent to carla at time: " + interaction.getTime());
             }
         } catch (Exception e) {
             log.error("error occurs during process carla traci response interaction: " + e.getMessage());
@@ -474,11 +500,95 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
             if (carlaConnection.getDataOutputStream() != null) {
                 carlaConnection.getDataOutputStream().write(interaction.getResult());
-                log.info("message sent to carla at time: " + interaction.getTime());
             }
 
         } catch (Exception e) {
             log.error("error occurs during process simulation step response interaction: " + e.getMessage());
         }
+    }
+
+    /**
+     * Process the CARLA vehicles receiving V2X message interaction
+     * 
+     * @param interaction CarlaV2xMessageReception interaction
+     */
+    private void receiveInteraction(CarlaV2xMessageReception interaction) {
+        log.info("{} received V2x message: {}.", interaction.getReceiverID(), interaction.getMessage().toString());
+
+        interactionQueue.add(interaction);
+    }
+
+    /**
+     * Send received V2X message to CARLA simulator
+     */
+    private void sendReceivedV2xMessageToCarla() {
+        List<String> v2xMessageSent = new ArrayList<>();
+        int totoalBytesSent = 6;
+        while (!carlaV2xInteractionQueue.isEmpty()) {
+            if (carlaV2xInteractionQueue.peek().getTime() > nextTimeStep)
+                break;
+            CarlaV2xMessageReception carlaV2xMessageReception = carlaV2xInteractionQueue.poll();
+            if (carlaV2xMessageReception != null) {
+                String message = "Time: " + carlaV2xMessageReception.getTime() + "; Receiver ID: "
+                        + carlaV2xMessageReception.getReceiverID() + "; Message: "
+                        + carlaV2xMessageReception.getMessage() + ".";
+
+                totoalBytesSent += message.length() + 4;
+
+                v2xMessageSent.add(message);
+            }
+        }
+        if (totoalBytesSent > 255) {
+            totoalBytesSent += 4;
+        }
+        try {
+            // send messages to client
+            if (carlaConnection.getDataOutputStream() != null) {
+                carlaConnection.getDataOutputStream().writeInt(totoalBytesSent + 11);
+                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x00 });
+                if (totoalBytesSent - 4 > 255) {
+                    carlaConnection.getDataOutputStream().writeByte(0);
+                    carlaConnection.getDataOutputStream().writeInt(totoalBytesSent);
+                } else {
+                    carlaConnection.getDataOutputStream().writeByte(totoalBytesSent);
+                }
+                carlaConnection.getDataOutputStream().writeByte(0x0d);
+                if (!v2xMessageSent.isEmpty()) {
+                    ListTraciWriter<String> listTraci = new ListTraciWriter<String>(new StringTraciWriter());
+                    listTraci.writeVariableArgument(carlaConnection.getDataOutputStream(), v2xMessageSent);
+                } else {
+                    carlaConnection.getDataOutputStream().writeInt(0);
+                }
+            }
+        } catch (Exception e) {
+            log.error("error occurs during sending messages to bridge: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Process the received messages from CARLA simulator.
+     * 
+     * @param length  the length of command
+     * @param command received command
+     * @return received external message
+     */
+    private String[] processReceivedV2xMessageFromCarla(int length, byte[] command) {
+
+        String message;
+        if (command[4] == 0) {
+            message = new String(Arrays.copyOfRange(command, 15, length));
+        } else {
+            message = new String(Arrays.copyOfRange(command, 11, length));
+        }
+        try {
+            // send response to client
+            if (carlaConnection.getDataOutputStream() != null) {
+                carlaConnection.getDataOutputStream().writeInt(11);
+                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00 });
+            }
+        } catch (Exception e) {
+            log.error("error occurs during process received messages: " + e.getMessage());
+        }
+        return message.split(";");
     }
 }

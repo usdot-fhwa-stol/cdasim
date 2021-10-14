@@ -84,6 +84,20 @@
                     <pattern>%date %-5level %logger{0} - %msg%n</pattern>
                 </encoder>
             </appender>
+            <appender name="CarmaLog" class="ch.qos.logback.core.FileAppender">
+                <charset>UTF-8</charset>
+                <file>${logDirectory}/Carma.log</file>
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                </encoder>
+            </appender>
+            <appender name="InfrastructureLog" class="ch.qos.logback.core.FileAppender">
+                <charset>UTF-8</charset>
+                <file>${logDirectory}/Infrastructure.log</file>
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                </encoder>
+            </appender>
             <appender name="EnvironmentLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Environment.log</file>
@@ -97,6 +111,13 @@
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
                     <pattern>%date %-5level %logger{0} - %msg%n</pattern>
                 </encoder>
+            </appender>
+            <appender name="CommunicationDetailsLog" class="ch.qos.logback.core.FileAppender">
+                <file>${logDirectory}/CommunicationDetails.log</file>
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                </encoder>
+                <append>false</append>
             </appender>
             <appender name="CellLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
@@ -180,6 +201,14 @@
                 <appender-ref ref="CarlaLog"/>
             </logger>
 
+            <logger name="org.eclipse.mosaic.fed.carma" additivity="false" level="INFO">
+                <appender-ref ref="CarmaLog"/>
+            </logger>
+
+            <logger name="org.eclipse.mosaic.fed.infrastructure" additivity="false" level="INFO">
+                <appender-ref ref="InfrastructureLog"/>
+            </logger>
+
             <logger name="org.eclipse.mosaic.fed.output" additivity="false" level="INFO">
                 <appender-ref ref="MosaicLog"/>
             </logger>
@@ -188,6 +217,13 @@
                 <appender-ref ref="ActivityLog"/>
             </logger>
 
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorOutput" additivity="false" level="WARN">
+                <appender-ref ref="CommunicationDetailsLog"/>
+            </logger>
+
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorError" additivity="false" level="ERROR">
+                <appender-ref ref="CommunicationDetailsLog"/>
+            </logger>
             <!-- All other stuff, which was not logged by other loggers before goes
                 to stdout and MOSAIC.log -->
             <root level="INFO">

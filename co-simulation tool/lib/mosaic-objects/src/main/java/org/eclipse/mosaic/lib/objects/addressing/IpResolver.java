@@ -34,12 +34,8 @@ import javax.annotation.Nonnull;
 public final class IpResolver {
 
     enum UnitType {
-        VEHICLE("veh"),
-        ROAD_SIDE_UNIT("rsu"),
-        TRAFFIC_MANAGEMENT_CENTER("tmc"),
-        TRAFFIC_LIGHT("tl"),
-        CHARGING_STATION("cs"),
-        SERVER("server");
+        VEHICLE("veh"), ROAD_SIDE_UNIT("rsu"), TRAFFIC_MANAGEMENT_CENTER("tmc"), TRAFFIC_LIGHT("tl"),
+        CHARGING_STATION("cs"), CARLA_VEHICLE("carla"), CARMA_VEHICLE("carma"), SERVER("server");
 
         private String prefix;
 
@@ -81,14 +77,18 @@ public final class IpResolver {
     }
 
     /**
-     * Gets a configuration and performs basic plausibility checks
-     * apaches commons-net could be helpful here.
+     * Gets a configuration and performs basic plausibility checks apaches
+     * commons-net could be helpful here.
      *
      * @param configuration configuration taken from json
      */
     public IpResolver(CIpResolver configuration) {
         Objects.requireNonNull(configuration.netMask, "Invalid IpResolver configuration: No netMask given");
         Objects.requireNonNull(configuration.vehicleNet, "Invalid IpResolver configuration: No vehicleNet given");
+        Objects.requireNonNull(configuration.carlaVehicleNet,
+                "Invalid IpResolver configuration: No carlaVehicleNet given");
+        Objects.requireNonNull(configuration.carmaVehicleNet,
+                "Invalid IpResolver configuration: No carmaVehicleNet given");
         Objects.requireNonNull(configuration.rsuNet, "Invalid IpResolver configuration: No rsuNet given");
         Objects.requireNonNull(configuration.tmcNet, "Invalid IpResolver configuration: No tmcNet given");
         Objects.requireNonNull(configuration.tlNet, "Invalid IpResolver configuration: No tlNet given");
@@ -98,8 +98,13 @@ public final class IpResolver {
             this.netMask = (Inet4Address) Inet4Address.getByName(configuration.netMask);
 
             unitNetworks.put(UnitType.VEHICLE, (Inet4Address) Inet4Address.getByName(configuration.vehicleNet));
+            unitNetworks.put(UnitType.CARLA_VEHICLE,
+                    (Inet4Address) Inet4Address.getByName(configuration.carlaVehicleNet));
+            unitNetworks.put(UnitType.CARMA_VEHICLE,
+                    (Inet4Address) Inet4Address.getByName(configuration.carmaVehicleNet));
             unitNetworks.put(UnitType.ROAD_SIDE_UNIT, (Inet4Address) Inet4Address.getByName(configuration.rsuNet));
-            unitNetworks.put(UnitType.TRAFFIC_MANAGEMENT_CENTER, (Inet4Address) Inet4Address.getByName(configuration.tmcNet));
+            unitNetworks.put(UnitType.TRAFFIC_MANAGEMENT_CENTER,
+                    (Inet4Address) Inet4Address.getByName(configuration.tmcNet));
             unitNetworks.put(UnitType.TRAFFIC_LIGHT, (Inet4Address) Inet4Address.getByName(configuration.tlNet));
             unitNetworks.put(UnitType.CHARGING_STATION, (Inet4Address) Inet4Address.getByName(configuration.csNet));
             unitNetworks.put(UnitType.SERVER, (Inet4Address) Inet4Address.getByName(configuration.serverNet));
@@ -145,9 +150,7 @@ public final class IpResolver {
      * @return the hosts Inet4Address if it is registered or null if not
      */
     public Inet4Address lookup(String hostname) {
-        return hostname != null
-                ? addressMap.get(hostname)
-                : null;
+        return hostname != null ? addressMap.get(hostname) : null;
     }
 
     /**
@@ -155,9 +158,7 @@ public final class IpResolver {
      * @return name of the host belonging to the given address or null if none found
      */
     public String reverseLookup(Inet4Address address) {
-        return address != null
-                ? addressMap.inverse().get(address)
-                : null;
+        return address != null ? addressMap.inverse().get(address) : null;
     }
 
     /**

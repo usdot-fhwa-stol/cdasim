@@ -59,20 +59,23 @@ public class DockerClientTest {
 
         when(commandLine.status(anyString())).thenReturn("", "", "Up 2 seconds");
         when(commandLine.port(anyString())).thenReturn("1337/tcp -> 0.0.0.0:7331\n");
+
+        System.setProperty("mosaic.docker.no-detach", "false");
     }
 
     @Test
     public void run_noPortBinding_readPortsFromDocker() {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
         String containerName = "test-image-container";
 
-        //RUN
+        // RUN
         DockerContainer container = dockerClient.run(imageName).name(containerName).execute();
 
-        //VERIFY
+        // VERIFY
         assertNotNull(container);
-        verify(commandLine).runAndDetach(eq(imageName), argThat(containsInOrder("-P", "--name", "test-image-container")));
+        verify(commandLine).runAndDetach(eq(imageName),
+                argThat(containsInOrder("-P", "--name", "test-image-container")));
         verify(commandLine, never()).kill(anyString());
         verify(commandLine, never()).rm(anyString());
         verify(commandLine, times(3)).status(eq(containerName));
@@ -84,40 +87,38 @@ public class DockerClientTest {
 
     @Test
     public void run_declarePortBinding() {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
         String containerName = "test-image-container";
 
-        //RUN
+        // RUN
         DockerContainer container = dockerClient.run(imageName).portBinding(1337, 7331).name(containerName).execute();
 
-        //VERIFY
+        // VERIFY
         assertNotNull(container);
-        verify(commandLine).runAndDetach(eq(imageName), argThat(containsInOrder("-p", "1337:7331", "--name", "test-image-container")));
+        verify(commandLine).runAndDetach(eq(imageName),
+                argThat(containsInOrder("-p", "1337:7331", "--name", "test-image-container")));
         verify(commandLine, never()).kill(anyString());
         verify(commandLine, never()).rm(anyString());
         verify(commandLine, times(3)).status(eq(containerName));
     }
 
-
-
     @Test
     public void run_declareVolumeBinding() throws Exception {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
         String containerName = "test-image-container";
         File tmpFile = tempFolder.newFile();
 
-        //RUN
-        DockerContainer container = dockerClient.run(imageName).volumeBinding(tmpFile, "/home/test").name(containerName).execute();
+        // RUN
+        DockerContainer container = dockerClient.run(imageName).volumeBinding(tmpFile, "/home/test").name(containerName)
+                .execute();
 
-        //VERIFY
+        // VERIFY
         assertNotNull(container);
         String tmpFilePath = tmpFile.getAbsolutePath().replace("\\", "/").replace(" ", "\\ ");
-        verify(commandLine).runAndDetach(
-                eq(imageName),
-                argThat(containsInOrder("-v", tmpFilePath + ":/home/test", "-P", "--name", "test-image-container"))
-        );
+        verify(commandLine).runAndDetach(eq(imageName),
+                argThat(containsInOrder("-v", tmpFilePath + ":/home/test", "-P", "--name", "test-image-container")));
         verify(commandLine, never()).kill(anyString());
         verify(commandLine, never()).rm(anyString());
         verify(commandLine, times(3)).status(eq(containerName));
@@ -125,13 +126,13 @@ public class DockerClientTest {
 
     @Test
     public void run_removeBeforeRun() {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
 
-        //RUN
+        // RUN
         DockerContainer container = dockerClient.run(imageName).removeBeforeRun().execute();
 
-        //VERIFY
+        // VERIFY
         assertNotNull(container);
         verify(commandLine).runAndDetach(eq(imageName), argThat(containsInOrder("-P", "--name", imageName)));
         verify(commandLine).kill(eq(imageName));
@@ -140,13 +141,13 @@ public class DockerClientTest {
 
     @Test
     public void run_removeAfterRun() {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
 
-        //RUN
+        // RUN
         DockerContainer container = dockerClient.run(imageName).removeAfterRun().execute();
 
-        //VERIFY
+        // VERIFY
         assertNotNull(container);
         verify(commandLine).runAndDetach(eq(imageName), argThat(containsInOrder("--rm", "-P", "--name", imageName)));
         verify(commandLine, never()).kill(anyString());
@@ -155,53 +156,53 @@ public class DockerClientTest {
 
     @Test(expected = DockerRuntimeException.class)
     public void run_timeoutDockerStatus() {
-        //SETUP
+        // SETUP
         DockerClient.DOCKER_RUN_TIMEOUT_MILLISECONDS = 500;
         String imageName = "test-image";
         when(commandLine.status(anyString())).thenReturn("");
 
-        //RUN
+        // RUN
         dockerClient.run(imageName).execute();
     }
 
     @Test
     public void killContainer_doNotRemove() {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
         DockerContainer container = dockerClient.run(imageName).removeAfterRun().execute();
 
-        //RUN
+        // RUN
         dockerClient.killContainer(container, false);
 
-        //VERIFY
+        // VERIFY
         verify(commandLine).kill(eq(imageName));
         verify(commandLine, never()).rm(anyString());
     }
 
     @Test
     public void killContainer_doRemove() {
-        //SETUP
+        // SETUP
         String imageName = "test-image";
         DockerContainer container = dockerClient.run(imageName).removeAfterRun().execute();
 
-        //RUN
+        // RUN
         dockerClient.killContainer(container, true);
 
-        //VERIFY
+        // VERIFY
         verify(commandLine).kill(eq(imageName));
         verify(commandLine).rm(eq(imageName));
     }
 
     @Test
     public void close_twoContainersRunning() {
-        //SETUP
+        // SETUP
         dockerClient.run("test-1").execute();
         dockerClient.run("test-2").execute();
 
-        //RUN
+        // RUN
         dockerClient.close();
 
-        //VERIFY
+        // VERIFY
         verify(commandLine).kill(eq("test-1"));
         verify(commandLine).kill(eq("test-2"));
         verify(commandLine).rm(eq("test-1"));
@@ -210,10 +211,10 @@ public class DockerClientTest {
 
     @Test
     public void close_noContainersRunning() {
-        //RUN
+        // RUN
         dockerClient.close();
 
-        //VERIFY
+        // VERIFY
         verify(commandLine, never()).kill(anyString());
         verify(commandLine, never()).rm(anyString());
     }

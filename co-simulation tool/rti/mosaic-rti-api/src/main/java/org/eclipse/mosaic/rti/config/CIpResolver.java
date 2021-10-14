@@ -19,11 +19,13 @@ package org.eclipse.mosaic.rti.config;
  * Configuration class for the IPResolver.
  */
 public class CIpResolver {
-    public String netMask    = "255.0.0.0";
+    public String netMask = "255.0.0.0";
     public String vehicleNet = "10.0.0.0";
-    public String rsuNet     = "11.0.0.0";
-    public String tlNet      = "12.0.0.0";
-    public String csNet      = "13.0.0.0";
-    public String serverNet  = "14.0.0.0";
-    public String tmcNet     = "15.0.0.0";
+    public String rsuNet = "11.0.0.0";
+    public String tlNet = "12.0.0.0";
+    public String csNet = "13.0.0.0";
+    public String serverNet = "14.0.0.0";
+    public String tmcNet = "15.0.0.0";
+    public String carmaVehicleNet = "16.0.0.0";
+    public String carlaVehicleNet = "17.0.0.0";
 }

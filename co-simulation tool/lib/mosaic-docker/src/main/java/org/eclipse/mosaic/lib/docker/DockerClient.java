@@ -16,6 +16,7 @@
 package org.eclipse.mosaic.lib.docker;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A simple client which is able to run docker images using the command line tools of docker.
- * Note, the command "docker" must be available in $PATH
+ * A simple client which is able to run docker images using the command line
+ * tools of docker. Note, the command "docker" must be available in $PATH
  */
 public class DockerClient {
 
@@ -47,9 +48,11 @@ public class DockerClient {
     }
 
     /**
-     * Compose a docker run command by calling this method, building your command, and eventually calling {@link DockerRun#execute()}.
+     * Compose a docker run command by calling this method, building your command,
+     * and eventually calling {@link DockerRun#execute()}.
      *
-     * @return an instance of {@link DockerRun} which can be used to compose and execute the docker run command
+     * @return an instance of {@link DockerRun} which can be used to compose and
+     *         execute the docker run command
      */
     public DockerRun run(String image) {
         return new DockerRun(this, image);
@@ -83,7 +86,8 @@ public class DockerClient {
         }
 
         final Process p;
-        if ("true".equals(System.getProperty("mosaic.docker.no-detach"))) {
+        if ("true"
+                .equals(System.getProperty("mosaic.docker.no-detach", SystemUtils.IS_OS_WINDOWS ? "true" : "false"))) {
             logger.info("Starting container without detaching.");
             p = docker.run(image, options);
         } else {
@@ -127,8 +131,10 @@ public class DockerClient {
     /**
      * Kills a container which has been executed by this client.
      *
-     * @param container the container which has been returned previously by {@link #run(String)}
-     * @param remove    {@code true}, if this container should be removed after being killed
+     * @param container the container which has been returned previously by
+     *                  {@link #run(String)}
+     * @param remove    {@code true}, if this container should be removed after
+     *                  being killed
      */
     public void killContainer(DockerContainer container, boolean remove) {
         if (runningContainers.remove(container)) {

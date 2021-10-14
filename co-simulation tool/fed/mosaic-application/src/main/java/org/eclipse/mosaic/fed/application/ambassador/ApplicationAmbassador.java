@@ -27,6 +27,10 @@ import org.eclipse.mosaic.fed.application.app.api.TrafficSignAwareApplication;
 import org.eclipse.mosaic.fed.application.app.api.os.OperatingSystem;
 import org.eclipse.mosaic.fed.application.config.CApplicationAmbassador;
 import org.eclipse.mosaic.interactions.application.ApplicationInteraction;
+import org.eclipse.mosaic.interactions.application.CarlaV2xMessageReception;
+import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
+import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
+import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.SumoTraciResponse;
 import org.eclipse.mosaic.interactions.communication.V2xFullMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageAcknowledgement;
@@ -53,6 +57,7 @@ import org.eclipse.mosaic.lib.objects.environment.EnvironmentEvent;
 import org.eclipse.mosaic.lib.objects.traffic.InductionLoopInfo;
 import org.eclipse.mosaic.lib.objects.traffic.LaneAreaDetectorInfo;
 import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.etsi.EtsiPayloadConfiguration;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleBatteryState;
@@ -99,10 +104,9 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
     private final Map<String, VehicleRegistration> vehicleRegistrations = new HashMap<>();
 
     /**
-     * Constructor for {@link ApplicationAmbassador}.
-     * This will load the configuration, initialize the {@link SimulationKernel},
-     * initialize the {@link CentralNavigationComponent} and add all Application
-     * jar-files.
+     * Constructor for {@link ApplicationAmbassador}. This will load the
+     * configuration, initialize the {@link SimulationKernel}, initialize the
+     * {@link CentralNavigationComponent} and add all Application jar-files.
      *
      * @param ambassadorParameter parameters for ambassador configuration
      */
@@ -113,11 +117,11 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
         try {
             SimulationKernel.SimulationKernel.setConfigurationPath(ambassadorParameter.configuration.getParentFile());
             // try to read the configuration from the configuration file
-            ambassadorConfig = new ObjectInstantiation<>(CApplicationAmbassador.class).readFile(ambassadorParameter.configuration);
+            ambassadorConfig = new ObjectInstantiation<>(CApplicationAmbassador.class)
+                    .readFile(ambassadorParameter.configuration);
 
             Validate.isTrue(ambassadorConfig.eventSchedulerThreads > 0,
-                    "Number of eventSchedulerThreads must be greater than zero."
-            );
+                    "Number of eventSchedulerThreads must be greater than zero.");
 
             if (ambassadorConfig.eventSchedulerThreads == 1) {
                 eventScheduler = new DefaultEventScheduler();
@@ -126,9 +130,8 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
             }
 
             SimulationKernel.SimulationKernel.setConfiguration(ambassadorConfig);
-            EtsiPayloadConfiguration.setPayloadConfiguration(
-                    new EtsiPayloadConfiguration(ambassadorConfig.encodePayloads, ambassadorConfig.minimalPayloadLength)
-            );
+            EtsiPayloadConfiguration.setPayloadConfiguration(new EtsiPayloadConfiguration(
+                    ambassadorConfig.encodePayloads, ambassadorConfig.minimalPayloadLength));
 
         } catch (InstantiationException e) {
             log.error(ErrorRegister.CONFIGURATION_CouldNotReadFromFile.toString(), e);
@@ -138,10 +141,8 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
 
         if (SimulationKernel.SimulationKernel.navigation == null) {
             // set the CNC (central navigation component)
-            CentralNavigationComponent cnc = new CentralNavigationComponent(
-                    ambassadorParameter,
-                    ambassadorConfig.navigationConfiguration
-            );
+            CentralNavigationComponent cnc = new CentralNavigationComponent(ambassadorParameter,
+                    ambassadorConfig.navigationConfiguration);
             SimulationKernel.SimulationKernel.setCentralNavigationComponent(cnc);
         }
 
@@ -164,15 +165,13 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                 log.error(ErrorRegister.AMBASSADOR_ErrorLoadingJarFiles.toString(), e);
             }
         }
-        SimulationKernel.SimulationKernel.setClassLoader(new URLClassLoader(
-                urls.toArray(new URL[0]),
-                Thread.currentThread().getContextClassLoader()
-        ));
+        SimulationKernel.SimulationKernel.setClassLoader(
+                new URLClassLoader(urls.toArray(new URL[0]), Thread.currentThread().getContextClassLoader()));
     }
 
     /**
-     * This returns {@code false}, since the {@link ApplicationAmbassador} is developed in a way, where it takes
-     * care of its own time management.
+     * This returns {@code false}, since the {@link ApplicationAmbassador} is
+     * developed in a way, where it takes care of its own time management.
      *
      * @return {@code false}
      */
@@ -182,8 +181,8 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
     }
 
     /**
-     * This returns {@code false}, since the {@link ApplicationAmbassador} is developed in a way, where it takes
-     * care of its own time management.
+     * This returns {@code false}, since the {@link ApplicationAmbassador} is
+     * developed in a way, where it takes care of its own time management.
      *
      * @return {@code false}
      */
@@ -238,11 +237,9 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
     @Override
     protected void processInteraction(final Interaction interaction) throws InternalFederateException {
         if (log.isDebugEnabled()) {
-            log.debug("#process with interaction {} at time {} with currentSimulationTime {}",
-                    interaction.getTypeId(),
+            log.debug("#process with interaction {} at time {} with currentSimulationTime {}", interaction.getTypeId(),
                     TIME.format(interaction.getTime()),
-                    TIME.format(SimulationKernel.SimulationKernel.getCurrentSimulationTime())
-            );
+                    TIME.format(SimulationKernel.SimulationKernel.getCurrentSimulationTime()));
         }
         try {
             if (interaction.getTypeId().startsWith(RsuRegistration.TYPE_ID)) {
@@ -291,27 +288,29 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                 this.process((VehicleTypesInitialization) interaction);
             } else if (interaction.getTypeId().startsWith(ApplicationInteraction.TYPE_ID)) {
                 this.process((ApplicationInteraction) interaction);
+            } else if (interaction.getTypeId().startsWith(ExternalMessage.TYPE_ID)) {
+                this.process((ExternalMessage) interaction);
             } else {
-                log.warn("Unknown interaction received with time {} : {}", TIME.format(interaction.getTime()), interaction.getTypeId());
+                log.warn("Unknown interaction received with time {} : {}", TIME.format(interaction.getTime()),
+                        interaction.getTypeId());
             }
         } catch (RuntimeException e) {
-            throw new InternalFederateException(ErrorRegister.AMBASSADOR_UncaughtExceptionInProcessInteraction.toString(), e);
+            throw new InternalFederateException(
+                    ErrorRegister.AMBASSADOR_UncaughtExceptionInProcessInteraction.toString(), e);
         }
     }
 
     private void process(final VehicleElectricityUpdates electricInformationMessage) {
         // schedule all updated vehicles
         for (VehicleBatteryState vehicleBatteryState : electricInformationMessage.getUpdated()) {
-            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(vehicleBatteryState.getName());
+            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                    .getUnitFromId(vehicleBatteryState.getName());
             // we don't simulate vehicles without application
             if (simulationUnit == null) {
                 continue;
             }
-            final Event event = new Event(
-                    electricInformationMessage.getTime(), simulationUnit,
-                    vehicleBatteryState,
-                    EventNicenessPriorityRegister.batteryUpdated
-            );
+            final Event event = new Event(electricInformationMessage.getTime(), simulationUnit, vehicleBatteryState,
+                    EventNicenessPriorityRegister.batteryUpdated);
             addEvent(event);
         }
     }
@@ -325,7 +324,8 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
     }
 
     private void process(final VehicleRouteRegistration vehicleRouteRegistration) {
-        SimulationKernel.SimulationKernel.getRoutes().put(vehicleRouteRegistration.getRoute().getId(), vehicleRouteRegistration.getRoute());
+        SimulationKernel.SimulationKernel.getRoutes().put(vehicleRouteRegistration.getRoute().getId(),
+                vehicleRouteRegistration.getRoute());
     }
 
     private void process(final RsuRegistration rsuRegistration) {
@@ -353,22 +353,18 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
     }
 
     private void process(final RoutelessVehicleRegistration routelessVehicleRegistration) {
-        final VehicleDeparture routeInfo = SimulationKernel.SimulationKernel.getCentralNavigationComponent().createRouteForOdInfo(
-                routelessVehicleRegistration.getTime(), routelessVehicleRegistration.getTrip()
-        );
+        final VehicleDeparture routeInfo = SimulationKernel.SimulationKernel.getCentralNavigationComponent()
+                .createRouteForOdInfo(routelessVehicleRegistration.getTime(), routelessVehicleRegistration.getTrip());
         if (routeInfo == null) {
             log.error(ErrorRegister.AMBASSADOR_ErrorCalculateDeparture.toString());
             return;
         }
 
-        final VehicleRegistration addInteraction = new VehicleRegistration(
-                routelessVehicleRegistration.getTime(),
+        final VehicleRegistration addInteraction = new VehicleRegistration(routelessVehicleRegistration.getTime(),
                 routelessVehicleRegistration.getMapping().getName(),
                 routelessVehicleRegistration.getMapping().getGroup(),
-                routelessVehicleRegistration.getMapping().getApplications(),
-                routeInfo,
-                routelessVehicleRegistration.getMapping().getVehicleType()
-        );
+                routelessVehicleRegistration.getMapping().getApplications(), routeInfo,
+                routelessVehicleRegistration.getMapping().getVehicleType());
         log.info("Sending VehicleRegistration Interaction:" + addInteraction);
         try {
             rti.triggerInteraction(addInteraction);
@@ -385,149 +381,170 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
             } else {
                 // Call the methods onTrafficSign and onPassedTrafficSign for the respective
                 // vehicles/signs in all TrafficSignHandlingApplications.
-                for (TrafficSignAwareApplication application : simulationUnit.getApplicationsIterator(TrafficSignAwareApplication.class)) {
-                    addEvent(new Event(
-                            vehicleSeenTrafficSignsUpdate.getTime(),
-                            e -> vehicleSeenTrafficSignsUpdate.getNewSigns(vehicleId).forEach(application::onTrafficSignNoticed),
+                for (TrafficSignAwareApplication application : simulationUnit
+                        .getApplicationsIterator(TrafficSignAwareApplication.class)) {
+                    addEvent(new Event(vehicleSeenTrafficSignsUpdate.getTime(),
+                            e -> vehicleSeenTrafficSignsUpdate.getNewSigns(vehicleId)
+                                    .forEach(application::onTrafficSignNoticed),
                             EventNicenessPriorityRegister.updateSeenTrafficSign
 
                     ));
-                    addEvent(new Event(
-                            vehicleSeenTrafficSignsUpdate.getTime(),
-                            e -> vehicleSeenTrafficSignsUpdate.getPassedSigns(vehicleId).forEach(application::onTrafficSignInvalidated),
-                            EventNicenessPriorityRegister.updateSeenTrafficSign
-                    ));
+                    addEvent(new Event(vehicleSeenTrafficSignsUpdate.getTime(),
+                            e -> vehicleSeenTrafficSignsUpdate.getPassedSigns(vehicleId)
+                                    .forEach(application::onTrafficSignInvalidated),
+                            EventNicenessPriorityRegister.updateSeenTrafficSign));
                 }
             }
         }
     }
 
     private void process(final ChargingStationUpdates chargingStationUpdates) {
-        final AbstractSimulationUnit simulationUnit =
-                UnitSimulator.UnitSimulator.getUnitFromId(chargingStationUpdates.getChargingStation().getName());
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(chargingStationUpdates.getChargingStation().getName());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
             return;
         }
-        final Event event = new Event(
-                chargingStationUpdates.getChargingStation().getTime(),
-                simulationUnit,
-                chargingStationUpdates.getChargingStation(),
-                EventNicenessPriorityRegister.updateChargingStation
-        );
+        final Event event = new Event(chargingStationUpdates.getChargingStation().getTime(), simulationUnit,
+                chargingStationUpdates.getChargingStation(), EventNicenessPriorityRegister.updateChargingStation);
         addEvent(event);
     }
 
     private void process(final ChargingDenialResponse chargingDenialResponse) {
-        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(chargingDenialResponse.getVehicleId());
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(chargingDenialResponse.getVehicleId());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
             return;
         }
-        final Event event = new Event(
-                chargingDenialResponse.getTime(),
-                simulationUnit,
-                chargingDenialResponse,
-                EventNicenessPriorityRegister.chargingRejected
-        );
+        final Event event = new Event(chargingDenialResponse.getTime(), simulationUnit, chargingDenialResponse,
+                EventNicenessPriorityRegister.chargingRejected);
         addEvent(event);
     }
 
     private void process(final V2xMessageReception v2xMessageReception) {
-        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(v2xMessageReception.getReceiverName());
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(v2xMessageReception.getReceiverName());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
             return;
         }
-        // because the sendV2XMessage method put the v2x message in the map and only send a V2XMessageGeneralized around, unmap the message
-        V2xMessage v2XMessage = SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(v2xMessageReception.getMessageId());
+        // because the sendV2XMessage method put the v2x message in the map and only
+        // send a V2XMessageGeneralized around, unmap the message
+        V2xMessage v2XMessage = SimulationKernel.SimulationKernel.getV2xMessageCache()
+                .getItem(v2xMessageReception.getMessageId());
         if (v2XMessage == null) {
             log.warn("V2XMessage with id {} is unknown", v2xMessageReception.getMessageId());
             return;
         }
 
-        ReceivedV2xMessage receivedV2xMessage = new ReceivedV2xMessage(
-                v2XMessage,
+        ReceivedV2xMessage receivedV2xMessage = new ReceivedV2xMessage(v2XMessage,
                 v2xMessageReception.getReceiverInformation());
-        final Event event = new Event(
-                v2xMessageReception.getTime(),
-                simulationUnit,
-                receivedV2xMessage,
-                EventNicenessPriorityRegister.v2xMessageReception
-        );
+        final Event event = new Event(v2xMessageReception.getTime(), simulationUnit, receivedV2xMessage,
+                EventNicenessPriorityRegister.v2xMessageReception);
 
         addEvent(event);
+        // Send received externalV2xMessage to the corresponding ambassador
+        if (v2XMessage instanceof ExternalV2xMessage) {
+            ExternalV2xMessage externalV2xMessage = (ExternalV2xMessage) v2XMessage;
+            if (v2xMessageReception.getReceiverName().startsWith("carma")) {
+                // ExternalV2xMessage received by a CARMA vehicle
+                CarmaV2xMessageReception carmaV2xMessageReception = new CarmaV2xMessageReception(
+                        v2xMessageReception.getTime(), externalV2xMessage.getMessage(),
+                        v2xMessageReception.getReceiverName());
+                try {
+                    rti.triggerInteraction(carmaV2xMessageReception);
+                } catch (InternalFederateException | IllegalValueException e) {
+                    log.error(ErrorRegister.AMBASSADOR_ErrorSendInteraction.toString(), e);
+                }
+            } else if (v2xMessageReception.getReceiverName().startsWith("carla")) {
+                // ExternalV2xMessage received by a Carla vehicle
+                CarlaV2xMessageReception carlaV2xMessageReception = new CarlaV2xMessageReception(
+                        v2xMessageReception.getTime(), externalV2xMessage.getMessage(),
+                        v2xMessageReception.getReceiverName());
+                try {
+                    rti.triggerInteraction(carlaV2xMessageReception);
+                } catch (InternalFederateException | IllegalValueException e) {
+                    log.error(ErrorRegister.AMBASSADOR_ErrorSendInteraction.toString(), e);
+                }
+            } else if (v2xMessageReception.getReceiverName().startsWith("rsu")) {
+                // ExternalV2xMessage received by a rsu
+                InfrastructureV2xMessageReception infrastructureV2xMessageReception = new InfrastructureV2xMessageReception(
+                        v2xMessageReception.getTime(), externalV2xMessage.getMessage(),
+                        v2xMessageReception.getReceiverName());
+                try {
+                    rti.triggerInteraction(infrastructureV2xMessageReception);
+                } catch (InternalFederateException | IllegalValueException e) {
+                    log.error(ErrorRegister.AMBASSADOR_ErrorSendInteraction.toString(), e);
+                }
+            }
+        }
     }
 
     private void process(final V2xFullMessageReception v2xFullMessageReception) {
-        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(v2xFullMessageReception.getReceiverName());
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(v2xFullMessageReception.getReceiverName());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
             return;
         }
-        ReceivedV2xMessage receivedV2xMessage = new ReceivedV2xMessage(
-                v2xFullMessageReception.getMessage(),
-                v2xFullMessageReception.getReceiverInformation()
-        );
+        ReceivedV2xMessage receivedV2xMessage = new ReceivedV2xMessage(v2xFullMessageReception.getMessage(),
+                v2xFullMessageReception.getReceiverInformation());
 
-        final Event event = new Event(
-                v2xFullMessageReception.getTime(),
-                simulationUnit,
-                receivedV2xMessage,
-                EventNicenessPriorityRegister.v2xFullMessageReception
-        );
+        final Event event = new Event(v2xFullMessageReception.getTime(), simulationUnit, receivedV2xMessage,
+                EventNicenessPriorityRegister.v2xFullMessageReception);
         addEvent(event);
     }
 
     /**
-     * This function does not directly fire an event, but puts it in a environmentEvents-map (see {@link AbstractSimulationUnit}).
-     * Use {@link OperatingSystem#getStateOfEnvironmentSensor} to determine the state of a Sensor. Keep in mind, that
-     * the map only stores the latest {@link EnvironmentEvent} of a specific type and overwrites old values.
-     * <p>Events will not directly be removed from the map, but since events are mapped to their type, there
-     * can't be more members than there are SensorType's. Nonetheless, the map can be cleared using
-     * {@link AbstractSimulationUnit#cleanPastEnvironmentEvents()}, which is also invoked by {@link SimulationKernel#garbageCollection()}.
+     * This function does not directly fire an event, but puts it in a
+     * environmentEvents-map (see {@link AbstractSimulationUnit}). Use
+     * {@link OperatingSystem#getStateOfEnvironmentSensor} to determine the state of
+     * a Sensor. Keep in mind, that the map only stores the latest
+     * {@link EnvironmentEvent} of a specific type and overwrites old values.
+     * <p>
+     * Events will not directly be removed from the map, but since events are mapped
+     * to their type, there can't be more members than there are SensorType's.
+     * Nonetheless, the map can be cleared using
+     * {@link AbstractSimulationUnit#cleanPastEnvironmentEvents()}, which is also
+     * invoked by {@link SimulationKernel#garbageCollection()}.
      * </p>
      *
-     * @param environmentSensorUpdates the Interaction of type EnvironmentSensorUpdates to be processed
+     * @param environmentSensorUpdates the Interaction of type
+     *                                 EnvironmentSensorUpdates to be processed
      */
     private void process(final EnvironmentSensorUpdates environmentSensorUpdates) {
-        // store the sensor data immediately, the sensor event hold their intermittent time
-        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(environmentSensorUpdates.getUnitId());
+        // store the sensor data immediately, the sensor event hold their intermittent
+        // time
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(environmentSensorUpdates.getUnitId());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
             return;
         }
         for (EnvironmentEvent event : environmentSensorUpdates.getEvents()) {
-            addEvent(new Event(
-                    environmentSensorUpdates.getTime(),
-                    e -> simulationUnit.putEnvironmentEvent(event.type, event))
-            );
+            addEvent(new Event(environmentSensorUpdates.getTime(),
+                    e -> simulationUnit.putEnvironmentEvent(event.type, event)));
         }
     }
 
     private void process(final TrafficDetectorUpdates trafficDetectorUpdates) {
         for (TrafficManagementCenterUnit tmc : UnitSimulator.UnitSimulator.getTmcs().values()) {
-            final List<InductionLoopInfo> relevantInductionLoops = trafficDetectorUpdates.getUpdatedInductionLoops().stream()
-                    .filter(i -> tmc.getInductionLoopIds().contains(i.getName()))
-                    .collect(Collectors.toList());
+            final List<InductionLoopInfo> relevantInductionLoops = trafficDetectorUpdates.getUpdatedInductionLoops()
+                    .stream().filter(i -> tmc.getInductionLoopIds().contains(i.getName())).collect(Collectors.toList());
 
-            final List<LaneAreaDetectorInfo> relevantLaneAreaDetectors = trafficDetectorUpdates.getUpdatedLaneAreaDetectors().stream()
-                    .filter(i -> tmc.getLaneAreaIds().contains(i.getName()))
+            final List<LaneAreaDetectorInfo> relevantLaneAreaDetectors = trafficDetectorUpdates
+                    .getUpdatedLaneAreaDetectors().stream().filter(i -> tmc.getLaneAreaIds().contains(i.getName()))
                     .collect(Collectors.toList());
 
             if (!relevantInductionLoops.isEmpty() || !relevantLaneAreaDetectors.isEmpty()) {
-                // Create new TrafficDetectorUpdates interaction containing only relevant updates
-                TrafficDetectorUpdates relevantUpdates = new TrafficDetectorUpdates(
-                        trafficDetectorUpdates.getTime(),
-                        relevantLaneAreaDetectors,
-                        relevantInductionLoops);
+                // Create new TrafficDetectorUpdates interaction containing only relevant
+                // updates
+                TrafficDetectorUpdates relevantUpdates = new TrafficDetectorUpdates(trafficDetectorUpdates.getTime(),
+                        relevantLaneAreaDetectors, relevantInductionLoops);
 
-                final Event event = new Event(
-                        relevantUpdates.getTime(),
-                        tmc,
-                        relevantUpdates,
-                        EventNicenessPriorityRegister.updateTrafficDetectors
-                );
+                final Event event = new Event(relevantUpdates.getTime(), tmc, relevantUpdates,
+                        EventNicenessPriorityRegister.updateTrafficDetectors);
                 addEvent(event);
             }
         }
@@ -539,62 +556,83 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
             for (AbstractSimulationUnit simulationUnit : UnitSimulator.UnitSimulator.getAllUnits().values()) {
                 // iterate over all applications on the unit
                 for (MosaicApplication application : simulationUnit.getApplicationsIterator(MosaicApplication.class)) {
-                    addEvent(new Event(applicationInteraction.getTime(), e -> application.onInteractionReceived(applicationInteraction)));
+                    addEvent(new Event(applicationInteraction.getTime(),
+                            e -> application.onInteractionReceived(applicationInteraction)));
                 }
             }
         } else {
             // notify only a specific unit if available
-            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(applicationInteraction.getUnitId());
+            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                    .getUnitFromId(applicationInteraction.getUnitId());
             // we don't simulate this application
             if (simulationUnit == null) {
-                log.warn("#process(ApplicationInteraction) and the unitId {} is not available.", applicationInteraction.getUnitId());
+                log.warn("#process(ApplicationInteraction) and the unitId {} is not available.",
+                        applicationInteraction.getUnitId());
             } else {
                 for (MosaicApplication application : simulationUnit.getApplicationsIterator(MosaicApplication.class)) {
-                    addEvent(new Event(applicationInteraction.getTime(), e -> application.onInteractionReceived(applicationInteraction)));
+                    addEvent(new Event(applicationInteraction.getTime(),
+                            e -> application.onInteractionReceived(applicationInteraction)));
                 }
             }
         }
     }
 
     /**
-     * Inform all simulation units and all their applications immediately
-     * about the response. The application should determine by itself, if it
-     * needs to handle the response. No event is created, because the
-     * information is not time relevant. It also may be possible that
-     * an RSU or something else wants to talk with SUMO.
+     * Inform all simulation units and all their applications immediately about the
+     * response. The application should determine by itself, if it needs to handle
+     * the response. No event is created, because the information is not time
+     * relevant. It also may be possible that an RSU or something else wants to talk
+     * with SUMO.
      *
-     * @param sumoTraciResponse the Interaction of type SumoTraciResponse to be processed
+     * @param sumoTraciResponse the Interaction of type SumoTraciResponse to be
+     *                          processed
      */
     private void process(final SumoTraciResponse sumoTraciResponse) {
         UnitSimulator.UnitSimulator.processSumoTraciMessage(sumoTraciResponse.getSumoTraciResult());
     }
 
     private void process(final V2xMessageAcknowledgement v2xMessageAcknowledgement) {
-        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(v2xMessageAcknowledgement.getSourceName());
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(v2xMessageAcknowledgement.getSourceName());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
             return;
         }
-        final Event event = new Event(
-                v2xMessageAcknowledgement.getTime(),
-                simulationUnit, v2xMessageAcknowledgement,
-                EventNicenessPriorityRegister.v2xMessageAcknowledgement
-        );
+        final Event event = new Event(v2xMessageAcknowledgement.getTime(), simulationUnit, v2xMessageAcknowledgement,
+                EventNicenessPriorityRegister.v2xMessageAcknowledgement);
         addEvent(event);
+    }
+
+    /**
+     * Process the external messages and enable applications can use the external
+     * message.
+     * 
+     * @param externalMessage the Interaction of ExternalMessage to be processed
+     */
+    private void process(final ExternalMessage externalMessage) {
+
+        final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                .getUnitFromId(externalMessage.getSenderID());
+        // we don't simulate vehicles without an application
+        if (simulationUnit == null) {
+            log.info("External messages can not be processed without simulation unit");
+            return;
+        }
+        log.debug("External message received in application ambassador at time: " + externalMessage.getTime());
+        final Event event = new Event(externalMessage.getTime(), simulationUnit, externalMessage,
+                EventNicenessPriorityRegister.externalMessage);
+        addEvent(event);
+        log.debug("Event for external message is triggered.");
     }
 
     private void process(final TrafficLightUpdates trafficLightUpdates) {
         for (TrafficLightGroupUnit simulationUnit : UnitSimulator.UnitSimulator.getTrafficLights().values()) {
-            TrafficLightGroupInfo trafficLightGroupInfo =
-                    trafficLightUpdates.getUpdated().get(simulationUnit.getTrafficLightGroup().getGroupId());
+            TrafficLightGroupInfo trafficLightGroupInfo = trafficLightUpdates.getUpdated()
+                    .get(simulationUnit.getTrafficLightGroup().getGroupId());
 
             if (trafficLightGroupInfo != null) {
-                final Event event = new Event(
-                        trafficLightUpdates.getTime(),
-                        simulationUnit,
-                        trafficLightGroupInfo,
-                        EventNicenessPriorityRegister.updateTrafficLight
-                );
+                final Event event = new Event(trafficLightUpdates.getTime(), simulationUnit, trafficLightGroupInfo,
+                        EventNicenessPriorityRegister.updateTrafficLight);
                 addEvent(event);
             }
         }
@@ -605,59 +643,47 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
         // schedule all added vehicles
         for (VehicleData vehicleData : vehicleUpdates.getAdded()) {
             addVehicleIfNotYetAdded(vehicleUpdates.getTime(), vehicleData.getName());
-            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(vehicleData.getName());
+            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                    .getUnitFromId(vehicleData.getName());
             // we don't simulate vehicles without an application
             if (simulationUnit == null) {
                 continue;
             }
-            final Event event = new Event(
-                    vehicleData.getTime(),
-                    simulationUnit,
-                    vehicleData,
-                    EventNicenessPriorityRegister.vehicleAdded
-            );
+            final Event event = new Event(vehicleData.getTime(), simulationUnit, vehicleData,
+                    EventNicenessPriorityRegister.vehicleAdded);
             addEvent(event);
         }
 
         // schedule all updated vehicles
         for (VehicleData vehicleData : vehicleUpdates.getUpdated()) {
             addVehicleIfNotYetAdded(vehicleUpdates.getTime(), vehicleData.getName());
-            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator.getUnitFromId(vehicleData.getName());
+            final AbstractSimulationUnit simulationUnit = UnitSimulator.UnitSimulator
+                    .getUnitFromId(vehicleData.getName());
             // we don't simulate vehicles without an application
             if (simulationUnit == null) {
                 continue;
             }
-            final Event event = new Event(
-                    vehicleData.getTime(),
-                    simulationUnit,
-                    vehicleData,
-                    EventNicenessPriorityRegister.vehicleUpdated
-            );
+            final Event event = new Event(vehicleData.getTime(), simulationUnit, vehicleData,
+                    EventNicenessPriorityRegister.vehicleUpdated);
             addEvent(event);
         }
 
         /*
-         * Schedule an event to remove vehicles. There is no problem if the
-         * event occurs only after the simulation. The unit simulator will
-         * cleanly terminate the application.
+         * Schedule an event to remove vehicles. There is no problem if the event occurs
+         * only after the simulation. The unit simulator will cleanly terminate the
+         * application.
          */
         final RemoveVehicles removeVehicles = new RemoveVehicles(vehicleUpdates.getRemovedNames());
-        final Event event = new Event(
-                vehicleUpdates.getTime(),
-                UnitSimulator.UnitSimulator,
-                removeVehicles,
-                EventNicenessPriorityRegister.vehicleRemoved
-        );
+        final Event event = new Event(vehicleUpdates.getTime(), UnitSimulator.UnitSimulator, removeVehicles,
+                EventNicenessPriorityRegister.vehicleRemoved);
         addEvent(event);
 
         /*
-         * Finally, a VehicleUpdate interaction is a good (okay, not good, but we
-         * have no other choice) event, to trigger an internal garbage
-         * collection.
+         * Finally, a VehicleUpdate interaction is a good (okay, not good, but we have
+         * no other choice) event, to trigger an internal garbage collection.
          */
 
-        final Event triggerGarbageCollection = new Event(
-                vehicleUpdates.getTime(),
+        final Event triggerGarbageCollection = new Event(vehicleUpdates.getTime(),
                 e -> SimulationKernel.SimulationKernel.garbageCollection());
         addEvent(triggerGarbageCollection);
     }

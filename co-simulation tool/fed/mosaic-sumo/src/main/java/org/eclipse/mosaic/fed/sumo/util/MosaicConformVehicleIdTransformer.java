@@ -37,8 +37,9 @@ public class MosaicConformVehicleIdTransformer implements IdTransformer<String, 
     private BiMap<String, String> sumoToMosaicVehicleIdMap = HashBiMap.create(1024);
 
     /**
-     * Takes a MOSAIC conform vehicle id (e.g. veh_1) and returns the saved SUMO id in {@link #sumoToMosaicVehicleIdMap}.
-     * If a new vehicle from MOSAIC has to be added to SUMO we use the same id.
+     * Takes a MOSAIC conform vehicle id (e.g. veh_1) and returns the saved SUMO id
+     * in {@link #sumoToMosaicVehicleIdMap}. If a new vehicle from MOSAIC has to be
+     * added to SUMO we use the same id.
      *
      * @param mosaicVehicleId the MOSAIC conform vehicle id
      * @return the corresponding SUMO id
@@ -62,6 +63,12 @@ public class MosaicConformVehicleIdTransformer implements IdTransformer<String, 
      */
     @Override
     public String fromExternalId(String sumoVehicleId) {
+        // do not change Carla vehicle ID
+        if (sumoVehicleId.startsWith("carla")) {
+            sumoToMosaicVehicleIdMap.put(sumoVehicleId, sumoVehicleId);
+            return sumoVehicleId;
+        }
+
         String mosaicVehicleId = sumoToMosaicVehicleIdMap.get(sumoVehicleId);
         if (mosaicVehicleId == null) {
             mosaicVehicleId = NameGenerator.getVehicleName();

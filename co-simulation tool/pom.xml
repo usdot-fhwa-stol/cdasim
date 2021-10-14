@@ -70,6 +70,8 @@
         <module>fed/mosaic-sns</module>
         <module>fed/mosaic-sumo</module>
         <module>fed/mosaic-carla</module>
+        <module>fed/mosaic-carma</module>
+        <module>fed/mosaic-infrastructure</module>
 
         <module>test/mosaic-integration-tests</module>
 
@@ -77,6 +79,7 @@
         <module>app/tutorials/highway-management</module>
         <module>app/tutorials/traffic-light-communication</module>
         <module>app/tutorials/weather-warning</module>
+        <module>app/tutorials/external-communication</module>
     </modules>
 
     <properties>

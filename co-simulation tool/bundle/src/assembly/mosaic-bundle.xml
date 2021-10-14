@@ -96,7 +96,12 @@
                 <include>org.eclipse.mosaic.app:example-applications</include>
             </includes>
         </dependencySet>
-
+        <dependencySet>
+            <outputDirectory>scenarios/Co-simulation/application</outputDirectory>
+            <includes>
+                <include>org.eclipse.mosaic.app:external-communication</include>
+            </includes>
+        </dependencySet>
 
         <!-- MOSAIC projects -->
         <dependencySet>

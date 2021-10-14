@@ -33,7 +33,8 @@ public final class CAbstractNetworkAmbassador {
      * given {@link DestinationType}.
      *
      * @param routingType the {@link DestinationType} to check
-     * @return {@code true}, if the network ambassador implementation supports the given {@link DestinationType}.
+     * @return {@code true}, if the network ambassador implementation supports the
+     *         given {@link DestinationType}.
      */
     boolean isRoutingTypeSupported(DestinationType routingType) {
         return messages.routingType.getOrDefault(routingType, false);
@@ -44,20 +45,23 @@ public final class CAbstractNetworkAmbassador {
      * given {@link NetworkAddress}.
      *
      * @param destinationAddress the {@link NetworkAddress} to check
-     * @return {@code true}, if the network ambassador implementation supports the given {@link NetworkAddress}.
+     * @return {@code true}, if the network ambassador implementation supports the
+     *         given {@link NetworkAddress}.
      */
     boolean isAddressTypeSupported(NetworkAddress destinationAddress) {
         return destinationAddress != null
                 && (destinationAddress.isUnicast() && messages.destinationAddress.ipv4UnicastAddress
-                || destinationAddress.isBroadcast() && messages.destinationAddress.ipv4BroadcastAddress
-                || destinationAddress.isAnycast() && messages.destinationAddress.ipv4AnycastAddress);
+                        || destinationAddress.isBroadcast() && messages.destinationAddress.ipv4BroadcastAddress
+                        || destinationAddress.isAnycast() && messages.destinationAddress.ipv4AnycastAddress);
     }
 
     /**
-     * Returns {@code true}, if the network ambassador implementation supports the given {@link ProtocolType}.
+     * Returns {@code true}, if the network ambassador implementation supports the
+     * given {@link ProtocolType}.
      *
      * @param protocolType the {@link ProtocolType} to check
-     * @return {@code true}, if the network ambassador implementation supports the given {@link ProtocolType}.
+     * @return {@code true}, if the network ambassador implementation supports the
+     *         given {@link ProtocolType}.
      */
     boolean isProtocolSupported(ProtocolType protocolType) {
         return messages.protocolType.getOrDefault(protocolType, false);
@@ -70,7 +74,7 @@ public final class CAbstractNetworkAmbassador {
         private Map<ProtocolType, Boolean> protocolType = new HashMap<>();
 
         CMessages() {
-            routingType.put(DestinationType.AD_HOC_GEOCAST, false);
+            routingType.put(DestinationType.AD_HOC_GEOCAST, true);
             routingType.put(DestinationType.AD_HOC_TOPOCAST, true);
             routingType.put(DestinationType.CELL_GEOCAST, false);
             routingType.put(DestinationType.CELL_GEOCAST_MBMS, false);

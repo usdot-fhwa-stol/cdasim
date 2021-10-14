@@ -32,38 +32,38 @@
                 "VehicleUpdates",
                 "VehicleRoutesInitialization",
                 "VehicleTypesInitialization",
-                "VehicleSeenTrafficSignsUpdate"
+                "VehicleSeenTrafficSignsUpdate",
+                "ExternalMessage"
             ],
             "javaClasspathEntries": []
         },
         {
-            "id": "environment",
-            "classname": "org.eclipse.mosaic.fed.environment.ambassador.EnvironmentAmbassador",
-            "configuration": "environment_config.json",
+            "id": "carla",
+            "classname": "org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador",
+            "configuration": "carla_config.json",
+            "priority": 50,
+            "host": "local",
+            "port": 2000,
+            "deploy": true,
+            "start": true,
+            "subscriptions": [
+                "CarlaTraciResponse",
+                "SimulationStepResponse",
+                "CarlaV2xMessageReception"
+            ],
+            "javaClasspathEntries": []
+        },
+        {
+            "id": "carma",
+            "classname": "org.eclipse.mosaic.fed.carma.ambassador.CarmaMessageAmbassador",
+            "configuration": "carma_config.json",
             "priority": 50,
             "host": "local",
             "port": 0,
             "deploy": false,
             "start": false,
             "subscriptions": [
-                "EnvironmentSensorActivation",
-                "VehicleUpdates"
-            ],
-            "javaClasspathEntries": []
-        },
-        {
-            "id": "mapping",
-            "classname": "org.eclipse.mosaic.fed.mapping.ambassador.MappingAmbassador",
-            "configuration": "mapping_config.json",
-            "priority": 50,
-            "host": "local",
-            "port": 0,
-            "deploy": false,
-            "start": false,
-            "subscriptions": [
-                "VehicleRoutesInitialization",
-                "ScenarioTrafficLightRegistration",
-                "ScenarioVehicleRegistration"
+                "CarmaV2xMessageReception"
             ],
             "javaClasspathEntries": []
         },
@@ -86,6 +86,53 @@
                 "VehicleUpdates",
                 "V2xMessageTransmission",
                 "CellularCommunicationConfiguration"
+            ],
+            "javaClasspathEntries": []
+        },
+        {
+            "id": "environment",
+            "classname": "org.eclipse.mosaic.fed.environment.ambassador.EnvironmentAmbassador",
+            "configuration": "environment_config.json",
+            "priority": 50,
+            "host": "local",
+            "port": 0,
+            "deploy": false,
+            "start": false,
+            "subscriptions": [
+                "EnvironmentSensorActivation",
+                "VehicleUpdates"
+            ],
+            "javaClasspathEntries": []
+        },
+        {
+            "id": "infrastructure",
+            "classname": "org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureMessageAmbassador",
+            "configuration": "infrastructure_config.json",
+            "priority": 50,
+            "host": "local",
+            "port": 0,
+            "deploy": false,
+            "start": false,
+            "subscriptions": [
+                "InfrastructureV2xMessageReception"
+            ],
+            "javaClasspathEntries": []
+        },
+
+        {
+            "id": "mapping",
+            "classname": "org.eclipse.mosaic.fed.mapping.ambassador.MappingAmbassador",
+            "configuration": "mapping_config.json",
+            "priority": 50,
+            "host": "local",
+            "port": 0,
+            "deploy": false,
+            "start": false,
+            "subscriptions": [
+                "VehicleRoutesInitialization",
+                "ScenarioTrafficLightRegistration",
+                "ScenarioVehicleRegistration",
+                "VehicleFederateAssignment"
             ],
             "javaClasspathEntries": []
         },
@@ -182,21 +229,6 @@
                 "TrafficLightSubscription",
                 "CarlaTraciRequest",
                 "SimulationStep"
-            ],
-            "javaClasspathEntries": []
-        },
-        {
-            "id": "carla",
-            "classname": "org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador",
-            "configuration": "carla_config.json",
-            "priority": 50,
-            "host": "local",
-            "port": 2000,
-            "deploy": true,
-            "start": true,
-            "subscriptions": [
-                "CarlaTraciResponse",
-                "SimulationStepResponse"
             ],
             "javaClasspathEntries": []
         },
