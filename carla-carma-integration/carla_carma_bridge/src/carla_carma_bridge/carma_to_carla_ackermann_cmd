@@ -18,18 +18,27 @@
 Subscribe from CARMA :autoware_msgs::VehicleCmd
     Topic: /hardware_interface/vehicle_cmd
 
+Subscribe from CARMA :std_msgs::Float32
+    Topic: /guidance/twist_filter/result/twist/lateral_jerk
+
+Subscribe from CARMA :cav_msgs::GuidanceState
+    Topic: /guidance/state
+
 Publish to CARLA :ackermann_msgs::AckermannDrive
     Topic: /carla/{}/ackermann_cmd
+
 """
 import rospy
 from ackermann_msgs.msg import AckermannDrive
 from autoware_msgs.msg import VehicleCmd
 from cav_msgs.msg import GuidanceState
+from std_msgs.msg import Float32
 
-pub = None
+ackermann_cmd_pub = None
 guidance_state = GuidanceState.STARTUP
 init_status = True
 init_cmd = AckermannDrive()
+lateral_jerk = 0
 
 def guidance_state_callback(guidance_state_msg):
     """
@@ -44,10 +53,21 @@ def guidance_state_callback(guidance_state_msg):
     if guidance_state == GuidanceState.ENGAGED and init_status:
         init_status = False
         ## providing initial ackermann command to carla virtual vehicle
-        init_cmd.speed = 10
-        init_cmd.acceleration = 2
-        init_cmd.steering_angle = 0
-        pub.publish(init_cmd)
+        init_cmd.speed = rospy.get_param('/init_speed', 10)
+        init_cmd.acceleration = rospy.get_param('/init_acceleration', 1)
+        init_cmd.steering_angle = rospy.get_param('/init_steering_angle', 0)
+        init_cmd.jerk = rospy.get_param('/init_jerk', 0)
+        ackermann_cmd_pub.publish(init_cmd)
+
+def commanded_jerk_callback(lateral_jerk_msg):
+    """
+    callback for commanded jerk from CARMA
+    lateral_jerk_msg type:
+        std_msgs::Float32
+    """
+
+    global jerk
+    lateral_jerk = lateral_jerk_msg
 
 def vehicle_cmd_callback(vehicle_cmd):
     """
@@ -63,20 +83,25 @@ def vehicle_cmd_callback(vehicle_cmd):
         ackermann_drive.speed = vehicle_cmd.ctrl_cmd.linear_velocity
         ackermann_drive.acceleration = vehicle_cmd.ctrl_cmd.linear_acceleration
         ackermann_drive.steering_angle = vehicle_cmd.ctrl_cmd.steering_angle
+        ackermann_drive.jerk = lateral_jerk
+
         ## publishing ackermann drive msg to CARLA virtual vehicle
-        pub.publish(ackermann_drive)
+        ackermann_cmd_pub.publish(ackermann_drive)
 
 
 def vehicle_cmd_to_ackermanndrive():
     """
     mainloop
     """
-    global pub
+    global ackermann_cmd_pub
     rospy.init_node('carma_to_carla_vehicle_cmd')
     role_name = rospy.get_param('/role_name', 'ego_vehicle')
-    pub = rospy.Publisher('/carla/{}/ackermann_cmd'.format(role_name), AckermannDrive, queue_size=1)
+    # pub init
+    ackermann_cmd_pub = rospy.Publisher('/carla/{}/ackermann_cmd'.format(role_name), AckermannDrive, queue_size=1)
+    # sub init
     rospy.Subscriber('/hardware_interface/vehicle_cmd', VehicleCmd, vehicle_cmd_callback, queue_size=1)
     rospy.Subscriber('/guidance/state', GuidanceState, guidance_state_callback, queue_size=1)
+    rospy.Subscriber('/guidance/twist_filter/result/twist/lateral_jerk', Float32, commanded_jerk_callback, queue_size=1)
     rospy.spin()
 
 
