@@ -66,7 +66,7 @@ def commanded_jerk_callback(lateral_jerk_msg):
         std_msgs::Float32
     """
 
-    global jerk
+    global lateral_jerk
     lateral_jerk = lateral_jerk_msg
 
 def vehicle_cmd_callback(vehicle_cmd):
