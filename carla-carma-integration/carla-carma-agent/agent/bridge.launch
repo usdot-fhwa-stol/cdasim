@@ -1,5 +1,11 @@
 <launch>
   <arg name='role_name' default='ego_vehicle'/>
+  <param name='init_speed' type="double" value="5"/>
+  <param name='init_acceleration' type="double" value="1"/>
+  <param name='init_steering_angle' type="double" value="0"/>
+  <param name='init_jerk' type="double" value="0"/>
+
+  <arg name='wheelbase' default='2.7'/>
 
   <!--
     ##################
