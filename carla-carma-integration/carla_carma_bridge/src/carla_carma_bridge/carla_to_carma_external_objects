@@ -59,13 +59,9 @@ def converter(object):
     object_msg.size.y = object.shape.dimensions[1]
     object_msg.size.z = object.shape.dimensions[2]
 
-    ## determine the vehicle is dynmic or static, 1: dynamic 2:static
-    if object.twist.linear.x !=0 or \
-        object.twist.linear.y !=0 or \
-        object.twist.linear.z !=0:
-        object_msg.dynamic_obj = 1
-    else:
-        object_msg.dynamic_obj = 0
+    ## the ros topic of /carla/{}/objects only provides dynamic object information. As a result, this parameter should always be 1.
+    object_msg.dynamic_obj = 1
+
 
     ## determine what object type is
     if object.object_classified:
