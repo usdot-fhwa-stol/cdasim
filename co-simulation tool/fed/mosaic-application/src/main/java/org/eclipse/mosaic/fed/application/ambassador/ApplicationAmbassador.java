@@ -477,6 +477,8 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                 } catch (InternalFederateException | IllegalValueException e) {
                     log.error(ErrorRegister.AMBASSADOR_ErrorSendInteraction.toString(), e);
                 }
+            } else {
+                log.debug("V2X message is received by SUMO vehicles");
             }
         }
     }
@@ -596,6 +598,7 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                 .getUnitFromId(v2xMessageAcknowledgement.getSourceName());
         // we don't simulate vehicles without an application
         if (simulationUnit == null) {
+            log.info("V2X message acknowledgement can not be processed without simulation unit");
             return;
         }
         final Event event = new Event(v2xMessageAcknowledgement.getTime(), simulationUnit, v2xMessageAcknowledgement,
@@ -647,6 +650,7 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                     .getUnitFromId(vehicleData.getName());
             // we don't simulate vehicles without an application
             if (simulationUnit == null) {
+                log.info("Add vehicle will not be processed without simulation unit.");
                 continue;
             }
             final Event event = new Event(vehicleData.getTime(), simulationUnit, vehicleData,
@@ -661,6 +665,7 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                     .getUnitFromId(vehicleData.getName());
             // we don't simulate vehicles without an application
             if (simulationUnit == null) {
+                log.info("Update vehicle will not be processed without simulation unit.");
                 continue;
             }
             final Event event = new Event(vehicleData.getTime(), simulationUnit, vehicleData,
