@@ -34,6 +34,7 @@ from autoware_msgs.msg import VehicleStatus, Gear
 pub = rospy.Publisher('/hardware_interface/vehicle_status', VehicleStatus, queue_size=1)
 vehicle_info = None
 
+max_steering_angle = rospy.get_param('/max_steering_angle', 70)
 
 def vehicle_info_callback(vehicle_info_msg):
     """
@@ -50,13 +51,16 @@ def vehicle_status_callback(vehicle_status_msg):
     vehicle_status_msg type:
         carla_msgs::CarlaEgoVehicleStatus
     """
+
     if vehicle_info is None:
         return
+
     status = VehicleStatus()
     status.header = vehicle_status_msg.header
 
     # calculate max steering angle
-    max_steering_angle = math.radians(70)
+    global max_steering_angle
+    max_steering_angle = math.radians(max_steering_angle)
 
     # get max steering angle (use smallest non-zero value of all wheels)
     for wheel in vehicle_info.wheels:
