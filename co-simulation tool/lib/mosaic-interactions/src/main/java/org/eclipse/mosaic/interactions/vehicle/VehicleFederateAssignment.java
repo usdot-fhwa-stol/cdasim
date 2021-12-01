@@ -79,7 +79,7 @@ public final class VehicleFederateAssignment extends Interaction {
      *                                  interaction object.
      * @param vehicleId                 String identifying a simulated vehicle the
      *                                  interaction applies to.
-     ** @param assignedFederateId        String identifying which simulator this
+     * @param assignedFederateId        String identifying which simulator this
      *                                  interaction is intended for.
      * @param surroundingVehiclesRadius The radius around the ego vehicle for which
      *                                  vehicle data is to be sent.
