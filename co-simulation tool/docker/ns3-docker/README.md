@@ -34,7 +34,7 @@ If you do not have NVIDIA Container Toolkit installed, please refer to this [lin
 ##### Step 1:  Run the following command to build the docker image
 
 ```
-docker build - < Dockerfile -t ns3-integration
+docker build - < Dockerfile -t ns-3-integration
 ```
 
 ##### Step 2: Copy CARLA and Co-Simulation tool with NS-3 to the docker image and commit them
@@ -71,13 +71,7 @@ vim ns3_installer.sh
 
 (If you see a message `vim: command not found`, please use `sudo apt-get install vim` to install vim as text editor)
 
-In line 365, change
-
-```
-cp -ar ns-3.28/build/ns3 /usr/include/
-```
-
-to 
+In the `build_ns3()` function, after `CXXFLAGS="-Wno-error" python3.6 ./build.py --disable-netanim`, add the following command 
 
 ```
 sudo cp -ar ns-3.28/build/ns3 /usr/include/
@@ -192,7 +186,7 @@ Then in the directory `/usr/share/sumo/tools/traci`, modify the following three 
    
        if response != command:
            raise FatalTraCIError("Received answer %s for command %s." % (response, command))
-   	return result.readStringList()
+       return result.readStringList()
    
    def setV2xMessage(self, message):
        self._sendCmd(tc.CMD_SET_V2X, None, None, "s", message)
@@ -219,4 +213,4 @@ Once everything is ready, under directory `/ns-3-integration`, simply type:
 ./mosaic.sh -s Co-simulation
 ```
 
-After the map in CARLA is loaded, you can start co-simulation with NS-3 in SUMO-GUI.
+After the map in CARLA is loaded, you can start co-simulation with ns-3 in SUMO-GUI.
