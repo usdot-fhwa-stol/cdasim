@@ -34,8 +34,21 @@ import javax.annotation.Nonnull;
 public final class IpResolver {
 
     enum UnitType {
-        VEHICLE("veh"), ROAD_SIDE_UNIT("rsu"), TRAFFIC_MANAGEMENT_CENTER("tmc"), TRAFFIC_LIGHT("tl"),
-        CHARGING_STATION("cs"), CARLA_VEHICLE("carla"), CARMA_VEHICLE("carma"), SERVER("server");
+        VEHICLE("veh"),
+
+        ROAD_SIDE_UNIT("rsu"),
+
+        TRAFFIC_MANAGEMENT_CENTER("tmc"),
+
+        TRAFFIC_LIGHT("tl"),
+
+        CHARGING_STATION("cs"),
+
+        CARLA_VEHICLE("carla"),
+
+        CARMA_VEHICLE("carma"),
+
+        SERVER("server");
 
         private String prefix;
 
@@ -84,29 +97,45 @@ public final class IpResolver {
      */
     public IpResolver(CIpResolver configuration) {
         Objects.requireNonNull(configuration.netMask, "Invalid IpResolver configuration: No netMask given");
+
         Objects.requireNonNull(configuration.vehicleNet, "Invalid IpResolver configuration: No vehicleNet given");
+
         Objects.requireNonNull(configuration.carlaVehicleNet,
                 "Invalid IpResolver configuration: No carlaVehicleNet given");
+
         Objects.requireNonNull(configuration.carmaVehicleNet,
                 "Invalid IpResolver configuration: No carmaVehicleNet given");
+
         Objects.requireNonNull(configuration.rsuNet, "Invalid IpResolver configuration: No rsuNet given");
+
         Objects.requireNonNull(configuration.tmcNet, "Invalid IpResolver configuration: No tmcNet given");
+
         Objects.requireNonNull(configuration.tlNet, "Invalid IpResolver configuration: No tlNet given");
+
         Objects.requireNonNull(configuration.csNet, "Invalid IpResolver configuration: No csNet given");
+
         Objects.requireNonNull(configuration.serverNet, "Invalid IpResolver configuration: No serverNet given");
+
         try {
             this.netMask = (Inet4Address) Inet4Address.getByName(configuration.netMask);
 
             unitNetworks.put(UnitType.VEHICLE, (Inet4Address) Inet4Address.getByName(configuration.vehicleNet));
+
             unitNetworks.put(UnitType.CARLA_VEHICLE,
                     (Inet4Address) Inet4Address.getByName(configuration.carlaVehicleNet));
+
             unitNetworks.put(UnitType.CARMA_VEHICLE,
                     (Inet4Address) Inet4Address.getByName(configuration.carmaVehicleNet));
+
             unitNetworks.put(UnitType.ROAD_SIDE_UNIT, (Inet4Address) Inet4Address.getByName(configuration.rsuNet));
+
             unitNetworks.put(UnitType.TRAFFIC_MANAGEMENT_CENTER,
                     (Inet4Address) Inet4Address.getByName(configuration.tmcNet));
+
             unitNetworks.put(UnitType.TRAFFIC_LIGHT, (Inet4Address) Inet4Address.getByName(configuration.tlNet));
+
             unitNetworks.put(UnitType.CHARGING_STATION, (Inet4Address) Inet4Address.getByName(configuration.csNet));
+
             unitNetworks.put(UnitType.SERVER, (Inet4Address) Inet4Address.getByName(configuration.serverNet));
 
         } catch (UnknownHostException ex) {
@@ -207,8 +236,11 @@ public final class IpResolver {
      */
     public String ipToName(@Nonnull Inet4Address address) {
         int ip = addressArrayToFlat(address.getAddress());
+
         int netPart = addressArrayToFlat(netMask.getAddress());
+
         int client = ip & ~netPart;
+
         netPart = netPart & ip;
 
         for (Map.Entry<UnitType, Inet4Address> unitNetworkEntry : unitNetworks.entrySet()) {
@@ -227,17 +259,21 @@ public final class IpResolver {
      */
     public Inet4Address nameToIp(String name) {
         final int firstUnderscorePosition = name.indexOf('_');
+
         final int unitNumber = Integer.parseInt(name.substring(firstUnderscorePosition + 1));
+
         if (unitNumber > singleton.maxRange) {
             throw new IllegalArgumentException("IPv4 address exhausted");
         }
 
         String unitPrefix = name.substring(0, firstUnderscorePosition);
+
         for (Map.Entry<UnitType, Inet4Address> unitNetworkEntry : unitNetworks.entrySet()) {
             if (unitNetworkEntry.getKey().prefix.equals(unitPrefix)) {
                 int network = addressArrayToFlat(unitNetworkEntry.getValue().getAddress());
 
                 final Inet4Address ipResult;
+
                 try {
                     ipResult = (Inet4Address) Inet4Address.getByAddress(addressFlatToArray(network | unitNumber));
                 } catch (UnknownHostException ex) {
