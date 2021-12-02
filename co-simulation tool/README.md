@@ -51,7 +51,6 @@ cd protobuf-3.3.0
 make
 make check
 sudo make install
-
 ```
 
 ##### Installation of ns-3 federate
@@ -258,9 +257,10 @@ For a successfully build the co-simulation tool, Apache Maven needs to be instal
 - Add the **bin** directory of the created directory **apache-maven-3.8.3** to the **PATH** environment variable.
 
   ```
-export PATH=path_to_apache_maven-3.8.3/apache-maven-3.8.3/bin:$PATH
+  export PATH=path_to_apache_maven-3.8.3/apache-maven-3.8.3/bin:$PATH
   ```
 
+  
 - Verify the installation by running **mvn -v** in a new terminal. 
 
 **Windows system**
@@ -273,6 +273,7 @@ export PATH=path_to_apache_maven-3.8.3/apache-maven-3.8.3/bin:$PATH
 #### b. Build Co-simulation Tool
 
 - Download zip file of Co-simulation tool or clone the code from this [link](https://github.com/usdot-fhwa-stol/carma-simulation/tree/feature/mosaic-carla-sumo-ambassadors).
+
 
   ```
   git clone https://github.com/usdot-fhwa-stol/carma-simulation.git
@@ -297,6 +298,8 @@ export PATH=path_to_apache_maven-3.8.3/apache-maven-3.8.3/bin:$PATH
   mvn clean install -DskipTests
   ```
 
+  
+
 - After building, go to bundle\target directory, a zip file of co-simulation bundle "**carla-sumo-mosaic-21.2.zip**" can be found.
 
 - Extract the bundle to an arbitrary path. The installation folder is referenced as `<cosimulation-root>`. 
@@ -304,6 +307,7 @@ export PATH=path_to_apache_maven-3.8.3/apache-maven-3.8.3/bin:$PATH
 ## **Folder Content**
 
 The folder structure of  `<cosimulation-root>` is described in the following.
+
 
 ```
 └─ <cosimulation-root>
@@ -321,11 +325,13 @@ The folder structure of  `<cosimulation-root>` is described in the following.
   ├─ LICENSE 
   ├─ mosaic.bat ............ Start script for Windows systems.
   └─ mosaic.sh ............. Start script for GNU/Linux systems.
+  
 ```
 
 ## **Co-Simulation Scenario**
 
 To run the co-simulation tool, you need to prepare a co-simulation scenario. The following file structure shows the setup of a typical co-simulation scenario.
+
 
 ```
 └─ <scenarioName>
@@ -349,13 +355,17 @@ To run the co-simulation tool, you need to prepare a co-simulation scenario. The
  | └─ <scenarioName>.rou.xml ............ SUMO route file
  | └─ <scenarioName>.sumocfg ............ SUMO configuration file
  └─ scenario_config.json ................ Basic configuration of the simulation scenario
+
 ```
+
 
 Here the scenario configuration file, the CARLA configuration file, CARMA configuration file, Infrastructure configuration file, and bridge file are introduced in detail below. For other configuration files and scenario creation, refer to the documentation of Eclipse MOSAIC [[link](https://www.eclipse.org/mosaic/docs/)]. Moreover, the CARLA 3D maps corresponding to the scenarios must be generated for co-simulation scenarios.
 
 ### **1.**   **Scenario configuration file**
 
 The **scenario_config.json** is the main configuration file of a co-simulation scenario. A co-simulation scenario file looks like the following example.
+
+
 
 ```json
 {
