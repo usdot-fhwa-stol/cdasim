@@ -25,6 +25,7 @@ If you do not have NVIDIA Container Toolkit installed, please refer to this [lin
 
 #### Preparation for building docker image
 
+- Download the executable bundle file `carla-sumo-mosaic-21.2.zip` from GitHub and extract the zip file, the folder named `carla-sumo-mosaic-21.2` will be generated and rename the folder as `ns-3-integration`.
 - Put the docker file (Dockerfile), the folder of CARLA executable file (CARLA_0.9.10), and the folder of `ns-3-integration`in the same folder.
 - Change the CARLA path in the CARLA configuration file of scenarios to the location of the CARLA executable file.
 - The .sh files (CarlaUE4.sh and bridge.sh) must be given permission.
@@ -39,7 +40,6 @@ docker build - < Dockerfile -t ns-3-integration
 
 ##### Step 2: Copy CARLA and Co-Simulation tool with NS-3 to the docker image and commit them
 
-Download the executable bundle file `carla-sumo-mosaic-21.2.zip` from GitHub and extract the zip file, the folder named `carla-sumo-mosaic-21.2` will be generated and rename the folder as `ns-3-integration`.
 
 Copy `CARLA_0.9.10` and `ns-3-integration` folder into this container.
 
