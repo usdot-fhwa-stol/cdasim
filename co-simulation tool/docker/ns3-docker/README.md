@@ -39,6 +39,8 @@ docker build - < Dockerfile -t ns-3-integration
 
 ##### Step 2: Copy CARLA and Co-Simulation tool with NS-3 to the docker image and commit them
 
+Download the executable bundle file `carla-sumo-mosaic-21.2.zip` from GitHub and extract the zip file, the folder named `carla-sumo-mosaic-21.2` will be generated and rename the folder as `ns-3-integration`.
+
 Copy `CARLA_0.9.10` and `ns-3-integration` folder into this container.
 
 ```
