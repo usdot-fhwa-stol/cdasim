@@ -12,6 +12,18 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+#
+#
+# This file is loosely based on the reference architecture developed by Intel Corporation for Leidos located here
+# https://github.com/41623134/carla-autoware/blob/master/catkin_ws/src/carla_autoware_bridge/src/carla_autoware_bridge/odometry_to_posestamped
+#
+# That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+#
+# Copyright (c) 2018-2019 Intel Corporation
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
 """
 Subscribe from CARLA :nav_msgs::Odometry
     Topic: /carla/{}/odometry
