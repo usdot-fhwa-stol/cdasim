@@ -1,0 +1,28 @@
+{
+	"events": [
+		{
+			"type": {
+				"sensorType": "ICE",
+				"value": 1
+			},
+			"location": {
+				"area": {
+					"type": "Rectangle",
+					"a": {
+						"latitude": 52.582941,
+						"longitude": 13.470102
+					},
+					"b": {
+						"latitude": 52.581996,
+						"longitude": 13.466395
+					}
+				}
+			},
+			"time": {
+				"start": "0 s",
+				"end": "1220 s"
+			}
+		}
+	]
+}
+
