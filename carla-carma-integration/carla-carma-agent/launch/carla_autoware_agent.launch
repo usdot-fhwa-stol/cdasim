@@ -21,9 +21,25 @@
   <arg name='vehicle_width' default='3.00'/>
   <arg name='vehicle_wheelbase' default='2.79'/>
 
+  <!-- vehicle speed PID -->
+  <arg name='speed_Kp' default='0.05'/>
+  <arg name='speed_Ki' default='0.018'/>
+  <arg name='speed_Kd' default='0.4'/>
+  
+  <!-- vehicle acceleration PID -->
+  <arg name='accel_Kp' default='0.053'/>
+  <arg name='accel_Ki' default='0.0'/>
+  <arg name='accel_Kd' default='0.052'/>
+
+  <!-- Initial arguments for integration scripts -->
+  <arg name='init_speed' default='5'/>
+  <arg name='init_acceleration' default='1'/>
+  <arg name='init_steering_angle' default='0'/>
+  <arg name='init_jerk' default='0'/>
+  <arg name='max_steering_degree' default='70'/>
+
   <arg name='use_ground_truth_localization' default='false'/>
   <arg name='use_ground_truth_detections' default='false'/>
-
   <!--
     ##########################
     ##  CARLA CARMA bridge  ##
@@ -36,6 +52,13 @@
     <arg name='vehicle_filter' value='$(arg vehicle_model)'/>
     <arg name='role_name' value='$(arg role_name)'/>
     <arg name='spawn_point' value='$(arg spawn_point)'/>
+    <arg name='speed_Kp' value='$(arg speed_Kp)'/>
+    <arg name='speed_Ki' value='$(arg speed_Ki)'/>
+    <arg name='speed_Kd' value='$(arg speed_Kd)'/>
+
+    <arg name='accel_Kp' value='$(arg accel_Kp)'/>
+    <arg name='accel_Ki' value='$(arg accel_Ki)'/>
+    <arg name='accel_Kd' value='$(arg accel_Kd)'/>
   </include>
 
   <!--
@@ -45,6 +68,12 @@
   -->
   <include file='$(find carla_carma_agent)/$(arg agent)/bridge.launch'>
     <arg name='role_name' value='$(arg role_name)'/>
+    <arg name='wheelbase' value='$(arg vehicle_wheelbase)'/>
+    <arg name='init_speed' value='$(arg init_speed)'/>
+    <arg name='init_acceleration' value='$(arg init_acceleration)'/>
+    <arg name='init_steering_angle' value='$(arg init_steering_angle)'/>
+    <arg name='init_jerk' value='$(arg init_jerk)'/>
+    <arg name='max_steering_degree' value='$(arg max_steering_degree)'/>
   </include>
 
   <!--

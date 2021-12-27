@@ -1,12 +1,11 @@
 <launch>
   <arg name='role_name' default='ego_vehicle'/>
-  <param name='init_speed' type="double" value="5"/>
-  <param name='init_acceleration' type="double" value="1"/>
-  <param name='init_steering_angle' type="double" value="0"/>
-  <param name='init_jerk' type="double" value="0"/>
-
   <arg name='wheelbase' default='2.7'/>
-
+  <arg name='init_speed' default='5'/>
+  <arg name='init_acceleration' default='1'/>
+  <arg name='init_steering_angle' default='0'/>
+  <arg name='init_jerk' default='0'/>
+  <arg name='max_steering_degree' default='70'/>
   <!--
     ##################
     ## TF remapping ##
@@ -42,30 +41,36 @@
     Extract the pose from carla odometry.
     Disable this if Autoware should calculate its pose from gnss (see my_localization.launch)
   -->
-  <node pkg='carla_carma_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'/>
-
+  <node pkg='carla_carma_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
+    <param name='role_name' type="str" value="$(arg role_name)"/>
+  </node>
   <!--
     # twist #
     Extract the twist from carla odometry
   -->
-  <node pkg='carla_carma_bridge' type='carla_to_autoware_twist' name='carla_to_autoware_twist' output='screen'/>
-
+  <node pkg='carla_carma_bridge' type='carla_to_carma_twist' name='carla_to_carma_twist' output='screen'>
+    <param name='role_name' type="str" value="$(arg role_name)"/>
+  </node>
   <!--
     # external objects
     Extract the external objects from carla ObjectArray
   -->>
-  <node pkg='carla_carma_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'/>
+  <node pkg='carla_carma_bridge' type='carla_to_carma_external_objects' name='carla_to_carma_external_objects' output='screen'>
+    <param name='role_name' type="str" value="$(arg role_name)"/>
+  </node>
+  <!-- convert vehicle command to carla ackermann drive-->
+  <node pkg='carla_carma_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'>
+    <param name='role_name' type="str" value="$(arg role_name)"/>
+    <param name="init_speed" type="double" value="$(arg init_speed)"/>
+    <param name="init_acceleration" type="double" value="$(arg init_acceleration)"/>
+    <param name="init_steering_angle" type="double" value="$(arg init_steering_angle)"/>
+    <param name="init_jerk" type="double" value="$(arg init_jerk)"/>
+  </node>
 
-  <!--
-    # ackermann command
-    convert vehicle command to carla ackermann drive
-  -->
-  <node pkg='carla_carma_bridge' type='carma_to_carla_ackermann_cmd' name='carma_to_carla_ackermann_cmd' output='screen'/>
-
-  <!--
-    # vehicle status
-    convert the vehicle status from carla to autoware
-  -->
-  <node pkg='carla_carma_bridge' type='carla_to_autoware_vehicle_status' name='carla_to_autoware_vehicle_status' output='screen'/>
+  <!-- convert the vehicle status from carla to autoware -->
+  <node pkg='carla_carma_bridge' type='carla_to_carma_vehicle_status' name='carla_to_carma_vehicle_status' output='screen'>
+    <param name='role_name' type="str" value="$(arg role_name)"/>
+    <param name='max_steering_degree' type="double" value="$(arg max_steering_degree)"/>
+  </node>
 
 </launch>
