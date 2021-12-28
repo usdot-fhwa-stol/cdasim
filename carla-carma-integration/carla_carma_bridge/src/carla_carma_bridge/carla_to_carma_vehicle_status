@@ -45,7 +45,7 @@ from autoware_msgs.msg import VehicleStatus, Gear
 pub = rospy.Publisher('/hardware_interface/vehicle_status', VehicleStatus, queue_size=1)
 vehicle_info = None
 
-max_steering_angle = rospy.get_param('/max_steering_angle', 70)
+max_steering_angle = rospy.get_param('~max_steering_degree', 70)
 
 def vehicle_info_callback(vehicle_info_msg):
     """
@@ -98,7 +98,7 @@ def convert_status_carla_to_autoware():
     main loop
     """
     rospy.init_node('convert_status_carla_to_autoware', anonymous=True)
-    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    role_name = rospy.get_param('~role_name', 'ego_vehicle')
     rospy.Subscriber('/carla/{}/vehicle_status'.format(role_name), CarlaEgoVehicleStatus,
                      vehicle_status_callback)
     rospy.Subscriber('/carla/{}/vehicle_info'.format(role_name), CarlaEgoVehicleInfo,

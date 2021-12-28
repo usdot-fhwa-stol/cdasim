@@ -64,10 +64,10 @@ def guidance_state_callback(guidance_state_msg):
     if guidance_state == GuidanceState.ENGAGED and init_status:
         init_status = False
         ## providing initial ackermann command to carla virtual vehicle
-        init_cmd.speed = rospy.get_param('/init_speed', 10)
-        init_cmd.acceleration = rospy.get_param('/init_acceleration', 1)
-        init_cmd.steering_angle = rospy.get_param('/init_steering_angle', 0)
-        init_cmd.jerk = rospy.get_param('/init_jerk', 0)
+        init_cmd.speed = rospy.get_param('~init_speed', 10)
+        init_cmd.acceleration = rospy.get_param('~init_acceleration', 1)
+        init_cmd.steering_angle = rospy.get_param('~init_steering_angle', 0)
+        init_cmd.jerk = rospy.get_param('~init_jerk', 0)
         ackermann_cmd_pub.publish(init_cmd)
 
 def commanded_jerk_callback(lateral_jerk_msg):
@@ -106,7 +106,7 @@ def vehicle_cmd_to_ackermanndrive():
     """
     global ackermann_cmd_pub
     rospy.init_node('carma_to_carla_vehicle_cmd')
-    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    role_name = rospy.get_param('~role_name', 'ego_vehicle')
     # pub init
     ackermann_cmd_pub = rospy.Publisher('/carla/{}/ackermann_cmd'.format(role_name), AckermannDrive, queue_size=1)
     # sub init
