@@ -58,7 +58,7 @@ def convert_odometry_to_pose():
     main loop
     """
     rospy.init_node('carla_to_carma_localization', anonymous=True)
-    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    role_name = rospy.get_param('~role_name', 'ego_vehicle')
     rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback)
     rospy.spin()
 
