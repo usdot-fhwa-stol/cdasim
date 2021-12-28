@@ -33,7 +33,7 @@ Subscribe from CARLA :nav_msgs::Odometry
 Publish to CARMA :geometry_msgs::TwistStamped
     Topic: /hardware_interface/vehicle/twist
 """
-from os import stat
+
 import rospy
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
@@ -59,7 +59,7 @@ def carla_to_carma_twist():
     """
 
     rospy.init_node('carla_to_carma_twist', anonymous=True)
-    role_name = rospy.get_param('/role_name', 'ego_vehicle')
+    role_name = rospy.get_param('~role_name', 'ego_vehicle')
     rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback)
     rospy.spin()
 
