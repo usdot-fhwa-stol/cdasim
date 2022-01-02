@@ -1,3 +1,24 @@
+<!--
+ Copyright (C) 2021 LEIDOS.
+
+ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+	@@ -13,6 +12,18 @@
+ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ License for the specific language governing permissions and limitations under
+ the License.
+
+
+ This file is loosely based on the reference architecture developed by Intel Corporation for Leidos located here
+ https://github.com/carla-simulator/carla-autoware/blob/master/carla-autoware-agent/agent/bridge.launch
+
+ That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+
+ Copyright (c) 2019 Intel Corporation
+
+ This work is licensed under the terms of the MIT license.
+ For a copy, see <https://opensource.org/licenses/MIT>.
+-->
+
 <launch>
   <arg name='role_name' default='ego_vehicle'/>
   <arg name='wheelbase' default='2.7'/>
