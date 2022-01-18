@@ -1,0 +1,35 @@
+<!-- Copyright (c) 2021 Intel Corporation
+    This work is licensed under the terms of the MIT license.
+    For a copy, see <https://opensource.org/licenses/MIT>.
+-->
+
+<launch>
+
+  <arg name='town' default='Town02'/>
+
+  <arg name='vehicle_length' default='5.0'/>
+  <arg name='vehicle_width' default='3.0'/>
+
+  <arg name='use_ground_truth_localization' default='false'/>
+  <arg name='use_ground_truth_detections' default='false'/>
+  <arg name='use_manual_control' default='false'/>
+
+  <!--
+    # vehicle_model #
+    provides the vehicle_model mesh to rviz
+  -->
+  <include file='$(find vehicle_description)/launch/vehicle_model.launch'>
+    <arg name='offset_x' default='0.0'/>
+    <arg name='model_path' default='$(find vehicle_description)/urdf/prius.urdf'/>
+  </include>
+
+  <!--
+    # localization #
+  -->
+
+  <group unless='$(arg use_ground_truth_localization)'>
+    <include file='$(find carla_carma_agent)/agent/launch/my_localization.launch'>
+    </include>
+  </group>
+
+</launch>
