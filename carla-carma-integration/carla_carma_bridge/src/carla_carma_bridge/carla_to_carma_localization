@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# Copyright (C) 2021 LEIDOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
+#
+# This file is loosely based on the reference architecture developed by Intel Corporation for Leidos located here
+# https://github.com/41623134/carla-autoware/blob/master/catkin_ws/src/carla_autoware_bridge/src/carla_autoware_bridge/odometry_to_posestamped
+#
+# That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+#
+# Copyright (c) 2018-2019 Intel Corporation
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+"""
+Subscribe from CARLA :nav_msgs::Odometry
+    Topic: /carla/{}/odometry
+
+Publish to CARMA :geometry_msgs::PoseStamped
+    Topic: /localization/gnss_pose;
+           /localization/current_pose
+"""
+import rospy
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
+
+gnss_pub = rospy.Publisher('/localization/gnss_pose', PoseStamped, queue_size=1)
+pose_pub = rospy.Publisher('/localization/current_pose', PoseStamped, queue_size=1)
+
+
+def odometry_callback(carla_odometry):
+    """
+    callback odometry
+    carla_odometry message type:
+        nav_msgs::Odometry
+    """
+    pose = PoseStamped()
+    pose.header = carla_odometry.header
+    pose.pose = carla_odometry.pose.pose
+    pose_pub.publish(pose)
+    gnss_pub.publish(pose)
+
+
+def convert_odometry_to_pose():
+    """
+    main loop
+    """
+    rospy.init_node('carla_to_carma_localization', anonymous=True)
+    role_name = rospy.get_param('~role_name', 'ego_vehicle')
+    rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback)
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    print("carla_to_carma_localization")
+    convert_odometry_to_pose()
