@@ -93,7 +93,7 @@ def vehicle_status_callback(vehicle_status_msg):
     pub.publish(status)
 
 
-def convert_status_carla_to_autoware():
+def convert_status_carla_to_carma():
     """
     main loop
     """
@@ -107,5 +107,5 @@ def convert_status_carla_to_autoware():
 
 
 if __name__ == '__main__':
-    print("carla_to_autoware_vehicle_status")
-    convert_status_carla_to_autoware()
+    print("carla_to_carma_vehicle_status")
+    convert_status_carla_to_carma()
