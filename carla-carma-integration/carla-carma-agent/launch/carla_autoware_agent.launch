@@ -96,19 +96,4 @@
     <arg name='init_jerk' value='$(arg init_jerk)'/>
     <arg name='max_steering_degree' value='$(arg max_steering_degree)'/>
   </include>
-
-  <!--
-    ####################
-    ## CARMA agent ##
-    ####################
-  -->
-  <include file='$(find carla_carma_agent)/$(arg agent)/my_agent.launch'>
-    <arg name='town' value='$(arg town)'/>
-    <arg name='vehicle_length' value='$(arg vehicle_length)'/>
-    <arg name='vehicle_width' value='$(arg vehicle_width)'/>
-    <arg name='use_ground_truth_localization' value='$(arg use_ground_truth_localization)'/>
-    <arg name='use_ground_truth_detections' value='$(arg use_ground_truth_detections)'/>
-  </include>
-
-
 </launch>

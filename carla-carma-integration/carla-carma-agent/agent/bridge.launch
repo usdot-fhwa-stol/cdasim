@@ -58,9 +58,8 @@
   -->
 
   <!--
-    # gnss #
+    # localization #
     Extract the pose from carla odometry.
-    Disable this if Autoware should calculate its pose from gnss (see my_localization.launch)
   -->
   <node pkg='carla_carma_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
@@ -88,7 +87,7 @@
     <param name="init_jerk" type="double" value="$(arg init_jerk)"/>
   </node>
 
-  <!-- convert the vehicle status from carla to autoware -->
+  <!-- convert the vehicle status from carla to carma -->
   <node pkg='carla_carma_bridge' type='carla_to_carma_vehicle_status' name='carla_to_carma_vehicle_status' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
     <param name='max_steering_degree' type="double" value="$(arg max_steering_degree)"/>
