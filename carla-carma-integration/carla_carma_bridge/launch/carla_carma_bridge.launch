@@ -20,12 +20,21 @@
 -->
 
 <launch>
+  <param name="use_sim_time" value="True"/>
   <arg name='host' default='localhost'/>
   <arg name='port' default='2000'/>
   <arg name='town' default='Town02'/>
   <arg name='vehicle_filter' default='vehicle.toyota.prius'/>
   <arg name='role_name' default='ego_vehicle'/>
   <arg name='spawn_point' default=''/>
+
+  <arg name='speed_Kp' default='0.05'/>
+  <arg name='speed_Ki' default='0.018'/>
+  <arg name='speed_Kd' default='0.4'/>
+
+  <arg name='accel_Kp' default='0.053'/>
+  <arg name='accel_Ki' default='0.0'/>
+  <arg name='accel_Kd' default='0.052'/>
 
   <!-- carla ros bridge -->
   <include file='$(find carla_ros_bridge)/launch/carla_ros_bridge.launch'>
@@ -41,7 +50,7 @@
     <arg name='vehicle_filter' value='$(arg vehicle_filter)'/>
     <arg name='role_name' value='$(arg role_name)'/>
     <arg name='spawn_point' value='$(arg spawn_point)'/>
-    <arg name='sensor_definition_file' value='$(find carla-carma-agent)/agent/config/sensors.json'/>
+    <arg name='sensor_definition_file' value='$(find carla_carma_agent)/agent/config/sensors.json'/>
   </include>
 
   <!-- carla ackermann control -->
