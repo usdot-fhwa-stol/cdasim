@@ -70,7 +70,4 @@ RUN cd carla_carma_ws/src \
 
 RUN pip install simple-pid
 
-RUN echo "source /home/carla_carma_ws/devel/setup.bash" >> .bashrc \
-    && echo "export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg" >> .bashrc
-
 CMD ["/bin/bash"]
