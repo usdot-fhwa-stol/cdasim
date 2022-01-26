@@ -108,7 +108,7 @@ vim run.sh
 Change line 11 to:
 
 ```
-LD_LIBRARY_PATH=/ns-3-integration/fed/bin/ns3/ns-allinone-3.28/ns-3.28/build /ns-3-integration/fed/bin/ns3/ns-allinone-3.28/ns-3.28/build/scratch/mosaic_starter --port=$port --cmdPort=$cmdport --configFile=scratch/ns3_federate_config.xml
+LD_LIBRARY_PATH=/ns-3-integration/bin/fed/ns3/ns-allinone-3.28/ns-3.28/build /ns-3-integration/bin/fed/ns3/ns-allinone-3.28/ns-3.28/build/scratch/mosaic_starter --port=$port --cmdPort=$cmdport --configFile=scratch/ns3_federate_config.xml
 ```
 
 Now, you can test if NS-3 works.
