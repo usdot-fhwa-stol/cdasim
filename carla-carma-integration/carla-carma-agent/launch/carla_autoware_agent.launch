@@ -43,14 +43,14 @@
   <arg name='vehicle_wheelbase' default='2.79'/>
 
   <!-- vehicle speed PID -->
-  <arg name='speed_Kp' default='0.05'/>
-  <arg name='speed_Ki' default='0.018'/>
-  <arg name='speed_Kd' default='0.4'/>
+  <arg name='speed_Kp' default='0.4'/>
+  <arg name='speed_Ki' default='0.0'/>
+  <arg name='speed_Kd' default='0.05'/>
 
   <!-- vehicle acceleration PID -->
-  <arg name='accel_Kp' default='0.053'/>
+  <arg name='accel_Kp' default='0.05'/>
   <arg name='accel_Ki' default='0.0'/>
-  <arg name='accel_Kd' default='0.052'/>
+  <arg name='accel_Kd' default='0.05'/>
 
   <!-- Initial arguments for integration scripts -->
   <arg name='init_speed' default='5'/>
@@ -76,7 +76,6 @@
     <arg name='speed_Kp' value='$(arg speed_Kp)'/>
     <arg name='speed_Ki' value='$(arg speed_Ki)'/>
     <arg name='speed_Kd' value='$(arg speed_Kd)'/>
-
     <arg name='accel_Kp' value='$(arg accel_Kp)'/>
     <arg name='accel_Ki' value='$(arg accel_Ki)'/>
     <arg name='accel_Kd' value='$(arg accel_Kd)'/>
@@ -96,19 +95,4 @@
     <arg name='init_jerk' value='$(arg init_jerk)'/>
     <arg name='max_steering_degree' value='$(arg max_steering_degree)'/>
   </include>
-
-  <!--
-    ####################
-    ## CARMA agent ##
-    ####################
-  -->
-  <include file='$(find carla_carma_agent)/$(arg agent)/my_agent.launch'>
-    <arg name='town' value='$(arg town)'/>
-    <arg name='vehicle_length' value='$(arg vehicle_length)'/>
-    <arg name='vehicle_width' value='$(arg vehicle_width)'/>
-    <arg name='use_ground_truth_localization' value='$(arg use_ground_truth_localization)'/>
-    <arg name='use_ground_truth_detections' value='$(arg use_ground_truth_detections)'/>
-  </include>
-
-
 </launch>
