@@ -78,7 +78,7 @@ def commanded_jerk_callback(lateral_jerk_msg):
     """
 
     global lateral_jerk
-    lateral_jerk = lateral_jerk_msg
+    lateral_jerk = lateral_jerk_msg.data
 
 def vehicle_cmd_callback(vehicle_cmd):
     """
