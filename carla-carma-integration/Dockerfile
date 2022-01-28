@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-FROM ubuntu:16.04
 FROM ros:kinetic
 WORKDIR /home
 
@@ -35,13 +34,13 @@ RUN apt-get update && apt-get install -y \
 		g++-6
 
 # CARLA ROS Bridge
-RUN git clone -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
+RUN git clone --depth 1 -b '0.9.10.1' --recurse-submodules https://github.com/carla-simulator/ros-bridge.git
 
 # CARLA-CARMA integration tool copy from local
 COPY . ./carla-carma-integration
 
 # CARLA-CARMA integration tool necessary package and msgs
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     python-pip \
     python-wheel \
     ros-kinetic-ackermann-msgs \
