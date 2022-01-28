@@ -16,7 +16,7 @@ git clone https://github.com/usdot-fhwa-stol/carma-simulation.git
 2. build image from Dockerfile by using following command:
 
 ```sh
-cd carma-simulation/carla-carma-integration && ./build.sh
+cd carma-simulation/carla-carma-integration && ./build-image.sh
 ```
 After built the image successfully, the CARLA-CARMA integration tool docker image will be generated.
 
