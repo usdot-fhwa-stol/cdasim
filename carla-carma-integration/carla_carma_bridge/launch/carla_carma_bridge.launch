@@ -29,12 +29,12 @@
   <arg name='spawn_point' default=''/>
 
   <arg name='speed_Kp' default='0.05'/>
-  <arg name='speed_Ki' default='0.018'/>
-  <arg name='speed_Kd' default='0.4'/>
+  <arg name='speed_Ki' default='0.0'/>
+  <arg name='speed_Kd' default='0.5'/>
 
-  <arg name='accel_Kp' default='0.053'/>
+  <arg name='accel_Kp' default='0.05'/>
   <arg name='accel_Ki' default='0.0'/>
-  <arg name='accel_Kd' default='0.052'/>
+  <arg name='accel_Kd' default='0.05'/>
 
   <!-- carla ros bridge -->
   <include file='$(find carla_ros_bridge)/launch/carla_ros_bridge.launch'>
@@ -60,13 +60,13 @@
 
   <!-- tune carla ackermann controller parameters -->
   <node name='$(anon dynparam)' pkg='dynamic_reconfigure' type='dynparam' args='set_from_parameters carla/ego_vehicle/ackermann_control'>
-    <param name='speed_Kp' type='double' value='0.15' />
-    <param name='speed_Ki' type='double' value='0.0' />
-    <param name='speed_Kd' type='double' value='0.4' />
+    <param name='speed_Kp' type='double' value='$(arg speed_Kp)' />
+    <param name='speed_Ki' type='double' value='$(arg speed_Ki)' />
+    <param name='speed_Kd' type='double' value='$(arg speed_Kd)' />
 
-    <param name='accel_Kp' type='double' value='0.03' />
-    <param name='accel_Ki' type='double' value='0.0' />
-    <param name='accel_Kd' type='double' value='0.05' />
+    <param name='accel_Kp' type='double' value='$(arg accel_Kp)' />
+    <param name='accel_Ki' type='double' value='$(arg accel_Ki)' />
+    <param name='accel_Kd' type='double' value='$(arg accel_Kd)' />
   </node>
 
 
