@@ -69,7 +69,6 @@
   <include file='$(find carla_carma_bridge)/launch/carla_carma_bridge.launch'>
     <arg name='host' value='$(arg host)'/>
     <arg name='port' value='$(arg port)'/>
-    <arg name='town' value='$(arg town)'/>
     <arg name='vehicle_filter' value='$(arg vehicle_model)'/>
     <arg name='role_name' value='$(arg role_name)'/>
     <arg name='spawn_point' value='$(arg spawn_point)'/>
