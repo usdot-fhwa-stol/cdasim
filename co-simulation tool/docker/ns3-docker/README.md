@@ -226,4 +226,4 @@ After the run if there is no issue, commit docker container to docker image
 docker container commit <container-id> ns-3-integration
 ```
 
-Current CARMA XiL version not fully support NS-3 with CARMA-CARLA integration tool which is still under developing. User could run NS-3 co-simulation tool alone only for testing  by **`./mosaic.sh -s Co-simulation`**. 
+Current CARMA XIL Version has a known issue with a port conflict between NS-3 and CARMA-CARLA integration see [#39](https://github.com/usdot-fhwa-stol/carma-simulation/issues/39). The recommended workaround is to run exclusively one or the other module. To run with only NS-3module run **`./mosaic.sh -s Co-simulation`**.
