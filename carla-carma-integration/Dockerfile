@@ -14,6 +14,8 @@
 FROM ros:kinetic
 WORKDIR /home
 
+ARG CARMA_VERSION="carma-system-3.8.0"
+
 # CARLA PythonAPI
 RUN mkdir ./PythonAPI
 ADD https://carla-releases.s3.eu-west-3.amazonaws.com/Backup/carla-0.9.10-py2.7-linux-x86_64.egg ./PythonAPI
@@ -59,8 +61,20 @@ RUN mv cmake-3.13.0-Linux-x86_64 /opt/cmake-3.13.0
 RUN ln -sf /opt/cmake-3.13.0/bin/* /usr/bin/
 RUN rm cmake-3.13.0-Linux-x86_64.tar.gz
 
+# Clone ROS message
+RUN mkdir -p msgs
+RUN cd msgs \
+		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/autoware.ai.git \
+		&& git clone -b ${CARMA_VERSION} https://github.com/usdot-fhwa-stol/carma-msgs.git
+
 # Catkin make for both ros-bridge and carla-carma-integration
-RUN mkdir -p carla_carma_ws/src
+RUN mkdir -p carla_carma_ws/src/msgs
+
+RUN cd carla_carma_ws/src/msgs \
+		&& ln -s ../../../msgs/carma-msgs/j2735_msgs \
+		&& ln -s ../../../msgs/carma-msgs/cav_msgs \
+		&& ln -s ../../../msgs/autoware.ai/messages/autoware_msgs
+
 RUN cd carla_carma_ws/src \
     && ln -s ../../ros-bridge \
     && ln -s ../../carla-carma-integration \
