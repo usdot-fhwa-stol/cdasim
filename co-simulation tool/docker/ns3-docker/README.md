@@ -1,10 +1,10 @@
-#  Running CARLA-SUMO-MOSAIC Co-Simulation Tool with NS-3 Integration in Docker 
+#  Running CARLA-SUMO-MOSAIC Co-Simulation Tool with NS-3 Integration in Docker
 
 This is the tutorial to run CARLA-SUMO-MOSAIC co-simulation tool in a docker container. It is recommended to run the co-simulation tool on a **high-performance** computer.
 
 ## Test Platform
 
-- Operating System: Ubuntu 20.04.2 LTS 
+- Operating System: Ubuntu 20.04.2 LTS
 - CPU: Intel(R) Core(TM) i7-9700K CPU @ 3.60 GHz
 - RAM: 16 GB
 - Graphics: NVIDIA GeForce RTX 2070 Super 8 GB
@@ -37,8 +37,11 @@ If you do not have NVIDIA Container Toolkit installed, please refer to this [lin
 ```
 docker build - < Dockerfile -t ns-3-integration
 ```
-
-##### Step 2: Copy CARLA and Co-Simulation tool with NS-3 to the docker image and commit them
+##### Step 2: Run docker image with a docker container
+```
+docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carla_sumo_mosaic ns-3-integration
+```
+##### Step 3: Copy CARLA and Co-Simulation tool with NS-3 to the docker image and commit them
 
 
 Copy `CARLA_0.9.10` and `ns-3-integration` folder into this container.
@@ -46,13 +49,11 @@ Copy `CARLA_0.9.10` and `ns-3-integration` folder into this container.
 ```
 docker cp CARLA_0.9.10 <container-id>:./
 docker cp ns-3-integration <container-id>:./
-docker container commit <container-id> ns-3-integration
 ```
-
-### Run Docker Image
-
+##### Step 4: Upzip scenarios from Co-simulation Scenarios.zip under co-simulation tool folder and copy to docker
 ```
-docker run --rm -it --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carla_sumo_mosaic ns-3-integration
+docker cp Town04_10 <container-id>:./ns-3-integration/scenarios
+docker cp Town04_200 <container-id>:./ns-3-integration/scenarios
 ```
 
 ### Modify files in Docker Container
@@ -73,7 +74,7 @@ vim ns3_installer.sh
 
 (If you see a message `vim: command not found`, please use `sudo apt-get install vim` to install vim as text editor)
 
-In the `build_ns3()` function, after `CXXFLAGS="-Wno-error" python3.6 ./build.py --disable-netanim`, add the following command 
+In the `build_ns3()` function, after `CXXFLAGS="-Wno-error" python3.6 ./build.py --disable-netanim`, add the following command
 
 ```
 sudo cp -ar ns-3.28/build/ns3 /usr/include/
@@ -116,7 +117,12 @@ Now, you can test if NS-3 works.
 In root directory, type:
 
 ```
-cd ns-3-integration
+cd /ns-3-integration
+```
+Change mosaic.sh permission by typing command:
+
+```
+chmod +x mosaic.sh
 ```
 
 Use example `Tiergarten` to test:
@@ -146,7 +152,7 @@ Then in the directory `/usr/share/sumo/tools/traci`, modify the following three 
    ```python
    # command: get V2X message
    CMD_GET_V2X = 0x0d
-   
+
    # command: set V2X message
    CMD_SET_V2X = 0x2f
    ```
@@ -164,7 +170,7 @@ Then in the directory `/usr/share/sumo/tools/traci`, modify the following three 
        if "" not in _connections:
            raise FatalTraCIError("Not connected.")
        return _connections[""].getV2xMessage()
-   
+
    def setV2xMessage(message):
        if "" not in _connections:
            raise FatalTraCIError("Not connected.")
@@ -185,24 +191,23 @@ Then in the directory `/usr/share/sumo/tools/traci`, modify the following three 
        result = self._sendCmd(command,None,None)
        result.readLength()
        response = result.read("!B")[0]
-   
+
        if response != command:
            raise FatalTraCIError("Received answer %s for command %s." % (response, command))
        return result.readStringList()
-   
+
    def setV2xMessage(self, message):
        self._sendCmd(tc.CMD_SET_V2X, None, None, "s", message)
    ```
-
 #### Step 6: Modify `carla_config.json`
 
-Please modify this file to:
+Modify carla_config.json file as following under folder /ns-3-integration/scenarios/<scenario_name>/carla/:
 
 ```
 {
     "updateInterval": 100,
     "carlaUE4Path": "./CARLA_0.9.10/",
-    "bridgePath": "./scenarios/Co-simulation/carla; bridge.sh",
+    "bridgePath": "./scenarios/<scenario_name>/carla; bridge.sh",
     "carlaConnectionPort": 8913
 }
 ```
@@ -212,7 +217,13 @@ Please modify this file to:
 Once everything is ready, under directory `/ns-3-integration`, simply type:
 
 ```
-./mosaic.sh -s Co-simulation
+./mosaic.sh -s Town04_10
+./mosaic.sh -s Town04_200
 ```
 
-After the map in CARLA is loaded, you can start co-simulation with ns-3 in SUMO-GUI.
+After the run if there is no issue, commit docker container to docker image
+```
+docker container commit <container-id> ns-3-integration
+```
+
+Current CARMA XiL version not fully support NS-3 with CARMA-CARLA integration tool which is still under developing. User could run NS-3 co-simulation tool alone only for testing  by **`./mosaic.sh -s Co-simulation`**. 
