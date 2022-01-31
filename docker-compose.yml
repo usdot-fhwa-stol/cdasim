@@ -31,7 +31,7 @@ services:
     command: bash -c "export NS3_HOME='/ns-3-integration/bin/fed/ns3' && cd /ns-3-integration/ && ./mosaic.sh -s ${map}_${vehicle_num}"
 
   carla-carma-integration:
-    image: carla-carma:latest
+    image: carla-carma-integration:latest
     network_mode: host
     environment:
       - ROS_IP=127.0.0.1
