@@ -11,4 +11,4 @@ docker run \
        -it --rm\
        --name carla_carma_integration \
        --net=host \
-       carla-carma-integration:latest
+       usdotfhwastol/carla-carma-integration:latest
