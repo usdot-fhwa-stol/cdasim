@@ -16,6 +16,8 @@ catkin_python_setup()
 catkin_package()
 
 catkin_install_python(PROGRAMS
+    src/carla_carma_bridge/carla_to_carma_driver_status
+    src/carla_carma_bridge/carla_to_carma_robot_status
     src/carla_carma_bridge/carla_to_carma_twist
     src/carla_carma_bridge/carla_to_carma_vehicle_status
     src/carla_carma_bridge/carla_to_carma_localization
