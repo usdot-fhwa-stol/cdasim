@@ -32,7 +32,6 @@ def driver_status():
     rate = rospy.Rate(pub_rate)
 
     ## initial msg parameters
-    driver_name = rospy.get_param('~driver_name', "/hardware_inteface/carla_driver")
     lidar_enabled = rospy.get_param('~lidar_enabled', True)
     controller_enabled = rospy.get_param('~controller_enabled', True)
     camera_enabled = rospy.get_param('~camera_enabled', True)
@@ -40,7 +39,7 @@ def driver_status():
 
     while not rospy.is_shutdown():
         driver_status_msg = DriverStatus()
-        driver_status_msg.name          = driver_name
+        driver_status_msg.name          = '/hardware_inteface/carla_driver'
         driver_status_msg.status        = DriverStatus.OPERATIONAL
         driver_status_msg.lidar         = lidar_enabled
         driver_status_msg.controller    = controller_enabled

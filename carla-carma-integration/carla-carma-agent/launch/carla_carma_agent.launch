@@ -63,7 +63,6 @@
   <arg name='use_ground_truth_detections' default='false'/>
 
   <!-- driver status params -->
-  <arg name='driver_name' default='/hardware_inteface/carla_driver'/>
   <arg name='lidar_enabled' default='true'/>
   <arg name='controller_enabled' default='true'/>
   <arg name='camera_enabled' default='true'/>
@@ -107,7 +106,6 @@
     <arg name='max_steering_degree' value='$(arg max_steering_degree)'/>
 
     <!-- driver status params -->
-    <arg name='driver_name' value='$(arg driver_name)'/>
     <arg name='lidar_enabled' value='$(arg lidar_enabled)'/>
     <arg name='controller_enabled' value='$(arg controller_enabled)'/>
     <arg name='camera_enabled' value='$(arg camera_enabled)'/>
