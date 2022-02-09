@@ -35,11 +35,11 @@ If you do not have NVIDIA Container Toolkit installed, please refer to this [lin
 ##### Step 1:  Run the following command to build the docker image
 
 ```
-docker build - < Dockerfile -t ns-3-integration
+docker build - < Dockerfile -t usdotfhwastol/carma-xil-cosimulation
 ```
 ##### Step 2: Run docker image with a docker container
 ```
-docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carla_sumo_mosaic ns-3-integration
+docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carla_sumo_mosaic usdotfhwastol/carma-xil-cosimulation
 ```
 ##### Step 3: Copy CARLA and Co-Simulation tool with NS-3 to the docker image and commit them
 
@@ -223,7 +223,7 @@ Once everything is ready, under directory `/ns-3-integration`, simply type:
 
 After the run if there is no issue, commit docker container to docker image
 ```
-docker container commit <container-id> ns-3-integration
+docker container commit <container-id> usdotfhwastol/carma-xil-cosimulation
 ```
 
 Current CARMA XIL Version has a known issue with a port conflict between NS-3 and CARMA-CARLA integration see [#39](https://github.com/usdot-fhwa-stol/carma-simulation/issues/39). The recommended workaround is to run exclusively one or the other module. To run with only NS-3module run **`./mosaic.sh -s Co-simulation`**.
