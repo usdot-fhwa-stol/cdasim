@@ -24,3 +24,35 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 #
+"""
+Subscribe from CARMA:geometry_msgs::PoseStamped
+    Topic: /localization/gnss_pose;
+           /localization/current_pose
+
+Subscribe from CARMA: 
+    Service: /guidance/get_available_routes
+
+Publish to CARMA :cav_msgs::Route
+    
+"""
+from hashlib import new
+import rospy
+from geometry_msgs.msg import PoseStamped
+from cav_msgs.msg import RouteState
+from cav_srvs.srv import GetAvailableRoutes
+
+
+route_state_pub = rospy.Publisher('/guidance/route_state', RouteState, queue_size=1)
+#available_routes_serv = rospy.ServiceProxy('/guidance/get_available_routes', GetAvailableRoutes)
+
+def available_routes_callback(available_routes):
+    try:
+        available_routes_serv = rospy.ServiceProxy('/guidance/get_available_routes', GetAvailableRoutes)
+    except rospy.ServiceException as exc:
+        print("Service did not process request: /guidance/get_available_routes ")
+
+
+
+
+
+#def route_state_callback(state):

@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   autoware_msgs
   rospy
   cav_msgs
+  cav_srvs
 )
 
 catkin_python_setup()
