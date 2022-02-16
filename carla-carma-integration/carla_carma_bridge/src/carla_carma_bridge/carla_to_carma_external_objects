@@ -36,7 +36,7 @@ import tf
 from derived_object_msgs.msg import ObjectArray, Object
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
-pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+pub = rospy.Publisher('/environment/external_object_predictions', ExternalObjectList, queue_size=1)
 
 def converter(object):
     """
