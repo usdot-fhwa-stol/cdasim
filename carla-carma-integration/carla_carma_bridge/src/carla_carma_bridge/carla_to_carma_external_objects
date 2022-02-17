@@ -74,14 +74,18 @@ def converter(object):
         prev_time = prev_objects[object.id]['object'].header.stamp.secs + 10**-9 * prev_objects[object.id]['object'].header.stamp.nsecs
         time_diff = curr_time - prev_time
 
-        ## dist diff
-        x_pose_diff = ((object.pose.position.x - prev_objects[object.id]['object'].pose.position.x) ** 2) ** 0.5
-        y_pose_diff = ((object.pose.position.y - prev_objects[object.id]['object'].pose.position.y) ** 2) ** 0.5
-        z_pose_diff = ((object.pose.position.z - prev_objects[object.id]['object'].pose.position.z) ** 2) ** 0.5
+        if time_diff != 0:
+            ## dist diff
+            x_pose_diff = ((object.pose.position.x - prev_objects[object.id]['object'].pose.pose.position.x) ** 2) ** 0.5
+            y_pose_diff = ((object.pose.position.y - prev_objects[object.id]['object'].pose.pose.position.y) ** 2) ** 0.5
+            z_pose_diff = ((object.pose.position.z - prev_objects[object.id]['object'].pose.pose.position.z) ** 2) ** 0.5
 
-        object_msg.velocity.twist.linear.x = x_pose_diff / time_diff
-        object_msg.velocity.twist.linear.y = y_pose_diff / time_diff
-        object_msg.velocity.twist.linear.z = z_pose_diff / time_diff
+            object_msg.velocity.twist.linear.x = x_pose_diff / time_diff
+            object_msg.velocity.twist.linear.y = y_pose_diff / time_diff
+            object_msg.velocity.twist.linear.z = z_pose_diff / time_diff
+        else:
+            ## if time differences is 0, assign exact same velocity twist from previous object to current object
+            object_msg.velocity.twist.linear = prev_objects[object.id]['object'].velocity.twist.linear
 
     else:
         prev_objects[object.id] = {}
@@ -109,7 +113,7 @@ def converter(object):
         object_msg.presence_vector = object_msg.presence_vector - ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
 
     ## save the current object status
-    prev_objects[object.id]['object'] = object
+    prev_objects[object.id]['object'] = object_msg
     prev_objects[object.id]['update'] = True
     prev_objects[object.id]["no_update_count"] = 0
 
