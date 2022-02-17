@@ -37,12 +37,14 @@ from derived_object_msgs.msg import ObjectArray, Object
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
 pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+prev_objects = {}
 
 def converter(object):
     """
     CARLA object message type:
         derived_object_msgs::Object
     """
+    global prev_objects
     object_type_lookup = {Object.CLASSIFICATION_PEDESTRIAN:ExternalObject.PEDESTRIAN,
                           Object.CLASSIFICATION_CAR:ExternalObject.SMALL_VEHICLE,
                           Object.CLASSIFICATION_TRUCK:ExternalObject.LARGE_VEHICLE,
@@ -63,7 +65,26 @@ def converter(object):
     object_msg.header = object.header
     object_msg.id = object.id
     object_msg.pose.pose = object.pose
-    object_msg.velocity.twist = object.twist
+
+    ## CARLA ROS Bridge will not provide the vehicle twist info which generated,
+    ## As a result, we need to calculate that based on position and time differences
+    if object.id in prev_objects:
+        ## time diff
+        curr_time = object.header.stamp.secs + 10**-9 * object.header.stamp.nsecs
+        prev_time = prev_objects[object.id]['object'].header.stamp.secs + 10**-9 * prev_objects[object.id]['object'].header.stamp.nsecs
+        time_diff = curr_time - prev_time
+
+        ## dist diff
+        x_pose_diff = ((object.pose.position.x - prev_objects[object.id]['object'].pose.position.x) ** 2) ** 0.5
+        y_pose_diff = ((object.pose.position.y - prev_objects[object.id]['object'].pose.position.y) ** 2) ** 0.5
+        z_pose_diff = ((object.pose.position.z - prev_objects[object.id]['object'].pose.position.z) ** 2) ** 0.5
+
+        object_msg.velocity.twist.linear.x = x_pose_diff / time_diff
+        object_msg.velocity.twist.linear.y = y_pose_diff / time_diff
+        object_msg.velocity.twist.linear.z = z_pose_diff / time_diff
+
+    else:
+        prev_objects[object.id] = {}
 
     ## since we are using simulation, the external objects info is not received via detector. The confidence should always be 1
     object_msg.confidence = 1
@@ -87,6 +108,11 @@ def converter(object):
         ## if the object classified is set as False, it means the object can not be identified
         object_msg.presence_vector = object_msg.presence_vector - ExternalObject.OBJECT_TYPE_PRESENCE_VECTOR
 
+    ## save the current object status
+    prev_objects[object.id]['object'] = object
+    prev_objects[object.id]['update'] = True
+    prev_objects[object.id]["no_update_count"] = 0
+
     return object_msg
 
 def external_objects_callback(obj_arr):
@@ -99,6 +125,21 @@ def external_objects_callback(obj_arr):
     objects_msg.header = obj_arr.header
     for i in range(len(obj_arr.objects)):
         objects_msg.objects.append(converter(obj_arr.objects[i]))
+
+    ## check the dictionary if object not being used anymore
+    remove_key_list = []
+    for key in prev_objects:
+        if prev_objects[key]["update"]:
+            prev_objects[key]["update"] = False
+        else:
+            prev_objects[key]["no_update_count"] = prev_objects[key]["no_update_count"] + 1
+
+        if prev_objects[key]["no_update_count"] > 10:
+            remove_key_list.append(key)
+    ## remove these not use objects
+    for i in range(len(remove_key_list)):
+        prev_objects.pop(remove_key_list[i])
+
     pub.publish(objects_msg)
 
 
