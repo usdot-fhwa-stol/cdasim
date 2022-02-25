@@ -1,1 +1,1 @@
-route_id: /opt/carma/routes/tfhrc_test_route.csv
+routes: '/opt/carma/routes/'

@@ -24,6 +24,7 @@ from asyncio.windows_events import NULL
 from typing import Iterator
 from xml.dom.minidom import Document
 import rospy
+import os
 from geometry_msgs.msg import PoseStamped
 from cav_msgs.msg import RouteState
 from cav_msgs.msg import Route
@@ -98,7 +99,12 @@ def set_route(id, route_name):
                 #Change Guidance from READY to ACTIVE
                 state.state = 3
                 state_pub(state)
-                #f = open('/opt/carma/routes')
+                
+                ##If resp.ID & resp.routeName return null, use the route file specified in the config/parameters.yml file
+                #f = open('config/parameters.yml')
+                #direc = f.read()
+                #routes = os.listdir(direc)
+                #selected_route.route_id = routes[0].
 
 
     except:

@@ -24,3 +24,37 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 #
+
+from pickle import TRUE
+import rospy
+from cav_msgs.msg import Plugin, PluginList, PluginStatus
+from cav_srvs.srv import GetRegisteredPlugins
+
+plugin_pub = rospy.Publisher('/guidance/plugin_discovery', Plugin())
+
+def get_guidance_plugins():
+    """Call Service to get registered plugins"""
+
+    serv = rospy.ServiceProxy('guidance/get_registered_plugins', PluginList)
+    plugins = serv.call()
+    plugin = Plugin()
+    
+    #If the plugins are listed as AVAILABLE, make sure that they are both active and running
+    for x in plugins:
+        if x.available == TRUE:
+            plugin.activated = TRUE
+            plugin.name = x.name
+            plugin.capability = x.capability
+            plugin.versionId = x.versionID
+            plugin.type = x.type
+        #Publish the now active plugin message to /guidance/plugin_discovery
+        plugin_pub.publish(plugin)
+
+def initialize():
+    get_guidance_plugins()
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    print("carma_to_carla_plugins")
+    initialize()
