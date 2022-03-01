@@ -1,1 +1,9 @@
+#String: Route to be initialized
 routes: '/opt/carma/routes/'
+
+# List of String: Required plugins for the platform to be functional
+required_plugins:
+  - RouteFollowing
+  - InLaneCruisingPlugin
+  - StopAndWaitPlugin
+  - Pure Pursuit
