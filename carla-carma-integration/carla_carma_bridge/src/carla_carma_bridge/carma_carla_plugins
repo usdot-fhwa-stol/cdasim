@@ -78,5 +78,5 @@ def initialize():
 
 
 if __name__ == '__main__':
-    print("carma_to_carla_plugins")
+    print("carma_carla_plugins")
     initialize()
