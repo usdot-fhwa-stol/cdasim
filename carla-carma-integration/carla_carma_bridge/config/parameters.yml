@@ -1,8 +1,8 @@
 #String: Route to be initialized
-routes: '/opt/carma/routes/'
+selected_routes: '/opt/carma/routes/'
 
 # List of String: Required plugins for the platform to be functional
-required_plugins:
+selected_plugins:
   - RouteFollowing
   - InLaneCruisingPlugin
   - StopAndWaitPlugin

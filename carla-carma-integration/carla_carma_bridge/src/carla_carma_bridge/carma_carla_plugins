@@ -25,73 +25,55 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 #
 
-from pickle import FALSE, TRUE
 import rospy
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import GetRegisteredPlugins
 
-
 plugin_pub = rospy.Publisher('/guidance/plugin_discovery', Plugin())
-required_plugins = rospy.get_param('required_plugins')
+selected_plugins = rospy.get_param('selected_plugins')
+
+#List to contain the registered plugins from the service call in initialize()
 plugin_list = PluginList()
 
-def get_registered_plugins(resp):
-    """ Service to get registered plugins"""
-
-    plugins = plugin_list.plugins
-    plugin = Plugin()
-
-    #If the plugins are listed as AVAILABLE, make sure that they are both active and running
-    for x in plugins:
-            plugin.available == x.available
-            plugin.activated = x.activated
-            plugin.name = x.name
-            plugin.capability = x.capability
-            plugin.versionId = x.versionID
-            plugin.type = x.type
-            plugin.activated = TRUE
-    resp.plugins.append(plugin)
-        #Publish the now active plugin message to /guidance/plugin_discovery
-        #plugin_pub.publish(plugin)
-        
 
 #Check if the plugin is included in the list of required plugins
-def check_required_plugins(name):
-    for i in required_plugins:
+def check_selected_plugins(name):
+    for i in selected_plugins:
         if i == name:
-            return TRUE
+            return True
         else:
-            return FALSE
+            return False
 
-def update_plugin_status(plugin_msg):
+def plugin_status_cb(plugin_msg):
     print("Received status from: " ++ plugin_msg.name)
-    requested_name = get_plugin_name(plugin_msg.name)
+    requested = get_plugin(plugin_msg)
     plugin = Plugin()
     plugin.available = plugin_msg.available
     plugin.name = plugin_msg.name
     plugin.capability = plugin_msg.capability
     plugin.type = plugin_msg.type
+    activation_srv = rospy.ServiceProxy("/activate_plugin")
 
-    #If the requested plugin exists, don't change the activation status
-    if requested_name != FALSE:
+    #If the requested plugin is registered, don't change the activation status
+    if requested != None:
         plugin.activated = plugin_msg.activated
-    elif check_required_plugins(plugin_msg.name) == TRUE:
-        plugin.activated = TRUE
+    elif check_selected_plugins(plugin_msg.name) == True:
+        plugin.activated = True 
+    activation_srv.call(plugin.name, plugin.activated)
 
-    plugin_list.plugins.append(plugin)
 
-
-def get_plugin_name(name):
-    for i in required_plugins:
-        if i == name:
-            return i
-        else:
-            return FALSE
+#Search through list of registered plugins. If it exists, return the requested plugin
+def get_plugin(plugin):
+    if plugin in plugin_list.plugins:
+        return plugin
+    else:
+        return None
+    
 
 def initialize():
-    plugin_sub = rospy.Subscriber('plugin/plugin_discovery',Plugin(), update_plugin_status)
-    #registered_plugins_serv = rospy.ServiceProxy('carla/get_registered_plugins',get_registered_plugins)
-    registered_plugins_serv = rospy.Service('carla/get_registered_plugins',GetRegisteredPlugins,get_registered_plugins)
+    registered_plugins_serv = rospy.ServiceProxy('/get_registered_plugins')
+    plugin_list.plugins = registered_plugins_serv.call()
+    plugin_sub = rospy.Subscriber('/plugin_discovery',Plugin(), plugin_status_cb)
     rospy.spin()
 
 

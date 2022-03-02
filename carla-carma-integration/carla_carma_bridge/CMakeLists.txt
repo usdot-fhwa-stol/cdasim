@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   cav_srvs
   cav_msgs
+  health_monitor
   
 )
 
