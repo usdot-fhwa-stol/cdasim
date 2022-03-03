@@ -34,16 +34,16 @@ from cav_srvs.srv import SetActiveRoute
 
 localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped)
 state_pub = rospy.Publisher('/guidance/state', GuidanceState)
-selected_route = Route()
+selected_route = rospy.get_param('selected_route')
 
 class ErrorStatus:
     def __init__(self, value, text):
         self.value = value
         self.text = text
 
-
+#Get the routes to be set after localization
 def get_available_routes():
-    service = rospy.ServiceProxy('/guidance/get_available_routes', GetAvailableRoutes)     
+    service = rospy.ServiceProxy('/get_available_routes', GetAvailableRoutes)     
     try:
         resp = service.call(0)
         available_routes = GetAvailableRoutes()
@@ -57,9 +57,9 @@ def get_available_routes():
 
 
 
-def set_route(id, route_name):
+def set_route(id):
     state = GuidanceState()
-    service = rospy.ServiceProxy('/guidance/set_active_route', SetActiveRoute)
+    service = rospy.ServiceProxy('/set_active_route', SetActiveRoute)
     
     NO_ERROR = ErrorStatus(0, "NO_ERROR")
     NO_ROUTE = ErrorStatus(1, "NO_ROUTE")
@@ -94,17 +94,9 @@ def set_route(id, route_name):
         else:
                 #Call succeeded: Setting Route
                 print('call set active route success!')
-                selected_route.route_id = resp.routeID
-                selected_route.route_name = resp.routeName
                 #Change Guidance from READY to ACTIVE
-                state.state = 3
-                state_pub(state)
-                
-                ##If resp.ID & resp.routeName return null, use the route file specified in the config/parameters.yml file
-                #f = open('config/parameters.yml')
-                #direc = f.read()
-                #routes = os.listdir(direc)
-                #selected_route.route_id = routes[0].
+                #set_guidance_active()
+                   
 
 
     except:
@@ -119,17 +111,29 @@ def route_event_callback(event):
     route_event.event = event
     if route_event.event == 6:
         print("ROUTE_GEN_FAILED")
-    
+        
+def check_selected_route(available_routes):
+    if selected_route in available_routes:
+        return True
+    else:
+        return False
+
+"""TODO: Listen to a topic indicating that CARLA Sim has started before seting guidance to active
+def set_guidance_active():
+    service = rospy.ServiceProxy('/set_active_guidance')    """
 
 def initialize():
     available_routes = get_available_routes()
     if available_routes == None:
         rospy.spin()
     else:
-        route = available_routes.availableRoutes[0]
-        #Insert route from /opt/carma/routes/ folder
-        #route = Document.load('/opt/carma/routes/tfhrc_test_route.csv')
-        set_route(route.route_id, route.route_name)
+        """Check if the selected route is one of the available routes. If it isn't,then use the first of the available 
+        routes received from the service call"""
+        if check_selected_route(available_routes) == True:
+            route = selected_route
+        else:
+            route = available_routes.availableRoutes[0]
+        set_route(route.route_id)
         rospy.spin()
 
 
