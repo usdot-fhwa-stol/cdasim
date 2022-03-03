@@ -39,7 +39,7 @@ def driver_status():
 
     while not rospy.is_shutdown():
         driver_status_msg = DriverStatus()
-        driver_status_msg.name          = '/hardware_inteface/carla_driver'
+        driver_status_msg.name          = '/hardware_interface/carla_driver'
         driver_status_msg.status        = DriverStatus.OPERATIONAL
         driver_status_msg.lidar         = lidar_enabled
         driver_status_msg.controller    = controller_enabled
