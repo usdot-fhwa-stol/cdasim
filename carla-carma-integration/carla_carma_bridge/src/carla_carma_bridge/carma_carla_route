@@ -126,8 +126,7 @@ def initialize():
         if available_routes == None:
             print("No routes available.")
         else:
-            """Check if the selected route is one of the available routes. If it isn't,then use the first of the available 
-            routes received from the service call"""
+            """Check if the selected route is one of the available routes. If it isn't,then print error statement"""
             if check_selected_route(available_routes) == True:
                 route = selected_route
                 set_route(route.route_id)
