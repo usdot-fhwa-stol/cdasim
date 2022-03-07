@@ -35,8 +35,9 @@ def initialize():
     service = rospy.ServiceProxy('/set_active_guidance')
     route_sub = rospy.Subscriber("/route_event",RouteEvent(), check_route_status)
     plugin_sub = rospy.Subscriber("/plugin_discovery", Plugin(), check_plugin_status)
-    if route_selected == True && plugins_activated == True:
-        service.call()
+    if route_selected == True:
+        if plugins_activated == True:
+            service.call()
     else:
         rospy.spin()
 
