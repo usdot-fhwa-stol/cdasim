@@ -17,7 +17,6 @@
   <exec_depend>carla_msgs</exec_depend>
   <exec_depend>cav_msgs</exec_depend>
   <exec_depend>cav_srvs</exec_depend>
-  <exec_depend>health_monitor</exec_depend>
 
   <export>
   </export>

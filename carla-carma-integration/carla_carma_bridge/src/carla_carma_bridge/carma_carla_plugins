@@ -29,8 +29,9 @@ import rospy
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
 from cav_srvs.srv import GetRegisteredPlugins
 
-plugin_pub = rospy.Publisher('/guidance/plugin_discovery', Plugin())
 selected_plugins = rospy.get_param('selected_plugins')
+activation_srv = rospy.ServiceProxy("/activate_plugin")
+
 
 #List to contain the registered plugins from the service call in initialize()
 plugin_list = PluginList()
@@ -46,28 +47,22 @@ def check_selected_plugins(name):
 
 def plugin_status_cb(plugin_msg):
     print("Received status from: " ++ plugin_msg.name)
-    requested = get_plugin(plugin_msg)
-    plugin = Plugin()
-    plugin.available = plugin_msg.available
-    plugin.name = plugin_msg.name
-    plugin.capability = plugin_msg.capability
-    plugin.type = plugin_msg.type
-    activation_srv = rospy.ServiceProxy("/activate_plugin")
+    requested = check_plugin_registration(plugin_msg)
 
-    #If the requested plugin is registered, don't change the activation status
+    #If the requested plugin is not registered, print error message
     if requested != None:
-        plugin.activated = plugin_msg.activated
+        print("Incoming plugin is not included in list of registered plugins")
     elif check_selected_plugins(plugin_msg.name) == True:
-        plugin.activated = True 
-    activation_srv.call(plugin.name, plugin.activated)
+        plugin_msg.activated = True 
+        activation_srv.call(plugin_msg.name, plugin_msg.activated)
 
 
 #Search through list of registered plugins. If it exists, return the requested plugin
-def get_plugin(plugin):
+def check_plugin_registration(plugin):
     if plugin in plugin_list.plugins:
-        return plugin
+        return True
     else:
-        return None
+        return False
     
 
 def initialize():

@@ -20,19 +20,15 @@ Call Services from CARMA:
 Publish to CARMA :cav_msgs::Route
     
 """
-from asyncio.windows_events import NULL
-from typing import Iterator
-from xml.dom.minidom import Document
+
 import rospy
-import os
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from cav_msgs.msg import RouteState
 from cav_msgs.msg import Route
 from cav_msgs.msg import RouteEvent, GuidanceState
 from cav_srvs.srv import GetAvailableRoutes
 from cav_srvs.srv import SetActiveRoute
 
-localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped)
 state_pub = rospy.Publisher('/guidance/state', GuidanceState)
 selected_route = rospy.get_param('selected_route')
 
@@ -40,6 +36,13 @@ class ErrorStatus:
     def __init__(self, value, text):
         self.value = value
         self.text = text
+        
+NO_ERROR = ErrorStatus(0, "NO_ERROR")
+NO_ROUTE = ErrorStatus(1, "NO_ROUTE")
+ALREADY_FOLLOWING_ROUTE = ErrorStatus(2, "ALREADY_FOLLOWING_ROUTE")
+ROUTE_FILE_ERROR = ErrorStatus(3, "ROUTE_FILE_ERROR")
+ROUTING_FAILURE = ErrorStatus(4, "ROUTING_FAILURE")
+TRANSFORM_ERROR = ErrorStatus(5, "TRANSFORM_ERROR")
 
 #Get the routes to be set after localization
 def get_available_routes():
@@ -58,15 +61,7 @@ def get_available_routes():
 
 
 def set_route(id):
-    state = GuidanceState()
     service = rospy.ServiceProxy('/set_active_route', SetActiveRoute)
-    
-    NO_ERROR = ErrorStatus(0, "NO_ERROR")
-    NO_ROUTE = ErrorStatus(1, "NO_ROUTE")
-    ALREADY_FOLLOWING_ROUTE = ErrorStatus(2, "ALREADY_FOLLOWING_ROUTE")
-    ROUTE_FILE_ERROR = ErrorStatus(3, "ROUTE_FILE_ERROR")
-    ROUTING_FAILURE = ErrorStatus(4, "ROUTING_FAILURE")
-    TRANSFORM_ERROR = ErrorStatus(5, "TRANSFORM_ERROR")
 
     try:
         #Service Call Request
@@ -90,6 +85,8 @@ def set_route(id):
         
             else:
                 errorDescription = resp.errorStatus
+                
+            print(errorDescription)
 
         else:
                 #Call succeeded: Setting Route
@@ -102,8 +99,7 @@ def set_route(id):
     except:
             print("Fail")
     
-    #RouteEvent
-    route_event_sub = rospy.Subscriber('/guidance/route_event', RouteEvent,route_event_callback)
+    
 
 
 def route_event_callback(event):
@@ -114,26 +110,33 @@ def route_event_callback(event):
         
 def check_selected_route(available_routes):
     if selected_route in available_routes:
-        return True
-    else:
-        return False
+        return selected_route
 
 """TODO: Listen to a topic indicating that CARLA Sim has started before seting guidance to active
 def set_guidance_active():
     service = rospy.ServiceProxy('/set_active_guidance')    """
 
 def initialize():
+    route_event_sub = rospy.Subscriber('/guidance/route_event', RouteEvent,route_event_callback)
     available_routes = get_available_routes()
-    if available_routes == None:
-        rospy.spin()
-    else:
-        """Check if the selected route is one of the available routes. If it isn't,then use the first of the available 
-        routes received from the service call"""
-        if check_selected_route(available_routes) == True:
-            route = selected_route
+    
+    #Ensure that localization is complete before checking route information
+    localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped)
+    if localized_sub:
+        if available_routes == None:
+            print("No routes available.")
         else:
-            route = available_routes.availableRoutes[0]
-        set_route(route.route_id)
+            """Check if the selected route is one of the available routes. If it isn't,then use the first of the available 
+            routes received from the service call"""
+            if check_selected_route(available_routes) == True:
+                route = selected_route
+                set_route(route.route_id)
+
+            else:
+                print("Error: Invalid selected route")
+                rospy.spin()
+    else:
+        print("Localization Incomplete")
         rospy.spin()
 
 
