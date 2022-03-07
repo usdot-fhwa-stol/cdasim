@@ -112,10 +112,6 @@ def check_selected_route(available_routes):
     if selected_route in available_routes:
         return selected_route
 
-"""TODO: Listen to a topic indicating that CARLA Sim has started before seting guidance to active
-def set_guidance_active():
-    service = rospy.ServiceProxy('/set_active_guidance')    """
-
 def initialize():
     route_event_sub = rospy.Subscriber('/guidance/route_event', RouteEvent,route_event_callback)
     available_routes = get_available_routes()
@@ -134,13 +130,15 @@ def initialize():
             else:
                 print("Error: Invalid selected route")
                 rospy.spin()
+                
+            
     else:
         print("Localization Incomplete")
         rospy.spin()
 
 
 if __name__ == '__main__':
-    print("")
+    print("carma_carla_route")
     initialize()
 
     
