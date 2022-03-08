@@ -40,8 +40,8 @@ def initialize():
     plugin_sub = rospy.Subscriber("/plugin_discovery", Plugin(), check_plugin_status)
     while rospy.is_shutdown() != True:  
         if route_selected == True and plugins_activated == True:
-                service.call(True) #Sets guidance status to active
-                break
+            service.call(True) #Sets guidance status to active
+            break
     
 
 if __name__ == '__main__':
