@@ -21,11 +21,13 @@ route_selected = False
 plugins_activated = False
 
 def check_route_status(route_event_msg):
+    global route_selected
     if route_event_msg.event == 1:
         print("Route Selected")
         route_selected = True
 
 def check_plugin_status(plugin_msg):
+    global plugins_activated
     if plugin_msg.activated == True:
         print("Plugins Activated")
         #NOTE: May have to add logic to parse through every individual plugin and determine their status

@@ -59,6 +59,7 @@ def plugin_status_cb(plugin_msg):
 
 #Search through list of registered plugins. If it exists, return the requested plugin
 def check_plugin_registration(plugin):
+    global plugin_list
     if plugin in plugin_list.plugins:
         return True
     else:
