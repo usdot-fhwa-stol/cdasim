@@ -35,15 +35,14 @@ def initialize():
     rospy.init_node("carma_carla_guidance")
     service = rospy.ServiceProxy('/set_active_guidance')
     #While-loop monitors the route and plugin status and sets guidance to active once both are confirmed true
-    while rospy.is_shutdown() != True:
-        route_sub = rospy.Subscriber("/route_event",RouteEvent(), check_route_status)
-        plugin_sub = rospy.Subscriber("/plugin_discovery", Plugin(), check_plugin_status)
-        if route_selected == True:
-            if plugins_activated == True:
+    
+    route_sub = rospy.Subscriber("/route_event",RouteEvent(), check_route_status)
+    plugin_sub = rospy.Subscriber("/plugin_discovery", Plugin(), check_plugin_status)
+    while rospy.is_shutdown() != True:  
+        if route_selected == True and plugins_activated == True:
                 service.call(True) #Sets guidance status to active
                 break
     
-    rospy.spin()
 
 if __name__ == '__main__':
     print("carma_carla_guidance")

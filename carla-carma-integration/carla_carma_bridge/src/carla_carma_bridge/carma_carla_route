@@ -31,6 +31,7 @@ from cav_srvs.srv import SetActiveRoute
 
 state_pub = rospy.Publisher('/guidance/state', GuidanceState)
 selected_route = rospy.get_param('selected_route')
+local_pos = PoseStamped()
 
 class ErrorStatus:
     def __init__(self, value, text):
@@ -99,7 +100,9 @@ def set_route(id):
     except:
             print("Fail")
     
-    
+def pose_cb(pose_msg):
+    local_pos.header = pose_msg.pose
+    local_pos.pose = pose_msg.pose
 
 
 def route_event_callback(event):
@@ -118,8 +121,8 @@ def initialize():
     available_routes = get_available_routes()
     
     #Ensure that localization is complete before checking route information
-    localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped)
-    if localized_sub:
+    localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
+    if local_pos.pose.position.x != 0 and local_pos.pose.position.y != 0:
         if available_routes == None:
             print("No routes available.")
         else:
