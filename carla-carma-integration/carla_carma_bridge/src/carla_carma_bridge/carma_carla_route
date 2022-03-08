@@ -30,7 +30,7 @@ from cav_srvs.srv import GetAvailableRoutes
 from cav_srvs.srv import SetActiveRoute
 
 selected_route = rospy.get_param('selected_route')
-local_pos = PoseStamped()
+received_pose = False
 
 class ErrorStatus:
     def __init__(self, value, text):
@@ -57,8 +57,6 @@ def get_available_routes():
     else:
         print("Available Routes acquired")
         return available_routes.availableRoutes
-
-
 
 def set_route(id):
     service = rospy.ServiceProxy('/set_active_route', SetActiveRoute)
@@ -92,15 +90,12 @@ def set_route(id):
                 #Call succeeded: Setting Route
                 print('call set active route success!')
                    
-
-
     except:
             print("Fail")
     
 def pose_cb(pose_msg):
-    global local_pos
-    local_pos.header = pose_msg.pose
-    local_pos.pose = pose_msg.pose
+    global received_pose
+    received_pose = True
 
 
 def route_event_callback(event):
@@ -121,25 +116,20 @@ def initialize():
     #Ensure that localization is complete before checking route information
     localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
     while rospy.is_shutdown() != True:  
-        if local_pos.pose.position.x != 0 and local_pos.pose.position.y != 0:
+        if received_pose == True:
             if available_routes == None:
                 print("No routes available.")
             else:
                 """Check if the selected route is one of the available routes. If it isn't,then print error statement"""
-                if check_selected_route(available_routes) == True:
+                if check_selected_route(available_routes):
                     route = selected_route
                     set_route(route.route_id)
                     break
 
                 else:
-                    print("Error: Invalid selected route")
-                    rospy.spin()
-                
-            
+                    print("Error: Invalid selected route")                
         else:
             print("Localization Incomplete")
-            rospy.spin()
-
 
 if __name__ == '__main__':
     print("carma_carla_route")
