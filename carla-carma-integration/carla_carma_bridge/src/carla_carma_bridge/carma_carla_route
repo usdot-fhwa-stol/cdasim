@@ -113,6 +113,7 @@ def check_selected_route(available_routes):
         return selected_route
 
 def initialize():
+    rospy.init_node("carma_carla_route")
     route_event_sub = rospy.Subscriber('/guidance/route_event', RouteEvent,route_event_callback)
     available_routes = get_available_routes()
     
