@@ -27,10 +27,10 @@
 
 import rospy
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
-from cav_srvs.srv import GetRegisteredPlugins
+from cav_srvs.srv import GetRegisteredPlugins, PluginActivation
 
 selected_plugins = rospy.get_param('selected_plugins')
-activation_srv = rospy.ServiceProxy("/activate_plugin")
+activation_srv = rospy.ServiceProxy("/activate_plugin", PluginActivation)
 
 
 #List to contain the registered plugins from the service call in initialize()
@@ -54,7 +54,7 @@ def plugin_status_cb(plugin_msg):
         print("Incoming plugin is not included in list of registered plugins")
     elif check_selected_plugins(plugin_msg.name) == True:
         plugin_msg.activated = True 
-        activation_srv.call(plugin_msg.name, plugin_msg.activated)
+        activation = activation_srv(plugin_msg.name, plugin_msg.activated)
 
 
 #Search through list of registered plugins. If it exists, return the requested plugin
@@ -68,8 +68,8 @@ def check_plugin_registration(plugin):
 
 def initialize():
     rospy.init_node("carma_carla_plugins")
-    registered_plugins_serv = rospy.ServiceProxy('/get_registered_plugins')
-    plugin_list.plugins = registered_plugins_serv.call()
+    registered_plugins_serv = rospy.ServiceProxy('/get_registered_plugins',GetRegisteredPlugins)
+    plugin_list.plugins = registered_plugins_serv()
     plugin_sub = rospy.Subscriber('/plugin_discovery',Plugin(), plugin_status_cb)
     rospy.spin()
 

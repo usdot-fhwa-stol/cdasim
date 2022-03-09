@@ -48,7 +48,7 @@ TRANSFORM_ERROR = ErrorStatus(5, "TRANSFORM_ERROR")
 def get_available_routes():
     service = rospy.ServiceProxy('/get_available_routes', GetAvailableRoutes)     
     try:
-        resp = service.call(0)
+        resp = service(0)
         available_routes = GetAvailableRoutes()
         available_routes.availableRoutes = resp.availableRoutes
 
