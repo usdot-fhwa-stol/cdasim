@@ -16,6 +16,7 @@
 import rospy
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
+from cav_srvs.srv import SetGuidanceActive
 
 route_selected = False
 plugins_activated = False
@@ -35,14 +36,14 @@ def check_plugin_status(plugin_msg):
 
 def initialize():
     rospy.init_node("carma_carla_guidance")
-    service = rospy.ServiceProxy('/set_active_guidance')
+    service = rospy.ServiceProxy('/set_active_guidance', SetGuidanceActive)
     #While-loop monitors the route and plugin status and sets guidance to active once both are confirmed true
     
     route_sub = rospy.Subscriber("/route_event",RouteEvent(), check_route_status)
     plugin_sub = rospy.Subscriber("/plugin_discovery", Plugin(), check_plugin_status)
     while rospy.is_shutdown() != True:  
         if route_selected == True and plugins_activated == True:
-            service.call(True) #Sets guidance status to active
+            activation = service.call(True) #Sets guidance status to active
             break
     
 

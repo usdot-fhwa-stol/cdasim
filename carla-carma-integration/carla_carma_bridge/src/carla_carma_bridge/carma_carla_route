@@ -127,7 +127,8 @@ def initialize():
                     break
 
                 else:
-                    print("Error: Invalid selected route")                
+                    print("Error: Invalid selected route")
+                    break                
         else:
             print("Localization Incomplete")
 
