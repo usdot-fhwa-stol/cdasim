@@ -53,8 +53,9 @@ def plugin_status_cb(plugin_msg):
     if requested != None:
         print("Incoming plugin is not included in list of registered plugins")
     elif check_selected_plugins(plugin_msg.name) == True:
-        plugin_msg.activated = True 
-        activation = activation_srv(plugin_msg.name, plugin_msg.activated)
+        if plugin_msg.activated != True:
+            plugin_msg.activated = True 
+            activation = activation_srv(plugin_msg.name, plugin_msg.activated)
 
 
 #Search through list of registered plugins. If it exists, return the requested plugin
@@ -67,6 +68,7 @@ def check_plugin_registration(plugin):
     
 
 def initialize():
+    global plugin_list
     rospy.init_node("carma_carla_plugins")
     registered_plugins_serv = rospy.ServiceProxy('/get_registered_plugins',GetRegisteredPlugins)
     plugin_list.plugins = registered_plugins_serv()

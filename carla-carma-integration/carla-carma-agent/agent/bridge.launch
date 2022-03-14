@@ -98,7 +98,7 @@
     Set the vehicle route after localization.
   -->
   <node pkg='carla_carma_bridge' type='carma_carla_route' name='carma_carla_route' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
+    <param name='selected_route' type="str" value="$(arg selected_route)"/>
   </node>
 
   <!--
@@ -106,7 +106,6 @@
     Activate all registered plugins.
   -->
   <node pkg='carla_carma_bridge' type='carma_carla_plugins' name='carma_carla_plugins' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>
 
   <!--
@@ -114,7 +113,6 @@
     Set guidance to active once the plugins have been activated and the route has been selected.
   -->
   <node pkg='carla_carma_bridge' type='carma_carla_guidance' name='carma_carla_guidance' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>
 
 </launch>

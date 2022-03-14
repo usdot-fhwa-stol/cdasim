@@ -65,7 +65,6 @@ def set_route(id):
         #Service Call Request
         resp = service(0, id)
         if resp.errorStatus != NO_ERROR.value:
-            errorDescription = ""
             if resp.errorStatus == NO_ROUTE.value:
                 errorDescription = NO_ROUTE.text
 
