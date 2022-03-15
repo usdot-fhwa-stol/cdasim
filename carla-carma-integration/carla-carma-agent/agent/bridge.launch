@@ -98,7 +98,7 @@
     Set the vehicle route after localization.
   -->
   <node pkg='carla_carma_bridge' type='carma_carla_route' name='carma_carla_route' output='screen'>
-    <param name='selected_route' type="str" value="$(arg selected_route)"/>
+    <rosparam file="$(find carla_carma_bridge)/config/parameter.yaml" command="load" />
   </node>
 
   <!--
