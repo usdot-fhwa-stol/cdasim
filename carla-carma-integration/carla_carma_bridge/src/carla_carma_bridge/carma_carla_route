@@ -36,13 +36,6 @@ class ErrorStatus:
     def __init__(self, value, text):
         self.value = value
         self.text = text
-        
-NO_ERROR = ErrorStatus(0, "NO_ERROR")
-NO_ROUTE = ErrorStatus(1, "NO_ROUTE")
-ALREADY_FOLLOWING_ROUTE = ErrorStatus(2, "ALREADY_FOLLOWING_ROUTE")
-ROUTE_FILE_ERROR = ErrorStatus(3, "ROUTE_FILE_ERROR")
-ROUTING_FAILURE = ErrorStatus(4, "ROUTING_FAILURE")
-TRANSFORM_ERROR = ErrorStatus(5, "TRANSFORM_ERROR")
 
 #Get the routes to be set after localization
 def get_available_routes():
@@ -64,25 +57,8 @@ def set_route(id):
     try:
         #Service Call Request
         resp = service(0, id)
-        if resp.errorStatus != NO_ERROR.value:
-            if resp.errorStatus == NO_ROUTE.value:
-                errorDescription = NO_ROUTE.text
-
-            elif resp.errorStatus == ALREADY_FOLLOWING_ROUTE.value:
-                errorDescription = ALREADY_FOLLOWING_ROUTE.text
-
-            elif resp.errorStatus == ROUTE_FILE_ERROR.value:
-                errorDescription = ROUTE_FILE_ERROR.text
-
-            elif resp.errorStatus == ROUTING_FAILURE.value:
-                errorDescription = ROUTING_FAILURE.text
-
-            elif resp.errorStatus == TRANSFORM_ERROR.value:
-                errorDescription = TRANSFORM_ERROR.text
-        
-            else:
-                errorDescription = resp.errorStatus
-                
+        if resp.errorStatus != 0:
+            errorDescription = resp.errorStatus    
             print(errorDescription)
 
         else:
