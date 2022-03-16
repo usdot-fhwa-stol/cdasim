@@ -106,6 +106,7 @@ def initialize():
                     break                
         else:
             print("Localization Incomplete")
+        rospy.sleep(0.1)
 
 if __name__ == '__main__':
     print("carma_carla_route")

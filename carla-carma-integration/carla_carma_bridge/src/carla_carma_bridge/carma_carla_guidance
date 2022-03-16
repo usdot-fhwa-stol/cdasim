@@ -45,6 +45,7 @@ def initialize():
         if route_selected == True and plugins_activated == True:
             activation = service(True) #Sets guidance status to active
             break
+        rospy.sleep(0.1)
     
 
 if __name__ == '__main__':
