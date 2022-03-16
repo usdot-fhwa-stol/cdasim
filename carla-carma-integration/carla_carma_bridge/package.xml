@@ -16,6 +16,8 @@
   <exec_depend>autoware_msgs</exec_depend>
   <exec_depend>carla_msgs</exec_depend>
   <exec_depend>cav_msgs</exec_depend>
+  <exec_depend>cav_srvs</exec_depend>
+
   <export>
   </export>
 </package>

@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+# Copyright (C) 2021 LEIDOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
+#
+# This file is loosely based on the reference architecture developed by Intel Corporation for Leidos located here
+# https://github.com/usdot-fhwa-stol/carma-platform/blob/develop/health_monitor/src/plugin_manager.cpp
+#
+# That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+#
+# Copyright (c) 2018-2019 Intel Corporation
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+
+import rospy
+from cav_msgs.msg import Plugin, PluginList, PluginStatus
+from cav_srvs.srv import GetRegisteredPlugins, PluginActivation
+
+selected_plugins = rospy.get_param('selected_plugins')
+activation_srv = rospy.ServiceProxy("/activate_plugin", PluginActivation)
+
+
+#List to contain the registered plugins from the service call in initialize()
+plugin_list = PluginList()
+
+
+#Check if the plugin is included in the list of required plugins
+def check_selected_plugins(name):
+    for i in selected_plugins:
+        if i == name:
+            return True
+        else:
+            return False
+
+def plugin_status_cb(plugin_msg):
+    print("Received status from: " ++ plugin_msg.name)
+    requested = check_plugin_registration(plugin_msg)
+
+    #If the requested plugin is not registered, print error message
+    if requested != None:
+        print("Incoming plugin is not included in list of registered plugins")
+    elif check_selected_plugins(plugin_msg.name) == True:
+        if plugin_msg.activated != True:
+            plugin_msg.activated = True 
+            activation = activation_srv(plugin_msg.name, plugin_msg.activated)
+
+
+#Search through list of registered plugins. If it exists, return the requested plugin
+def check_plugin_registration(plugin):
+    global plugin_list
+    if plugin in plugin_list.plugins:
+        return True
+    else:
+        return False
+    
+
+def initialize():
+    global plugin_list
+    rospy.init_node("carma_carla_plugins")
+    registered_plugins_serv = rospy.ServiceProxy('/get_registered_plugins',GetRegisteredPlugins)
+    plugin_list.plugins = registered_plugins_serv()
+    plugin_sub = rospy.Subscriber('/plugin_discovery',Plugin(), plugin_status_cb)
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    print("carma_carla_plugins")
+    initialize()
