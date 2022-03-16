@@ -58,14 +58,8 @@ Once CARLA-CARMA integration tool has been launched, the CARMA corresponding CAR
 
 4. Open CARMA-Web-UI for selecting route and plugins via Chromium Web Browser then click the circle button at the left bottom corner.
 
-**`Guidance is now ACTIVE`** message will be shown after clicked circle button as the picture below
-
 ![CARMA-Web-UI](docs/images/CARMA-Web-UI.png)
 
-5. Publish robot_status ROS message to CARMA platform
-```sh
-rostopic pub /hardware_interface/controller/robot_status cav_msgs/RobotEnabled "{robot_active: true, robot_enabled: true, torque: 0.0, torque_validity: false, brake_decel: 0.0, brake_decel_validity: false, throttle_effort: 0.0, throttle_effort_validity: false, braking_effort: 0.0, braking_effort_validity: false}" --rate=1000
-```
 Afterward, the corresponding CARLA vehicle will start to receive control command from CARMA-Platform and start to following the selected route to move
 
 ## Usage instruction
@@ -93,3 +87,4 @@ The usage instruction including what parameter could be parsed to CALRA-CARMA in
 |init_acceleration| To specify the initial vehicle acceleration |1|
 |init_steering_angle| To specify the initial vehicle steering wheel angle, it range from 0.7(left) to -0.7(right)|0|
 |init_jerk| To specify the initial vehicle jerk value|0|
+|driver_name| To specify the name to the topic of `/hardware_interface/driver_discovery`. This name should be configured exact same with `required_drivers` in VehicleConfigParams.yaml in CARMA config| /hardware/carla_driver|

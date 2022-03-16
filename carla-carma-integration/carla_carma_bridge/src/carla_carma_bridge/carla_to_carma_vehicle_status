@@ -81,10 +81,17 @@ def vehicle_status_callback(vehicle_status_msg):
     status.angle = vehicle_status_msg.control.steer * math.degrees(max_steering_angle)
     status.speed = vehicle_status_msg.velocity
 
+    # VehicleStatus from autoware_msgs has different parameter compare with autoware 1.12 and 1.14
     if vehicle_status_msg.control.reverse:
-        status.gearshift = Gear.REVERSE
+        try:
+            status.gearshift = Gear.REVERSE
+        except:
+            status.current_gear.gear = Gear.REVERSE
     else:
-        status.gearshift = Gear.DRIVE
+        try:
+            status.gearshift = Gear.DRIVE
+        except:
+            status.current_gear.gear = Gear.DRIVE
 
     if vehicle_status_msg.control.manual_gear_shift:
         status.drivemode = VehicleStatus.MODE_MANUAL
@@ -97,6 +104,7 @@ def convert_status_carla_to_carma():
     """
     main loop
     """
+
     rospy.init_node('convert_status_carla_to_autoware', anonymous=True)
     role_name = rospy.get_param('~role_name', 'ego_vehicle')
     rospy.Subscriber('/carla/{}/vehicle_status'.format(role_name), CarlaEgoVehicleStatus,

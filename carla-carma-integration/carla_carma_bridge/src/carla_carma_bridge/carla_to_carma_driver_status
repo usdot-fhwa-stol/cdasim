@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# Copyright (C) 2021 LEIDOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+
+"""
+Publish to CARMA :cav_msgs::DriverStatus
+    Topic: /hardware_interface/driver_discovery;
+"""
+import rospy
+from cav_msgs.msg import DriverStatus
+
+driver_status_pub = rospy.Publisher('/hardware_interface/driver_discovery', DriverStatus, queue_size=10)
+
+def driver_status():
+    """
+    main loop
+    """
+    rospy.init_node('carla_to_carma_driver_status', anonymous=True)
+    pub_rate = rospy.get_param('~driver_status_pub_rate', 10)
+    rate = rospy.Rate(pub_rate)
+
+    ## initial msg parameters
+    lidar_enabled = rospy.get_param('~lidar_enabled', True)
+    controller_enabled = rospy.get_param('~controller_enabled', True)
+    camera_enabled = rospy.get_param('~camera_enabled', True)
+    gnss_enabled = rospy.get_param('~gnss_enabled', True)
+
+    while not rospy.is_shutdown():
+        driver_status_msg = DriverStatus()
+        driver_status_msg.name          = '/hardware_interface/carla_driver'
+        driver_status_msg.status        = DriverStatus.OPERATIONAL
+        driver_status_msg.lidar         = lidar_enabled
+        driver_status_msg.controller    = controller_enabled
+        driver_status_msg.camera        = camera_enabled
+        driver_status_msg.gnss          = gnss_enabled
+
+        driver_status_pub.publish(driver_status_msg)
+        rate.sleep()
+
+if __name__ == '__main__':
+    print("carla_to_carma_driver_status")
+    driver_status()

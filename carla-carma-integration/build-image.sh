@@ -1,2 +1,2 @@
 #!/bin/sh
-docker build -t carla-carma-integration -f Dockerfile . "$@"
+docker build -t usdotfhwastol/carla-carma-integration -f Dockerfile . "$@"

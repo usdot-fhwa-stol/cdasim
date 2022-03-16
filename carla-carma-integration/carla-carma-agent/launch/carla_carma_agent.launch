@@ -61,6 +61,17 @@
 
   <arg name='use_ground_truth_localization' default='false'/>
   <arg name='use_ground_truth_detections' default='false'/>
+
+  <!-- driver status params -->
+  <arg name='lidar_enabled' default='true'/>
+  <arg name='controller_enabled' default='true'/>
+  <arg name='camera_enabled' default='true'/>
+  <arg name='gnss_enabled' default='true'/>
+  <arg name='driver_status_pub_rate' default='10'/>
+
+  <!-- robot status params -->
+  <arg name='robot_status_pub_rate' default='10'/>
+
   <!--
     ##########################
     ##  CARLA CARMA bridge  ##
@@ -93,5 +104,15 @@
     <arg name='init_steering_angle' value='$(arg init_steering_angle)'/>
     <arg name='init_jerk' value='$(arg init_jerk)'/>
     <arg name='max_steering_degree' value='$(arg max_steering_degree)'/>
+
+    <!-- driver status params -->
+    <arg name='lidar_enabled' value='$(arg lidar_enabled)'/>
+    <arg name='controller_enabled' value='$(arg controller_enabled)'/>
+    <arg name='camera_enabled' value='$(arg camera_enabled)'/>
+    <arg name='gnss_enabled' value='$(arg gnss_enabled)'/>
+    <arg name='driver_status_pub_rate' value='$(arg driver_status_pub_rate)'/>
+
+    <!-- robot status params -->
+    <arg name='robot_status_pub_rate' value='$(arg robot_status_pub_rate)'/>
   </include>
 </launch>
