@@ -57,9 +57,8 @@ def guidance_state_callback(guidance_state_msg):
     guidance_state_msg type:
         cav_msgs::GuidanceState
     """
-    global init_status
-    global init_cmd
-    global guidance_state
+    global init_status, guidance_state, init_cmd, ackermann_cmd_pub
+
     guidance_state = guidance_state_msg.state
     if guidance_state == GuidanceState.ENGAGED and init_status:
         init_status = False
@@ -86,7 +85,7 @@ def vehicle_cmd_callback(vehicle_cmd):
     vehicle_cmd type:
         autoware_msgs::VehicleCmd
     """
-
+    global ackermann_cmd_pub
     if guidance_state != GuidanceState.ENGAGED:
         return
     else:

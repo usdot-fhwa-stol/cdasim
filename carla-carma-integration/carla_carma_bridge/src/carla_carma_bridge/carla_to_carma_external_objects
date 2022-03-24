@@ -36,7 +36,7 @@ import tf
 from derived_object_msgs.msg import ObjectArray, Object
 from cav_msgs.msg import ExternalObjectList, ExternalObject
 
-pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
+external_objects_pub = rospy.Publisher('/environment/external_objects', ExternalObjectList, queue_size=1)
 prev_objects = {}
 
 def converter(object):
@@ -125,6 +125,7 @@ def external_objects_callback(obj_arr):
     obj_arr message type:
         derived_object_msgs::ObjectArray
     """
+    global external_objects_pub
     objects_msg = ExternalObjectList()
     objects_msg.header = obj_arr.header
     for i in range(len(obj_arr.objects)):
@@ -144,7 +145,7 @@ def external_objects_callback(obj_arr):
     for i in range(len(remove_key_list)):
         prev_objects.pop(remove_key_list[i])
 
-    pub.publish(objects_msg)
+    external_objects_pub.publish(objects_msg)
 
 
 def convert_objects():
