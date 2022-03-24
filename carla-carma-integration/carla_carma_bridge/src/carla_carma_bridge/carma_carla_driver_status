@@ -27,7 +27,7 @@ def driver_status():
     """
     main loop
     """
-    rospy.init_node('carla_to_carma_driver_status', anonymous=True)
+    rospy.init_node('carma_carla_driver_status', anonymous=True)
     pub_rate = rospy.get_param('~driver_status_pub_rate', 10)
     rate = rospy.Rate(pub_rate)
 
@@ -50,5 +50,5 @@ def driver_status():
         rate.sleep()
 
 if __name__ == '__main__':
-    print("carla_to_carma_driver_status")
+    print("carma_carla_driver_status")
     driver_status()
