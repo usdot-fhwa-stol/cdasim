@@ -23,7 +23,7 @@
 
 namespace vehicle{
 
-class VirtualVehicle public Actor
+class VirtualVehicle
 {
     public:
 

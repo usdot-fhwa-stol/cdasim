@@ -30,6 +30,7 @@ namespace vehicle{
 
         /*Assign the newly acquired parameters to the virtual-vehicle as attributes*/
         carla::client::ActorAttribute vehicle_make;
+    
         
 
 
