@@ -4,7 +4,7 @@ This user guide provides step-by-step user instructions on how to build the CARL
 ##  Requirement
 -  Docker (19.03+)
 -  [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker)
--  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (3.8.0+)
+-  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (3.9.0)
 
 ## Setup
 ### CARLA-CARMA Integration tool
