@@ -42,6 +42,23 @@
   <arg name='vehicle_width' default='3.00'/>
   <arg name='vehicle_wheelbase' default='2.79'/>
 
+  <!--
+    ###################
+    ## Virtual Vehicle Info ##
+    ###################
+  -->
+  <arg name='role_name' default='virtual_vehicle'/>
+  <arg name='vehicle_model' default='vehicle.toyota.prius'/>
+  <remap from="vehicle_length" to="/vehicle_length"/> 
+  <remap from="vehicle_width" to="/vehicle_width"/> 
+  <remap from="vehicle_model_wheelbase" to="/vehicle_wheel_base"/>
+  <remap from="~lateral_accel_limit" to="/vehicle_lateral_accel_limit"/>
+  <remap from="~lateral_jerk_limit" to="/vehicle_lateral_jerk_limit"/>
+  <remap from="~longitudinal_velocity_limit" to="/config_speed_limit"/>
+  <remap from="~longitudinal_accel_limit" to="/vehicle_acceleration_limit"/>
+
+
+
   <!-- vehicle speed PID -->
   <arg name='speed_Kp' default='0.4'/>
   <arg name='speed_Ki' default='0.0'/>
