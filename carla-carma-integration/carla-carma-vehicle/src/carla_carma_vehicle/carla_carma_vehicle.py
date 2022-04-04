@@ -67,12 +67,11 @@ class CarlaVirtualVehicle(object):
         self.role_name = rospy.get_param('~role_name', 'virtual_vehicle')
         self.vehicle_make = rospy.get_param('/vehicle_make',"Default")
         self.vehicle_model = rospy.get_param('/vehicle_model', "Default_Model")
-        """
-        pnh.param<int>('/vehicle_year',vehicle_year_, 1999);
-        pnh.param<double>('/vehicle_length', vehicle_length_, 1.0);
-        pnh.param<double>('/vehicle_width', vehicle_width_, 2.0);
-        pnh.param<double>('/vehicle_height', vehicle_height_, 3.0);
-        """
+        self.vehicle_year = rospy.get_param('/vehicle_year', 1999)
+        self.vehicle_length = rospy.get_param('/vehicle_length', 1.0)
+        self.vehicle_width = rospy.get_param('/vehicle_width',  2.0)
+        self.vehicle_height = rospy.get_param('/vehicle_height', 3.0)
+    
         # check argument and set spawn_point
         spawn_point_param = rospy.get_param('~spawn_point')
         if spawn_point_param and rospy.get_param('~spawn_virtual_vehicle'):
