@@ -32,23 +32,24 @@ from visualization_msgs.msg import Marker
 from carla_msgs.msg import (CarlaEgoVehicleStatus, CarlaEgoVehicleInfo, CarlaWorldInfo)
 
 
-PKG = 'test_roslaunch'
+PKG = 'carla-carma-vehicle'
 
 
 class TestNode(unittest.TestCase):
     #Insert test cases
     print('0')
 
-def test_vehicle_status(self):
-        """
-        Tests vehicle_status
-        """
-        rospy.init_node('test_node', anonymous=True)
-        #msg = rospy.wait_for_message(
-        #    "/carla/ego_vehicle/vehicle_status", CarlaEgoVehicleStatus, timeout=TIMEOUT)
-        #self.assertNotEqual(msg.header, Header())  # todo: check frame-id
-        #self.assertNotEqual(msg.orientation, Quaternion())
+    def test_vehicle_status(self):
+            """
+            Tests vehicle_status
+            """
+            rospy.init_node('test_node', anonymous=True)
+            print("Starting tests")
+            msg = rospy.wait_for_message(
+                "/carla/ego_vehicle/vehicle_status", CarlaEgoVehicleStatus, timeout=TIMEOUT)
+            self.assertNotEqual(msg.header, Header())  # todo: check frame-id
+            #self.assertNotEqual(msg.orientation, Quaternion())
 
 
 if __name__ == '__main__':
-    rostest.rosrun(PKG, 'tests', TestNode)
+    rostest.rosrun(PKG, 'test_vehicle_status', TestNode)
