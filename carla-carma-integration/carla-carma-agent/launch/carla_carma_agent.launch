@@ -47,8 +47,15 @@
     ## Virtual Vehicle Info ##
     ###################
   -->
+ <!-- Directory of vehicle config parameters -->
+  <arg name="vehicle_config_dir" default="/opt/carma/vehicle/config" doc="The directory continaing vehicle config type parameters"/>
+  <arg name="vehicle_calibration_dir" default="/opt/carma/vehicle/calibration" doc="The directory continaing vehicle calibration type parameters"/>
+ 
+ <!--Load Vehicle Characteristics -->
+  <rosparam command="load" file="$(arg vehicle_calibration_dir)/identifiers/UniqueVehicleParams.yaml"/>
+  <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
+
   <arg name='role_name' default='virtual_vehicle'/>
-  <arg name='vehicle_model' default='vehicle.toyota.prius'/>
   <remap from="vehicle_length" to="/vehicle_length"/> 
   <remap from="vehicle_width" to="/vehicle_width"/> 
   <remap from="vehicle_model_wheelbase" to="/vehicle_wheel_base"/>
