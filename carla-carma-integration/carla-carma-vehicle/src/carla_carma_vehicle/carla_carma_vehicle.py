@@ -62,11 +62,12 @@ class CarlaVirtualVehicle(object):
         self.player = None
         self.player_created = False
         self.sensor_actors = []
-        self.actor_filter = rospy.get_param('~vehicle_filter', 'vehicle.*')
+
+        #Get vehicle parameter values
+        self.actor_filter = rospy.get_param('/vehicle_model', 'vehicle.*')
         self.actor_spawnpoint = None
         self.role_name = rospy.get_param('~role_name', 'virtual_vehicle')
         self.vehicle_make = rospy.get_param('/vehicle_make',"Default")
-        self.vehicle_model = rospy.get_param('/vehicle_model', "Default_Model")
         self.vehicle_year = rospy.get_param('/vehicle_year', 1999)
         self.vehicle_length = rospy.get_param('/vehicle_length', 1.0)
         self.vehicle_width = rospy.get_param('/vehicle_width',  2.0)

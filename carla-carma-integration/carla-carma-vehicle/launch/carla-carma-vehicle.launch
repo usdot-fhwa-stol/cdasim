@@ -1,29 +1,47 @@
 <!--
- Copyright (C) 2021 LEIDOS.
+ Copyright (c) 2018-2019 Intel Corporation
+Modified by Leidos 2022
 
- Licensed under the Apache License, Version 2.0 (the "License"); you may not
-	@@ -13,6 +12,18 @@
- WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- License for the specific language governing permissions and limitations under
- the License.
- 
- That file has the following license and some code snippets from it may be present in this file as well and are under the same license.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
- Copyright (c) 2019 Intel Corporation
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
- This work is licensed under the terms of the MIT license.
- For a copy, see <https://opensource.org/licenses/MIT>.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN 
 -->
 <launch>
   <arg name='host' default='localhost'/>
   <arg name='port' default='2000'/>
   <arg name='timeout' default='10'/>
-  <arg name="vehicle_filter" default="vehicle.*" />
+
+<!-- Directory of vehicle config parameters -->
+  <arg name="vehicle_config_dir" default="/opt/carma/vehicle/config" doc="The directory continaing vehicle config type parameters"/>
+  <arg name="vehicle_calibration_dir" default="/opt/carma/vehicle/calibration" doc="The directory continaing vehicle calibration type parameters"/>
+ 
+ <!--Load Vehicle Characteristics -->
+  <rosparam command="load" file="$(arg vehicle_calibration_dir)/identifiers/UniqueVehicleParams.yaml"/>
+  <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
+
+
+  <remap from="vehicle_model" to="/vehicle_model"/>
+
+  <arg name="vehicle_filter" value='$(arg vehicle_model)' />
   <arg name="role_name" default="virtual_vehicle"/>
   <!-- use comma separated format "x,y,z,roll,pitch,yaw" -->
   <arg name="spawn_point" default=""/>
   <arg name="remap_rviz_initialpose_goal" default="True"/>
   <arg name="spawn_virtual_vehicle" default="True" />
+  <arg name="sensor_definition_file" value='$(find carla_carma_agent)/agent/config/sensors.json'/>
 
   <param name="/carla/host" value="$(arg host)" />
   <param name="/carla/port" value="$(arg port)" />

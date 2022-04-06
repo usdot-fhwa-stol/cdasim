@@ -35,12 +35,13 @@
   <!-- use comma separated format "x,y,z,roll,pìtch,yaw" -->
   <arg name='spawn_point' default=''/>
 
-  <!-- vehicle info -->
+  <!-- vehicle info 
   <arg name='role_name' default='ego_vehicle'/>
   <arg name='vehicle_model' default='vehicle.toyota.prius'/>
   <arg name='vehicle_length' default='5.00'/>
   <arg name='vehicle_width' default='3.00'/>
   <arg name='vehicle_wheelbase' default='2.79'/>
+-->
 
   <!--
     ###################
@@ -56,13 +57,11 @@
   <rosparam command="load" file="$(arg vehicle_config_dir)/VehicleConfigParams.yaml"/>
 
   <arg name='role_name' default='virtual_vehicle'/>
+  <remap from="vehicle_make" to="/vehicle_make"/>
+  <remap from="vehicle_model" to="/vehicle_model"/>
   <remap from="vehicle_length" to="/vehicle_length"/> 
   <remap from="vehicle_width" to="/vehicle_width"/> 
-  <remap from="vehicle_model_wheelbase" to="/vehicle_wheel_base"/>
-  <remap from="~lateral_accel_limit" to="/vehicle_lateral_accel_limit"/>
-  <remap from="~lateral_jerk_limit" to="/vehicle_lateral_jerk_limit"/>
-  <remap from="~longitudinal_velocity_limit" to="/config_speed_limit"/>
-  <remap from="~longitudinal_accel_limit" to="/vehicle_acceleration_limit"/>
+  <remap from="vehicle_wheelbase" to="/vehicle_wheel_base"/>
 
 
 
