@@ -31,14 +31,15 @@ Subscribe from CARLA :nav_msgs::Odometry
 Publish to CARMA :geometry_msgs::PoseStamped
     Topic: /localization/gnss_pose;
            /localization/current_pose
+           /hardware_interface/vehicle/twist           
 """
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from nav_msgs.msg import Odometry
 
-gnss_pub = rospy.Publisher('/localization/gnss_pose', PoseStamped, queue_size=1)
-pose_pub = rospy.Publisher('/localization/current_pose', PoseStamped, queue_size=1)
-
+gnss_pub = rospy.Publisher('/localization/gnss_pose', PoseStamped, queue_size=10)
+pose_pub = rospy.Publisher('/localization/current_pose', PoseStamped, queue_size=10)
+twist_pub = rospy.Publisher('/hardware_interface/vehicle/twist', TwistStamped, queue_size=10)
 
 def odometry_callback(carla_odometry):
     """
@@ -46,23 +47,31 @@ def odometry_callback(carla_odometry):
     carla_odometry message type:
         nav_msgs::Odometry
     """
+    global pose_pub, twist_pub, gnss_pub
+    header = carla_odometry.header
+    twist = TwistStamped()
+    twist.header = header
+    twist.twist.linear = carla_odometry.twist.twist.linear
+    twist.twist.angular = carla_odometry.twist.twist.angular
+
     pose = PoseStamped()
-    pose.header = carla_odometry.header
+    pose.header = header
     pose.pose = carla_odometry.pose.pose
     pose_pub.publish(pose)
     gnss_pub.publish(pose)
+    twist_pub.publish(twist)
 
 
-def convert_odometry_to_pose():
+def convert_odometry():
     """
     main loop
     """
     rospy.init_node('carla_to_carma_localization', anonymous=True)
     role_name = rospy.get_param('~role_name', 'ego_vehicle')
-    rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback)
+    rospy.Subscriber('/carla/{}/odometry'.format(role_name), Odometry, odometry_callback, queue_size=10)
     rospy.spin()
 
 
 if __name__ == '__main__':
     print("carla_to_carma_localization")
-    convert_odometry_to_pose()
+    convert_odometry()

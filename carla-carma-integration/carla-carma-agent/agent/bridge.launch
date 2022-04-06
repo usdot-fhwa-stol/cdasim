@@ -72,18 +72,9 @@
 
   <!--
     # localization #
-    Extract the pose from carla odometry.
+    Extract the pose, twsit from carla odometry.
   -->
-
-
   <node pkg='carla_carma_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
-    <param name='role_name' type="str" value="$(arg role_name)"/>
-  </node>
-  <!--
-    # twist #
-    Extract the twist from carla odometry
-  -->
-  <node pkg='carla_carma_bridge' type='carla_to_carma_twist' name='carla_to_carma_twist' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
   </node>
   <!--
