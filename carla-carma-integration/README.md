@@ -4,7 +4,7 @@ This user guide provides step-by-step user instructions on how to build the CARL
 ##  Requirement
 -  Docker (19.03+)
 -  [Nvidia Docker](https://github.com/NVIDIA/nvidia-docker)
--  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (3.8.0+)
+-  [CARMA Platform](https://usdot-carma.atlassian.net/wiki/spaces/CRMPLT/pages/486178827/Development+Environment+Setup) (3.9.0)
 
 ## Setup
 ### CARLA-CARMA Integration tool
@@ -47,9 +47,12 @@ carma config set usdotfhwastol/carma-config:[tag]
 carma start all
 ```
 
-3. Run CARLA-CAMRA integration tool docker image by using run.sh file in the direction **`carma-simulation/carla-carma-integration`** and launch the tool when get into container
+3. Run CARLA-CAMRA integration tool docker image by using run.sh file in the direction **`carma-simulation/carla-carma-integration`**, setting the catkin source and Python path, and launch the tool when get into container
 ```
 ./run.sh
+```
+```
+export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla-0.9.10-py2.7-linux-x86_64.egg && source /home/carla_carma_ws/devel/setup.bash
 ```
 ```
 roslaunch carla_carma_agent carla_carma_agent.launch

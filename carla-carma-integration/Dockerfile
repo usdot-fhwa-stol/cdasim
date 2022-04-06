@@ -14,7 +14,7 @@
 FROM ros:kinetic
 WORKDIR /home
 
-ARG CARMA_VERSION="carma-system-3.8.0"
+ARG CARMA_VERSION="carma-system-3.9.0"
 
 # CARLA PythonAPI
 RUN mkdir ./PythonAPI
