@@ -51,6 +51,16 @@
     <arg name='sensor_definition_file' value='$(find carla_carma_agent)/agent/config/sensors.json'/>
   </include>
 
+  <!-- carla virtual vehicle -->
+  <include file='$(find carla-carma-vehicle)/launch/carla-carma-vehicle.launch' >
+    <arg name='host' value='$(arg host)'/>
+    <arg name='port' value='$(arg port)'/>
+    <arg name='vehicle_filter' value='$(arg vehicle_filter)'/>
+    <arg name='role_name' value='$(arg role_name)'/>
+    <arg name='spawn_point' value='$(arg spawn_point)'/>
+    <arg name='sensor_definition_file' value='$(find carla_carma_agent)/agent/config/sensors.json'/>
+  </include>
+
   <!-- carla ackermann control -->
   <include file='$(find carla_ackermann_control)/launch/carla_ackermann_control.launch'>
     <arg name='role_name' value='$(arg role_name)'/>
