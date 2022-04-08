@@ -72,7 +72,7 @@
 
   <!--
     # localization #
-    Extract the pose, twsit from carla odometry.
+    Extract the pose, twist from carla odometry.
   -->
   <node pkg='carla_carma_bridge' type='carla_to_carma_localization' name='carla_to_carma_localization' output='screen'>
     <param name='role_name' type="str" value="$(arg role_name)"/>
@@ -99,11 +99,11 @@
     <param name='max_steering_degree' type="double" value="$(arg max_steering_degree)"/>
   </node>
 
-  <node pkg='carla_carma_bridge' type='carla_to_carma_robot_status' name='carla_to_carma_robot_status' output='screen'>
+  <node pkg='carla_carma_bridge' type='carma_carla_robot_status' name='carla_to_carma_robot_status' output='screen'>
     <param name='robot_status_pub_rate' type="double" value="$(arg robot_status_pub_rate)"/>
   </node>
 
-  <node pkg='carla_carma_bridge' type='carla_to_carma_driver_status' name='carla_to_carma_driver_status' output='screen'>
+  <node pkg='carla_carma_bridge' type='carma_carla_driver_status' name='carla_to_carma_driver_status' output='screen'>
     <param name='driver_status_pub_rate' type="double" value="$(arg driver_status_pub_rate)"/>
     <param name='lidar_enabled' type="bool" value="$(arg lidar_enabled)"/>
     <param name='controller_enabled' type="bool" value="$(arg controller_enabled)"/>
