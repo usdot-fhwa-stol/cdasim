@@ -24,56 +24,65 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 #
-
+"""
+Call Services from CARMA:
+    Service :/guidance/plugins/get_registered_plugins
+            :/guidance/plugins/activate_plugin
+"""
 import rospy
 from cav_msgs.msg import Plugin, PluginList, PluginStatus
-from cav_srvs.srv import GetRegisteredPlugins, PluginActivation
+from cav_srvs.srv import PluginList, PluginActivation
 
-selected_plugins = rospy.get_param('selected_plugins')
-activation_srv = rospy.ServiceProxy("/activate_plugin", PluginActivation)
+def check_registration_plugin(registered_plugins, plugin_list):
+    """
+    check registered plugin with plugin list
+    plugin_list: selected plugins + required plugins
+    registered_plugin: the PluginList in /guidance/plugins/get_registered_plugins ROS service
+    """
+    registered_plugin_name_list = []
+    # pick up the plugin name of plugin from cav_srvs:PluginList to python list
+    for registered_plugin in registered_plugins:
+        registered_plugin_name_list.append(registered_plugin.name)
 
-
-#List to contain the registered plugins from the service call in initialize()
-plugin_list = PluginList()
-
-
-#Check if the plugin is included in the list of required plugins
-def check_selected_plugins(name):
-    for i in selected_plugins:
-        if i == name:
-            return True
-        else:
-            return False
-
-def plugin_status_cb(plugin_msg):
-    print("Received status from: " ++ plugin_msg.name)
-    requested = check_plugin_registration(plugin_msg)
-
-    #If the requested plugin is not registered, print error message
-    if requested != None:
-        print("Incoming plugin is not included in list of registered plugins")
-    elif check_selected_plugins(plugin_msg.name) == True:
-        if plugin_msg.activated != True:
-            plugin_msg.activated = True 
-            activation = activation_srv(plugin_msg.name, plugin_msg.activated)
-
-
-#Search through list of registered plugins. If it exists, return the requested plugin
-def check_plugin_registration(plugin):
-    global plugin_list
-    if plugin in plugin_list.plugins:
-        return True
-    else:
+    if len(list( set(plugin_list) - set(registered_plugin_name_list) )) > 0:
+        ropy.loginfo("Selected plugins/Required plugins can not be found from registered plugins list")
+        rospy.loginfo(list( set(plugin_list) - set(registered_plugin_name_list) ))
         return False
-    
+    else:
+        return True
 
 def initialize():
-    global plugin_list
+    """
+    main loop
+    """
     rospy.init_node("carma_carla_plugins")
-    registered_plugins_serv = rospy.ServiceProxy('/get_registered_plugins',GetRegisteredPlugins)
-    plugin_list.plugins = registered_plugins_serv()
-    plugin_sub = rospy.Subscriber('/plugin_discovery',Plugin(), plugin_status_cb)
-    rospy.spin()
+    # get selected plugins from carla_carma_bridge parameters
+    selected_plugins = rospy.get_param('/selected_plugins')
+    required_plugins = rospy.get_param('/required_plugins')
+
+    # concat selected plugins with required plugins and remove duplicate elements if there is a one
+    plugin_list = list(set(selected_plugins) - set(required_plugins)) + required_plugins
+
+    # initialize ROS service
+    activation_srv = rospy.ServiceProxy("/guidance/plugins/activate_plugin", PluginActivation)
+    registered_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_registered_plugins', PluginList)
+
+    while rospy.is_shutdown() != True:
+        # get registered plugins from CARMA platform
+        registered_plugins = registered_plugins_serv().plugins
+
+        # check if selected plugins and required plugins are listed in registered plugins
+        # if not, sleep loop for a second and recall the registered plugin ROS service for updating
+        if check_registration_plugin(registered_plugins, plugin_list):
+            for plugin in plugin_list:
+                activation = activation_srv(pluginName=plugin, activated=True)
+                if activation.newState:
+                    rospy.loginfo(str(plugin) + " has been activated")
+                else:
+                    rospy.logerr(str(plugin) + " not able to be activated.")
+            break
+        else:
+            rospy.sleep(1)
 
 
 if __name__ == '__main__':

@@ -13,105 +13,96 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """
-Call Services from CARMA: 
+Subscribe from CARMA :geometry_msgs::PoseStamped
+    Topic: /localization/current_pose
+
+Call Services from CARMA:
     Service: /guidance/get_available_routes
              /guidance/set_active_route
-
-Publish to CARMA :cav_msgs::Route
-    
 """
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Pose
-from cav_msgs.msg import RouteState
-from cav_msgs.msg import Route
-from cav_msgs.msg import RouteEvent
-from cav_srvs.srv import GetAvailableRoutes
-from cav_srvs.srv import SetActiveRoute
+from cav_msgs.msg import RouteState, RouteEvent, Route
+from cav_srvs.srv import GetAvailableRoutes, SetActiveRoute
 
-selected_route = rospy.get_param('selected_route')
 received_pose = False
 
-class ErrorStatus:
-    def __init__(self, value, text):
-        self.value = value
-        self.text = text
-
-#Get the routes to be set after localization
-def get_available_routes():
-    service = rospy.ServiceProxy('/get_available_routes', GetAvailableRoutes)     
+def get_available_route_ids():
+    """
+    Getting available route function
+    if successfully got available route, return available route ID python list
+    else, return None
+    """
+    service = rospy.ServiceProxy('/guidance/get_available_routes', GetAvailableRoutes)
+    available_route_ids = []
     try:
-        resp = service(0)
-        available_routes = GetAvailableRoutes()
-        available_routes.availableRoutes = resp.availableRoutes
-
+        resp = service()
+        for i in range(len(resp.availableRoutes)):
+            route_msg = resp.availableRoutes[i]
+            available_route_ids.append(resp.availableRoutes[i].route_id)
+        return available_route_ids
     except:
-        print("Invalid: /guidance/get_available_routes failed.")
-    else:
-        print("Available Routes acquired")
-        return available_routes.availableRoutes
+        rospy.logerr("Invalid: /guidance/get_available_routes failed.")
 
-def set_route(id):
-    service = rospy.ServiceProxy('/set_active_route', SetActiveRoute)
-
+def set_route(selected_route_id):
+    """
+    Setting selected route to CARMA platform
+    """
+    service = rospy.ServiceProxy('/guidance/set_active_route', SetActiveRoute)
     try:
-        #Service Call Request
-        resp = service(0, id)
+        resp = service(choice=0, routeID=selected_route_id)
         if resp.errorStatus != 0:
-            errorDescription = resp.errorStatus    
-            print(errorDescription)
-
+            rospy.logerr('Error status response from /guidance/set_active_route:', resp)
         else:
-                #Call succeeded: Setting Route
-                print('call set active route success!')
-                   
+            rospy.loginfo('Call set active route success!')
     except:
-            print("Fail")
-    
+        rospy.logerr("Exception occurs during the set_active_route call")
+
 def pose_cb(pose_msg):
+    """
+    callback current_pose to make sure carla_to_carma_localization start to send vehicle position info to CARMA
+    PoseStamped message type:
+        geometry_msgs::PoseStamped
+    """
     global received_pose
     received_pose = True
 
-
-def route_event_callback(event):
-    route_event = RouteEvent()
-    route_event.event = event
-    if route_event.event == 6:
-        print("ROUTE_GEN_FAILED")
-        
-def check_selected_route(available_routes):
-    if selected_route in available_routes:
-        return selected_route
+def check_selected_route(available_route_ids, selected_route_id):
+    """
+    Checking the selected route if it can be matched with available route
+    """
+    ind_list = [ind for (ind, route_id) in enumerate(available_route_ids) if route_id == selected_route_id]
+    if len(ind_list) == 1:
+        return selected_route_id
+    elif len(ind_list) > 1:
+        rospy.logerr("Duplicate route files found")
+    else:
+        rospy.logerr("Route not found, check selected_route parameter and CARMA route folder")
+    return None
 
 def initialize():
+    """
+    main loop
+    """
     rospy.init_node("carma_carla_route")
-    route_event_sub = rospy.Subscriber('/guidance/route_event', RouteEvent,route_event_callback)
-    available_routes = get_available_routes()
-    
-    #Ensure that localization is complete before checking route information
-    localized_sub = rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
-    while rospy.is_shutdown() != True:  
-        if received_pose == True:
-            if available_routes == None:
-                print("No routes available.")
+    selected_route_id = rospy.get_param('/selected_route')
+    available_route_ids = get_available_route_ids()
+    # sleep the node for n second to make sure current_pose has been set to CARMA platform properly
+    rospy.sleep(2)
+    rospy.Subscriber('/localization/current_pose', PoseStamped, pose_cb)
+    while rospy.is_shutdown() != True:
+        if received_pose:
+            if available_route_ids == None:
+                rospy.logerr("No routes available, make sure the route folder at /opt/carma/routes has route file")
             else:
-                """Check if the selected route is one of the available routes. If it isn't,then print error statement"""
-                if check_selected_route(available_routes):
-                    route = selected_route
-                    set_route(route.route_id)
-                    break
-
-                else:
-                    print("Error: Invalid selected route")
-                    break                
+                if check_selected_route(available_route_ids, selected_route_id):
+                    set_route(selected_route_id)
+            break
         else:
-            print("Localization Incomplete")
-        rospy.sleep(0.1)
+            rospy.loginfo("Localization Incomplete")
+        rospy.sleep(1)
 
 if __name__ == '__main__':
-    print("carma_carla_route")
+    rospy.loginfo("carma_carla_route")
     initialize()
-
-    
-
-

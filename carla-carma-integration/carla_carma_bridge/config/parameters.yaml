@@ -1,0 +1,11 @@
+#String: Route to be initialized
+selected_route: 'TFHRC_we'
+
+required_plugins:
+    - RouteFollowingPlugin
+    - InLaneCruisingPlugin
+    - StopAndWaitPlugin
+    - Pure Pursuit
+    
+selected_plugins:
+    - YieldPlugin
