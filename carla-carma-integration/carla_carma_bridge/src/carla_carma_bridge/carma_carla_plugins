@@ -45,7 +45,7 @@ def check_registration_plugin(registered_plugins, plugin_list):
         registered_plugin_name_list.append(registered_plugin.name)
 
     if len(list( set(plugin_list) - set(registered_plugin_name_list) )) > 0:
-        ropy.loginfo("Selected plugins/Required plugins can not be found from registered plugins list")
+        rospy.loginfo("Selected plugins/Required plugins can not be found from registered plugins list")
         rospy.loginfo(list( set(plugin_list) - set(registered_plugin_name_list) ))
         return False
     else:
