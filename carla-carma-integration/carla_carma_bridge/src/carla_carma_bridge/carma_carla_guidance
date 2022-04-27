@@ -13,41 +13,79 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+"""
+Subscribe from CARMA :cav_msgs::RouteEvent
+    Topic: /guidance/route_event
+
+Call Services from CARMA:
+    Service: /guidance/set_guidance_active
+             /guidance/plugins/get_active_plugins
+"""
 import rospy
 from cav_msgs.msg import RouteEvent
 from cav_msgs.msg import Plugin
-from cav_srvs.srv import SetGuidanceActive
+from cav_srvs.srv import SetGuidanceActive, PluginList
 
 route_selected = False
-plugins_activated = False
 
-def check_route_status(route_event_msg):
+def route_event_callback(route_event_msg):
+    """
+    callback for route event subscribing from CARMA
+    guidance_state_msg type:
+        cav_msgs::GuidanceState
+    """
     global route_selected
-    if route_event_msg.event == 1:
-        print("Route Selected")
+    if route_event_msg.event == RouteEvent.ROUTE_SELECTED:
+        rospy.loginfo("Route Selected")
         route_selected = True
 
-def check_plugin_status(plugin_msg):
-    global plugins_activated
-    if plugin_msg.activated == True:
-        print("Plugins Activated")
-        #NOTE: May have to add logic to parse through every individual plugin and determine their status
-        plugins_activated = True
+def check_plugin_status(activate_plugins, plugin_list):
+    """
+    check active plugin with plugin list
+    plugin_list: selected plugins + required plugins
+    activate_plugins: the PluginList in /guidance/plugins/get_active_plugins ROS service
+    """
+    activate_plugins_name_list = []
+    for activate_plugin in activate_plugins:
+        if activate_plugin.available and activate_plugin.activated:
+            activate_plugins_name_list.append(activate_plugin.name)
+    if len(list( set(plugin_list) - set(activate_plugins_name_list) )) > 0:
+        # still have some plugin not being activated yet
+        return False
+    else:
+        return True
 
 def initialize():
+    """
+    main loop
+    """
     rospy.init_node("carma_carla_guidance")
-    service = rospy.ServiceProxy('/set_active_guidance', SetGuidanceActive)
-    #While-loop monitors the route and plugin status and sets guidance to active once both are confirmed true
-    
-    route_sub = rospy.Subscriber("/route_event",RouteEvent(), check_route_status)
-    plugin_sub = rospy.Subscriber("/plugin_discovery", Plugin(), check_plugin_status)
-    while rospy.is_shutdown() != True:  
-        if route_selected == True and plugins_activated == True:
-            activation = service(True) #Sets guidance status to active
-            break
-        rospy.sleep(0.1)
-    
+    # get selected plugins from carla_carma_bridge parameters
+    selected_plugins = rospy.get_param('/selected_plugins')
+    required_plugins = rospy.get_param('/required_plugins')
+
+    # concat selected plugins with required plugins and remove duplicate elements if there is a one
+    plugin_list = list(set(selected_plugins) - set(required_plugins)) + required_plugins
+
+    # initialize ROS service
+    set_guidance_active_serv = rospy.ServiceProxy('/guidance/set_guidance_active', SetGuidanceActive)
+    active_plugins_serv = rospy.ServiceProxy('/guidance/plugins/get_active_plugins', PluginList)
+
+    # initialize ROS topic
+    rospy.Subscriber("/guidance/route_event",RouteEvent, route_event_callback)
+
+    while rospy.is_shutdown() != True:
+        active_plugins = active_plugins_serv().plugins
+        if route_selected and check_plugin_status(active_plugins, plugin_list):
+            resp = set_guidance_active_serv(True)
+            if resp.guidance_status:
+                break
+            else:
+                rospy.logerr("Failed to set guidance status")
+        else:
+            rospy.sleep(1)
+
 
 if __name__ == '__main__':
-    print("carma_carla_guidance")
+    rospy.loginfo("carma_carla_guidance")
     initialize()

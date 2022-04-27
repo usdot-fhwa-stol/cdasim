@@ -1,9 +1,0 @@
-#String: Route to be initialized
-selected_route: '/opt/carma/routes/tfhrc_test_route.csv'
-
-# List of String: Required plugins for the platform to be functional
-selected_plugins:
-  - RouteFollowing
-  - InLaneCruisingPlugin
-  - StopAndWaitPlugin
-  - Pure Pursuit
