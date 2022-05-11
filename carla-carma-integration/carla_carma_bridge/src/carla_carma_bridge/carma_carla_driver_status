@@ -38,6 +38,8 @@ def driver_status():
     gnss_enabled = rospy.get_param('~gnss_enabled', True)
 
     while not rospy.is_shutdown():
+
+        ## SSC
         driver_status_msg = DriverStatus()
         driver_status_msg.name          = '/hardware_interface/carla_driver'
         driver_status_msg.status        = DriverStatus.OPERATIONAL
@@ -45,8 +47,29 @@ def driver_status():
         driver_status_msg.controller    = controller_enabled
         driver_status_msg.camera        = camera_enabled
         driver_status_msg.gnss          = gnss_enabled
-
+​
+        ## camera driver
+        camera_driver_status_msg = DriverStatus()
+        camera_driver_status_msg.name   = '/hardware_interface/carla_camera_driver'
+        camera_driver_status_msg.status = DriverStatus.OPERATIONAL
+        camera_driver_status_msg.camera = camera_enabled
+​
+        ## lidar driver
+        lidar_driver_status_msg = DriverStatus()
+        lidar_driver_status_msg.name    = '/hardware_interface/carla_lidar_driver'
+        lidar_driver_status_msg.status  = DriverStatus.OPERATIONAL
+        lidar_driver_status_msg.lidar   = lidar_enabled
+​
+        ## gnss driver
+        gnss_driver_status_msg = DriverStatus()
+        gnss_driver_status_msg.name     = '/hardware_interface/carla_gnss_driver'
+        gnss_driver_status_msg.status   = DriverStatus.OPERATIONAL
+        gnss_driver_status_msg.gnss     = gnss_enabled
+​
         driver_status_pub.publish(driver_status_msg)
+        driver_status_pub.publish(camera_driver_status_msg)
+        driver_status_pub.publish(lidar_driver_status_msg)
+        driver_status_pub.publish(gnss_driver_status_msg)
         rate.sleep()
 
 if __name__ == '__main__':
