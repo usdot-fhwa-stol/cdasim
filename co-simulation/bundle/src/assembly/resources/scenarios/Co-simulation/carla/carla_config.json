@@ -1,0 +1,5 @@
+{
+    "updateInterval": 100,
+"bridgePath": "./scenarios/Co-simulation/carla; bridge.bat",
+"carlaConnectionPort": 8913
+}

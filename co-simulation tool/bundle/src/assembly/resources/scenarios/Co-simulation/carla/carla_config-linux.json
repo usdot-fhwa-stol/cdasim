@@ -1,6 +1,0 @@
-{
-    "updateInterval": 100,
-"carlaUE4Path": "/media/dcui/StorageDevice/carla/Carla_source/carla-0.9.10/Unreal/CarlaUE4/build/LinuxNoEditor/",
-"bridgePath": "./scenarios/Co-simulation/carla; bridge.sh",
-"carlaConnectionPort": 8913
-}

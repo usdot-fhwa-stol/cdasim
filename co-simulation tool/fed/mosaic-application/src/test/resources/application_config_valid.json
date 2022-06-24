@@ -1,5 +1,0 @@
-{
-    "messageCacheTime": "40 s",
-    "minimalPayloadLength": 1500,
-    "encodedPayloads": true
-}
