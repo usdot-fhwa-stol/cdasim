@@ -111,9 +111,9 @@ RUN apt-get update && apt-get install -y sudo
 
 RUN adduser $SUMO_USER sudo --disabled-password
 
-COPY traci_update/connection.py ./usr/share/sumo/tools/traci/
-COPY traci_update/constants.py ./usr/share/sumo/tools/traci/
-COPY traci_update/main.py ./usr/share/sumo/tools/traci/
+COPY co-simulation/traci_update/connection.py ./usr/share/sumo/tools/traci/
+COPY co-simulation/traci_update/constants.py ./usr/share/sumo/tools/traci/
+COPY co-simulation/traci_update/main.py ./usr/share/sumo/tools/traci/
 
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> \
 /etc/sudoers
