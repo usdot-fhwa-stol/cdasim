@@ -144,11 +144,11 @@ Once everything is ready, under directory `/carla_sumo_mosaic`, simply type:
 
 The command will start CARLA, SUMO and x-terminal showing the CALRA-MOSAIC loading status
 
-![carla_sumo_mosaic_ready](../../doc/gif/ready.gif)
+![carla_sumo_mosaic_ready](../../co-simulation/doc/gif/ready.gif)
 
 When the x-terminal showing the CARLA-MOSAIC status is connected, simply click the SUMO play button to start the program
 
-![carla_sumo_mosaic](../../doc/gif/carla_sumo_mosaic_demo.gif)
+![carla_sumo_mosaic](../../co-simulation/doc/gif/carla_sumo_mosaic_demo.gif)
 
 ***Note: Current CARMA XIL Version has a known issue with a port conflict between NS-3 and CARMA-CARLA integration see [#39](https://github.com/usdot-fhwa-stol/carma-simulation/issues/39). The recommended workaround is to run exclusively one or the other module.***
 
