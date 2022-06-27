@@ -23,7 +23,7 @@ If you do not have NVIDIA Container Toolkit installed, please refer to this [lin
 
 ## Build/Pull Docker Image of Co-Simulation Tool
 
-There are two ways to run the co-simulation tool on docker. You can either choose to pull the co-simulation tool docker image from DockerHub or build the image by yourself.
+There are two ways to get co-simulation docker image. You can either choose to pull the co-simulation tool docker image from DockerHub or build the image by yourself.
 
 #### Option 1, Pull Docker Image
 
