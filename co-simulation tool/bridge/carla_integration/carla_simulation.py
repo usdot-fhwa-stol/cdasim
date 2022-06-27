@@ -26,8 +26,7 @@ class CarlaSimulation(object):
     """
     CarlaSimulation is responsible for the management of the carla simulation.
     """
-    def __init__(self, host, port, step_length):
-
+    def __init__(self, host, port, map = None, step_length = 0.1):
         maxConnectionAttempts = 5
         while maxConnectionAttempts > 0:
             connected = True
@@ -35,7 +34,11 @@ class CarlaSimulation(object):
             try:
                 self.client = carla.Client(host, port)
                 self.client.set_timeout(5.0)
-                self.world = self.client.get_world()
+                if map is not None:
+                    print('load map %r.' % map)
+                    self.world = self.client.load_world(map)
+                else:
+                    self.world = self.client.get_world()
             except:
                 print("reconnect carla")
                 connected=False

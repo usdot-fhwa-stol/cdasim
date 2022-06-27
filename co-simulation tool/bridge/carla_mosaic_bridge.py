@@ -63,13 +63,8 @@ def main(args):
     # ----------------
     # carla simulation
     # ----------------
-    carla_simulation = CarlaSimulation(args.host, args.port, args.step_length)
-    if args.map is not None:
-        print('load map %r.' % args.map)
-        world = carla_simulation.client.load_world(args.map)
-    else:
-        world = carla_simulation.client.get_world()
-
+    carla_simulation = CarlaSimulation(args.host, args.port, args.map, args.step_length)
+    
     # ---------------
     # sumo simulation
     # ---------------
@@ -79,7 +74,7 @@ def main(args):
     else:
         # Temporal folder to save intermediate files.
         tmpdir = tempfile.mkdtemp()    
-        current_map = world.get_map()
+        current_map = carla_simulation.client.world.get_map()
         xodr_file = os.path.join(tmpdir, current_map.name + '.xodr')
         current_map.save_to_disk(xodr_file)
         net_file = os.path.join(tmpdir, current_map.name + '.net.xml')

@@ -164,7 +164,7 @@ class SumoTLManager(object):
 
         
         for tlid in traci.trafficlight.getIDList():
-            #self.subscribe(tlid)
+            self.subscribe(tlid)
 
             self._tls[tlid] = {}
             for tllogic in traci.trafficlight.getAllProgramLogics(tlid):
@@ -301,7 +301,7 @@ class SumoSimulation(object):
         self.destroyed_actors = set()
         
         # Traffic light manager.
-        self.traffic_light_manager = None
+        self.traffic_light_manager = SumoTLManager()
 
         #first time tick
         self.firstTime = True
@@ -450,11 +450,11 @@ class SumoSimulation(object):
         """
         if self.firstTime:
         # Creating a random route to be able to spawn carla actors and initialize traffic light manager
-            traci.route.add("carla_route", [traci.edge.getIDList()[0]])
-            self.traffic_light_manager = SumoTLManager()
+            traci.route.add("carla_route", [traci.edge.getIDList()[0]])           
             self.firstTime = False
+
         traci.simulationStep()
-        #self.traffic_light_manager.tick()
+        self.traffic_light_manager.tick()
         # Update data structures for the current frame.
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
         self.destroyed_actors = set(traci.simulation.getArrivedIDList())
