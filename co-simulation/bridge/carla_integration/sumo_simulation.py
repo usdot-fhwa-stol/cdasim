@@ -5,206 +5,475 @@
 #
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
+""" This module is responsible for the management of the sumo simulation. """
 
 # ==================================================================================================
-# -- find carla module -----------------------------------------------------------------------------
+# -- imports ---------------------------------------------------------------------------------------
 # ==================================================================================================
 
-import glob
-import os
-import sys
+import collections
+import enum
+import logging
 
-try:
-    sys.path.append(
-        glob.glob('PythonAPI/carla/dist/carla-*%d.%d-%s.egg' %
-                  (sys.version_info.major, sys.version_info.minor,
-                   'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
-except IndexError:
-    pass
+import carla  # pylint: disable=import-error
+import sumolib  # pylint: disable=import-error
+import traci  # pylint: disable=import-error
 
-# ==================================================================================================
-# -- find traci module -----------------------------------------------------------------------------
-# ==================================================================================================
+from .constants import INVALID_ACTOR_ID
 
-if 'SUMO_HOME' in os.environ:
-    sys.path.append(os.path.join(os.environ['SUMO_HOME'], 'tools'))
-else:
-    sys.exit("please declare environment variable 'SUMO_HOME'")
 
 # ==================================================================================================
-# -- bridge helper imports ----------------------------------------------------------------------
-# ==================================================================================================
-
-from carla_integration.bridge_helper import BridgeHelper  # pylint: disable=wrong-import-position
-from carla_integration.constants import INVALID_ACTOR_ID  # pylint: disable=wrong-import-position
-
-# ==================================================================================================
-# -- synchronization --------------------------------------------------------------------------
+# -- sumo definitions ------------------------------------------------------------------------------
 # ==================================================================================================
 
 
-class SimulationSynchronization(object):
+# https://sumo.dlr.de/docs/Simulation/Traffic_Lights.html#signal_state_definitions
+class SumoSignalState(object):
     """
-    SimulationSynchronization class is responsible for the synchronization of sumo and carla
-    simulations.
+    SumoSignalState contains the different traffic light states.
     """
-    def __init__(self,
-                 sumo_simulation,
-                 carla_simulation,
-                 tls_manager='none',
-                 sync_vehicle_color=False,
-                 sync_vehicle_lights=False):
+    RED = 'r'
+    YELLOW = 'y'
+    GREEN = 'G'
+    GREEN_WITHOUT_PRIORITY = 'g'
+    GREEN_RIGHT_TURN = 's'
+    RED_YELLOW = 'u'
+    OFF_BLINKING = 'o'
+    OFF = 'O'
 
-        self.sumo = sumo_simulation
-        self.carla = carla_simulation
 
-        self.tls_manager = tls_manager
-        self.sync_vehicle_color = sync_vehicle_color
-        self.sync_vehicle_lights = sync_vehicle_lights
+# https://sumo.dlr.de/docs/TraCI/Vehicle_Signalling.html
+class SumoVehSignal(object):
+    """
+    SumoVehSignal contains the different sumo vehicle signals.
+    """
+    BLINKER_RIGHT = 1 << 0
+    BLINKER_LEFT = 1 << 1
+    BLINKER_EMERGENCY = 1 << 2
+    BRAKELIGHT = 1 << 3
+    FRONTLIGHT = 1 << 4
+    FOGLIGHT = 1 << 5
+    HIGHBEAM = 1 << 6
+    BACKDRIVE = 1 << 7
+    WIPER = 1 << 8
+    DOOR_OPEN_LEFT = 1 << 9
+    DOOR_OPEN_RIGHT = 1 << 10
+    EMERGENCY_BLUE = 1 << 11
+    EMERGENCY_RED = 1 << 12
+    EMERGENCY_YELLOW = 1 << 13
 
-        if tls_manager == 'carla':
-            self.sumo.switch_off_traffic_lights()
-        elif tls_manager == 'sumo':
-            self.carla.switch_off_traffic_lights()
 
-        # Mapped actor ids.
-        self.sumo2carla_ids = {}  # Contains only actors controlled by sumo.
-        self.carla2sumo_ids = {}  # Contains only actors controlled by carla.
+# https://sumo.dlr.de/docs/Definition_of_Vehicles,_Vehicle_Types,_and_Routes.html#abstract_vehicle_class
+class SumoActorClass(enum.Enum):
+    """
+    SumoActorClass enumerates the different sumo actor classes.
+    """
+    IGNORING = "ignoring"
+    PRIVATE = "private"
+    EMERGENCY = "emergency"
+    AUTHORITY = "authority"
+    ARMY = "army"
+    VIP = "vip"
+    PEDESTRIAN = "pedestrian"
+    PASSENGER = "passenger"
+    HOV = "hov"
+    TAXI = "taxi"
+    BUS = "bus"
+    COACH = "coach"
+    DELIVERY = "delivery"
+    TRUCK = "truck"
+    TRAILER = "trailer"
+    MOTORCYCLE = "motorcycle"
+    MOPED = "moped"
+    BICYCLE = "bicycle"
+    EVEHICLE = "evehicle"
+    TRAM = "tram"
+    RAIL_URBAN = "rail_urban"
+    RAIL = "rail"
+    RAIL_ELECTRIC = "rail_electric"
+    RAIL_FAST = "rail_fast"
+    SHIP = "ship"
+    CUSTOM1 = "custom1"
+    CUSTOM2 = "custom2"
 
-        BridgeHelper.blueprint_library = self.carla.world.get_blueprint_library()
-        BridgeHelper.offset = self.sumo.get_net_offset()
 
-        # Configuring carla simulation in sync mode.
-        settings = self.carla.world.get_settings()
-        settings.synchronous_mode = True
-        settings.fixed_delta_seconds = self.carla.step_length
-        self.carla.world.apply_settings(settings)
+SumoActor = collections.namedtuple('SumoActor', 'type_id vclass transform signals extent color')
 
-        traffic_manager = self.carla.client.get_trafficmanager()
-        traffic_manager.set_synchronous_mode(True)
+# ==================================================================================================
+# -- sumo traffic lights ---------------------------------------------------------------------------
+# ==================================================================================================
+
+
+class SumoTLLogic(object):
+    """
+    SumoTLLogic holds the data relative to a traffic light in sumo.
+    """
+    def __init__(self, tlid, states, parameters):
+        self.tlid = tlid
+        self.states = states
+
+        self._landmark2link = {}
+        self._link2landmark = {}
+        for link_index, landmark_id in parameters.items():
+            # Link index information is added in the parameter as 'linkSignalID:x'
+            link_index = int(link_index.split(':')[1])
+
+            if landmark_id not in self._landmark2link:
+                self._landmark2link[landmark_id] = []
+            self._landmark2link[landmark_id].append((tlid, link_index))
+            self._link2landmark[(tlid, link_index)] = landmark_id
+
+    def get_number_signals(self):
+        """
+        Returns number of internal signals of the traffic light.
+        """
+        if len(self.states) > 0:
+            return len(self.states[0])
+        return 0
+
+    def get_all_signals(self):
+        """
+        Returns all the signals of the traffic light.
+            :returns list: [(tlid, link_index), (tlid, link_index), ...]
+        """
+        return [(self.tlid, i) for i in range(self.get_number_signals())]
+
+    def get_all_landmarks(self):
+        """
+        Returns all the landmarks associated with this traffic light.
+        """
+        return self._landmark2link.keys()
+
+    def get_associated_signals(self, landmark_id):
+        """
+        Returns all the signals associated with the given landmark.
+            :returns list: [(tlid, link_index), (tlid, link_index), ...]
+        """
+        return self._landmark2link.get(landmark_id, [])
+
+
+class SumoTLManager(object):
+    """
+    SumoTLManager is responsible for the management of the sumo traffic lights (i.e., keeps control
+    of the current program, phase, ...)
+    """
+    def __init__(self):
+        self._tls = {}  # {tlid: {program_id: SumoTLLogic}
+        self._current_program = {}  # {tlid: program_id}
+        self._current_phase = {}  # {tlid: index_phase}
+
+        for tlid in traci.trafficlight.getIDList():
+            self.subscribe(tlid)
+
+            self._tls[tlid] = {}
+            for tllogic in traci.trafficlight.getAllProgramLogics(tlid):
+                states = [phase.state for phase in tllogic.getPhases()]
+                parameters = tllogic.getParameters()
+                tl = SumoTLLogic(tlid, states, parameters)
+                self._tls[tlid][tllogic.programID] = tl
+
+            # Get current status of the traffic lights.
+            self._current_program[tlid] = traci.trafficlight.getProgram(tlid)
+            self._current_phase[tlid] = traci.trafficlight.getPhase(tlid)
+
+        self._off = False
+
+    @staticmethod
+    def subscribe(tlid):
+        """
+        Subscribe the given traffic ligth to the following variables:
+
+            * Current program.
+            * Current phase.
+        """
+        traci.trafficlight.subscribe(tlid, [
+            traci.constants.TL_CURRENT_PROGRAM,
+            traci.constants.TL_CURRENT_PHASE,
+        ])
+
+    @staticmethod
+    def unsubscribe(tlid):
+        """
+        Unsubscribe the given traffic ligth from receiving updated information each step.
+        """
+        traci.trafficlight.unsubscribe(tlid)
+
+    def get_all_signals(self):
+        """
+        Returns all the traffic light signals.
+        """
+        signals = set()
+        for tlid, program_id in self._current_program.items():
+            signals.update(self._tls[tlid][program_id].get_all_signals())
+        return signals
+
+    def get_all_landmarks(self):
+        """
+        Returns all the landmarks associated with a traffic light in the simulation.
+        """
+        landmarks = set()
+        for tlid, program_id in self._current_program.items():
+            landmarks.update(self._tls[tlid][program_id].get_all_landmarks())
+        return landmarks
+
+    def get_all_associated_signals(self, landmark_id):
+        """
+        Returns all the signals associated with the given landmark.
+            :returns list: [(tlid, link_index), (tlid, link_index), ...]
+        """
+        signals = set()
+        for tlid, program_id in self._current_program.items():
+            signals.update(self._tls[tlid][program_id].get_associated_signals(landmark_id))
+        return signals
+
+    def get_state(self, landmark_id):
+        """
+        Returns the traffic light state of the signals associated with the given landmark.
+        """
+        states = set()
+        for tlid, link_index in self.get_all_associated_signals(landmark_id):
+            current_program = self._current_program[tlid]
+            current_phase = self._current_phase[tlid]
+
+            tl = self._tls[tlid][current_program]
+            states.update(tl.states[current_phase][link_index])
+
+        if len(states) == 1:
+            return states.pop()
+        elif len(states) > 1:
+            logging.warning('Landmark %s is associated with signals with different states',
+                            landmark_id)
+            return SumoSignalState.RED
+        else:
+            return None
+
+    def set_state(self, landmark_id, state):
+        """
+        Updates the state of all the signals associated with the given landmark.
+        """
+        for tlid, link_index in self.get_all_associated_signals(landmark_id):
+            traci.trafficlight.setLinkState(tlid, link_index, state)
+        return True
+
+    def switch_off(self):
+        """
+        Switch off all traffic lights.
+        """
+        for tlid, link_index in self.get_all_signals():
+            traci.trafficlight.setLinkState(tlid, link_index, SumoSignalState.OFF)
+        self._off = True
 
     def tick(self):
         """
-        Tick to simulation synchronization
+        Tick to traffic light manager
         """
-        # -----------------
-        # sumo-->carla sync
-        # -----------------
-        self.sumo.tick()
+        if self._off is False:
+            for tl_id in traci.trafficlight.getIDList():               
+                current_program = traci.trafficlight.getProgram(tl_id)
+                current_phase = traci.trafficlight.getPhase(tl_id)
 
-        # Spawning new sumo actors in carla (i.e, not controlled by carla).
-        sumo_spawned_actors = self.sumo.spawned_actors - set(self.carla2sumo_ids.values())
-        for sumo_actor_id in sumo_spawned_actors:
-            sumo_actor = self.sumo.get_actor(sumo_actor_id)
-            carla_blueprint = BridgeHelper.get_carla_blueprint(sumo_actor, self.sync_vehicle_color)
-            if carla_blueprint is not None:
-                carla_transform = BridgeHelper.get_carla_transform(sumo_actor.transform,
-                                                                   sumo_actor.extent)
+                if current_program != 'online':
+                    self._current_program[tl_id] = current_program
+                    self._current_phase[tl_id] = current_phase
+        
 
-                carla_actor_id = self.carla.spawn_actor(carla_blueprint, carla_transform)
-                if carla_actor_id != INVALID_ACTOR_ID:
-                    self.sumo2carla_ids[sumo_actor_id] = carla_actor_id
+# ==================================================================================================
+# -- sumo simulation -------------------------------------------------------------------------------
+# ==================================================================================================
 
-        # Destroying sumo arrived actors in carla.
-        for sumo_actor_id in self.sumo.destroyed_actors:
-            if sumo_actor_id in self.sumo2carla_ids:
-                self.carla.destroy_actor(self.sumo2carla_ids.pop(sumo_actor_id))
+class SumoSimulation(object):
+    """
+    SumoSimulation is responsible for the management of the sumo simulation.
+    """
+    def __init__(self, sumo_net, step_length, host=None, port=None):
 
-        # Updating sumo actors in carla.
-        for sumo_actor_id in self.sumo2carla_ids:
-            carla_actor_id = self.sumo2carla_ids[sumo_actor_id]
+        logging.info('Connection to bridge server. Host: %s Port: %s', host, port)
+        traci.init(host=host, port=port)
+        
+        self.net = sumo_net
 
-            sumo_actor = self.sumo.get_actor(sumo_actor_id)
-            carla_actor = self.carla.get_actor(carla_actor_id)
-            carla_transform = BridgeHelper.get_carla_transform(sumo_actor.transform,
-                                                               sumo_actor.extent)
-            if self.sync_vehicle_lights:
-                carla_lights = BridgeHelper.get_carla_lights_state(carla_actor.get_light_state(),
-                                                                   sumo_actor.signals)
-            else:
-                carla_lights = None
+        # Variable to asign an id to new added actors.
+        self._sequential_id = 0
 
-            self.carla.synchronize_vehicle(carla_actor_id, carla_transform, carla_lights)
+        # Structures to keep track of the spawned and destroyed vehicles at each time step.
+        self.spawned_actors = set()
+        self.destroyed_actors = set()
+        
+        # Traffic light manager.
+        self.traffic_light_manager = None
 
-        # # Updates traffic lights in carla based on sumo information.
-        if self.tls_manager == 'sumo':
-            common_landmarks = self.sumo.traffic_light_ids & self.carla.traffic_light_ids
-            for landmark_id in common_landmarks:
-                sumo_tl_state = self.sumo.get_traffic_light_state(landmark_id)
-                carla_tl_state = BridgeHelper.get_carla_traffic_light_state(sumo_tl_state)
+        #first time tick
+        self.firstTime = True
 
-                self.carla.synchronize_traffic_light(landmark_id, carla_tl_state)
+        #interval for sending V2X messages
+        self.sendV2xInterval = 0
 
-        # # -----------------
-        # # carla-->sumo sync
-        # # -----------------
-        self.carla.tick()
+    @property
+    def traffic_light_ids(self):
+        return self.traffic_light_manager.get_all_landmarks()
 
-        # Spawning new carla actors (not controlled by sumo)
-        carla_spawned_actors = self.carla.spawned_actors - set(self.sumo2carla_ids.values())
-        for carla_actor_id in carla_spawned_actors:
-            carla_actor = self.carla.get_actor(carla_actor_id)
-
-            type_id = BridgeHelper.get_sumo_vtype(carla_actor)
-            color = carla_actor.attributes.get('color', None) if self.sync_vehicle_color else None
-            if type_id is not None:
-                sumo_actor_id = self.sumo.spawn_actor(type_id, color)
-                if sumo_actor_id != INVALID_ACTOR_ID:
-                    self.carla2sumo_ids[carla_actor_id] = sumo_actor_id
-
-        # Destroying required carla actors in sumo.
-        for carla_actor_id in self.carla.destroyed_actors:
-            if carla_actor_id in self.carla2sumo_ids:
-                self.sumo.destroy_actor(self.carla2sumo_ids.pop(carla_actor_id))
-
-        # Updating carla actors in sumo.
-        for carla_actor_id in self.carla2sumo_ids:
-            sumo_actor_id = self.carla2sumo_ids[carla_actor_id]
-
-            carla_actor = self.carla.get_actor(carla_actor_id)
-            sumo_actor = self.sumo.get_actor(sumo_actor_id)
-
-            sumo_transform = BridgeHelper.get_sumo_transform(carla_actor.get_transform(),
-                                                             carla_actor.bounding_box.extent)
-            if self.sync_vehicle_lights:
-                carla_lights = self.carla.get_actor_light_state(carla_actor_id)
-                if carla_lights is not None:
-                    sumo_lights = BridgeHelper.get_sumo_lights_state(sumo_actor.signals,
-                                                                     carla_lights)
-                else:
-                    sumo_lights = None
-            else:
-                sumo_lights = None
-
-            self.sumo.synchronize_vehicle(sumo_actor_id, sumo_transform, sumo_lights)
-
-        # # Updates traffic lights in sumo based on carla information.
-        if self.tls_manager == 'carla':
-            common_landmarks = self.sumo.traffic_light_ids & self.carla.traffic_light_ids
-            for landmark_id in common_landmarks:
-                carla_tl_state = self.carla.get_traffic_light_state(landmark_id)
-                sumo_tl_state = BridgeHelper.get_sumo_traffic_light_state(carla_tl_state)
-
-                # Updates all the sumo links related to this landmark.
-                self.sumo.synchronize_traffic_light(landmark_id, sumo_tl_state)
-
-    def close(self):
+    @staticmethod
+    def subscribe(actor_id):
         """
-        Cleans synchronization.
+        Subscribe the given actor to the following variables:
+
+            * Type.
+            * Vehicle class.
+            * Color.
+            * Length, Width, Height.
+            * Position3D (i.e., x, y, z).
+            * Angle, Slope.
+            * Speed.
+            * Lateral speed.
+            * Signals.
         """
-        # Configuring carla simulation in async mode.
-        settings = self.carla.world.get_settings()
-        settings.synchronous_mode = False
-        settings.fixed_delta_seconds = None
-        self.carla.world.apply_settings(settings)
+        traci.vehicle.subscribe(actor_id, [
+            traci.constants.VAR_TYPE, traci.constants.VAR_VEHICLECLASS, traci.constants.VAR_COLOR,
+            traci.constants.VAR_LENGTH, traci.constants.VAR_WIDTH, traci.constants.VAR_HEIGHT,
+            traci.constants.VAR_POSITION3D, traci.constants.VAR_ANGLE, traci.constants.VAR_SLOPE,
+            traci.constants.VAR_SPEED, traci.constants.VAR_SPEED_LAT, traci.constants.VAR_SIGNALS
+        ])
 
-        # Destroying synchronized actors.
-        for carla_actor_id in self.sumo2carla_ids.values():
-            self.carla.destroy_actor(carla_actor_id)
+    @staticmethod
+    def unsubscribe(actor_id):
+        """
+        Unsubscribe the given actor from receiving updated information each step.
+        """
+        traci.vehicle.unsubscribe(actor_id)
 
-        for sumo_actor_id in self.carla2sumo_ids.values():
-            self.sumo.destroy_actor(sumo_actor_id)
+    def get_net_offset(self):
+        """
+        Accessor for sumo net offset.
+        """
+        if self.net is None:
+            return (0, 0)
+        return self.net.getLocationOffset()
 
-        # Closing sumo and carla client.
-        self.carla.close()
-        self.sumo.close()
+    @staticmethod
+    def get_actor(actor_id):
+        """
+        Accessor for sumo actor.
+        """
+        type_id = traci.vehicle.getTypeID(actor_id) 
+        vclass = SumoActorClass(traci.vehicle.getVehicleClass(actor_id))
+        color = traci.vehicle.getColor(actor_id) 
+
+        length = traci.vehicle.getLength(actor_id)
+        width = traci.vehicle.getWidth(actor_id)
+        height = traci.vehicle.getHeight(actor_id)
+
+        location = list(traci.vehicle.getPosition3D(actor_id))
+        rotation = [traci.vehicle.getSlope(actor_id), traci.vehicle.getAngle(actor_id), 0.0]
+        transform = carla.Transform(carla.Location(location[0], location[1], location[2]),
+                                    carla.Rotation(rotation[0], rotation[1], rotation[2]))
+
+        signals = traci.vehicle.getSignals(actor_id)
+        extent = carla.Vector3D(length / 2.0, width / 2.0, height / 2.0)
+
+        return SumoActor(type_id, vclass, transform, signals, extent, color)
+
+    def spawn_actor(self, type_id, color=None):
+        """
+        Spawns a new actor.
+
+            :param type_id: vtype to be spawned.
+            :param color: color attribute for this specific actor.
+            :return: actor id if the actor is successfully spawned. Otherwise, INVALID_ACTOR_ID.
+        """
+        actor_id = 'carla_' + str(self._sequential_id)
+        try:
+            traci.vehicle.add(actor_id, 'carla_route', typeID=type_id)
+        except traci.exceptions.TraCIException as error:
+            logging.error('Spawn sumo actor failed: %s', error)
+            return INVALID_ACTOR_ID
+
+        if color is not None:
+            color = color.split(',')
+            traci.vehicle.setColor(actor_id, color)
+
+        self._sequential_id += 1
+
+        return actor_id
+
+    @staticmethod
+    def destroy_actor(actor_id):
+        """
+        Destroys the given actor.
+        """
+        traci.vehicle.remove(actor_id)
+
+    def get_traffic_light_state(self, landmark_id):
+        """
+        Accessor for traffic light state.
+
+        If the traffic ligth does not exist, returns None.
+        """
+        return self.traffic_light_manager.get_state(landmark_id)
+
+    def switch_off_traffic_lights(self):
+        """
+        Switch off all traffic lights.
+        """
+        self.traffic_light_manager.switch_off()
+
+    def synchronize_vehicle(self, vehicle_id, transform, signals=None):
+        """
+        Updates vehicle state.
+
+            :param vehicle_id: id of the actor to be updated.
+            :param transform: new vehicle transform (i.e., position and rotation).
+            :param signals: new vehicle signals.
+            :return: True if successfully updated. Otherwise, False.
+        """
+        loc_x, loc_y = transform.location.x, transform.location.y
+        yaw = transform.rotation.yaw
+
+        traci.vehicle.moveToXY(vehicle_id, "", 0, loc_x, loc_y, angle=yaw, keepRoute=2)
+        if signals is not None:
+            traci.vehicle.setSignals(vehicle_id, signals)
+        return True
+
+    def synchronize_traffic_light(self, landmark_id, state):
+        """
+        Updates traffic light state.
+
+            :param tl_id: id of the traffic light to be updated (logic id, link index).
+            :param state: new traffic light state.
+            :return: True if successfully updated. Otherwise, False.
+        """
+        self.traffic_light_manager.set_state(landmark_id, state)
+
+    def tick(self):
+        """
+        Tick to sumo simulation.
+        """
+        if self.firstTime:
+        # Creating a random route to be able to spawn carla actors and initialize traffic light manager
+            traci.route.add("carla_route", [traci.edge.getIDList()[0]])
+            self.traffic_light_manager = SumoTLManager()
+            self.firstTime = False
+        traci.simulationStep()
+        self.traffic_light_manager.tick()
+        # Update data structures for the current frame.
+        self.spawned_actors = set(traci.simulation.getDepartedIDList())
+        self.destroyed_actors = set(traci.simulation.getArrivedIDList())
+
+        # Show v2x messages received by CARLA vehicles
+        v2xMessageReceived = traci.getV2xMessage()
+        if v2xMessageReceived is not None:
+            for message in v2xMessageReceived:
+                print(message)
+
+         # Send V2x message to CARLA ambassador
+        if self.sendV2xInterval == 10:          
+            traci.setV2xMessage("carla_0; A V2X messages from CARLA simulator.")
+            self.sendV2xInterval = 0
+
+        self.sendV2xInterval += 1
+
+    @staticmethod
+    def close():
+        """
+        Closes traci client.
+        """
+        traci.close()
