@@ -162,9 +162,8 @@ class SumoTLManager(object):
         self._current_program = {}  # {tlid: program_id}
         self._current_phase = {}  # {tlid: index_phase}
 
-        
         for tlid in traci.trafficlight.getIDList():
-            #self.subscribe(tlid)
+            self.subscribe(tlid)
 
             self._tls[tlid] = {}
             for tllogic in traci.trafficlight.getAllProgramLogics(tlid):
@@ -269,14 +268,14 @@ class SumoTLManager(object):
         Tick to traffic light manager
         """
         if self._off is False:
-            for tl_id in traci.trafficlight.getIDList():               
+            for tl_id in traci.trafficlight.getIDList():
                 current_program = traci.trafficlight.getProgram(tl_id)
                 current_phase = traci.trafficlight.getPhase(tl_id)
 
                 if current_program != 'online':
                     self._current_program[tl_id] = current_program
                     self._current_phase[tl_id] = current_phase
-        
+
 
 # ==================================================================================================
 # -- sumo simulation -------------------------------------------------------------------------------
@@ -290,7 +289,7 @@ class SumoSimulation(object):
 
         logging.info('Connection to bridge server. Host: %s Port: %s', host, port)
         traci.init(host=host, port=port)
-        
+
         self.net = sumo_net
 
         # Variable to asign an id to new added actors.
@@ -299,7 +298,7 @@ class SumoSimulation(object):
         # Structures to keep track of the spawned and destroyed vehicles at each time step.
         self.spawned_actors = set()
         self.destroyed_actors = set()
-        
+
         # Traffic light manager.
         self.traffic_light_manager = None
 
@@ -355,9 +354,9 @@ class SumoSimulation(object):
         """
         Accessor for sumo actor.
         """
-        type_id = traci.vehicle.getTypeID(actor_id) 
+        type_id = traci.vehicle.getTypeID(actor_id)
         vclass = SumoActorClass(traci.vehicle.getVehicleClass(actor_id))
-        color = traci.vehicle.getColor(actor_id) 
+        color = traci.vehicle.getColor(actor_id)
 
         length = traci.vehicle.getLength(actor_id)
         width = traci.vehicle.getWidth(actor_id)
@@ -454,7 +453,7 @@ class SumoSimulation(object):
             self.traffic_light_manager = SumoTLManager()
             self.firstTime = False
         traci.simulationStep()
-        #self.traffic_light_manager.tick()
+        self.traffic_light_manager.tick()
         # Update data structures for the current frame.
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
         self.destroyed_actors = set(traci.simulation.getArrivedIDList())
@@ -466,7 +465,7 @@ class SumoSimulation(object):
                 print(message)
 
          # Send V2x message to CARLA ambassador
-        if self.sendV2xInterval == 10:          
+        if self.sendV2xInterval == 10:
             traci.setV2xMessage("carla_0; A V2X messages from CARLA simulator.")
             self.sendV2xInterval = 0
 
