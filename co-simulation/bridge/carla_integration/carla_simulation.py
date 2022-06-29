@@ -39,7 +39,7 @@ class CarlaSimulation(object):
             except:
                 print("reconnect carla")
                 connected=False
-                
+
             if connected:
                 print("CARLA simulator connected")
                 break

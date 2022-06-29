@@ -70,6 +70,7 @@ def main(args):
     else:
         world = carla_simulation.client.get_world()
 
+    carla_simulation = CarlaSimulation(args.host, args.port, args.step_length)
     # ---------------
     # sumo simulation
     # ---------------
@@ -78,7 +79,7 @@ def main(args):
         print("load net file")
     else:
         # Temporal folder to save intermediate files.
-        tmpdir = tempfile.mkdtemp()    
+        tmpdir = tempfile.mkdtemp()
         current_map = world.get_map()
         xodr_file = os.path.join(tmpdir, current_map.name + '.xodr')
         current_map.save_to_disk(xodr_file)
@@ -108,7 +109,7 @@ def main(args):
         print("Socket server closed")
 
     finally:
-        try: 
+        try:
             synchronization.close()
         except:
             print("Connection closed")
@@ -137,10 +138,10 @@ if __name__ == '__main__':
                            default=8913,
                            type=int,
                            help='TCP port to listen to (default: None)')
-    argparser.add_argument('-m', 
+    argparser.add_argument('-m',
                            '--map',
                             help='load a new map')
-    argparser.add_argument('net_file', 
+    argparser.add_argument('net_file',
                            type=str,
                            default=None,
                            help='load the net file')
