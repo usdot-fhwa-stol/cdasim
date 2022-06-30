@@ -40,7 +40,7 @@ The tag information could be found from [usdotfhwastol Dockerhub](https://hub.do
 ##### Step 2: Run docker image with a container:
 
 ```sh
-cd <path-to-CARMA-simulation>/docker && ./run.sh
+cd <path-to-CARMA-simulation>/docker && ./run.sh -v [version]
 ```
 
 Once you access the conainer, skip the option 2 and go to the `Run carma-xil-cosimulation` step to test the co-simulation
@@ -53,13 +53,13 @@ To build the co-simulation tool docker image, the executable `carla_sumo_mosaic`
 ##### Step 1: Build image from Dockerfile by using following command:
 
 ```sh
-cd <path-to-CARMA-simulation>/docker && ./build-image.sh
+cd <path-to-CARMA-simulation>/docker && ./build-image.sh -v [version]
 ```
 
 ##### Step 2: Run docker image with a docker container
 
 ```sh
-cd <path-to-CARMA-simulation>/docker && ./run.sh
+cd <path-to-CARMA-simulation>/docker && ./run.sh -v [version]
 ```
 
 ##### Step 3: Copy CARLA and Co-Simulation tool
