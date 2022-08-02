@@ -93,6 +93,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private int connectionAttempts = 5;
 
     /**
+     * Maximum amount of attempts to connect to CARLA simulator.
+     */
+     private int executedTimes = 0;
+
+    /**
      * Carla simulator client port
      */
     private int carlaSimulatorClientPort = -1;
@@ -158,7 +163,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * Get CARLA simulator executable file location
-     * 
+     *
      * @param executable the name of carla executable file
      * @return the path to CarlaUE4 executable file
      */
@@ -186,7 +191,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     /**
      * This method is called to tell the federate the start time and the end time.
      * It is also used to start CARLA, and connect to CARLA.
-     * 
+     *
      * @param startTime Start time of the simulation run in nano seconds.
      * @param endTime   End time of the simulation run in nano seconds.
      * @throws InternalFederateException Exception is thrown if an error is occurred
@@ -335,8 +340,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
             }
-            rti.requestAdvanceTime(nextTimeStep, 0, (byte) 2);
-
+            rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
+            this.executedTimes++;
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
@@ -378,7 +383,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * get the CARLA command arguments
-     * 
+     *
      * @param port CARLA simulator client port
      * @return the list of CARLA command arguments
      */
@@ -417,7 +422,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     /**
      * Trigger a new CarlaTraciRequest, SimulationStep or ExternalMessage
      * interaction
-     * 
+     *
      * @param length  command length
      * @param command command
      */
@@ -476,7 +481,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * process the Carla traci response interaction
-     * 
+     *
      * @param interaction Carla Traci Response interaction
      */
     private void receiveInteraction(CarlaTraciResponse interaction) {
@@ -492,7 +497,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * process the traci response interaction
-     * 
+     *
      * @param interaction Simulation Step Response interaction
      */
     private void receiveInteraction(SimulationStepResponse interaction) {
@@ -500,6 +505,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
             if (carlaConnection.getDataOutputStream() != null) {
                 carlaConnection.getDataOutputStream().write(interaction.getResult());
+                this.executedTimes = 0;
             }
 
         } catch (Exception e) {
@@ -509,7 +515,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * Process the CARLA vehicles receiving V2X message interaction
-     * 
+     *
      * @param interaction CarlaV2xMessageReception interaction
      */
     private void receiveInteraction(CarlaV2xMessageReception interaction) {
@@ -567,7 +573,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * Process the received messages from CARLA simulator.
-     * 
+     *
      * @param length  the length of command
      * @param command received command
      * @return received external message
