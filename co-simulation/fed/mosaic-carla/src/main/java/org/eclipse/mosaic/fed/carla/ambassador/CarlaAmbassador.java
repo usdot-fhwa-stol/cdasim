@@ -169,12 +169,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     String getCarlaExecutable(String executable) {
         String carlaHome = null;
-        if (System.getenv("CARLA_HOME") != null) {
-            carlaHome = System.getenv("CARLA_HOME");
-            log.info("use carla path from environmental variable: " + carlaHome);
-        } else if (carlaConfig.carlaUE4Path != null) {
+        if (carlaConfig.carlaUE4Path != null) {
             carlaHome = carlaConfig.carlaUE4Path;
             log.info("use carla path from configuration file: " + carlaHome);
+        }
+        else if (System.getenv("CARLA_HOME") != null) {
+            carlaHome = System.getenv("CARLA_HOME");
+            log.info("use carla path from environmental variable: " + carlaHome);
         }
         if (StringUtils.isNotBlank(carlaHome)) {
             boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
