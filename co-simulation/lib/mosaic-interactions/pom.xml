@@ -34,6 +34,12 @@
             <artifactId>mosaic-objects</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-rti-api</artifactId>
+            <version>21.2</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

@@ -54,6 +54,30 @@
       <version>4.11</version>
       <scope>test</scope>
     </dependency>
+      <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-rti-api</artifactId>
+          <version>21.2</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-objects</artifactId>
+          <version>21.2</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-utils</artifactId>
+          <version>21.2</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-interactions</artifactId>
+          <version>21.2</version>
+          <scope>compile</scope>
+      </dependency>
   </dependencies>
 
   <profiles>
