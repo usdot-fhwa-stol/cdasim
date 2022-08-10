@@ -16,6 +16,6 @@
 
 source /opt/ros/kinetic/setup.bash
 cd ~/
-export ROS_LANG_DISABLE=genjava # Disable genjava
-catkin_make install -DCATKIN_BLACKLIST_PACKAGES="rosjava_utils"
+colcon build  --cmake-args -DCMAKE_BUILD_TYPE=Release
+
 chmod -R ugo+x ~/install
