@@ -18,7 +18,7 @@ MAINTAINER Leidos, Inc.
 LABEL Description="Dockerised Simulation of Carla_Sumo_Mosaic"
 
 ENV SUMO_HOME /usr/share/sumo
-ENV SUMO_USER carla_sumo_mosaic
+ENV SUMO_USER carma
 
 
 ENV CARLA_HOME /CARLA_0.9.10/
@@ -60,6 +60,7 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password
 
 COPY --chown=carma:carma . /home/carma/src
+USER carma
 WORKDIR /home/carma/src
 RUN docker/install.sh
 
