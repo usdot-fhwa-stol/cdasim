@@ -73,9 +73,9 @@ make -j$(nproc)
 sudo make install
 
 # Update TraCI library
-sudo cp "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/constants.py" /usr/local/share/sumo/tools/traci
-sudo cp "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/connection.py" /usr/local/share/sumo/tools/traci
-sudo cp "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/main.py" /usr/local/share/sumo/tools/traci
+sudo cp "/home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/constants.py" /usr/local/share/sumo/tools/traci
+sudo cp "/home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/connection.py" /usr/local/share/sumo/tools/traci
+sudo cp "/home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/main.py" /usr/local/share/sumo/tools/traci
 
 # Install python3.7 and lxml
 python3.7 -m pip install pip
