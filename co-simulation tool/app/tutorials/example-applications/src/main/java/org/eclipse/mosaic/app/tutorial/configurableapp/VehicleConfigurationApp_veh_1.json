@@ -1,5 +1,0 @@
-{
-	"fooInteger": 10,
-	"fooString" : "A config only for veh_1",
-	"fooStringList" : [ "Place", "me", "in", "application", "folder" ]
-}
