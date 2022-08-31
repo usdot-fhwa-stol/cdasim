@@ -8,4 +8,5 @@ export CARLA_HOME="/opt/carla"
 export CARMA_SIMULATION_HOME="/opt/carma-simulation"
 export PATH="/usr/local/share/sumo/bin:/usr/local/share/sumo/tools:$PATH"
 export PATH="/opt/maven/bin:$PATH"
+export PATH="/opt/carma-simulation:$PATH"
 

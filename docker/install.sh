@@ -15,6 +15,7 @@
 #  the License.
 
 set -e
+
 # Install software-proprties-common to be able to setup PPA repos
 sudo apt-get update
 sudo apt-get install -y software-properties-common
@@ -24,6 +25,7 @@ sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo add-apt-repository ppa:sumo/stable
 sudo apt-get update
 
+# Download apt dependencies
 sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar python3.6-dev \
   pkg-config sqlite3 autoconf libtool curl make libxml2 libsqlite3-dev \
   libxml2-dev cmake libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev \
@@ -44,7 +46,10 @@ sudo update-alternatives --set python /usr/bin/python3.7
 
 cd /home/carma/src
 
-# Install Protobuf
+# Install Protobuf - OPTIONAL
+# 
+# Pulled in via apt-get instead of compiled
+#
 #wget "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.3.0.tar.gz"
 #tar xvf v3.3.0.tar.gz
 #cd protobuf-3.3.0
@@ -76,18 +81,15 @@ make -j$(nproc)
 sudo make install
 
 # Update TraCI library
-#sudo cp "/home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/constants.py" /usr/local/share/sumo/tools/traci
-#sudo cp "/home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/connection.py" /usr/local/share/sumo/tools/traci
-#sudo cp "/home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/main.py" /usr/local/share/sumo/tools/traci
+sudo cp /home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/constants.py /usr/local/share/sumo/tools/traci
+sudo cp /home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/connection.py /usr/local/share/sumo/tools/traci
+sudo cp /home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/main.py /usr/local/share/sumo/tools/traci
 
 # Install python3.7 and lxml
 python3.7 -m pip install pip
 pip3 install lxml==4.5.0
 
 # Install CARLA
-# TODO: Figure out how to optimize this, as it's a 3.7GB download
-# cd /home/carma/src
-# wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
 cd /home/carma/src/
 if [[ ! -f '/home/carma/src/CARLA_0.9.10.tar.gz' ]]; then
     echo "!!! CARLA not present in the installation directy, please download CARLA_0.9.10.tar.gz into the work directory and rebuild. !!!"
@@ -106,13 +108,17 @@ tar xzvf apache-maven-3.8.3-bin.tar.gz -C /opt/maven
 export PATH=/opt/maven/apache-maven-3.8.3/bin/:$PATH
 
 # Build co-simulation tool
-cd "/home/carma/src/co-simulation"
+cd /home/carma/src/co-simulation
 mvn clean install -DskipTests
 cd bundle/target
 sudo mkdir -p /opt/carma-simulation
 sudo chown -R carma:carma /opt/carma-simulation
 unzip carla-sumo-mosaic-22.1-SNAPSHOT.zip -d /opt/carma-simulation
+sudo chmod +x /opt/carma-simulation/mosaic.sh
 cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 
-echo "Build complete!!!"
+# Deploy scenario files
+cd /home/carma/src/co-simulation
+unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
 
+echo "Build complete!!!"
