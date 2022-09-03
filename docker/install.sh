@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #  Copyright (C) 2018-2020 LEIDOS.
-# 
+#
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy of
 #  the License at
-# 
+#
 #  http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 #  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -22,7 +22,6 @@ sudo apt-get install -y software-properties-common
 
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo add-apt-repository -y ppa:deadsnakes/ppa
-sudo add-apt-repository ppa:sumo/stable
 sudo apt-get update
 
 # Download apt dependencies
@@ -33,12 +32,12 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   python3.7-distutils x11-xserver-utils dconf-editor dbus-x11 libglvnd0 libgl1 \
   libglx0 libegl1 libxext6 libx11-6 python3-dev \
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
-  wget vim nano xterm default-jdk sumo sumo-tools sumo-doc libprotobuf-dev
+  wget vim nano xterm default-jdk libprotobuf-dev
 sudo rm -rf /var/lib/apt/lists/*
 export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
 #update-alternatives --set python /usr/bin/python3.7
-sudo apt-get clean 
+sudo apt-get clean
 sudo rm -rf /var/cache/oracle-jdk8-installer
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
@@ -47,7 +46,7 @@ sudo update-alternatives --set python /usr/bin/python3.7
 cd /home/carma/src
 
 # Install Protobuf - OPTIONAL
-# 
+#
 # Pulled in via apt-get instead of compiled
 #
 #wget "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.3.0.tar.gz"
@@ -68,26 +67,24 @@ cd /home/carma/src
 #./ns3_installer.sh -q
 #TODO: Add expore NS3_HOME=path_to_run.sh to /bin/fed/ns3/run.sh
 
-# Install SUMO-1.8.0
+# Install SUMO-1.12.0
 cd /home/carma/src/
-wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_8_0.tar.gz"
+wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_12_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
-tar xvf v1_8_0.tar.gz -C /opt/sumo
-cd /opt/sumo/sumo-1_8_0
+tar xvf v1_12_0.tar.gz -C /opt/sumo
+cd /opt/sumo/sumo-1_12_0
+sudo cp /home/carma/src/co-simulation/traci_update/constants.py /opt/sumo/sumo-1_12_0/tools/traci
+sudo cp /home/carma/src/co-simulation/traci_update/connection.py /opt/sumo/sumo-1_12_0/tools/traci
+sudo cp /home/carma/src/co-simulation/traci_update/main.py /opt/sumo/sumo-1_12_0/tools/traci
 mkdir -p build/cmake-build && cd build/cmake-build
 cmake ../..
 make -j$(nproc)
 sudo make install
 
-# Update TraCI library
-sudo cp /home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/constants.py /usr/local/share/sumo/tools/traci
-sudo cp /home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/connection.py /usr/local/share/sumo/tools/traci
-sudo cp /home/carma/src/co-simulation/bundle/src/assembly/resources/fed/ns3/main.py /usr/local/share/sumo/tools/traci
-
 # Install python3.7 and lxml
 python3.7 -m pip install pip
-pip3 install lxml==4.5.0
+python3.7 -m pip install lxml==4.5.0
 
 # Install CARLA
 cd /home/carma/src/
