@@ -20,10 +20,6 @@ LABEL Description="Dockerised Simulation of Carla_Sumo_Mosaic"
 ENV SUMO_HOME /usr/share/sumo
 ENV SUMO_USER carma
 
-
-ENV CARLA_HOME /CARLA_0.9.10/
-RUN export CARLA_HOME
-
 ARG VERSION
 ARG VCS_REF
 ARG BUILD_DATE
@@ -57,10 +53,6 @@ USER carma
 WORKDIR /home/carma/src
 COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
 RUN docker/install.sh
-
-COPY co-simulation/traci_update/connection.py /usr/share/sumo/tools/traci/
-COPY co-simulation/traci_update/constants.py /usr/share/sumo/tools/traci/
-COPY co-simulation/traci_update/main.py /usr/share/sumo/tools/traci/
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
 CMD [ "mosaic.sh", "-s", "HelloWorld" ]
