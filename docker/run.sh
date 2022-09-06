@@ -27,4 +27,4 @@ docker run \
        -v /tmp/.X11-unix:/tmp/.X11-unix\
        -e DISPLAY=$DISPLAY\
        -e QT_X11_NO_MITSHM=1\
-       --user=carla_sumo_mosaic usdotfhwastol/carma-xil-cosimulation:$COMPONENT_VERSION_STRING
+       --user=carma usdotfhwastol/carma-xil-cosimulation:$COMPONENT_VERSION_STRING
