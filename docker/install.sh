@@ -112,6 +112,7 @@ sudo mkdir -p /opt/carma-simulation
 sudo chown -R carma:carma /opt/carma-simulation
 unzip carla-sumo-mosaic-22.1-SNAPSHOT.zip -d /opt/carma-simulation
 sudo chmod +x /opt/carma-simulation/mosaic.sh
+sudo mkdir /opt/carma-simulation/scenarios/tmp_scenario
 cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 
 # Deploy scenario files
