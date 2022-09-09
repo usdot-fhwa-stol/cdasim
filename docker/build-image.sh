@@ -18,7 +18,7 @@ USERNAME=usdotfhwastol
 
 cd "$(dirname "$0")"
 # IMAGE=$(./get-image-name.sh | tr '[:upper:]' '[:lower:]')
-IMAGE="carma-xil-cosimulation"
+IMAGE=$(basename `git rev-parse --show-toplevel`)
 
 echo ""
 echo "##### $IMAGE Docker Image Build Script #####"
