@@ -73,10 +73,10 @@ wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_12_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
 tar xvf v1_12_0.tar.gz -C /opt/sumo
+sudo cp co-simulation/traci_update/constants.py /opt/sumo/sumo-1_12_0/tools/traci
+sudo cp co-simulation/traci_update/connection.py /opt/sumo/sumo-1_12_0/tools/traci
+sudo cp co-simulation/traci_update/main.py /opt/sumo/sumo-1_12_0/tools/traci
 cd /opt/sumo/sumo-1_12_0
-sudo cp /home/carma/src/co-simulation/traci_update/constants.py /opt/sumo/sumo-1_12_0/tools/traci
-sudo cp /home/carma/src/co-simulation/traci_update/connection.py /opt/sumo/sumo-1_12_0/tools/traci
-sudo cp /home/carma/src/co-simulation/traci_update/main.py /opt/sumo/sumo-1_12_0/tools/traci
 mkdir -p build/cmake-build && cd build/cmake-build
 cmake ../..
 make -j$(nproc)
@@ -112,6 +112,7 @@ sudo mkdir -p /opt/carma-simulation
 sudo chown -R carma:carma /opt/carma-simulation
 unzip carla-sumo-mosaic-22.1-SNAPSHOT.zip -d /opt/carma-simulation
 sudo chmod +x /opt/carma-simulation/mosaic.sh
+sudo mkdir /opt/carma-simulation/scenarios/tmp_scenario
 cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 
 # Deploy scenario files
