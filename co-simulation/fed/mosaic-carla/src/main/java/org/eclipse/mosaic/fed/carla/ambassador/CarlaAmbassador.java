@@ -390,7 +390,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     List<String> getProgramArguments(int port) {
 
-        List<String> args = Lists.newArrayList("-carla-rpc-port", Integer.toString(port));
+        List<String> args = Lists.newArrayList("-carla-rpc-port", Integer.toString(port), "-opengl3");
 
         return args;
     }
