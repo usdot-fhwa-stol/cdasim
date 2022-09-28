@@ -22,7 +22,7 @@ done
 echo "##### Running usdotfhwastol/carma-xil-cosimulation:$COMPONENT_VERSION_STRING docker container #####"
 docker run \
        --rm -it\
-       --gpus all\
+       --runtime=nvidia\
        --net=host\
        -v /tmp/.X11-unix:/tmp/.X11-unix\
        -e DISPLAY=$DISPLAY\
