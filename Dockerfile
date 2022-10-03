@@ -12,7 +12,7 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 
-FROM ubuntu:18.04
+FROM nvidia/cudagl:11.2.2-base-ubuntu18.04
 
 MAINTAINER Leidos, Inc.
 LABEL Description="Dockerised Simulation of Carla_Sumo_Mosaic"
@@ -60,22 +60,22 @@ RUN apt update && \
       libomp-dev \
       fontconfig
 
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+#RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
 
 # fix ALSA errors
-RUN echo pcm.!default { type plug slave.pcm "null" } >> /etc/asound.conf
+#RUN echo pcm.!default { type plug slave.pcm "null" } >> /etc/asound.conf
 
 # install NICE DCV (for RoboMaker)
-RUN apt update -y && apt upgrade -y && apt install -y wget pgp
-RUN wget https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
-RUN gpg --import NICE-GPG-KEY
-RUN wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.1/Servers/nice-dcv-2021.1-10598-ubuntu1804-x86_64.tgz
-RUN tar -xvzf nice-dcv-2021.1-10598-ubuntu1804-x86_64.tgz
-RUN apt update && apt install -y ./nice-dcv-2021.1-10598-ubuntu1804-x86_64/nice-dcv-gl_2021.1.937-1_amd64.ubuntu1804.deb \
-                                 ./nice-dcv-2021.1-10598-ubuntu1804-x86_64/nice-dcv-gltest_2021.1.275-1_amd64.ubuntu1804.deb
+# RUN apt update -y && apt upgrade -y && apt install -y wget pgp
+# RUN wget https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+# RUN gpg --import NICE-GPG-KEY
+# RUN wget https://d1uj6qtbmh3dt5.cloudfront.net/2021.1/Servers/nice-dcv-2021.1-10598-ubuntu1804-x86_64.tgz
+# RUN tar -xvzf nice-dcv-2021.1-10598-ubuntu1804-x86_64.tgz
+# RUN apt update && apt install -y ./nice-dcv-2021.1-10598-ubuntu1804-x86_64/nice-dcv-gl_2021.1.937-1_amd64.ubuntu1804.deb \
+#                                  ./nice-dcv-2021.1-10598-ubuntu1804-x86_64/nice-dcv-gltest_2021.1.275-1_amd64.ubuntu1804.deb
 
-# install opengl 
-RUN apt update && apt install -y libglfw3 libglfw3-dev
+# # install opengl 
+# RUN apt update && apt install -y libglfw3 libglfw3-dev
 
 USER carma
 WORKDIR /home/carma/src
