@@ -1,0 +1,44 @@
+# Copyright (C) 2021 LEIDOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+version: "2"
+services:
+  co-simulation:
+    privileged: true
+    image: usdotfhwastol/carma-xil-cosimulation:latest
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    volumes_from:
+      - container:carma-config:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    command: bash -c "export NS3_HOME='/ns-3-integration/bin/fed/ns3' && cd /ns-3-integration/ && ./mosaic.sh -s Town04_10"
+
+  carma-carla-integration:
+    image: usdotfhwastol/carma-carla-integration:latest
+    network_mode: host
+    volumes_from:
+      - container:carma-config:ro
+    environment:
+      - ROS_IP=127.0.0.1
+    command: bash -c "sleep 10; export PYTHONPATH=$PYTHONPATH:/home/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg &&
+                      source /home/carma_carla_ws/devel/setup.bash &&
+                      roslaunch carma_carla_agent carma_carla_agent.launch spawn_point:='15.4,-90.1,0,0,0,90' town:='Town04' selected_route:='Release_test_case_1' selected_plugins:='RouteFollowingPlugin,InLaneCruisingPlugin,StopAndWaitPlugin,Pure Pursuit' "
