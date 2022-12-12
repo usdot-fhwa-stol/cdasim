@@ -24,6 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import main.java.org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
+import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
+import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 
 /**
  * Session management class for CARMA Platform instances communicating with MOSAIC
@@ -57,9 +65,34 @@ public class CarmaInstanceManager {
      * @param rxVehicleId The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
-    public void onV2XMessageTx(CarmaV2xMessage txMsg) {
-        if (!managedInstances.containsKey(txMsg.getVehicleId()))  {
-            return;
+    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg) {
+        CarmaInstance sender = null;
+        for (CarmaInstance ci : managedInstances.values()) {
+            if (ci.getTargetAddress().equals(sourceAddr)) {
+                sender = ci;
+            }
+        }
+
+        if (sender == null) {
+            // Unregistered instance attempting to send messages
+            throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
+        }
+
+        AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
+                sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
+
+        MessageRouting routing = messageRoutingBuilder.topoBroadCast(1);
+
+        return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
+                new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
+
+    }
+
+    public void onVehicleUpdates(VehicleUpdates vui) {
+        for (VehicleData veh : vui.getUpdated()) {
+            if (managedInstances.containsKey(veh.getName())) {
+                managedInstances.get(veh.getName()).setLocation(veh.getPosition());
+            }
         }
     }
 

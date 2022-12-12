@@ -15,6 +15,7 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.DestinationAddressContainer;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
@@ -30,6 +31,7 @@ import main.java.org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessag
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -184,9 +186,10 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 carmaInstanceManager.onNewRegistration(reg);
             }
 
-            List<CarmaV2xMessage> newMessages = v2xMessageReceiver.getReceivedMessages();
-            for (CarmaV2xMessage msg : newMessages) {
-                V2xMessageTransmission txInteraction = new V2xMessageTransmission(this.currentSimulationTime, new V2
+            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                this.rti.triggerInteraction(msgInt);
             }
 
             // Update CARMA vehicle

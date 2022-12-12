@@ -17,9 +17,12 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+import org.eclipse.mosaic.lib.misc.Tuple;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ import java.util.Queue;
  */
 public class CarmaV2xMessageReceiver implements Runnable {
 
-    private Queue<CarmaV2xMessage> rxQueue = new ArrayList<>();
+    private Queue<Tuple<InetAddress, CarmaV2xMessage>> rxQueue = new ArrayList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1516;
     private boolean running = true;
@@ -55,7 +58,11 @@ public class CarmaV2xMessageReceiver implements Runnable {
     public void run() {
         byte[] buf = new byte[UDP_MTU];
        while (running) {
-            DatagramPacket msg = new DatagramPacket(buf, buf.length);
+           DatagramPacket msg = new DatagramPacket(buf, buf.length);
+           InetAddress senderAddr = msg.getAddress();
+
+
+
            try {
                listenSocket.receive(msg);
            } catch (IOException e) {
@@ -67,7 +74,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                rxQueue.add(parsedMessage);
+                rxQueue.add(new Tuple<>(senderAddr, parsedMessage));
             }
        }
     }
@@ -87,8 +94,8 @@ public class CarmaV2xMessageReceiver implements Runnable {
      * Query the current buffer of outbound messages. Clears the currently stored buffer once called. Thread-safe.
      * @return The list of received outbound message from all CARMA Platform instances since last call of this method
      */
-    public List<CarmaV2xMessage> getReceivedMessages() {
-        List<CarmaV2xMessage> output = new ArrayList<>();
+    public List<Tuple<InetAddress, CarmaV2xMessage>> getReceivedMessages() {
+        List<Tuple<InetAddress, CarmaV2xMessage>> output = new ArrayList<>();
 
         synchronized (rxQueue) {
             output.addAll(rxQueue);

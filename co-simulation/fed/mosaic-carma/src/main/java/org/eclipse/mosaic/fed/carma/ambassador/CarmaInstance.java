@@ -16,6 +16,8 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+import org.eclipse.mosaic.lib.geo.GeoPoint;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,14 +28,33 @@ public class CarmaInstance {
     private String carmaVehicleId;
     private String carlaRoleName;
     private DatagramSocket rxMsgsSocket = null;
+
+
     private InetAddress targetAddress;
     private int port;
+    private GeoPoint location = null;
 
     public CarmaInstance(String carmaVehicleId, String carlaRoleName, InetAddress targetAddress, int port) {
         this.carmaVehicleId = carmaVehicleId;
         this.carlaRoleName = carlaRoleName;
         this.targetAddress = targetAddress;
         this.port = port;
+    }
+
+    public InetAddress getTargetAddress() {
+        return targetAddress;
+    }
+
+    public void setTargetAddress(InetAddress targetAddress) {
+        this.targetAddress = targetAddress;
+    }
+
+    public void setLocation(GeoPoint location) {
+        this.location = location;
+    }
+
+    public GeoPoint getLocation() {
+        return this.location;
     }
 
     public void sendMsgs(byte[] data) throws IOException {
@@ -48,5 +69,21 @@ public class CarmaInstance {
 
     public void bind() throws IOException {
         rxMsgsSocket = new DatagramSocket();
+    }
+
+    public String getCarmaVehicleId() {
+        return carmaVehicleId;
+    }
+
+    public void setCarmaVehicleId(String carmaVehicleId) {
+        this.carmaVehicleId = carmaVehicleId;
+    }
+
+    public String getCarlaRoleName() {
+        return carlaRoleName;
+    }
+
+    public void setCarlaRoleName(String carlaRoleName) {
+        this.carlaRoleName = carlaRoleName;
     }
 }

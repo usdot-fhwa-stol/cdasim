@@ -27,13 +27,13 @@ public class CarmaV2xMessage {
     private String version;
     private String type;
     private int psid;
-    private String vehicleId;
     private int priority;
     private String txMode;
     private int txChannel; 
     private int txInterval;
     private String deliveryStart;
     private String deliveryStop;
+    private String payload;
     private boolean signature;
     private boolean encryption;
 
@@ -44,7 +44,6 @@ public class CarmaV2xMessage {
         this.version = version;
         this.type = type;
         this.psid = psid;
-        this.vehicleId = vehicleId;
         this.priority = priority; this.txMode = txMode;
         this.txChannel = txChannel;
         this.txInterval = txInterval;
@@ -60,7 +59,6 @@ public class CarmaV2xMessage {
         this.version = version;
         this.type = type;
         this.psid = psid;
-        this.vehicleId = vehicleId;
         this.priority = priority; this.txMode = txMode;
         this.txChannel = txChannel;
         this.txInterval = txInterval;
@@ -84,10 +82,6 @@ public class CarmaV2xMessage {
 
     public int getPsid() {
         return psid;
-    }
-
-    public String getVehicleId() {
-        return vehicleId;
     }
 
     public int getPriority() {
@@ -137,8 +131,6 @@ public class CarmaV2xMessage {
                 type = msgParts[++i];
             } else if (msgParts[i].equals("PSID")) {
                 psid = Integer.parseInt(msgParts[++i]);
-            } else if (msgParts[i].equals("VehicleID")) {
-                vehicleId = msgParts[++i];
             } else if (msgParts[i].equals("Priority")) {
                 priority = Integer.parseInt(msgParts[++i]);
             } else if (msgParts[i].equals("TxMode")) {
@@ -172,5 +164,13 @@ public class CarmaV2xMessage {
 
     public InetAddress getOriginAddress() {
         return originAddress;
+    }
+
+    public String getPayload() {
+        return payload;
+    }
+
+    public void setPayload(String payload) {
+        this.payload = payload;
     }
 }
