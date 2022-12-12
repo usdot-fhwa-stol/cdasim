@@ -25,6 +25,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
@@ -36,7 +37,7 @@ import java.util.Queue;
  */
 public class CarmaV2xMessageReceiver implements Runnable {
 
-    private Queue<Tuple<InetAddress, CarmaV2xMessage>> rxQueue = new ArrayList<>();
+    private Queue<Tuple<InetAddress, CarmaV2xMessage>> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1516;
     private boolean running = true;

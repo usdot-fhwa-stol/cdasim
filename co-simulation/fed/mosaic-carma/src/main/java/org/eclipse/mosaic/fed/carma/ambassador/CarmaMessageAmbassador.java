@@ -26,7 +26,7 @@ import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-import main.java.org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
 
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
@@ -262,6 +262,9 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         }
         if (interaction.getTypeId().equals(CarmaV2xMessageReception.TYPE_ID)) {
             receiveInteraction((CarmaV2xMessageReception) interaction);
+        }
+        if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
+            carmaInstanceManager.onVehicleUpdates((VehicleUpdates) interaction);
         }
     }
 

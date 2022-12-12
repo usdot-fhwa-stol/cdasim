@@ -23,7 +23,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import main.java.org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
@@ -44,7 +44,7 @@ public class CarmaInstanceManager {
     private static final int TARGET_PORT = 5374;
 
     public void onNewRegistration(CarmaRegistrationMessage registration) {
-        if (!managedInstances.containsKey(txMsg.getVehicleId())) {
+        if (!managedInstances.containsKey(registration.getCarlaVehicleRole())) {
             try {
                 newCarmaInstance(
                     registration.getCarmaVehicleId(),
@@ -61,8 +61,8 @@ public class CarmaInstanceManager {
     }
     /**
      * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
-     * @param rxMsg The V2X Message received
-     * @param rxVehicleId The Host ID of the vehicle receiving the data
+     * @param sourceAddr The V2X Message received
+     * @param txMsg The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg) {
@@ -103,7 +103,7 @@ public class CarmaInstanceManager {
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
     public void onV2XMessageRx(CarmaV2xMessage rxMsg, String rxVehicleId) {
-        if (!managedInstances.containsKey(rxMsg.getVehicleId()))  {
+        if (!managedInstances.containsKey(rxVehicleId))  {
             return;
         }
 
