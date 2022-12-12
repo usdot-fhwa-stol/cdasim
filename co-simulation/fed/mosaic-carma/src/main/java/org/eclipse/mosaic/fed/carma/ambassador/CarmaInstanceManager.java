@@ -102,14 +102,14 @@ public class CarmaInstanceManager {
      * @param rxVehicleId The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
-    public void onV2XMessageRx(CarmaV2xMessage rxMsg, String rxVehicleId) {
+    public void onV2XMessageRx(byte[] rxMsg, String rxVehicleId) {
         if (!managedInstances.containsKey(rxVehicleId))  {
             return;
         }
 
         CarmaInstance carma = managedInstances.get(rxVehicleId);
         try {
-            carma.sendMsgs(rxMsg.encodeV2xMessage());
+            carma.sendMsgs(rxMsg);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

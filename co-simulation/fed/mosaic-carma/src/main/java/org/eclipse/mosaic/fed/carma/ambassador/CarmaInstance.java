@@ -71,7 +71,7 @@ public class CarmaInstance {
         rxMsgsSocket = new DatagramSocket();
     }
 
-    public String getCarmaVehicleId() {
+    public String getCarmaVehicleId() {j
         return carmaVehicleId;
     }
 
