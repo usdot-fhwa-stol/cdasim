@@ -19,8 +19,11 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+
+import main.java.org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
 
 /**
  * Session management class for CARMA Platform instances communicating with MOSAIC
@@ -32,26 +35,31 @@ public class CarmaInstanceManager {
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
     private static final int TARGET_PORT = 5374;
 
-    /**
-     * Callback to invoked when a CARMA Platform vehicle broadcasts a V2X message
-     * @param txMsg The message information
-     * @return true if that vehicle has already been tracked by this instance manager, false o.w.
-     */
-    public boolean onV2XMessageTx(CarmaV2xMessage txMsg) {
+    public void onNewRegistration(CarmaRegistrationMessage registration) {
         if (!managedInstances.containsKey(txMsg.getVehicleId())) {
-            newCarmaInstance(
-                txMsg.getVehicleId(), 
-                txMsg.getVehiclePosX(), 
-                txMsg.getVehiclePosY(),
-                txMsg.getOriginAddress(),
-                TARGET_PORT);
-            return false;
+            try {
+                newCarmaInstance(
+                    registration.getCarmaVehicleId(),
+                    registration.getCarlaVehicleRole(),
+                    InetAddress.getByName(registration.getRxMessageIpAddress()),
+                    registration.getRxMessagePort()
+                );
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
         } else {
-            updateCarmaInstance(
-                txMsg.getVehicleId(), 
-                txMsg.getVehiclePosX(), 
-                txMsg.getVehiclePosY());
-            return true;
+            // log warning
+        }
+    }
+    /**
+     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * @param rxMsg The V2X Message received
+     * @param rxVehicleId The Host ID of the vehicle receiving the data
+     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     */
+    public void onV2XMessageTx(CarmaV2xMessage txMsg) {
+        if (!managedInstances.containsKey(txMsg.getVehicleId()))  {
+            return;
         }
     }
 
@@ -74,19 +82,13 @@ public class CarmaInstanceManager {
         }
     }
 
-    private void newCarmaInstance(String vehId, double xPos, double yPos, InetAddress address, int port) {
-        CarmaInstance tmp = new CarmaInstance(vehId, xPos, yPos, currentSimulationTime);
+    private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int targetPort) {
+        CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, targetPort);
         try {
-            tmp.connect(address, port);
-        } catch (SocketException e) {
+            tmp.bind();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        managedInstances.put(vehId, new CarmaInstance(vehId, xPos, yPos, currentSimulationTime));
-    }
-
-    private void updateCarmaInstance(String vehId, double xPos, double yPos) {
-        managedInstances.get(vehId).setPosX(xPos);
-        managedInstances.get(vehId).setPosY(yPos);
-        managedInstances.get(vehId).setLastUpdateTime(currentSimulationTime);
+        managedInstances.put(carlaRoleName, tmp);
     }
 }

@@ -15,12 +15,17 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.lib.objects.addressing.DestinationAddressContainer;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
+import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+
+import main.java.org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
 
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
@@ -68,10 +73,11 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
      */
     int numberOfCarmaVehicle = 0;
 
-    private CarmaV2xMessageReceiver receiver;
-    private Thread rxBackgroundThread;
+    private CarmaRegistrationReceiver carmaRegistrationReceiver;
+    private Thread registrationRxBackgroundThread;
+    private CarmaV2xMessageReceiver v2xMessageReceiver;
+    private Thread v2xRxBackgroundThread;
     private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
-    private CarmaIdTransformer carmaIdTransformer = new CarmaIdTransformer();
 
     /**
      * Create a new {@link CarmaMessageAmbassador} object.
@@ -119,11 +125,17 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             throw new InternalFederateException(e);
         }
 
+        // Initialize listener socket and thread for CARMA Registration messages
+        carmaRegistrationReceiver = new CarmaRegistrationReceiver();
+        carmaRegistrationReceiver.init();
+        registrationRxBackgroundThread = new Thread(carmaRegistrationReceiver);
+        registrationRxBackgroundThread.start();
+
         // Initialize listener socket and thread for CARMA NS-3 Adapter messages
-        receiver = new CarmaV2xMessageReceiver();
-        receiver.init();
-        rxBackgroundThread = new Thread(receiver);
-        rxBackgroundThread.start();
+        v2xMessageReceiver = new CarmaV2xMessageReceiver();
+        v2xMessageReceiver.init();
+        v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
+        v2xRxBackgroundThread.start();
 
         // Register CARMA vehicles
         for (CarmaVehicleConfiguration carmaVehicleConfiguration : carmaConfiguration.carmaVehicles) {
@@ -167,9 +179,14 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
 
         try {
 
-            List<CarmaV2xMessage> newMessages = receiver.getReceivedMessages();
+            List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
+            for (CarmaRegistrationMessage reg : newRegistrations) {
+                carmaInstanceManager.onNewRegistration(reg);
+            }
+
+            List<CarmaV2xMessage> newMessages = v2xMessageReceiver.getReceivedMessages();
             for (CarmaV2xMessage msg : newMessages) {
-                carmaInstanceManager.onV2XMessageTx(msg);
+                V2xMessageTransmission txInteraction = new V2xMessageTransmission(this.currentSimulationTime, new V2
             }
 
             // Update CARMA vehicle
@@ -258,6 +275,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     }
 
     private V2xMessage lookupV2xMsgIdInBuffer(int id) {
+        // TODO: There should be a way to optimize this, this could become prohibitively slow
         for (V2xMessageTransmission msgTx : messageBuffer) {
             if (msgTx.getMessageId() == id) {
                 return msgTx.getMessage();
@@ -267,13 +285,13 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     }
 
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
-        String carmaId = carmaIdTransformer.ns3IdToCarmaId(interaction.getReceiverName());
+        String carlaRoleName = interaction.getReceiverName();
         int messageId = interaction.getMessageId();
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
 
         if (msg != null) {
             CarmaV2xMessage msg2 = new CarmaV2xMessage(msg.getPayLoad().getBytes());
-            carmaInstanceManager.onV2XMessageRx(msg2, carmaId);
+            carmaInstanceManager.onV2XMessageRx(msg2, carlaRoleName);
         } else {
             // TODO: Log warning as message was no longer in buffer to be received
         }

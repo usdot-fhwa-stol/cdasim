@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
  * Message to be sent or received by the CARMA Platform NS-3 Adapater interface
  */
 public class CarmaV2xMessage {
-
     private InetAddress originAddress;
     private String version;
     private String type;
@@ -37,12 +36,10 @@ public class CarmaV2xMessage {
     private String deliveryStop;
     private boolean signature;
     private boolean encryption;
-    private double vehiclePosX;
-    private double vehiclePosY;
 
     public CarmaV2xMessage(InetAddress originAddress, String version, String type, int psid, String vehicleId, int priority, String txMode,
             int txChannel, int txInterval, String deliveryStart, String deliveryStop, boolean signature,
-            boolean encryption, double vehiclePosX, double vehiclePosY) {
+            boolean encryption) {
         this.originAddress = originAddress;
         this.version = version;
         this.type = type;
@@ -55,13 +52,11 @@ public class CarmaV2xMessage {
         this.deliveryStop = deliveryStop;
         this.signature = signature;
         this.encryption = encryption;
-        this.vehiclePosX = vehiclePosX;
-        this.vehiclePosY = vehiclePosY;
     }
 
     public CarmaV2xMessage(String version, String type, int psid, String vehicleId, int priority, String txMode,
                            int txChannel, int txInterval, String deliveryStart, String deliveryStop, boolean signature,
-                           boolean encryption, double vehiclePosX, double vehiclePosY) {
+                           boolean encryption) {
         this.version = version;
         this.type = type;
         this.psid = psid;
@@ -73,8 +68,6 @@ public class CarmaV2xMessage {
         this.deliveryStop = deliveryStop;
         this.signature = signature;
         this.encryption = encryption;
-        this.vehiclePosX = vehiclePosX;
-        this.vehiclePosY = vehiclePosY;
     }
 
     public CarmaV2xMessage(byte[] bytes) {
@@ -129,14 +122,6 @@ public class CarmaV2xMessage {
         return encryption;
     }
 
-    public double getVehiclePosX() {
-        return vehiclePosX;
-    }
-
-    public double getVehiclePosY() {
-        return vehiclePosY;
-    }
-
     /**
      * Constructor helper, decodes the format sent by the CARMA Platform driver
      * @param buf A binary array containing the data sent from the CARMA Platform's ns3 adapter
@@ -170,10 +155,6 @@ public class CarmaV2xMessage {
                 signature = Boolean.parseBoolean(msgParts[++i]);
             } else if (msgParts[i].equals("Encryption")) {
                 encryption = Boolean.parseBoolean(msgParts[++i]);
-            } else if (msgParts[i].equals("VehiclePosX")) {
-                vehiclePosX = Double.parseDouble(msgParts[++i]);
-            } else if (msgParts[i].equals("VehiclePosY")) {
-                vehiclePosY = Double.parseDouble(msgParts[++i]);
             } else {
                 throw new IllegalArgumentException("No such field in CarmaV2xMessage.");
             }

@@ -23,28 +23,17 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 public class CarmaInstance {
-    private String vehicleId;
-    private double posX;
-    private double posY;
-    private double lastUpdateTime;
-
+    private String carmaVehicleId;
+    private String carlaRoleName;
     private DatagramSocket rxMsgsSocket = null;
     private InetAddress targetAddress;
     private int port;
 
-    public CarmaInstance(String vehicleId, double posX, double posY, double lastUpdateTime) {
-        this.vehicleId = vehicleId;
-        this.posX = posX;
-        this.posY = posY;
-        this.lastUpdateTime = lastUpdateTime;
-    }
-
-    public void connect(InetAddress targetAddress, int port) throws SocketException {
-        if (rxMsgsSocket == null) {
-            rxMsgsSocket = new DatagramSocket();
-            this.targetAddress = targetAddress;
-            this.port = port;
-        }
+    public CarmaInstance(String carmaVehicleId, String carlaRoleName, InetAddress targetAddress, int port) {
+        this.carmaVehicleId = carmaVehicleId;
+        this.carlaRoleName = carlaRoleName;
+        this.targetAddress = targetAddress;
+        this.port = port;
     }
 
     public void sendMsgs(byte[] data) throws IOException {
@@ -57,31 +46,7 @@ public class CarmaInstance {
         rxMsgsSocket.send(packet);
     }
 
-    public String getVehicleId() {
-        return vehicleId;
-    }
-
-    public double getPosX() {
-        return posX;
-    }
-
-    public double getPosY() {
-        return posY;
-    }
-
-    public double getLastUpdateTime() {
-        return lastUpdateTime;
-    }
-
-    public void setPosX(double posX) {
-        this.posX = posX;
-    }
-
-    public void setPosY(double posY) {
-        this.posY = posY;
-    }
-
-    public void setLastUpdateTime(double lastUpdateTime) {
-        this.lastUpdateTime = lastUpdateTime;
+    public void bind() throws IOException {
+        rxMsgsSocket = new DatagramSocket();
     }
 }
