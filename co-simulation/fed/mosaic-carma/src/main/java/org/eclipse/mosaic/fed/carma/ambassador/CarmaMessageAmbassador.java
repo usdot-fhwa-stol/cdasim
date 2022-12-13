@@ -296,8 +296,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
 
         if (msg != null) {
-            CarmaV2xMessage msg2 = new CarmaV2xMessage(msg.getPayLoad().getBytes());
-            carmaInstanceManager.onV2XMessageRx(msg2, carlaRoleName);
+            carmaInstanceManager.onV2XMessageRx(msg.getPayLoad().getBytes(), carlaRoleName);
         } else {
             // TODO: Log warning as message was no longer in buffer to be received
         }
