@@ -46,6 +46,8 @@ import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
 import org.eclipse.mosaic.lib.enums.DriveDirection;
 
+import javax.xml.bind.DatatypeConverter;
+
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for CARMA message
  * ambassador.
@@ -282,6 +284,8 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
 
     private V2xMessage lookupV2xMsgIdInBuffer(int id) {
         // TODO: There should be a way to optimize this, this could become prohibitively slow
+
+        // TODO: Convert to using simulation kernel buffer instead
         for (V2xMessageTransmission msgTx : messageBuffer) {
             if (msgTx.getMessageId() == id) {
                 return msgTx.getMessage();
@@ -295,8 +299,9 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         int messageId = interaction.getMessageId();
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
 
-        if (msg != null) {
-            carmaInstanceManager.onV2XMessageRx(msg.getPayLoad().getBytes(), carlaRoleName);
+        if (msg != null && msg instanceof ExternalV2xMessage) {
+            ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
+            carmaInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
         } else {
             // TODO: Log warning as message was no longer in buffer to be received
         }

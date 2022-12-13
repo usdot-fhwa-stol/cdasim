@@ -147,19 +147,12 @@ public class CarmaV2xMessage {
                 signature = Boolean.parseBoolean(msgParts[++i]);
             } else if (msgParts[i].equals("Encryption")) {
                 encryption = Boolean.parseBoolean(msgParts[++i]);
+            } else if (msgParts[i].equals("Payload")) {
+                payload = msgParts[++i];
             } else {
                 throw new IllegalArgumentException("No such field in CarmaV2xMessage.");
             }
         }
-    }
-
-    /**
-     * Encode this CARMA V2X Message into a binary format suitable for receipt at the CARMA Platform driver
-     * @return The encoded binary data
-     */
-    public byte[] encodeV2xMessage() {
-        // TODO: Implement encoding
-        return new byte[10];
     }
 
     public InetAddress getOriginAddress() {
