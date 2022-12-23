@@ -24,11 +24,13 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
+/**
+ * Connection manager and data object to associate with a single CARMA Platform instance in XIL
+ */
 public class CarmaInstance {
     private String carmaVehicleId;
     private String carlaRoleName;
     private DatagramSocket rxMsgsSocket = null;
-
 
     private InetAddress targetAddress;
     private int port;
@@ -57,6 +59,11 @@ public class CarmaInstance {
         return this.location;
     }
 
+    /**
+     * Sends the data to the CARMA Platform communications interface configured at construction time.
+     * @param data The binary data to transmit
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
     public void sendMsgs(byte[] data) throws IOException {
         if (rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
@@ -67,6 +74,10 @@ public class CarmaInstance {
         rxMsgsSocket.send(packet);
     }
 
+    /**
+     * Connects the sockt to receive messages from the CARMA Platform instance
+     * @throws IOException If the socket creation fails
+     */
     public void bind() throws IOException {
         rxMsgsSocket = new DatagramSocket();
     }

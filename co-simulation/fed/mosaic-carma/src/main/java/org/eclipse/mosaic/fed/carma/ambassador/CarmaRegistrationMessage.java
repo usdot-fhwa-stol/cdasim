@@ -14,9 +14,11 @@
  * the License.
  */
 
-
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+/**
+ * JSON compatible message to be sent by CARMA Platform when it registers with the carma-mosaic ambassador
+ */
 public class CarmaRegistrationMessage {
     private String carmaVehicleId;
     private String carlaVehicleRole;

@@ -14,7 +14,6 @@
  * the License.
  */
 
-
 package org.eclipse.mosaic.fed.carma.ambassador;
 
 import org.eclipse.mosaic.lib.misc.Tuple;

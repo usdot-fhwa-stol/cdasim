@@ -265,12 +265,27 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         }
     }
 
+    /**
+     * Helper function to retrieve previously transmitted messages by ID from the buffer
+     * @param id The id of the message to return
+     * @return The {@link V2xMessage} object if the id exists in the buffer, null o.w.
+     */
     private V2xMessage lookupV2xMsgIdInBuffer(int id) {
         return SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(id);
     }
 
+    /**
+     * Callback to be invoked when the network simulator determines that a simulated radio has received a V2X message
+     * @param interaction The v2x message receipt data
+     */
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
         String carlaRoleName = interaction.getReceiverName();
+
+        if (!carmaInstanceManager.checkIfRegistered(carlaRoleName)) {
+            // Abort early as we only are concerned with CARMA Platform vehicles
+            return;
+        }
+
         int messageId = interaction.getMessageId();
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
 

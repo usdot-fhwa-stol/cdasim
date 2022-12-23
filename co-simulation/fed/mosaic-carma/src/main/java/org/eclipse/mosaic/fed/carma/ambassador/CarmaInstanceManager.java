@@ -43,6 +43,10 @@ public class CarmaInstanceManager {
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
     private static final int TARGET_PORT = 5374;
 
+    /**
+     * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
+     * @param registration The new instance's registration data
+     */
     public void onNewRegistration(CarmaRegistrationMessage registration) {
         if (!managedInstances.containsKey(registration.getCarlaVehicleRole())) {
             try {
@@ -88,6 +92,11 @@ public class CarmaInstanceManager {
 
     }
 
+    /**
+     * Callback to be invoked when the simulation emits a VehicleUpdates event, used to track the location of CARMA
+     * Platform instances in this manager.
+     * @param vui The vehicle update information
+     */
     public void onVehicleUpdates(VehicleUpdates vui) {
         for (VehicleData veh : vui.getUpdated()) {
             if (managedInstances.containsKey(veh.getName())) {
@@ -115,6 +124,13 @@ public class CarmaInstanceManager {
         }
     }
 
+    /**
+     * Helper function to configure a new CARMA Platform instance object upon registration
+     * @param carmaVehId The CARMA Platform vehicle ID (e.g. it's license plate number)
+     * @param carlaRoleName The Role Name associated with the CARMA Platform's ego vehicle in CARLA
+     * @param targetAddress The IP address to which received simulated V2X messages should be sent
+     * @param targetPort The port to which received simulated V2X messages should be sent
+     */
     private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int targetPort) {
         CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, targetPort);
         try {
@@ -123,5 +139,15 @@ public class CarmaInstanceManager {
             throw new RuntimeException(e);
         }
         managedInstances.put(carlaRoleName, tmp);
+    }
+
+    /**
+     * External helper function to allow the ambassador to check if a given vehicle ID is a registered CARMA Platform
+     * instance
+     * @param mosiacVehicleId The id to check
+     * @return True if managed by this object (e.g., is a registered CARMA Platform vehicle). false o.w.
+     */
+    public boolean checkIfRegistered(String mosiacVehicleId) {
+        return managedInstances.keySet().contains(mosiacVehicleId);
     }
 }
