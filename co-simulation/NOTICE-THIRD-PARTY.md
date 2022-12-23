@@ -111,7 +111,7 @@ GraphHopper Core (0.13.0)
 
 Gson (2.8.6)
 
- * License: Apache 2.0
+ * License: Apache 2.0, Apache-2.0
  * Maven artifact: `com.google.code.gson:gson:2.8.6`
  * Project: https://github.com/google/gson/gson
  * Source: https://github.com/google/gson/gson/

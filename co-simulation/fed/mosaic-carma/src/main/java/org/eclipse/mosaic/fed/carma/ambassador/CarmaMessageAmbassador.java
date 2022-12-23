@@ -29,6 +29,7 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
 
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
+import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
 
 import java.net.InetAddress;
@@ -68,9 +69,6 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
      * List of vehicles that are controlled by CARMA platform.
      */
     private final HashMap<String, Boolean> carmaVehicleMap = new HashMap<>();
-
-    private List<V2xMessageTransmission> messageBuffer = new ArrayList<>();
-    private final int MESSAGE_BUFFER_MAX_SIZE = 100;
 
     /**
      * The number of CARMA vehicles.
@@ -256,9 +254,6 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         String type = interaction.getTypeId();
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-        if (interaction.getTypeId().equals(V2xMessageTransmission.TYPE_ID)) {
-            receiveV2xTransmissionInteraction((V2xMessageTransmission) interaction);
-        }
         if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
             receiveV2xReceptionInteraction((V2xMessageReception) interaction);
         }
@@ -270,28 +265,8 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         }
     }
 
-
-    private synchronized void receiveV2xTransmissionInteraction(V2xMessageTransmission interaction) {
-        // Enqueue the message broadcast into the message buffer
-        messageBuffer.add(interaction);
-
-        // Treat the message buffer like a ring buffer to only keep the N most recent elements
-        if (messageBuffer.size() > MESSAGE_BUFFER_MAX_SIZE) {
-            // Trim the front of the list
-            messageBuffer.subList(0, messageBuffer.size() - MESSAGE_BUFFER_MAX_SIZE).clear();
-        }
-    }
-
     private V2xMessage lookupV2xMsgIdInBuffer(int id) {
-        // TODO: There should be a way to optimize this, this could become prohibitively slow
-
-        // TODO: Convert to using simulation kernel buffer instead
-        for (V2xMessageTransmission msgTx : messageBuffer) {
-            if (msgTx.getMessageId() == id) {
-                return msgTx.getMessage();
-            }
-        }
-        return null;
+        return SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(id);
     }
 
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
