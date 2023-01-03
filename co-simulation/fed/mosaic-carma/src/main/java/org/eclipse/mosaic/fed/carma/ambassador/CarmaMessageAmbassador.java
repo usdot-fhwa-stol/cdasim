@@ -13,15 +13,26 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
+import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.lib.misc.Tuple;
+import org.eclipse.mosaic.lib.objects.addressing.DestinationAddressContainer;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
+import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
+import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
+import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +46,8 @@ import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
 import org.eclipse.mosaic.lib.enums.DriveDirection;
+
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for CARMA message
@@ -61,6 +74,12 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
      * The number of CARMA vehicles.
      */
     int numberOfCarmaVehicle = 0;
+
+    private CarmaRegistrationReceiver carmaRegistrationReceiver;
+    private Thread registrationRxBackgroundThread;
+    private CarmaV2xMessageReceiver v2xMessageReceiver;
+    private Thread v2xRxBackgroundThread;
+    private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
 
     /**
      * Create a new {@link CarmaMessageAmbassador} object.
@@ -108,6 +127,18 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             throw new InternalFederateException(e);
         }
 
+        // Initialize listener socket and thread for CARMA Registration messages
+        carmaRegistrationReceiver = new CarmaRegistrationReceiver();
+        carmaRegistrationReceiver.init();
+        registrationRxBackgroundThread = new Thread(carmaRegistrationReceiver);
+        registrationRxBackgroundThread.start();
+
+        // Initialize listener socket and thread for CARMA NS-3 Adapter messages
+        v2xMessageReceiver = new CarmaV2xMessageReceiver();
+        v2xMessageReceiver.init();
+        v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
+        v2xRxBackgroundThread.start();
+
         // Register CARMA vehicles
         for (CarmaVehicleConfiguration carmaVehicleConfiguration : carmaConfiguration.carmaVehicles) {
             VehicleDeparture vehicleDeparture = new VehicleDeparture.Builder(carmaVehicleConfiguration.routeID)
@@ -149,6 +180,18 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
+
+            List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
+            for (CarmaRegistrationMessage reg : newRegistrations) {
+                carmaInstanceManager.onNewRegistration(reg);
+            }
+
+            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                this.rti.triggerInteraction(msgInt);
+            }
+
             // Update CARMA vehicle
             updateCarmaVehicles();
 
@@ -211,8 +254,46 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         String type = interaction.getTypeId();
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
+        if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
+            receiveV2xReceptionInteraction((V2xMessageReception) interaction);
+        }
         if (interaction.getTypeId().equals(CarmaV2xMessageReception.TYPE_ID)) {
             receiveInteraction((CarmaV2xMessageReception) interaction);
+        }
+        if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
+            carmaInstanceManager.onVehicleUpdates((VehicleUpdates) interaction);
+        }
+    }
+
+    /**
+     * Helper function to retrieve previously transmitted messages by ID from the buffer
+     * @param id The id of the message to return
+     * @return The {@link V2xMessage} object if the id exists in the buffer, null o.w.
+     */
+    private V2xMessage lookupV2xMsgIdInBuffer(int id) {
+        return SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(id);
+    }
+
+    /**
+     * Callback to be invoked when the network simulator determines that a simulated radio has received a V2X message
+     * @param interaction The v2x message receipt data
+     */
+    private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
+        String carlaRoleName = interaction.getReceiverName();
+
+        if (!carmaInstanceManager.checkIfRegistered(carlaRoleName)) {
+            // Abort early as we only are concerned with CARMA Platform vehicles
+            return;
+        }
+
+        int messageId = interaction.getMessageId();
+        V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
+
+        if (msg != null && msg instanceof ExternalV2xMessage) {
+            ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
+            carmaInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
+        } else {
+            // TODO: Log warning as message was no longer in buffer to be received
         }
     }
 

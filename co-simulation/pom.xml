@@ -472,6 +472,7 @@
                         <excludes>
                             <exclude>target/**</exclude>
                             <exclude>**/ClientServerChannelProtos.java</exclude>
+                            <exclude>fed/mosaic-carma/**</exclude>
                         </excludes>
                         <useDefaultExcludes>true</useDefaultExcludes>
                         <encoding>${project.build.sourceEncoding}</encoding>
