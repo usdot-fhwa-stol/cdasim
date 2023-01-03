@@ -189,6 +189,22 @@ Java-WebSocket (1.3.9)
  * Source: https://github.com/TooTallNate/Java-WebSocket
 
 
+JavaBeans Activation Framework API jar (1.2.0)
+
+ * License: CDDL/GPLv2+CE
+ * Maven artifact: `javax.activation:javax.activation-api:1.2.0`
+ * Project: http://java.net/all/javax.activation-api/
+ * Source: https://github.com/javaee/activation/javax.activation-api
+
+
+jaxb-api (2.3.1)
+
+ * License: CDDL 1.1, GPL2 w/ CPE
+ * Maven artifact: `javax.xml.bind:jaxb-api:2.3.1`
+ * Project: https://github.com/javaee/jaxb-spec/jaxb-api
+ * Source: https://github.com/javaee/jaxb-spec/jaxb-api
+
+
 Johnzon :: Core (1.1.13)
 
  * License: The Apache Software License, Version 2.0
