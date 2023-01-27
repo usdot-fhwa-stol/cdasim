@@ -85,7 +85,7 @@ sudo make install
 # Install python3.7 and lxml
 python3.7 -m pip install pip
 python3.7 -m pip install lxml==4.5.0
-
+wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
 # Install CARLA
 cd /home/carma/src/
 if [[ ! -f '/home/carma/src/CARLA_0.9.10.tar.gz' ]]; then
