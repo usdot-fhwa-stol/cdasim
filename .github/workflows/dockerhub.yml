@@ -21,8 +21,8 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v3
         with:
-          context: ./carma-simulation/
-          file: ./telematic_system/Dockerfile
+          context: ./
+          file: ./Dockerfile
           push: true
           tags: usdotfhwastoldev/carma-simulation:${{ github.ref_name }}
 
