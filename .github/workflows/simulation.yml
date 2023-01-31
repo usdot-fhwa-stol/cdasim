@@ -17,7 +17,7 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v3 # GitHub Action to build and push Docker images with Buildx
         with:
-          context: ./carma-simulation/
-          file: ./carma-simulation/Dockerfile
+          context: ./
+          file: ./Dockerfile
 
  
