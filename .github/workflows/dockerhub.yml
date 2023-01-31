@@ -23,7 +23,6 @@ jobs:
         with:
           context: ./carma-simulation/
           file: ./telematic_system/Dockerfile
-          path: carma-simulation/
           push: true
           tags: usdotfhwastoldev/carma-simulation:${{ github.ref_name }}
 
