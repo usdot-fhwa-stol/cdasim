@@ -1,0 +1,29 @@
+name: "DockerHub Build and Push"
+
+on:
+  push:
+    branches:
+      - "develop"
+
+jobs:
+  dockerhub-carma-simulation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build
+        uses: docker/build-push-action@v3
+        with:
+          context: ./carma-simulation/
+          file: ./telematic_system/Dockerfile
+          path: carma-simulation/
+          push: true
+          tags: usdotfhwastoldev/carma-simulation:${{ github.ref_name }}
+
