@@ -26,6 +26,11 @@
       <version>${mosaic.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.9</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.mosaic</groupId>
       <artifactId>mosaic-interactions</artifactId>
       <version>${mosaic.version}</version>
@@ -54,6 +59,17 @@
       <version>4.11</version>
       <scope>test</scope>
     </dependency>
+      <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-application</artifactId>
+          <version>22.1-SNAPSHOT</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+          <version>2.3.1</version>
+      </dependency>
   </dependencies>
 
   <profiles>
