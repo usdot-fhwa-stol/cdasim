@@ -1,7 +1,7 @@
 # CARMA Simulation Release Notes
 
 ## February 10th, 2023 - Version 1.1.0
-### CARMA Simulation 1.0.1
+### <ins>CARMA Simulation 1.1.0 </ins>
 carma-simulation release version 1.1.0 is upgraded to support ROS2 versions of the CARMA Platform (4.2.0)
 
 Enhancements in this release:
@@ -13,7 +13,7 @@ Known Issues in this release:
 
 ## October 4th, 2022 - Version 1.0.1
 
-### CARMA Simulation 1.0.1
+### <ins>CARMA Simulation 1.0.1</ins>
 carma-simulation release version 1.0.1 is a hotfix to correct an artifacts problem in the build environment for 1.0.0. Also, added the dockerization feature for Docker image build process.
 
 #### Features:
@@ -35,7 +35,7 @@ Release version 1.0.0 of CARMA Simulation products. Initital release intended
 to deliver minimum-viable-proudct integration of several major simulation
 components: CARMA Platform, MOSAIC, SUMO, CARLA.
 
-### CARMA Simulation 1.0.0
+### <ins>CARMA Simulation 1.0.0</ins>
 Initial full release. Minimum viable product version of CARMA Simulation to act as a base for additional feature development and to allow prospective users to begin integration and early use of tool.
 
 #### Features:
@@ -54,7 +54,7 @@ Initial full release. Minimum viable product version of CARMA Simulation to act 
 #### Fixes:
 - Resolve MOSAIC RTI priority queue conflicts which caused simulation deadlock
 
-### CARMA-CARLA Integration 1.0.0
+### <ins>CARMA-CARLA Integration 1.0.0</ins>
 Initial full release. Minimum viable product version of CARMA-CARLA Integration packages to act as a base for additional feature development and to allow prospective users to begin integration and early use of tool.
 
 #### Features:
