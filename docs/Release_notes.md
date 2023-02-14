@@ -1,5 +1,16 @@
 # CARMA Simulation Release Notes
 
+## February 10th, 2023 - Version 1.1.0
+### CARMA Simulation 1.0.1
+carma-simulation release version 1.1.0 is upgraded to support ROS2 versions of the CARMA Platform (4.2.0)
+
+Enhancements in this release:
+- Updated CARMA-CARLA Ros bridge to support ROS2 versions of the CARMA Platform (4.2.0).
+
+Known Issues in this release:
+- Resolve error while processing the POMs during the mvn clean
+- CARMA Platform issues were observed during simulation testing, please refer to CARMA Platform issues #2034 and #2035 (https://github.com/usdot-fhwa-stol/carma-platform/blob/develop/docs/Release_notes.md)
+
 ## October 4th, 2022 - Version 1.0.1
 
 ### CARMA Simulation 1.0.1
