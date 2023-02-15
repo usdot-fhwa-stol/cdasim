@@ -1,6 +1,7 @@
 # CARMASimulation
 This repository will host the CARMA Everything-in-the-Loop Co-Simulation tool. This XiL simulation platform will support CARLA and SUMO simulation environments as a co-simulation using the MOSAIC framework to facilitate coordination and data exchange. This co-simulation environment will also utilize NS-3 to simulate the communications used by the C-ADS systems.
 
+The current version and release history of the CARMA can be found here: [CARMA Release Notes](<docs/Release_notes.md>)
 ## Contribution
 Welcome to the CARMA contributing guide. Please read this guide to learn about our development process, how to propose pull requests and improvements, and how to build and test your changes to this project. [CARMA Contributing Guide](https://github.com/usdot-fhwa-stol/carma-platform/blob/develop/Contributing.md)
 
