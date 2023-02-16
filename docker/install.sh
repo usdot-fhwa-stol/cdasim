@@ -87,16 +87,16 @@ python3.7 -m pip install pip
 python3.7 -m pip install lxml==4.5.0
 
 # Install CARLA
+CARLA_TAR="CARLA_0.9.10.tar.gz"
 cd /home/carma/src/
-wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
-if [[ ! -f '/home/carma/src/CARLA_0.9.10.tar.gz' ]]; then
-    echo "!!! CARLA not present in the installation directy, please download CARLA_0.9.10.tar.gz into the work directory and rebuild. !!!"
-    exit -1
+if [[ ! -f "$CARLA_TAR" ]]; then
+    echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
+    wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
 fi
 
 sudo mkdir -p /opt/carla
 sudo chown -R carma:carma /opt/carla
-tar xzvf CARLA_0.9.10.tar.gz -C /opt/carla
+tar xzvf "$CARLA_TAR" -C /opt/carla
 
 # Installation of Co-Simulation Tool
 wget "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
