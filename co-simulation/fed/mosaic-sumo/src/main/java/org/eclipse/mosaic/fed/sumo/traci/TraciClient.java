@@ -176,11 +176,13 @@ public class TraciClient implements TraciConnection {
     }
 
     public void setOrder(int orderNum) {
-        try {
-          commandRegister.getOrCreate(TraciSetOrder.class).execute(this, orderNum);
-    		} catch (TraciCommandException e) {
-          throw new InternalFederateException(e);
-    		}
+    	try {
+			commandRegister.getOrCreate(TraciSetOrder.class).execute(this, orderNum);
+		} catch (TraciCommandException e) {
+			e.printStackTrace();
+		} catch (InternalFederateException e) {
+			e.printStackTrace();
+		}
     }
 
     @Override
