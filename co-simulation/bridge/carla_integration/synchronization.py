@@ -66,6 +66,9 @@ class SimulationSynchronization(object):
             self.sumo.switch_off_traffic_lights()
         elif tls_manager == 'sumo':
             self.carla.switch_off_traffic_lights()
+        elif tls_manager == 'EVC':
+            # self.sumo.switch_off_traffic_lights()
+            self.carla.switch_off_traffic_lights()
 
         # Mapped actor ids.
         self.sumo2carla_ids = {}  # Contains only actors controlled by sumo.
@@ -134,7 +137,13 @@ class SimulationSynchronization(object):
                 carla_tl_state = BridgeHelper.get_carla_traffic_light_state(sumo_tl_state)
 
                 self.carla.synchronize_traffic_light(landmark_id, carla_tl_state)
+        elif self.tls_manager == 'EVC':
+            common_landmarks = self.sumo.traffic_light_ids & self.carla.traffic_light_ids
+            for landmark_id in common_landmarks:
+                sumo_tl_state = self.sumo.get_traffic_light_live_state(landmark_id)
+                carla_tl_state = BridgeHelper.get_carla_traffic_light_state(sumo_tl_state)
 
+                self.carla.synchronize_traffic_light(landmark_id, carla_tl_state)
         # # -----------------
         # # carla-->sumo sync
         # # -----------------
@@ -208,4 +217,3 @@ class SimulationSynchronization(object):
         # Closing sumo and carla client.
         self.carla.close()
         self.sumo.close()
-

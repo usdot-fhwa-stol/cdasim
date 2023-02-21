@@ -163,19 +163,20 @@ class SumoTLManager(object):
         self._current_phase = {}  # {tlid: index_phase}
 
         for tlid in traci.trafficlight.getIDList():
-            self.subscribe(tlid)
 
             self._tls[tlid] = {}
             for tllogic in traci.trafficlight.getAllProgramLogics(tlid):
+
                 states = [phase.state for phase in tllogic.getPhases()]
                 parameters = tllogic.getParameters()
                 tl = SumoTLLogic(tlid, states, parameters)
                 self._tls[tlid][tllogic.programID] = tl
 
+
             # Get current status of the traffic lights.
             self._current_program[tlid] = traci.trafficlight.getProgram(tlid)
             self._current_phase[tlid] = traci.trafficlight.getPhase(tlid)
-
+        # print(self._tls)
         self._off = False
 
     @staticmethod
@@ -190,6 +191,7 @@ class SumoTLManager(object):
             traci.constants.TL_CURRENT_PROGRAM,
             traci.constants.TL_CURRENT_PHASE,
         ])
+
 
     @staticmethod
     def unsubscribe(tlid):
@@ -225,6 +227,26 @@ class SumoTLManager(object):
         for tlid, program_id in self._current_program.items():
             signals.update(self._tls[tlid][program_id].get_associated_signals(landmark_id))
         return signals
+
+    def get_live_state(self, landmark_id):
+        link_index_list = []
+        _tlid = -1
+        for tlid, link_index in self.get_all_associated_signals(landmark_id):
+            _tlid = tlid
+            link_index_list.append(link_index)
+
+        state_string = traci.trafficlight.getRedYellowGreenState(_tlid)
+        state_list = []
+        for link_index in link_index_list:
+            state_list.append(state_string[link_index])
+        for state in state_list:
+            if state == 'g' or state == 'G':
+                return SumoSignalState.GREEN_WITHOUT_PRIORITY
+            elif state == 'y':
+                return SumoSignalState.YELLOW
+            else:
+                return SumoSignalState.RED
+
 
     def get_state(self, landmark_id):
         """
@@ -402,6 +424,9 @@ class SumoSimulation(object):
         """
         traci.vehicle.remove(actor_id)
 
+    def get_traffic_light_live_state(self, landmark_id):
+        return self.traffic_light_manager.get_live_state(landmark_id)
+
     def get_traffic_light_state(self, landmark_id):
         """
         Accessor for traffic light state.
@@ -453,6 +478,7 @@ class SumoSimulation(object):
             self.traffic_light_manager = SumoTLManager()
             self.firstTime = False
         traci.simulationStep()
+        # print(traci.trafficlight.getRedYellowGreenState('1008'))
         self.traffic_light_manager.tick()
         # Update data structures for the current frame.
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
