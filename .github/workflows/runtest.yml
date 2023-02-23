@@ -18,17 +18,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
         run: |
           cd co-simulation
-          mvn --batch-mode -DskipTests package
-          #mvn -e -X  mvn --batch-mode clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dmaven.test.failure.ignore=true -Pcoverage -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io
-      - name: Test
-        run: |
-          cd co-simulation
-          mvn --batch-mode clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dmaven.test.failure.ignore=true -Pcoverage -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io test
-      - name: Report
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Maven Tests
-          path: target/site/jacoco/jacoco.xml
-          reporter: java-junit
-          fail-on-error: true
+          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dmaven.test.failure.ignore=true -Pcoverage jacoco:report -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io -DskipTests        
