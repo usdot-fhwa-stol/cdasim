@@ -15,14 +15,14 @@ class EvcConnector:
 
     def __init__(self, asc3app_path, evc_sumo_cfg_path):
         """
-        Initialize
-        -------------
-        asc3app_path: The directory to asc3app which provided by Econolite team
+        Initialize EvcConnector object
+
+        Parameters:
+        - asc3app_path: The directory to asc3app which is provided by the Econolite team
         type: string
-        -------------
-        evc_sumo_cfg_path: The directory to evc_sumo_cfg.json file, default path is "resources/evc_sumo_cfg.json"
+
+        - evc_sumo_cfg_path: The directory to evc_sumo_cfg.json file, default path is "resources/evc_sumo_cfg.json"
         type: string
-        -------------
         """
         self.asc3app_path = asc3app_path
         self.evc_sumo_cfg_path = evc_sumo_cfg_path
@@ -30,20 +30,25 @@ class EvcConnector:
         self.controller_io_list = []
 
     def detector_status_to_CIB(self):
-        ## TBD
+        """
+        Convert detector status to CIB
+        """
         pass
 
     def COB_to_traffic_light_status(self, controller_io, phase_id):
         """
         Convert COB status to string
-        -------------
-        controller_io: The controller input/output (cib/cob)
-        type:
-        -------------
-        phase_id: The EVC traffic light phase ID, start from 1
+
+        Parameters:
+        - controller_io: The controller input/output (cib/cob)
+        type: pyeos.common.harness
+
+        - phase_id: The EVC traffic light phase ID, start from 1
         type: int
-        -------------
         """
+        ## This function converts the COB status for a given traffic light phase to a string representing its state (red, yellow, or green).
+        ## The controller input/output (cib/cob) is passed as an argument along with the phase ID.
+        ## The function returns a string representing the state of the traffic light phase.
 
         ## is_cob_on(0) is to check if phase 1 is or not in green state
         ## is_cob_on(16) is to check if phase 1 is or not in yellow state
@@ -58,14 +63,16 @@ class EvcConnector:
     def get_traffic_light_status_from_EVC(self, controller_io, phases):
         """
         Get traffic light status from EVC to SUMO state string
-        -------------
-        controller_io: The controller input/output (cib/cob)
-        type:
-        -------------
-        phases: Phases information defined in controller_cfg.json file
+
+        Parameters:
+        - controller_io: The controller input/output (cib/cob)
+        type: pyeos.common.harness
+
+        - phases: Phases information defined in evc_sumo_cfg.json file
         type: dict
-        -------------
-        return: string
+
+        Returns:
+        - string: A string representing the current state of the traffic light. The possible characters are "r" for red, "y" for yellow, and "g" for green.
         """
 
         ## get number of characters in state string for SUMO
@@ -85,7 +92,7 @@ class EvcConnector:
 
     def get_controller_cfg_path_list(self):
         """
-        Store all controller config path into a list in order to pass to eos_factory to initialize controllers
+        Get the controller config path list
         """
         with open(self.evc_sumo_cfg_path) as cfg_file:
             self.config_json = json.load(cfg_file)
@@ -95,7 +102,11 @@ class EvcConnector:
 
     def run(self, sumo_connector):
         """
-        main loop
+        The main loop for the EVC connector
+        -------------
+        sumo_connector: The SUMO connector instance
+        type: object
+        -------------
         """
         ## init traci connection
         with sumo_connector.traci_handler() as traci_session:
