@@ -15,21 +15,35 @@ class SumoConnector:
         self.order_num = order_num
         self.traci = traci
 
+
     @contextmanager
     def traci_handler(self):
+        """
+        Initialize traci
+        """
         self.traci.init(int(self.port))
         self.traci.setOrder(self.order_num)
         yield
         self.traci.close()
 
     def tick(self):
+        """
+        Advance SUMO time via traci
+        """
         self.traci.simulationStep()
 
     def set_traffic_light_status_to_SUMO(self, sumo_tl_id, tl_state_string):
+        """
+        Set traffic light status to SUMO
+        -------------
+        sumo_tl_id: SUMO traffic light ID (example: 1008)
+        type: int
+        -------------
+        tl_state_string: traffic light state string for SUMO (example: "rrrrrr")
+        type: string
+        """
         traci.trafficlight.setRedYellowGreenState(str(sumo_tl_id), tl_state_string)
 
     def get_detector_status_from_SUMO(self):
         ## TBD
         pass
-
-    
