@@ -8,7 +8,7 @@ from sumo_connector import SumoConnector
 
 def run(args):
     sumo_connector = SumoConnector(args.traci_port, args.traci_order_num)
-    evc_connector = EvcConnector(args.asc3app_path, args.controller_cfg_path)
+    evc_connector = EvcConnector(args.asc3app_path, args.evc_sumo_cfg_path)
     evc_connector.run(sumo_connector)
 
 if __name__ == "__main__":
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     arg.add_argument('--traci-order-num',
                      default=2,
                      help='Traci order number for SUMO multi-clients connection')
-    arg.add_argument('--controller-cfg-path',
+    arg.add_argument('--evc-sumo-cfg-path',
                      default='resources/controller_cfg.json')
     args = arg.parse_args()
     run(args)

@@ -33,15 +33,15 @@ class TestControllerIORed(object):
 class TestEvcConnector(unittest.TestCase):
     def setUp(self):
         self.asc3app_path = Path(os.path.abspath(os.path.join(__file__, "..", "asc3app")))
-        self.controller_cfg_path = Path(os.path.abspath(os.path.join(__file__, "..", "resources", "test_controller_cfg.json")))
+        self.evc_sumo_cfg_path = Path(os.path.abspath(os.path.join(__file__, "..", "resources", "test_controller_cfg.json")))
 
     def test_get_controller_cfg_path_list(self):
-        evc_connector = EvcConnector(self.asc3app_path, self.controller_cfg_path)
+        evc_connector = EvcConnector(self.asc3app_path, self.evc_sumo_cfg_path)
         evc_connector.get_controller_cfg_path_list()
         self.assertEqual(len(evc_connector.controller_cfg_path_list), 2)
 
     def test_cob_to_traffic_light_status(self):
-        evc_connector = EvcConnector(self.asc3app_path, self.controller_cfg_path)
+        evc_connector = EvcConnector(self.asc3app_path, self.evc_sumo_cfg_path)
         phase = 1
         ## get green light string
         green_io = TestControllerIOGreen()
@@ -57,7 +57,7 @@ class TestEvcConnector(unittest.TestCase):
         self.assertEqual(state, "r")
 
     def test_get_traffic_light_status(self):
-        evc_connector = EvcConnector(self.asc3app_path, self.controller_cfg_path)
+        evc_connector = EvcConnector(self.asc3app_path, self.evc_sumo_cfg_path)
 
         ## get green light state string
         green_io = TestControllerIOGreen()
