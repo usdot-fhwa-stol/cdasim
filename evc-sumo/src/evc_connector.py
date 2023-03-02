@@ -1,3 +1,18 @@
+ #   Copyright (C) 2022 LEIDOS.
+ #
+ #   Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ #   use this file except in compliance with the License. You may obtain a copy of
+ #   the License at
+ #
+ #   http://www.apache.org/licenses/LICENSE-2.0
+ #
+ #   Unless required by applicable law or agreed to in writing, software
+ #   distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ #   License for the specific language governing permissions and limitations under
+ #   the License.
+ #
+
 from pyeos.virtual.factory import virtual_factory
 from pyeos.virtual import VirtualControllerOptions
 import json
@@ -6,12 +21,12 @@ MAX_INTERSECTION_PHASES = 16
 
 class EvcConnector:
 
-    def tick(self):
+    def tick(self, advance_steps):
         """
         Advance EVC controllers time via PyEOS
         """
         for harness in self.harness_list:
-            harness.tick(1)
+            harness.tick(advance_steps)
 
     def __init__(self, asc3app_path, evc_sumo_cfg_path):
         """
@@ -53,6 +68,7 @@ class EvcConnector:
         ## is_cob_on(0) is to check if phase 1 is or not in green state
         ## is_cob_on(16) is to check if phase 1 is or not in yellow state
         ## is_cob_on(32) is to check if phase 1 is or not in red state
+        ## MAX_INTERSECTION_PHASES default setting is value 16 as setting in line 20
         if controller_io.is_cob_on( (phase_id - 1) + (MAX_INTERSECTION_PHASES * 2) ):
             return 'r'
         elif controller_io.is_cob_on( (phase_id - 1) + (MAX_INTERSECTION_PHASES * 1) ):
@@ -135,7 +151,13 @@ class EvcConnector:
                         ## io needs to be used to get CIB/COB
                         for i in range(len(harnesses)):
                             io = harnesses[i].io()
-                            harnesses[i].tick(1)
+
+                            ## harness.tick is a fix step length, 0.1, with given value update times
+                            ## if harness.tick(1) which means advance EVC 1 time within 0.1 second
+                            ## if harness.tick(10) which means advance EVC 10 time within 0.1 second
+                            ## By retrieving step length from SUMO (which is configured in MOSAIC configuration file)
+                            ## the formula to convert the value for EVC will be 1 / (sumo_step_length * 10)
+                            harnesses[i].tick( 1 / (sumo_connector.traci_get_step_length() * 10) )
                             self.controller_io_list.append(io)
                             self.harness_list.append(harnesses[i])
 
@@ -144,4 +166,4 @@ class EvcConnector:
                             for i in range(len(self.controller_io_list)):
                                 tl_state_string = self.get_traffic_light_status_from_EVC(self.controller_io_list[i], self.config_json['controllers'][i]['phases'])
                                 sumo_connector.set_traffic_light_status_to_SUMO(self.config_json['controllers'][i]['sumoTlId'], tl_state_string)
-                            self.tick()
+                            self.tick( 1 / (sumo_connector.traci_get_step_length() * 10) )
