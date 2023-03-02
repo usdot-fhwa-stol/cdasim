@@ -1,3 +1,19 @@
+ #   Copyright (C) 2022 LEIDOS.
+ #
+ #   Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ #   use this file except in compliance with the License. You may obtain a copy of
+ #   the License at
+ #
+ #   http://www.apache.org/licenses/LICENSE-2.0
+ #
+ #   Unless required by applicable law or agreed to in writing, software
+ #   distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ #   License for the specific language governing permissions and limitations under
+ #   the License.
+ #
+
+
 import unittest
 import os
 import sys
@@ -33,7 +49,7 @@ class TestControllerIORed(object):
 class TestEvcConnector(unittest.TestCase):
     def setUp(self):
         self.asc3app_path = Path(os.path.abspath(os.path.join(__file__, "..", "asc3app")))
-        self.evc_sumo_cfg_path = Path(os.path.abspath(os.path.join(__file__, "..", "resources", "test_controller_cfg.json")))
+        self.evc_sumo_cfg_path = Path(os.path.abspath(os.path.join(__file__, "..", "resources", "test_evc_sumo_cfg.json")))
 
     def test_get_controller_cfg_path_list(self):
         evc_connector = EvcConnector(self.asc3app_path, self.evc_sumo_cfg_path)
