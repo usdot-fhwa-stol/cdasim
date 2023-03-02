@@ -228,25 +228,42 @@ class SumoTLManager(object):
             signals.update(self._tls[tlid][program_id].get_associated_signals(landmark_id))
         return signals
 
-    def get_live_state(self, landmark_id):
+
+    def get_state_from_sumo(self, landmark_id):
+        """
+        This function will send a request to get sumo current traffic light state via MOSAIC
+        Returns the traffic light state of the signals associated with the given landmark.
+        """
         link_index_list = []
         _tlid = -1
         for tlid, link_index in self.get_all_associated_signals(landmark_id):
             _tlid = tlid
             link_index_list.append(link_index)
 
-        state_string = traci.trafficlight.getRedYellowGreenState(_tlid)
-        state_list = []
-        for link_index in link_index_list:
-            state_list.append(state_string[link_index])
-        for state in state_list:
-            if state == 'g' or state == 'G':
-                return SumoSignalState.GREEN_WITHOUT_PRIORITY
-            elif state == 'y':
-                return SumoSignalState.YELLOW
-            else:
-                return SumoSignalState.RED
+        ## SUMO traffic light state, ex 'rrggrr' in a intersection
+        sumo_tl_state_string = traci.trafficlight.getRedYellowGreenState(_tlid)
 
+        ## Collect state for the current phase from a intersection,
+        ## ex, if intersection tl state 'rrggrr' and current phase (west=>east) occupies index 1 and 2
+        ## then phase_state_list will be ['g','g']
+        phase_state_list = []
+        for link_index in link_index_list:
+            phase_state_list.append(sumo_tl_state_string[link_index])
+
+        ## Since CARLA traffic light 3D model currently only have green, red and yellow states
+        ## which left and right turn arrow can not be shown. As a result, if one of state
+        ## in a phase is green or yellow then return green or yellow state for CARLA traffic light
+        ## when all states in a phase are red then set red to CARLA traffic light
+
+        # if one of the state in the list is 'g' then return green for CARLA
+        if 'g' in phase_state_list or 'G' in phase_state_list:
+            return SumoSignalState.GREEN_WITHOUT_PRIORITY
+        # else if one of the state in the list is 'y' then return yellow for CARLA
+        elif 'y' in phase_state_list:
+            return SumoSignalState.YELLOW
+        # else if all of the states in the list are 'r' then return r for CARLA
+        else:
+            return SumoSignalState.RED
 
     def get_state(self, landmark_id):
         """
@@ -424,8 +441,8 @@ class SumoSimulation(object):
         """
         traci.vehicle.remove(actor_id)
 
-    def get_traffic_light_live_state(self, landmark_id):
-        return self.traffic_light_manager.get_live_state(landmark_id)
+    def get_traffic_light_state_from_sumo(self, landmark_id):
+        return self.traffic_light_manager.get_state_from_sumo(landmark_id)
 
     def get_traffic_light_state(self, landmark_id):
         """
@@ -478,8 +495,8 @@ class SumoSimulation(object):
             self.traffic_light_manager = SumoTLManager()
             self.firstTime = False
         traci.simulationStep()
-        # print(traci.trafficlight.getRedYellowGreenState('1008'))
         self.traffic_light_manager.tick()
+
         # Update data structures for the current frame.
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
         self.destroyed_actors = set(traci.simulation.getArrivedIDList())
