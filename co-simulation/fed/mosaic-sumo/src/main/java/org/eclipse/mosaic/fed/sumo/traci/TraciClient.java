@@ -175,14 +175,17 @@ public class TraciClient implements TraciConnection {
         }
     }
 
+    /**
+    * Set MOSAIC client order number to SUMO via traci
+    */
     public void setOrder(int orderNum) {
-    	try {
-			commandRegister.getOrCreate(TraciSetOrder.class).execute(this, orderNum);
-		} catch (TraciCommandException e) {
-			e.printStackTrace();
-		} catch (InternalFederateException e) {
-			e.printStackTrace();
-		}
+        try {
+            commandRegister.getOrCreate(TraciSetOrder.class).execute(this, orderNum);
+        } catch (TraciCommandException e) {
+            e.printStackTrace();
+        } catch (InternalFederateException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
