@@ -4,7 +4,7 @@
       "controllerId": 1,
       "sumoTlId": 1008,
       "enableWebPanel": true,
-      "controllerCfgPath": "/opt/carma-simulation/evc-sumo/evc_sumo_bridge/resources/skip_setup.cfg",
+      "controllerCfgPath": "resources/skip_setup.cfg",
       "phases": [{"phaseId": 1, "index":[1,5]},
                  {"phaseId": 2, "index":[3,4]},
                  {"phaseId": 3, "index":[0,2]} ]
@@ -13,7 +13,7 @@
       "controllerId": 2,
       "sumoTlId": 621,
       "enableWebPanel": true,
-      "controllerCfgPath": "/opt/carma-simulation/evc-sumo/evc_sumo_bridge/resources/skip_setup.cfg",
+      "controllerCfgPath": "resources/skip_setup.cfg",
       "phases": [{"phaseId": 1, "index":[1,8,10]},
                  {"phaseId": 2, "index":[0,5,11]},
                  {"phaseId": 3, "index":[3,4,9]},
