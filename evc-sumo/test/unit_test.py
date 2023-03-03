@@ -19,7 +19,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.append('../evc_sumo_bridge')
+sys.path.append('../src')
 from evc_connector import EvcConnector
 
 class TestControllerIOGreen(object):
@@ -51,10 +51,9 @@ class TestEvcConnector(unittest.TestCase):
         self.asc3app_path = Path(os.path.abspath(os.path.join(__file__, "..", "asc3app")))
         self.evc_sumo_cfg_path = Path(os.path.abspath(os.path.join(__file__, "..", "resources", "test_evc_sumo_cfg.json")))
 
-    def test_get_controller_cfg_path_list(self):
+    def test_get_controller_cfg_list(self):
         evc_connector = EvcConnector(self.asc3app_path, self.evc_sumo_cfg_path)
-        evc_connector.get_controller_cfg_path_list()
-        self.assertEqual(len(evc_connector.controller_cfg_path_list), 2)
+        self.assertEqual(len(evc_connector.get_controller_cfg_list()), 2)
 
     def test_cob_to_traffic_light_status(self):
         evc_connector = EvcConnector(self.asc3app_path, self.evc_sumo_cfg_path)
@@ -77,15 +76,15 @@ class TestEvcConnector(unittest.TestCase):
 
         ## get green light state string
         green_io = TestControllerIOGreen()
-        state = evc_connector.get_traffic_light_status_from_EVC(green_io, [{"index": [0, 1], "phaseId": 1}, {"index": [2, 3], "phaseId": 2}])
+        state = evc_connector.get_traffic_light_status_from_EVC(green_io, [{"sumoTlStateIndex": [0, 1], "evcPhaseId": 1}, {"sumoTlStateIndex": [2, 3], "evcPhaseId": 2}])
         self.assertEqual(state, "gggg")
         ## get yellow light state string
         yellow_io = TestControllerIOYellow()
-        state = evc_connector.get_traffic_light_status_from_EVC(yellow_io, [{"index": [0, 1], "phaseId": 1}, {"index": [2, 3], "phaseId": 2}])
+        state = evc_connector.get_traffic_light_status_from_EVC(yellow_io, [{"sumoTlStateIndex": [0, 1], "evcPhaseId": 1}, {"sumoTlStateIndex": [2, 3], "evcPhaseId": 2}])
         self.assertEqual(state, "yyyy")
         ## get red light state string
         red_io = TestControllerIORed()
-        state = evc_connector.get_traffic_light_status_from_EVC(red_io, [{"index": [0, 1], "phaseId": 1}, {"index": [2, 3], "phaseId": 2}])
+        state = evc_connector.get_traffic_light_status_from_EVC(red_io, [{"sumoTlStateIndex": [0, 1], "evcPhaseId": 1}, {"sumoTlStateIndex": [2, 3], "evcPhaseId": 2}])
         self.assertEqual(state, "rrrr")
 
 if __name__ == '__main__':
