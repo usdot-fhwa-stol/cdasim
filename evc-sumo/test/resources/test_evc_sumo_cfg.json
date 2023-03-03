@@ -2,22 +2,34 @@
   "controllers": [
     {
       "controllerId": 1,
+      "controllerCfgPath": "resources/skip_setup.cfg",
+      "start_time": null,
+      "https_port": 0,
+      "web_port": 0,
+      "snmp_port": 0,
+      "harness_port": 0,
+      "controller_speed": null,
       "sumoTlId": 1008,
       "enableWebPanel": true,
-      "cfgPath": "/opt/carma-simulation/evc-sumo/test/resources/skip_setup.cfg",
-      "phases": [{"phaseId": 1, "index":[1,5]},
-                 {"phaseId": 2, "index":[3,4]},
-                 {"phaseId": 3, "index":[0,2]} ]
+      "evcPhases": [{"evcPhaseId": 1, "sumoTlStateIndex":[1,5]},
+                    {"evcPhaseId": 2, "sumoTlStateIndex":[3,4]},
+                    {"evcPhaseId": 3, "sumoTlStateIndex":[0,2]} ]
     },
     {
       "controllerId": 2,
+      "controllerCfgPath": "resources/skip_setup.cfg",
+      "start_time": null,
+      "https_port": 0,
+      "web_port": 0,
+      "snmp_port": 0,
+      "harness_port": 0,
+      "controller_speed": null,
       "sumoTlId": 621,
       "enableWebPanel": true,
-      "cfgPath": "/opt/carma-simulation/evc-sumo/test/resources/skip_setup.cfg",
-      "phases": [{"phaseId": 1, "index":[1,8,10]},
-                 {"phaseId": 2, "index":[0,5,11]},
-                 {"phaseId": 3, "index":[3,4,9]},
-                 {"phaseId": 4, "index":[2,6,7]} ]
+      "evcPhases": [{"evcPhaseId": 1, "sumoTlStateIndex":[1,8,10]},
+                    {"evcPhaseId": 2, "sumoTlStateIndex":[0,5,11]},
+                    {"evcPhaseId": 3, "sumoTlStateIndex":[3,4,9]},
+                    {"evcPhaseId": 4, "sumoTlStateIndex":[2,6,7]} ]
     }
   ]
 }
