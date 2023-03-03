@@ -203,7 +203,7 @@
             "configuration": "sumo_config.json",
             "priority": 50,
             "host": "local",
-            "port": 0,
+            "port": 2010,
             "deploy": true,
             "start": true,
             "subscriptions": [

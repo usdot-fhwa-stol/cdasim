@@ -17,6 +17,7 @@ package org.eclipse.mosaic.fed.sumo.traci;
 
 import org.eclipse.mosaic.fed.sumo.config.CSumo;
 import org.eclipse.mosaic.fed.sumo.traci.commands.SimulationClose;
+import org.eclipse.mosaic.fed.sumo.traci.commands.TraciSetOrder;
 import org.eclipse.mosaic.fed.sumo.traci.commands.SimulationGetVersion;
 import org.eclipse.mosaic.fed.sumo.traci.commands.SimulationTraciRequest;
 import org.eclipse.mosaic.fed.sumo.traci.facades.TraciPoiFacade;
@@ -171,6 +172,19 @@ public class TraciClient implements TraciConnection {
             log.error("Simulation could not be closed properly.", e);
         } finally {
             closeStreamsAndSockets();
+        }
+    }
+
+    /**
+    * Set MOSAIC client order number to SUMO via traci
+    */
+    public void setOrder(int orderNum) {
+        try {
+            commandRegister.getOrCreate(TraciSetOrder.class).execute(this, orderNum);
+        } catch (TraciCommandException e) {
+            e.printStackTrace();
+        } catch (InternalFederateException e) {
+            e.printStackTrace();
         }
     }
 
