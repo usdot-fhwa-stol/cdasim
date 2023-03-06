@@ -83,7 +83,7 @@
     </modules>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>8</java.version>
         <sonar.organization>usdot-fhwa-stol</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         
