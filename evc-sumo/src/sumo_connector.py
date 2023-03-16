@@ -42,6 +42,9 @@ class SumoConnector:
         self.traci = traci
 
     def traci_get_step_length(self):
+        """
+        Get sumo step length
+        """
         return traci.simulation.getDeltaT()
 
     @contextmanager
@@ -60,7 +63,7 @@ class SumoConnector:
         """
         self.traci.simulationStep()
 
-    def set_traffic_light_status_to_SUMO(self, sumo_tl_id, tl_state_string):
+    def set_traffic_light_state_to_SUMO(self, sumo_tl_id, tl_state_string):
         """
         Set traffic light status to SUMO
 
@@ -73,9 +76,26 @@ class SumoConnector:
         """
         traci.trafficlight.setRedYellowGreenState(str(sumo_tl_id), tl_state_string)
 
-    def get_detector_status_from_SUMO(self):
+    def get_induction_loop_id_list(self):
         """
-        Get detector status from SUMO
+        Retrieves the induction loop id list from the SUMO simulation  
+
+        Returns:
+        - list: list of induction loop id in the SUMO simulation.
         """
-        ## TBD
-        pass
+        return traci.inductionloop.getIDList()
+
+    def get_induction_loop_status_from_SUMO(self, induction_loop_id):
+        """
+        Retrieves the induction loop status from the SUMO simulation and uses the `getLastStepVehicleNumber` 
+        method to get information about the vehicles that passed the detector. 
+        If no vehicles passed the detector, the function returns 0. 
+        Otherwise, it returns the number of vehicles that entered the detector. 
+
+        Parameters:
+        - detector_id (str): The detector ID in the SUMO simulation.
+
+        Returns:
+        - int: The number of vehicles that entered the detector.
+        """
+        return traci.inductionloop.getLastStepVehicleNumber(induction_loop_id)

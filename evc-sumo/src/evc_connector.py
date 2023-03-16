@@ -44,12 +44,6 @@ class EvcConnector:
         self.harness_list = []
         self.controller_io_list = []
 
-    def detector_status_to_CIB(self):
-        """
-        Convert detector status to CIB
-        """
-        pass
-
     def COB_to_traffic_light_status(self, controller_io, evc_phase_id):
         """
         Convert COB status to string
@@ -76,7 +70,7 @@ class EvcConnector:
         elif controller_io.is_cob_on( (evc_phase_id - 1) + (MAX_INTERSECTION_PHASES * 0) ):
             return 'g'
 
-    def get_traffic_light_status_from_EVC(self, controller_io, phases):
+    def get_traffic_light_state_from_EVC(self, controller_io, phases):
         """
         Get traffic light status from EVC to SUMO state string
 
@@ -91,20 +85,44 @@ class EvcConnector:
         - string: A string representing the current state of the traffic light. The possible characters are "r" for red, "y" for yellow, and "g" for green.
         """
 
-        ## get number of characters in state string for SUMO
-        state_num = 0
-        for phase in phases:
-            state_num = state_num + len(phase["sumoTlStateIndex"])
-        ## init sumo tl state string with all red states
-        state_string = ['r'] * state_num
+        ## get number of characters in state string for SUMO and init sumo tl state string with all red
+        state_string = ['r'] * sum(len(phase['sumoTlStateIndex']) for phase in phases)
 
         for phase in phases:
             state_string = [self.COB_to_traffic_light_status(controller_io, phase['evcPhaseId']) if i in phase['sumoTlStateIndex'] else x for i,x in enumerate(state_string)]
         return ''.join(state_string)
 
-    def set_detector_status_to_EVC(self):
-        ## TBD
-        pass
+    def set_induction_loop_status_to_EVC(self, controller_io, evc_phase_id, sumo_induction_loop_status):
+        """
+        Set induction loop status from SUMO to EVC via PyEOS CIB
+
+        Parameters:
+        - controller_io: The controller input/output (cib/cob)
+        type: pyeos.common.harness
+
+        - evc_phase_id: EVC phase ID
+        type: int
+
+        - sumo_induction_loop_status: induction loop status retrieved from SumoConnector
+        type: int
+
+        Returns:
+        - int: return a integer to represent cib is on or off.
+               cib on: 1
+               cib off: 0
+        """
+        if sumo_induction_loop_status != 0:
+            if controller_io.is_cib_off(evc_phase_id - 1):
+                controller_io.cib_on(evc_phase_id - 1)
+                return 1
+            else:
+                return 0
+        else:
+            if controller_io.is_cib_on(evc_phase_id - 1):
+                controller_io.cib_off(evc_phase_id - 1)
+                return 1
+            else:
+                return 0
 
     def get_controller_cfg_list(self):
         """
@@ -147,7 +165,7 @@ class EvcConnector:
                     for i in range(len(eos_controllers)):
                         if self.config_json['controllers'][i]['enableWebPanel']:
                             eos_controllers[i].watch()
-                            print("Launch EOS web pannel for controller ID:", self.config_json['controllers'][i]['controllerId'], ", SUMO TLID:", self.config_json['controllers'][i]['sumoTlId'])
+                            print("Launch EOS web panel for controller ID:", self.config_json['controllers'][i]['controllerId'], ", SUMO TLID:", self.config_json['controllers'][i]['sumoTlId'])
                         else:
                             continue
 
@@ -169,9 +187,21 @@ class EvcConnector:
                             self.controller_io_list.append(io)
                             self.harness_list.append(harnesses[i])
 
+                        ground_truth_sumo_loop_detector_ids = sumo_connector.get_induction_loop_id_list()
                         while True:
                             sumo_connector.tick()
-                            for i in range(len(self.controller_io_list)):
-                                tl_state_string = self.get_traffic_light_status_from_EVC(self.controller_io_list[i], self.config_json['controllers'][i]['evcPhases'])
-                                sumo_connector.set_traffic_light_status_to_SUMO(self.config_json['controllers'][i]['sumoTlId'], tl_state_string)
+                            for i, controller in enumerate(self.config_json['controllers']):
+                                ## Update EVC loop detector status
+                                for evcPhase in controller['evcPhases']:
+                                    ## Some intersection or lane might not set loop detector
+                                    if 'sumoInductionLoopId' not in evcPhase:
+                                        continue
+                                    ## Check if induction loop id in config file exists in SUMO simulation
+                                    if evcPhase['sumoInductionLoopId'] in ground_truth_sumo_loop_detector_ids:
+                                        sumo_induction_loop_status = sumo_connector.get_induction_loop_status_from_SUMO(evcPhase['sumoInductionLoopId'])
+                                        self.set_induction_loop_status_to_EVC(self.controller_io_list[i], evcPhase['evcPhaseId'], sumo_induction_loop_status)
+
+                                ## Update SUMO traffic light state
+                                tl_state_string = self.get_traffic_light_state_from_EVC(self.controller_io_list[i], controller['evcPhases'])
+                                sumo_connector.set_traffic_light_state_to_SUMO(controller['sumoTlId'], tl_state_string)
                             self.tick( int(1 / (sumo_connector.traci_get_step_length() * 10)) )
