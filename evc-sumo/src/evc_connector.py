@@ -69,6 +69,8 @@ class EvcConnector:
             return 'y'
         elif controller_io.is_cob_on( (evc_phase_id - 1) + (MAX_INTERSECTION_PHASES * 0) ):
             return 'g'
+        else:
+            return None
 
     def get_traffic_light_state_from_EVC(self, controller_io, phases):
         """
@@ -82,7 +84,8 @@ class EvcConnector:
         type: dict
 
         Returns:
-        - string: A string representing the current state of the traffic light. The possible characters are "r" for red, "y" for yellow, and "g" for green.
+        - string: A string representing the current state of the traffic light. 
+                  The possible characters are "r" for red, "y" for yellow, and "g" for green and None for exception
         """
 
         ## get number of characters in state string for SUMO and init sumo tl state string with all red
@@ -90,7 +93,10 @@ class EvcConnector:
 
         for phase in phases:
             state_string = [self.COB_to_traffic_light_status(controller_io, phase['evcPhaseId']) if i in phase['sumoTlStateIndex'] else x for i,x in enumerate(state_string)]
-        return ''.join(state_string)
+        if None in state_string:
+            return None
+        else:
+            return ''.join(state_string)
 
     def set_induction_loop_status_to_EVC(self, controller_io, evc_phase_id, sumo_induction_loop_status):
         """
@@ -203,5 +209,9 @@ class EvcConnector:
 
                                 ## Update SUMO traffic light state
                                 tl_state_string = self.get_traffic_light_state_from_EVC(self.controller_io_list[i], controller['evcPhases'])
-                                sumo_connector.set_traffic_light_state_to_SUMO(controller['sumoTlId'], tl_state_string)
+                                if tl_state_string is not None:
+                                    sumo_connector.set_traffic_light_state_to_SUMO(controller['sumoTlId'], tl_state_string)
+                                else:
+                                    print("Error: Could not connect to EVC, please check EVC-SUMO config")
+                                
                             self.tick( int(1 / (sumo_connector.traci_get_step_length() * 10)) )
