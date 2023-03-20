@@ -20,11 +20,12 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
  * A message to be sent by Infrastructure Device when it registers with the carma-mosaic ambassador
  * NOTE: TODO See carma.ambassador for reference
  */
-public class V2xRegistrationMessage {
+public class InfrastructureRegistrationMessage {
     private String rxMessageIpAddress;
     private int rxMessagePort;
-
-    public V2xRegistrationMessage() {
+    private GeoPoint location = null;
+    
+    public InfrastructureRegistrationMessage() {
         
     }
 

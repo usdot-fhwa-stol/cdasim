@@ -23,7 +23,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.mosaic.fed.infrastructure.ambassador.V2xRegistrationMessage;
+import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;

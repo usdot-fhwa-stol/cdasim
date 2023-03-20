@@ -33,8 +33,8 @@ import com.google.gson.Gson;
  * simulation processing step
  * NOTE: TODO See carma.ambassador for reference
  */
-public class V2xRegistrationReceiver implements Runnable {
-    private Queue<V2xRegistrationMessage> rxQueue = new LinkedList<>();
+public class InfrastructureRegistrationReceiver implements Runnable {
+    private Queue<InfrastructureRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1515; // TODO
     private boolean running = false;
@@ -68,7 +68,7 @@ public class V2xRegistrationReceiver implements Runnable {
             // parse message
             String receivedPacket = new String(msg.getData());
             Gson gson = new Gson();
-            V2xRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, V2xRegistrationMessage.class);
+            InfrastructureRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, InfrastructureRegistrationMessage.class);
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
@@ -92,8 +92,8 @@ public class V2xRegistrationReceiver implements Runnable {
      * Query the current buffer of outbound messages. Clears the currently stored buffer once called. Thread-safe.
      * @return The list of received outbound message from all Infrastructure Device instances since last call of this method
      */
-    public List<V2xRegistrationMessage> getReceivedMessages() {
-        List<V2xRegistrationMessage> output = new ArrayList<>();
+    public List<InfrastructureRegistrationMessage> getReceivedMessages() {
+        List<InfrastructureRegistrationMessage> output = new ArrayList<>();
 
         synchronized (rxQueue) {
             output.addAll(rxQueue);

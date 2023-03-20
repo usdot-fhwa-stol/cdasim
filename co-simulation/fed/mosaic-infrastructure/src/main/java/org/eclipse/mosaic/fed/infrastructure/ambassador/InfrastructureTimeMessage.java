@@ -24,12 +24,12 @@ import java.nio.charset.StandardCharsets;
  * NOTE: TODO See .ambassador for reference
  
  */
-public class V2xTimeMessage {
+public class InfrastructureTimeMessage {
     private String rxMessageIpAddress;
     private int rxMessagePort;
     
  
-    public V2xTimeMessage() {
+    public InfrastructureTimeMessage() {
     }
 
 }

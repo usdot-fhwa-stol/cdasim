@@ -35,9 +35,9 @@ import java.util.Queue;
  * simulation processing step
   * NOTE: TODO See .ambassador for reference
  */
-public class V2xTimeMessageReceiver implements Runnable {
+public class InfrastructureTimeMessageReceiver implements Runnable {
 
-    private Queue<Tuple<InetAddress, V2xTimeMessage>> rxQueue = new LinkedList<>();
+    private Queue<Tuple<InetAddress, InfrastructureTimeMessage>> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1516; // TODO 
     private boolean running = false;
@@ -71,7 +71,7 @@ public class V2xTimeMessageReceiver implements Runnable {
            }
 
            // parse message
-            V2xTimeMessage parsedMessage = new V2xTimeMessage(msg.getData());
+            InfrastructureTimeMessage parsedMessage = new InfrastructureTimeMessage(msg.getData());
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
@@ -95,8 +95,8 @@ public class V2xTimeMessageReceiver implements Runnable {
      * Query the current buffer of outbound messages. Clears the currently stored buffer once called. Thread-safe.
      * @return The list of received outbound message from all Infrastructure Device instances since last call of this method
      */
-    public List<Tuple<InetAddress, V2xTimeMessage>> getReceivedMessages() {
-        List<Tuple<InetAddress, V2xTimeMessage>> output = new ArrayList<>();
+    public List<Tuple<InetAddress, InfrastructureTimeMessage>> getReceivedMessages() {
+        List<Tuple<InetAddress, InfrastructureTimeMessage>> output = new ArrayList<>();
 
         synchronized (rxQueue) {
             output.addAll(rxQueue);

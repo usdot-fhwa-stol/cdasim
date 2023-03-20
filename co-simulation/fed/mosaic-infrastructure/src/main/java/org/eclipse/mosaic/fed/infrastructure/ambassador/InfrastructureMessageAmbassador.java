@@ -24,7 +24,7 @@ import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 
-import org.eclipse.mosaic.fed.infrastructure.ambassador.V2xRegistrationMessage;
+import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -57,9 +57,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      */
     int numberOfV2xInstances = 0;
 
-    private V2xRegistrationReceiver v2xRegistrationReceiver;
+    private InfrastructureRegistrationReceiver InfrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
-    private V2xTimeMessageReceiver v2xTimeMessageReceiver;
+    private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
     private V2xInstanceManager v2xInstanceManager = new V2xInstanceManager();
 
