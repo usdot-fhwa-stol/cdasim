@@ -108,9 +108,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             throw new InternalFederateException(e);
         }
 
-        // TODO Initialize listener socket and thread for V2x Registration messages
+        // TODO Initialize listener socket and thread for Infrastructure Registration messages
 
-        // TODO Initialize listener socket and thread for V2x time sync messages
+        // TODO Initialize listener socket and thread for Infrastructure time sync messages
       
         // TODO Register any V2x infrastructures from config if any
 
@@ -170,9 +170,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
 
         try {
-            // TODO actions to do on queued v2xhub instance registration attempts
+            // TODO actions to do on queued Infrastructure  instance registration attempts
 
-            // TODO actions to do on queued v2xhub time sync messages
+            // TODO actions to do on queued Infrastructure  time sync messages
 
             // TODO actions to do on queued v2x message receiver's received messages
 

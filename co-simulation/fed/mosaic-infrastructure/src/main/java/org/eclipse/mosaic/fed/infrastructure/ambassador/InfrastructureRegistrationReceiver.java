@@ -27,7 +27,7 @@ import java.util.Queue;
 import com.google.gson.Gson;
 
 /**
- * Worker thread Runnable for operating a listen socket to receive outbound V2X Messages from Infrastructure Device instances
+ * Worker thread Runnable for operating a listen socket to receive outbound Infrastructure Messages from Infrastructure Device instances
  * This {@link Runnable} instance will operate a UDP socket to subscribe to packets from the V2x infrastructure's
  * adapter. Upon receiving a packet, it will be enqueued for the primary thread to process the data once it ticks to a
  * simulation processing step
