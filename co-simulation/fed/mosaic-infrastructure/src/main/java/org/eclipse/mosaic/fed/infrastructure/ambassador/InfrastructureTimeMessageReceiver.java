@@ -71,7 +71,7 @@ public class InfrastructureTimeMessageReceiver implements Runnable {
            }
 
            // parse message
-            InfrastructureTimeMessage parsedMessage = new InfrastructureTimeMessage(msg.getData());
+            InfrastructureTimeMessage parsedMessage = null; /* = new InfrastructureTimeMessage(msg.getData()); */
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {

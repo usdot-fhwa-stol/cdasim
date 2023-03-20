@@ -25,8 +25,8 @@ import java.nio.charset.StandardCharsets;
  
  */
 public class InfrastructureTimeMessage {
-    private String rxMessageIpAddress;
-    private int rxMessagePort;
+    private int timestep;
+    private int seq;
     
  
     public InfrastructureTimeMessage() {

@@ -15,6 +15,7 @@
  */
  
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 /**
  * A message to be sent by Infrastructure Device when it registers with the carma-mosaic ambassador
@@ -22,9 +23,10 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
  */
 public class InfrastructureRegistrationMessage {
     private String rxMessageIpAddress;
-    private int rxMessagePort;
+    private int timeSyncListenPort = 1517; // TODO
+    private int regstratinoListenPort = 1516; // TODO 
     private GeoPoint location = null;
-    
+
     public InfrastructureRegistrationMessage() {
         
     }
