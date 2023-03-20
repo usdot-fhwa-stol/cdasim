@@ -100,7 +100,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     @Override
     public void initialize(long startTime, long endTime) throws InternalFederateException {
         super.initialize(startTime, endTime);
-        log.error("Arrived here: Successfully initializing the infrastructure federate now! 1");
         currentSimulationTime = startTime;
         try {
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
