@@ -21,7 +21,8 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
  * NOTE: TODO See carma.ambassador for reference
  */
 public class V2xRegistrationMessage {
-  
+    private String rxMessageIpAddress;
+    private int rxMessagePort;
 
     public V2xRegistrationMessage() {
         

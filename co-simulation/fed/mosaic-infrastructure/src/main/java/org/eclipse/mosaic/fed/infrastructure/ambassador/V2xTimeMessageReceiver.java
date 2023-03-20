@@ -39,9 +39,9 @@ public class V2xTimeMessageReceiver implements Runnable {
 
     private Queue<Tuple<InetAddress, V2xTimeMessage>> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1516;
-    private boolean running = true;
-    private static final int UDP_MTU = 1535;
+    private static final int listenPort = 1516; // TODO 
+    private boolean running = false;
+    private static final int UDP_MTU = 1535; // TOD OMaximum Transmission Unit
 
     /**
      * Initialize the listen socket for messages from the Infrastructure Device NS-3 Adapter
@@ -50,6 +50,7 @@ public class V2xTimeMessageReceiver implements Runnable {
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
+            
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -58,11 +59,10 @@ public class V2xTimeMessageReceiver implements Runnable {
     @Override
     public void run() {
         byte[] buf = new byte[UDP_MTU];
-       while (running) {
+        running = true;
+        while (running) {
            DatagramPacket msg = new DatagramPacket(buf, buf.length);
            InetAddress senderAddr = msg.getAddress();
-
-
 
            try {
                listenSocket.receive(msg);

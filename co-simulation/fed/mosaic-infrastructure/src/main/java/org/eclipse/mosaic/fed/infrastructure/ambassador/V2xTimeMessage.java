@@ -25,6 +25,9 @@ import java.nio.charset.StandardCharsets;
  
  */
 public class V2xTimeMessage {
+    private String rxMessageIpAddress;
+    private int rxMessagePort;
+    
     private InetAddress originAddress;
     private String version;
     private String type;

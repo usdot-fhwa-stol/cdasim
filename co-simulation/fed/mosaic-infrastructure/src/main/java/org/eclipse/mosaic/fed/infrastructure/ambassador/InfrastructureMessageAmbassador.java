@@ -25,9 +25,11 @@ import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 
 import org.eclipse.mosaic.fed.infrastructure.ambassador.V2xRegistrationMessage;
-import org.eclipse.mosaic.fed.infrastructure.ambassador.V2xRegistrationMessage;
 
-
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for Infrastructure
@@ -44,6 +46,22 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * InfrastructureMessageAmbassador configuration file.
      */
     InfrastructureConfiguration infrastructureConfiguration;
+
+    /**
+     * List of infrastructures that are controlled
+     */
+    private final HashMap<String, Boolean> v2xMap = new HashMap<>();
+
+    /**
+     * The number of CARMA vehicles.
+     */
+    int numberOfV2xInstances = 0;
+
+    private V2xRegistrationReceiver v2xRegistrationReceiver;
+    private Thread registrationRxBackgroundThread;
+    private V2xTimeMessageReceiver v2xTimeMessageReceiver;
+    private Thread v2xTimeRxBackgroundThread;
+    private V2xInstanceManager v2xInstanceManager = new V2xInstanceManager();
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.

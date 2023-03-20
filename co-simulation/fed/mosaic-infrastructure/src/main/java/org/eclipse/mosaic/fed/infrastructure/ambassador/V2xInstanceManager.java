@@ -40,8 +40,5 @@ import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 public class V2xInstanceManager {
     private Map<String, V2xInstance>  managedInstances = new HashMap<>();
     private double currentSimulationTime;
-
-    // TODO: Verify actual port for Infrastructure Device NS-3 adapter
-    private static final int TARGET_PORT = 5374;
  
 }

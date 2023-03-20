@@ -32,11 +32,13 @@ public class V2xInstance {
    
     private DatagramSocket rxMsgsSocket = null;
     private InetAddress targetAddress;
-    private int port;
+    private int registrationPort;
+    private int timeSyncPort;
     private GeoPoint location = null;
 
     public V2xInstance() {
         // TODO
+        // TODO Initialize Datagram Socket
     }
 
     public InetAddress getTargetAddress() {
@@ -65,8 +67,8 @@ public class V2xInstance {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
 
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, port);
-
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, registrationPort);
         rxMsgsSocket.send(packet);
+
     }
 }

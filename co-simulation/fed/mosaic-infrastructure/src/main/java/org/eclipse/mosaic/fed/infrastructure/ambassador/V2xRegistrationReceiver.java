@@ -37,8 +37,8 @@ public class V2xRegistrationReceiver implements Runnable {
     private Queue<V2xRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1515; // TODO
-    private boolean running = true;
-    private static final int UDP_MTU = 1535;    // TODO
+    private boolean running = false;
+    private static final int UDP_MTU = 1535;    // TODO Maximum Transmission Unit
 
     /**
      * Initialize the listen socket for messages from the Infrastructure Device NS-3 Adapter
@@ -47,6 +47,7 @@ public class V2xRegistrationReceiver implements Runnable {
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
+           
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -55,6 +56,7 @@ public class V2xRegistrationReceiver implements Runnable {
     @Override
     public void run() {
         byte[] buf = new byte[UDP_MTU];
+        running = true;
         while (running) {
             DatagramPacket msg = new DatagramPacket(buf, buf.length);
             try {
