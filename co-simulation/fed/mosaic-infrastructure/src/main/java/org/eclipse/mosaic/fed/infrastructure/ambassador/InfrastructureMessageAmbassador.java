@@ -55,13 +55,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     /**
      * The number of CARMA vehicles.
      */
-    int numberOfV2xInstances = 0;
+    int numberOfInfrastructureInstances = 0;
 
     private InfrastructureRegistrationReceiver InfrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
     private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
-    private V2xInstanceManager v2xInstanceManager = new V2xInstanceManager();
+    private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.

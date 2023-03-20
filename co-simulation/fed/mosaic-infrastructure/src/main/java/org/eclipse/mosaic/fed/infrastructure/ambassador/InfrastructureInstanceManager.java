@@ -37,8 +37,8 @@ import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
  * Session management class for Infrastructure instances communicating with MOSAIC
  * NOTE: TODO See carma.ambassador for reference
  */
-public class V2xInstanceManager {
-    private Map<String, V2xInstance>  managedInstances = new HashMap<>();
+public class InfrastructureInstanceManager {
+    private Map<String, InfrastructureInstance>  managedInstances = new HashMap<>();
     private double currentSimulationTime;
  
 }

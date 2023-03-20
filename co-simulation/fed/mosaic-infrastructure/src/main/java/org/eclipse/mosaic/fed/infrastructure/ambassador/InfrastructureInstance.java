@@ -28,7 +28,7 @@ import java.net.SocketException;
  * Connection manager and data object to associate with a single infrastructure instance in XIL
  * NOTE: TODO See carma.ambassador for reference
  */
-public class V2xInstance {
+public class InfrastructureInstance {
    
     private DatagramSocket rxMsgsSocket = null;
     private InetAddress targetAddress;
@@ -36,7 +36,7 @@ public class V2xInstance {
     private int timeSyncPort;
     private GeoPoint location = null;
 
-    public V2xInstance() {
+    public InfrastructureInstance() {
         // TODO
         // TODO Initialize Datagram Socket
     }
