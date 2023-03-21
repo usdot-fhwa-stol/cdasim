@@ -158,7 +158,7 @@ public class ApplicationAmbassadorTest {
         try {
             //PRE-ASSERT, make sure it cannot found by class loader BEFORE actual jar loading
             SimulationKernel.SimulationKernel.getClassLoader().loadClass(
-                    "load.from.jar.VehicleApplication"
+                    "org.eclipse.mosaic.fed.application.app.api.VehicleApplication"
             );
             fail();
         } catch (Throwable e) {
@@ -169,11 +169,9 @@ public class ApplicationAmbassadorTest {
         new ApplicationAmbassador(applicationParams);
 
         // ASSERT if classes in Jar could be loaded successfully. This class is in "application-from-jar.jar" only. 
-        // TODO This file is currently lost which is why the test is failing.
-
-        //SimulationKernel.SimulationKernel.getClassLoader().loadClass(
-        //        "load.from.jar.VehicleApplication"
-        //);
+        SimulationKernel.SimulationKernel.getClassLoader().loadClass(
+                "org.eclipse.mosaic.fed.application.app.api.VehicleApplication"
+        );
     }
 
     /**
