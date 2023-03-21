@@ -75,7 +75,7 @@
         <profile>
             <id>recreate-test-jar</id>
             <properties>
-                <skip.jar-test-creation>fakse</skip.jar-test-creation>
+                <skip.jar-test-creation>false</skip.jar-test-creation>
             </properties>
         </profile>
     </profiles>
