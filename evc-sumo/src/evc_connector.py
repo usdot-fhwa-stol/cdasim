@@ -86,7 +86,7 @@ class EvcConnector:
 
         Returns:
         - string: A string representing the current state of the traffic light. 
-                  The possible characters are "r" for red, "y" for yellow, and "g" for green and None for exception
+                  The possible characters are "r" for red, "y" for yellow, "g" for green and "O" for switched off
         """
 
         ## get number of characters in state string for SUMO and init sumo tl state string with all red
