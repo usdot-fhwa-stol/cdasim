@@ -148,12 +148,15 @@ class TestEvcConnector(unittest.TestCase):
 
         # Check if the `set_induction_loop_status_to_EVC` method can correctly set the 
         # induction loop state to on for a given detector and lane index
+        evc_phase_id = 1
+        sumo_induction_loop_status = 1
         ## on
-        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_on_io, 1, 0), 1)
-        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_on_io, 1, 1), 0)
+        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_on_io, evc_phase_id, sumo_induction_loop_status), 1)
+        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_on_io, evc_phase_id, sumo_induction_loop_status), 1)
+        sumo_induction_loop_status = 0
         ## off
-        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_off_io, 1, 1), 1)
-        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_off_io, 1, 0), 0)
+        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_off_io, evc_phase_id, sumo_induction_loop_status), 0)
+        self.assertEqual(evc_connector.set_induction_loop_status_to_EVC(cib_off_io, evc_phase_id, sumo_induction_loop_status), 0)
         
 
 
