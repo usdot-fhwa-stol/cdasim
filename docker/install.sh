@@ -28,17 +28,16 @@ sudo apt-get update
 sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar python3.6-dev \
   pkg-config sqlite3 autoconf libtool curl make libxml2 libsqlite3-dev \
   libxml2-dev cmake libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev \
-  libgl2ps-dev python3.7 python3-pip automake openjdk-8-jdk ant python3.7-dev \
+  libgl2ps-dev python3.7 python3-pip automake openjdk-11-jdk ant python3.7-dev \
   python3.7-distutils x11-xserver-utils dconf-editor dbus-x11 libglvnd0 libgl1 \
   libglx0 libegl1 libxext6 libx11-6 python3-dev \
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
-  wget vim nano xterm default-jdk libprotobuf-dev
+  wget vim nano xterm libprotobuf-dev
 sudo rm -rf /var/lib/apt/lists/*
 export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
 #update-alternatives --set python /usr/bin/python3.7
 sudo apt-get clean
-sudo rm -rf /var/cache/oracle-jdk8-installer
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 sudo update-alternatives --set python /usr/bin/python3.7

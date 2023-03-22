@@ -24,6 +24,13 @@ import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 
+import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
+
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for Infrastructure
  * message ambassador.
@@ -39,6 +46,22 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * InfrastructureMessageAmbassador configuration file.
      */
     InfrastructureConfiguration infrastructureConfiguration;
+
+    /**
+     * List of infrastructures that are controlled
+     */
+    private final HashMap<String, Boolean> v2xMap = new HashMap<>();
+
+    /**
+     * The number of CARMA vehicles.
+     */
+    int numberOfInfrastructureInstances = 0;
+
+    private InfrastructureRegistrationReceiver InfrastructureRegistrationReceiver;
+    private Thread registrationRxBackgroundThread;
+    private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
+    private Thread v2xTimeRxBackgroundThread;
+    private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.
@@ -77,7 +100,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     @Override
     public void initialize(long startTime, long endTime) throws InternalFederateException {
         super.initialize(startTime, endTime);
-
         currentSimulationTime = startTime;
         try {
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
@@ -85,6 +107,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             log.error("Error during advanceTime request", e);
             throw new InternalFederateException(e);
         }
+
+        // TODO Initialize listener socket and thread for Infrastructure Registration messages
+
+        // TODO Initialize listener socket and thread for Infrastructure time sync messages
+      
+        // TODO Register any V2x infrastructures from config if any
+
     }
 
     /**
@@ -99,9 +128,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         String type = interaction.getTypeId();
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
+        // Infrastructure message reception
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
+        // TODO Time sync message reception
+
+        // TODO V2xHub infrastructure Registration reception 
     }
 
     /**
@@ -131,10 +164,17 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
 
         if (time < currentSimulationTime) {
+            // process time advance only if time is equal or greater than the next
+            // simulation time step
             return;
         }
 
         try {
+            // TODO actions to do on queued Infrastructure  instance registration attempts
+
+            // TODO actions to do on queued Infrastructure  time sync messages
+
+            // TODO actions to do on queued v2x message receiver's received messages
 
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
 

@@ -83,7 +83,7 @@
     </modules>
 
     <properties>
-        <java.version>8</java.version>
+        <java.version>11</java.version>
         <sonar.organization>usdot-fhwa-stol</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         
@@ -469,6 +469,8 @@
                             <header>${parent.dir}/legal/templates/license-header-2020.txt</header>
                             <header>${parent.dir}/legal/templates/license-header-2021.txt</header>
                             <header>${parent.dir}/legal/templates/cosimulation-license-header-2021.txt</header>
+                            <header>${parent.dir}/legal/templates/leidos-license-header-2022.txt</header>
+                            <header>${parent.dir}/legal/templates/leidos-license-header-2023.txt</header>
                         </validHeaders>
                         <headerDefinitions>
                         </headerDefinitions>
