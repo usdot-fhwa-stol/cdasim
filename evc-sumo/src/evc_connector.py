@@ -70,7 +70,8 @@ class EvcConnector:
         elif controller_io.is_cob_on( (evc_phase_id - 1) + (MAX_INTERSECTION_PHASES * 0) ):
             return 'g'
         else:
-            return None
+            ## if state is not r, y or g then return O which is switched off state
+            return 'O'
 
     def get_traffic_light_state_from_EVC(self, controller_io, phases):
         """
@@ -93,10 +94,7 @@ class EvcConnector:
 
         for phase in phases:
             state_string = [self.COB_to_traffic_light_status(controller_io, phase['evcPhaseId']) if i in phase['sumoTlStateIndex'] else x for i,x in enumerate(state_string)]
-        if None in state_string:
-            return None
-        else:
-            return ''.join(state_string)
+        return ''.join(state_string)
 
     def set_induction_loop_status_to_EVC(self, controller_io, evc_phase_id, sumo_induction_loop_status):
         """
@@ -113,21 +111,25 @@ class EvcConnector:
         type: int
 
         Returns:
-        - int: return a integer to represent cib is on or off.
+        - int: return an integer to represent cib is on or off.
                cib on: 1
                cib off: 0
         """
         if sumo_induction_loop_status != 0:
             if controller_io.is_cib_off(evc_phase_id - 1):
+                ## CIB is currently off, turn to on
                 controller_io.cib_on(evc_phase_id - 1)
                 return 1
             else:
-                return 0
+                ## CIB is currently on
+                return 1
         else:
             if controller_io.is_cib_on(evc_phase_id - 1):
+                ## CIB is currently on, turn to off
                 controller_io.cib_off(evc_phase_id - 1)
-                return 1
+                return 0
             else:
+                ## CIB is currently off
                 return 0
 
     def get_controller_cfg_list(self):
@@ -209,9 +211,7 @@ class EvcConnector:
 
                                 ## Update SUMO traffic light state
                                 tl_state_string = self.get_traffic_light_state_from_EVC(self.controller_io_list[i], controller['evcPhases'])
-                                if tl_state_string is not None:
-                                    sumo_connector.set_traffic_light_state_to_SUMO(controller['sumoTlId'], tl_state_string)
-                                else:
-                                    print("Error: Could not connect to EVC, please check EVC-SUMO config")
+                                sumo_connector.set_traffic_light_state_to_SUMO(controller['sumoTlId'], tl_state_string)
+
                                 
                             self.tick( int(1 / (sumo_connector.traci_get_step_length() * 10)) )
