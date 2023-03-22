@@ -1,4 +1,4 @@
-FROM maven:3.6.3-adoptopenjdk-8
+FROM maven:3.8.3-adoptopenjdk-11
 
 ENV DEBIAN_FRONTEND=noninteractive
 
