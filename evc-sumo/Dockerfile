@@ -15,8 +15,7 @@
 FROM ubuntu:20.04
 
 # Set environment variables for non-interactive installation
-ENV DEBIAN_FRONTEND=noninteractive
-ARG DEBIAN_FRONTEND=noninteractive
+ARG EVC_TOKEN="NULL"
 ENV SUMO_HOME /usr/share/sumo
 RUN apt-get update && apt-get install -y sudo
 
@@ -33,8 +32,8 @@ COPY --chown=carma:carma /docker ./docker
 COPY --chown=carma:carma /src ./src
 COPY --chown=carma:carma /test ./test
 
-RUN docker/install.sh
-USER carma 
+RUN docker/install.sh ${EVC_TOKEN}
+USER carma
 # Set the working directory for the browser user
 WORKDIR /home/carma/src
 

@@ -16,9 +16,10 @@
 
 USERNAME=usdotfhwastol
 
+
 cd "$(dirname "$0")"
 # IMAGE=$(./get-image-name.sh | tr '[:upper:]' '[:lower:]')
-IMAGE=evc
+IMAGE=econolite-virtual-controller
 
 echo ""
 echo "##### $IMAGE Docker Image Build Script #####"
@@ -45,6 +46,10 @@ while [[ $# -gt 0 ]]; do
             COMPONENT_VERSION_STRING=develop
             shift
             ;;
+        *)
+            evc_token=${arg}
+            shift
+            ;;
     esac
 done
 
@@ -55,23 +60,30 @@ fi
 echo "Building docker image for $IMAGE version: $COMPONENT_VERSION_STRING"
 echo "Final image name: $USERNAME/$IMAGE:$COMPONENT_VERSION_STRING"
 
+if [ -z $evc_token ];
+    then 
+        echo "No argument provided for evc_token, this script needs to be run with token"
+        exit 1
+fi
+
 cd ..
 if [[ $COMPONENT_VERSION_STRING = "develop" ]]; then
     sed "s|usdotfhwastoldev/|$USERNAME/|g; s|usdotfhwastolcandidate/|$USERNAME/|g; s|usdotfhwastol/|$USERNAME/|g; s|:[0-9]*\.[0-9]*\.[0-9]*|:$COMPONENT_VERSION_STRING|g; s|checkout.sh|checkout.sh -d|g" \
         Dockerfile | docker build -f - --no-cache -t $USERNAME/$IMAGE:$COMPONENT_VERSION_STRING \
         --build-arg VERSION="$COMPONENT_VERSION_STRING" \
         --build-arg VCS_REF=`git rev-parse --short HEAD` \
-        --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` .
+        --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
+        --build-arg EVC_TOKEN=$evc_token .
 else
     docker build --no-cache -t $USERNAME/$IMAGE:$COMPONENT_VERSION_STRING \
         --build-arg VERSION="$COMPONENT_VERSION_STRING" \
         --build-arg VCS_REF=`git rev-parse --short HEAD` \
-        --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` .
+        --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
+        --build-arg EVC_TOKEN=$evc_token .
 fi
 
 TAGS=()
 TAGS+=("$USERNAME/$IMAGE:$COMPONENT_VERSION_STRING")
-
 docker tag $USERNAME/$IMAGE:$COMPONENT_VERSION_STRING $USERNAME/$IMAGE:latest
 TAGS+=("$USERNAME/$IMAGE:latest")
 
