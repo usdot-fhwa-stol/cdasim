@@ -33,7 +33,7 @@ COPY --chown=carma:carma /docker ./docker
 COPY --chown=carma:carma /src ./src
 COPY --chown=carma:carma /test ./test
 
-RUN docker/install.sh evc_token
+RUN docker/install.sh $evc_token
 USER carma
 # Set the working directory for the browser user
 WORKDIR /home/carma/src
