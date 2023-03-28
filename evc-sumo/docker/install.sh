@@ -16,37 +16,6 @@
 
 set -e
 
-#This token is required to run the script
-evc_token=""
-
-while [[ $# -gt 0 ]]; do
-    arg="$1"
-    case $arg in
-        -v|--version)
-            COMPONENT_VERSION_STRING="$2"
-            shift
-            shift
-            ;;
-        --system-release)
-            SYSTEM_RELEASE=true
-            shift
-            ;;
-        -p|--push)
-            PUSH=true
-            shift
-            ;;
-        -d|--develop)
-            USERNAME=usdotfhwastoldev
-            COMPONENT_VERSION_STRING=develop
-            shift
-            ;;
-        *)
-            evc_token=${arg}
-            shift
-            ;;
-    esac
-done
-
 if [ -z $evc_token ];
     then 
         echo "No argument provided for evc_token, this script needs to be run with token"
