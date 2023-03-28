@@ -21,10 +21,7 @@ if [ -z $evc_token ];
         echo "No argument provided for evc_token, this script needs to be run with token"
         exit 1
 fi
-        
 
-#user must replace the content in docker/token.txt with their own github token
-file="docker/token.txt"
 #download apt dependencies
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends firefox dbus-x11 x11-apps x11-utils x11-xserver-utils \
     xserver-xorg-video-dummy xserver-xorg-input-void xvfb libgl1-mesa-dri libgl1-mesa-glx libpulse0 \
