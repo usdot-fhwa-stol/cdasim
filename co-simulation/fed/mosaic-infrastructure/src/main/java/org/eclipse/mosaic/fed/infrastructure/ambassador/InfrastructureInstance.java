@@ -30,15 +30,21 @@ import java.net.SocketException;
  */
 public class InfrastructureInstance {
    
-    private DatagramSocket rxMsgsSocket = null;
+    private String infrastructureId;
     private InetAddress targetAddress;
-    private int registrationPort;
+    private int rxMessagePort;
     private int timeSyncPort;
     private GeoPoint location = null;
 
-    public InfrastructureInstance() {
-        // TODO
-        // TODO Initialize Datagram Socket
+    private DatagramSocket rxMsgsSocket = null;
+
+    public InfrastructureInstance(String infrastructureId, InetAddress targetAddress, 
+                                  int rxMessagePort, int timeSyncPort, GeoPoint location) {
+        this.infrastructureId = infrastructureId;
+        this.targetAddress = targetAddress;
+        this.rxMessagePort = rxMessagePort;
+        this.timeSyncPort = timeSyncPort;
+        this.location = location;
     }
 
     public InetAddress getTargetAddress() {
@@ -49,13 +55,42 @@ public class InfrastructureInstance {
         this.targetAddress = targetAddress;
     }
 
+    public GeoPoint getLocation() {
+        return this.location;
+    }
+
     public void setLocation(GeoPoint location) {
         this.location = location;
     }
 
-    public GeoPoint getLocation() {
-        return this.location;
+    public String getInfrastructureId() {
+        return infrastructureId;
     }
+
+    public void setInfrastructureId(String infrastructureId) {
+        this.infrastructureId = infrastructureId;
+    }
+
+    public int getRxMessagePort() {
+        return rxMessagePort;
+    }
+
+    public void setRxMessagePort(int rxMessagePort) {
+        this.rxMessagePort = rxMessagePort;
+    }
+
+    public int getTimeSyncPort() {
+        return timeSyncPort;
+    }
+
+    public void setTimeSyncPort(int timeSyncPort) {
+        this.timeSyncPort = timeSyncPort;
+    }
+
+    public void bind() throws IOException {
+        rxMsgsSocket = new DatagramSocket();
+    }
+    
 
     /**
      * Sends the data to the Infrastructure Device communications interface configured at construction time.
@@ -66,8 +101,7 @@ public class InfrastructureInstance {
         if (rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
-
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, registrationPort);
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, rxMessagePort);
         rxMsgsSocket.send(packet);
 
     }
