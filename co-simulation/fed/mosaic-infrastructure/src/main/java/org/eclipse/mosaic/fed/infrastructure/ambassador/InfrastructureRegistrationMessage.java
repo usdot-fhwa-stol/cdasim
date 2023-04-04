@@ -23,12 +23,77 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
  */
 public class InfrastructureRegistrationMessage {
     private String rxMessageIpAddress;
-    private int timeSyncListenPort = 1517; // TODO
-    private int regstratinoListenPort = 1516; // TODO 
+    private String intersectionId = null;
+    private String infrastructureId;
+
+    private int rxMessagePort = 1536;
+    private int timeSyncPort = 1517; // TODO
     private GeoPoint location = null;
 
-    public InfrastructureRegistrationMessage() {
-        
+    public InfrastructureRegistrationMessage(String rxMessageIpAddress, String intersectionId, String infrastructureId,
+                                            int rxMessagePort, int timeSyncPort, GeoPoint location) {
+        this.rxMessageIpAddress = rxMessageIpAddress;
+        this.intersectionId = intersectionId;
+        this.infrastructureId = infrastructureId;
+        this.rxMessagePort = rxMessagePort;
+        this.timeSyncPort = timeSyncPort;
+        this.location = location;
     }
+
+    public String getRxMessageIpAddress(){
+        return this.rxMessageIpAddress;
+    }
+
+    public String getIntersectionId(){
+        return this.intersectionId;
+    }
+
+    public String getInfrastructureId(){
+        return this.infrastructureId;
+    }
+
+    public int getRxMessagePort(){
+        return this.rxMessagePort;
+    }
+
+    public int getTimeSyncPort(){
+        return this.timeSyncPort;
+    }
+
+    public GeoPoint getLocation(){
+        return this.location;
+    }
+
+    public void setRxMessageIpAddress(String rxMessageIpAddress){
+        this.rxMessageIpAddress = rxMessageIpAddress;
+    }
+
+    public void setIntersectionId(String intersectionId){
+        this.intersectionId = intersectionId;
+    }
+
+    public void setInfrastructureId(String infrastructureId){
+        this.infrastructureId = infrastructureId;
+    }
+
+    public void setRxMessagePort(int rxMessagePort){
+        this.rxMessagePort = rxMessagePort;
+    }
+
+    public void setTimeSyncPort(int timeSyncPort){
+        this.timeSyncPort = timeSyncPort;
+    }
+
+    public void setLocation(GeoPoint location){
+        this.location = location;
+    }
+
+    @Override
+    public String toString() {
+        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress + ", intersectionId=" + intersectionId
+                + ", infrastructureId=" + infrastructureId + ", rxMessagePort=" + rxMessagePort 
+                + ", timeSyncPort=" + timeSyncPort + ", location=" + location + "]";
+    }
+    
 
 }
