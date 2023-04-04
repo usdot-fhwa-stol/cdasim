@@ -57,11 +57,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      */
     int numberOfInfrastructureInstances = 0;
 
-    private InfrastructureRegistrationReceiver InfrastructureRegistrationReceiver;
+    private InfrastructureRegistrationReceiver infrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
-    private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
+    private InfrastructureTimeMessageReceiver infrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
-    private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
+    private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.
@@ -109,7 +109,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
 
         // TODO Initialize listener socket and thread for Infrastructure Registration messages
-
+        infrastructureRegistrationReceiver = new InfrastructureRegistrationReceiver();
+        infrastructureRegistrationReceiver.init();
+        registrationRxBackgroundThread = new Thread(infrastructureRegistrationReceiver);
+        registrationRxBackgroundThread.start();
         // TODO Initialize listener socket and thread for Infrastructure time sync messages
       
         // TODO Register any V2x infrastructures from config if any
@@ -149,7 +152,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         log.info(infrastructureV2xMessageReception.getReceiverID() + " received V2X messages at time: "
                 + infrastructureV2xMessageReception.getTime() + ".");
         log.info("The received message is " + infrastructureV2xMessageReception.getMessage() + " .");
-
     }
 
     /**
@@ -170,8 +172,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
 
         try {
-            // TODO actions to do on queued Infrastructure  instance registration attempts
-
+            List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver.getReceivedMessages();
+            for (InfrastructureRegistrationMessage reg : newRegistrations) {
+                infrastructureInstanceManager.onNewRegistration(reg);
+            }
             // TODO actions to do on queued Infrastructure  time sync messages
 
             // TODO actions to do on queued v2x message receiver's received messages

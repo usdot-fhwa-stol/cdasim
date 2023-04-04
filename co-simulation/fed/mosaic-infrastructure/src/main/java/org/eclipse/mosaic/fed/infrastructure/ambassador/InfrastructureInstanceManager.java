@@ -25,20 +25,43 @@ import java.util.Map;
 
 import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
-import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
-import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 /**
  * Session management class for Infrastructure instances communicating with MOSAIC
  * NOTE: TODO See carma.ambassador for reference
  */
 public class InfrastructureInstanceManager {
-    private Map<String, InfrastructureInstance>  managedInstances = new HashMap<>();
+    private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
     private double currentSimulationTime;
- 
+
+    public void onNewRegistration(InfrastructureRegistrationMessage registration){
+        if (!managedInstances.containsKey(registration.getInfrastructureId())) {
+            try {
+                newInfrastructureInstance(
+                    registration.getIntersectionId(),
+                    registration.getInfrastructureId(),
+                    InetAddress.getByName(registration.getRxMessageIpAddress()),
+                    registration.getRxMessagePort(),
+                    registration.getTimeSyncPort(),
+                    registration.getLocation()
+                );
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            // log warning
+        }
+    }
+
+    private void newInfrastructureInstance(String intersectionId, String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort, int timeSyncPort, GeoPoint location) {
+        InfrastructureInstance tmp = new InfrastructureInstance(intersectionId, infrastructureId, rxMessageIpAddress, rxMessagePort, timeSyncPort, location);
+        try {
+            tmp.bind();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        managedInstances.put(infrastructureId, tmp);
+    }
 }
