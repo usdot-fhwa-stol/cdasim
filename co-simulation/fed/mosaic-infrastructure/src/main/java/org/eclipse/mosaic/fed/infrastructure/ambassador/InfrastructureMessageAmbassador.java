@@ -26,6 +26,7 @@ import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageRecep
 
 import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +63,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
     private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
+    private InfrastructureTimeInterface InfrastructureTimeInterface;
+
+    int Timesync_seq = 0;
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.
@@ -132,7 +136,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
-        // TODO Time sync message reception
+        // TODO Time sync message reception: needs to be implemented when time regulat....
 
         // TODO V2xHub infrastructure Registration reception 
     }
@@ -171,9 +175,16 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
         try {
             // TODO actions to do on queued Infrastructure  instance registration attempts
-
-            // TODO actions to do on queued Infrastructure  time sync messages
-
+           
+            Timesync_seq += 1;
+            InfrastructureTimeMessage timesync_message = new InfrastructureTimeMessage();
+            timesync_message.set_seq(Timesync_seq);
+            timesync_message.set_timestep(currentSimulationTime);
+            try {
+                InfrastructureTimeInterface.onTimestepUpdate(timesync_message);
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
             // TODO actions to do on queued v2x message receiver's received messages
 
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
@@ -219,6 +230,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      */
     @Override
     public boolean isTimeRegulating() {
-        return true;
+        return false;
     }
 }

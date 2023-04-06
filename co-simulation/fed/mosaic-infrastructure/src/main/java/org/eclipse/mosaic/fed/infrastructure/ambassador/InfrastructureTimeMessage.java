@@ -25,11 +25,32 @@ import java.nio.charset.StandardCharsets;
  
  */
 public class InfrastructureTimeMessage {
-    private int timestep;
+    private long timestep;
     private int seq;
     
  
     public InfrastructureTimeMessage() {
+    }
+
+    public long get_timestep()
+    {
+        return timestep;
+    }
+    public int get_seq()
+    {
+        return seq;
+    }
+    public void set_timestep(long new_timestep)
+    {
+        this.timestep = new_timestep;
+    }
+    public void set_seq(int new_seq)
+    {
+        this.seq = new_seq;
+    }
+    @Override
+    public String toString() {
+        return "InfrastructureTimeMessage [timestep=" + timestep + ", seq=" + seq + "]";
     }
 
 }

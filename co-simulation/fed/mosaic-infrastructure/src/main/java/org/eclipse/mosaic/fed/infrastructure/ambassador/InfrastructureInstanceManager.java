@@ -40,5 +40,10 @@ import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance>  managedInstances = new HashMap<>();
     private double currentSimulationTime;
+
+    public Map<String, InfrastructureInstance> get_managedInstances()
+    {
+        return managedInstances;
+    }
  
 }

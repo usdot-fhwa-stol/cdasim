@@ -71,4 +71,14 @@ public class InfrastructureInstance {
         rxMsgsSocket.send(packet);
 
     }
+
+    public void sendTimesyncMsgs(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, timeSyncPort);
+        rxMsgsSocket.send(packet);
+
+    }
 }
