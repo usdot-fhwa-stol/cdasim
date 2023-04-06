@@ -20,15 +20,20 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
-import org.eclipse.mosaic.fed.infrastructure.configuration.RsuConfiguration;
+import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
+import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
+import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -47,11 +52,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * InfrastructureMessageAmbassador configuration file.
      */
     InfrastructureConfiguration infrastructureConfiguration;
-
-    /**
-     * List of infrastructures that are controlled
-     */
-    private final HashMap<String, Boolean> v2xMap = new HashMap<>();
 
     /**
      * The number of CARMA vehicles.
@@ -109,30 +109,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             throw new InternalFederateException(e);
         }
 
-        // TODO Initialize listener socket and thread for Infrastructure Registration messages
         infrastructureRegistrationReceiver = new InfrastructureRegistrationReceiver();
         infrastructureRegistrationReceiver.init();
         registrationRxBackgroundThread = new Thread(infrastructureRegistrationReceiver);
         registrationRxBackgroundThread.start();
-
-        // Read configuration file and register RSU onto MOSAIC
-        for (RsuConfiguration rsuConfiguration : infrastructureConfiguration.rsus)
-        {
-            RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, rsuConfiguration.name, 
-                                                                  rsuConfiguration.group, rsuConfiguration.application, 
-                                                                  rsuConfiguration.position);
-            try {
-                this.rti.triggerInteraction(rsuRegistration);
-                v2xMap.put(rsuConfiguration.name, false);
-            } catch (InternalFederateException | IllegalValueException e) {
-                log.error(e.getMessage());
-            }
-        }
-
-        // TODO Initialize listener socket and thread for Infrastructure time sync messages
-      
-        // TODO Register any V2x infrastructures from config if any
-
     }
 
     /**
@@ -151,9 +131,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
-        // TODO Time sync message reception
-
-        // TODO V2xHub infrastructure Registration reception 
     }
 
     /**
@@ -188,15 +165,52 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
 
         try {
-
-            List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver.getReceivedMessages();
+            
+            // 
+            List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
+                    .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
+
+                // new instance registration to store to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
-                if (!v2xMap.get(reg.getInfrastructureId()))
-                    v2xMap.put(reg.getInfrastructureId(), true);
-                    
+
+                // register RSU, currently one infrastructure pair with one RSU, the ID will be the same as result
+                // group and applications leave as null for now
+                RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, reg.getInfrastructureId(),
+                                                                      null, null,
+                                                                      reg.getLocation());
+                try {
+                    // trigger RTI interaction to MOSAIC
+                    this.rti.triggerInteraction(rsuRegistration);
+                } catch (InternalFederateException | IllegalValueException e) {
+                    log.error(e.getMessage());
+                }
+
+                //TODO actions to create DSRC parameter and then send to RTI interaction to MOSAIC
+
+                // Create an AdHocConfiguration object to represent the configuration of the Ad-Hoc interface
+                InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1) 
+                    .power(50) 
+                    .radius(100.0) 
+                    .secondChannel(AdHocChannel.SCH2) 
+                    .create(); 
+
+                AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(reg.getInfrastructureId())
+                        .addInterface(interfaceConfig)
+                        .create();
+
+                AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime, adHocConfig);
+
+                // Use the object to exchange the Ad-Hoc configuration with another vehicle or component
+                try {
+                    // trigger RTI interaction to MOSAIC
+                    this.rti.triggerInteraction(communicationConfig);
+                } catch (InternalFederateException | IllegalValueException e) {
+                    log.error(e.getMessage());
+                }
             }
-            // TODO actions to do on queued Infrastructure  time sync messages
+
+            // TODO actions to do on queued Infrastructure time sync messages
 
             // TODO actions to do on queued v2x message receiver's received messages
 

@@ -36,6 +36,8 @@ public class InfrastructureInstance {
     private int timeSyncPort;
     private GeoPoint location = null;
 
+    
+
     private DatagramSocket rxMsgsSocket = null;
 
     public InfrastructureInstance(String infrastructureId, InetAddress targetAddress, 

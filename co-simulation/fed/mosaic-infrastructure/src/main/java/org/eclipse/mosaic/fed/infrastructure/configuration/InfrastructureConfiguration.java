@@ -35,11 +35,6 @@ public class InfrastructureConfiguration implements Serializable {
     public Long updateInterval = 1000L;
 
     /**
-     * The list of RSU configurations in the infrastructure.
-     */
-    public List<RsuConfiguration> rsus;
-
-    /**
      * The ID of the RSU that sends messages.
      */
     public String senderRSUId;
