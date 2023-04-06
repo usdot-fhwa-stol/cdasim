@@ -40,7 +40,6 @@ public class InfrastructureInstanceManager {
         if (!managedInstances.containsKey(registration.getInfrastructureId())) {
             try {
                 newInfrastructureInstance(
-                    registration.getIntersectionId(),
                     registration.getInfrastructureId(),
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
                     registration.getRxMessagePort(),
@@ -55,8 +54,8 @@ public class InfrastructureInstanceManager {
         }
     }
 
-    private void newInfrastructureInstance(String intersectionId, String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort, int timeSyncPort, GeoPoint location) {
-        InfrastructureInstance tmp = new InfrastructureInstance(intersectionId, infrastructureId, rxMessageIpAddress, rxMessagePort, timeSyncPort, location);
+    private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort, int timeSyncPort, GeoPoint location) {
+        InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort, timeSyncPort, location);
         try {
             tmp.bind();
         } catch (IOException e) {
