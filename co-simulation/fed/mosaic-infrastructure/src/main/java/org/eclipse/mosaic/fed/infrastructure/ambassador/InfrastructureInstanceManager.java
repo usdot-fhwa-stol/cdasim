@@ -63,4 +63,14 @@ public class InfrastructureInstanceManager {
         }
         managedInstances.put(infrastructureId, tmp);
     }
+
+        /**
+     * External helper function to allow the ambassador to check if a given vehicle ID is a registered CARMA Platform
+     * instance
+     * @param mosiacVehicleId The id to check
+     * @return True if managed by this object (e.g., is a registered CARMA Platform vehicle). false o.w.
+     */
+    public boolean checkIfRegistered(String infrastructureId) {
+        return managedInstances.keySet().contains(infrastructureId);
+    }
 }
