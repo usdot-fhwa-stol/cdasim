@@ -28,34 +28,74 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * Session management class for Infrastructure instances communicating with MOSAIC
- * NOTE: TODO See carma.ambassador for reference
+ * Session management class for Infrastructure instances communicating with
+ * MOSAIC.
+ * 
+ * This class is responsible for managing instances of infrastructure registered
+ * with the MOSAIC system. It provides methods for registering new instances,
+ * checking if instances are registered, and storing and retrieving instances
+ * from a map.
  */
 public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
     private double currentSimulationTime;
+    private static final Logger log = LoggerFactory.getLogger(InfrastructureInstanceManager.class);
 
-    public void onNewRegistration(InfrastructureRegistrationMessage registration){
+    /**
+     * Register a new infrastructure instance with the MOSAIC system.
+     * 
+     * This method takes an InfrastructureRegistrationMessage, converts it to an
+     * InfrastructureInstance, and adds it to the managedInstances map if it is not
+     * already present.
+     * 
+     * @param registration The InfrastructureRegistrationMessage to be registered.
+     * 
+     * @throws RuntimeException if an error occurs while creating or adding the new
+     *                          instance.
+     */
+    public void onNewRegistration(InfrastructureRegistrationMessage registration) {
         if (!managedInstances.containsKey(registration.getInfrastructureId())) {
             try {
                 newInfrastructureInstance(
-                    registration.getInfrastructureId(),
-                    InetAddress.getByName(registration.getRxMessageIpAddress()),
-                    registration.getRxMessagePort(),
-                    registration.getTimeSyncPort(),
-                    registration.getLocation()
-                );
+                        registration.getInfrastructureId(),
+                        InetAddress.getByName(registration.getRxMessageIpAddress()),
+                        registration.getRxMessagePort(),
+                        registration.getTimeSyncPort(),
+                        registration.getLocation());
             } catch (UnknownHostException e) {
+                log.error("Failed to create infrastructure instance with ID '{}' due to an unknown host exception: {}",
+                        registration.getInfrastructureId(), e.getMessage());
                 throw new RuntimeException(e);
             }
         } else {
-            // log warning
+            log.warn("Registration message received for already registered infrastructure with ID: {}",
+                    registration.getInfrastructureId());
         }
     }
 
-    private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort, int timeSyncPort, GeoPoint location) {
-        InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort, timeSyncPort, location);
+    /**
+     * Create a new InfrastructureInstance and add it to the managedInstances map.
+     * 
+     * This method creates a new InfrastructureInstance with the provided parameters
+     * and adds it to the managedInstances map.
+     * 
+     * @param infrastructureId   The ID of the new instance.
+     * @param rxMessageIpAddress The IP address to receive messages on.
+     * @param rxMessagePort      The port to receive messages on.
+     * @param timeSyncPort       The port for time synchronization.
+     * @param location           The location of the instance.
+     * 
+     * @throws RuntimeException if an error occurs while creating or adding the new
+     *                          instance.
+     */
+    private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
+            int timeSyncPort, GeoPoint location) {
+        InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
+                timeSyncPort, location);
         try {
             tmp.bind();
         } catch (IOException e) {
@@ -64,11 +104,14 @@ public class InfrastructureInstanceManager {
         managedInstances.put(infrastructureId, tmp);
     }
 
-        /**
-     * External helper function to allow the ambassador to check if a given vehicle ID is a registered CARMA Platform
+    /**
+     * External helper function to allow the ambassador to check if a given vehicle
+     * ID is a registered CARMA Platform
      * instance
-     * @param mosiacVehicleId The id to check
-     * @return True if managed by this object (e.g., is a registered CARMA Platform vehicle). false o.w.
+     * 
+     * @param infrastructureId The id to check
+     * @return True if managed by this object (e.g., is a registered CARMA Platform
+     *         vehicle). false o.w.
      */
     public boolean checkIfRegistered(String infrastructureId) {
         return managedInstances.keySet().contains(infrastructureId);
