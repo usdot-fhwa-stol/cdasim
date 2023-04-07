@@ -60,22 +60,23 @@ public class InfrastructureRegistrationReceiver implements Runnable {
         while (running) {
             DatagramPacket msg = new DatagramPacket(buf, buf.length);
             try {
-               listenSocket.receive(msg);
+                listenSocket.receive(msg);
             } catch (IOException e) {
-               throw new RuntimeException(e);
+                throw new RuntimeException(e);
             }
-
+    
             // parse message
-            String receivedPacket = new String(msg.getData());
+            String receivedPacket = new String(msg.getData(), 0, msg.getLength()); // Use length of message to create String
             Gson gson = new Gson();
             InfrastructureRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, InfrastructureRegistrationMessage.class);
-
+    
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
                 rxQueue.add(parsedMessage);
             }
-       }
+        }
     }
+    
 
     /**
      * Stop the runnable instance
@@ -84,7 +85,6 @@ public class InfrastructureRegistrationReceiver implements Runnable {
         if (listenSocket != null) {
             listenSocket.close();
         }
-
         running = false;
     }
 
