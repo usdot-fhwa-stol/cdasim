@@ -27,32 +27,41 @@ import java.util.Queue;
 import com.google.gson.Gson;
 
 /**
- * Worker thread Runnable for operating a listen socket to receive outbound Infrastructure Messages from Infrastructure Device instances
- * This {@link Runnable} instance will operate a UDP socket to subscribe to packets from the V2x infrastructure's
- * adapter. Upon receiving a packet, it will be enqueued for the primary thread to process the data once it ticks to a
+ * Worker thread Runnable for operating a listen socket to receive outbound
+ * Infrastructure Messages from Infrastructure Device instances
+ * This {@link Runnable} instance will operate a UDP socket to subscribe to
+ * packets from the V2x infrastructure's
+ * adapter. Upon receiving a packet, it will be enqueued for the primary thread
+ * to process the data once it ticks to a
  * simulation processing step
- * NOTE: TODO See carma.ambassador for reference
  */
 public class InfrastructureRegistrationReceiver implements Runnable {
     private Queue<InfrastructureRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1515; // TODO
+    private static final int listenPort = 1515;
     private boolean running = false;
-    private static final int UDP_MTU = 1535;    // TODO Maximum Transmission Unit
+    private static final int UDP_MTU = 1535;
 
     /**
-     * Initialize the listen socket for messages from the Infrastructure Device NS-3 Adapter
+     * Initialize the listen socket for messages from the Infrastructure Device NS-3
+     * Adapter
+     * 
      * @throws RuntimeException iff socket instantiation fails
      */
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
-           
+
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * The main method of the worker thread. Listens for incoming messages and
+     * enqueues them for processing on the
+     * primary thread.
+     */
     @Override
     public void run() {
         byte[] buf = new byte[UDP_MTU];
@@ -64,22 +73,23 @@ public class InfrastructureRegistrationReceiver implements Runnable {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-    
+
             // parse message
-            String receivedPacket = new String(msg.getData(), 0, msg.getLength()); // Use length of message to create String
+            String receivedPacket = new String(msg.getData(), 0, msg.getLength()); // Use length of message to create
+                                                                                   // String
             Gson gson = new Gson();
-            InfrastructureRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, InfrastructureRegistrationMessage.class);
-    
+            InfrastructureRegistrationMessage parsedMessage = gson.fromJson(receivedPacket,
+                    InfrastructureRegistrationMessage.class);
+
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
                 rxQueue.add(parsedMessage);
             }
         }
     }
-    
 
     /**
-     * Stop the runnable instance
+     * Stop the runnable instance and close the listen socket.
      */
     public void stop() {
         if (listenSocket != null) {
@@ -89,8 +99,11 @@ public class InfrastructureRegistrationReceiver implements Runnable {
     }
 
     /**
-     * Query the current buffer of outbound messages. Clears the currently stored buffer once called. Thread-safe.
-     * @return The list of received outbound message from all Infrastructure Device instances since last call of this method
+     * Query the current buffer of outbound messages. Clears the currently stored
+     * buffer once called. Thread-safe.
+     * 
+     * @return The list of received outbound message from all Infrastructure Device
+     *         instances since last call of this method
      */
     public List<InfrastructureRegistrationMessage> getReceivedMessages() {
         List<InfrastructureRegistrationMessage> output = new ArrayList<>();
@@ -99,7 +112,7 @@ public class InfrastructureRegistrationReceiver implements Runnable {
             output.addAll(rxQueue);
             rxQueue.clear();
         }
-        
+
         return output;
     }
 }
