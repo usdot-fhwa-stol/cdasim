@@ -28,13 +28,6 @@ import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
-import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
-
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -148,83 +141,117 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
-     * This method is called by the AbstractFederateAmbassador when a time advance
-     * has been granted by the RTI. Before this call is placed, any unprocessed
-     * interaction is forwarded to the federate using the processInteraction method.
+     * Creates an Ad-Hoc configuration object to represent the configuration of the
+     * Ad-Hoc interface used for communication between the infrastructure instance
+     * and other vehicles or components, and sends it to the RTI for exchange.
      *
-     * @param time The timestamp towards which the federate can advance it local
-     *             time.
+     * @param reg the infrastructure registration message received from the RTI
+     */
+    private final void onDsrcRegistrationRequest(InfrastructureRegistrationMessage reg) {
+        // Create an InterfaceConfiguration object to represent the configuration of the
+        // Ad-Hoc interface
+        // Set the IP address and subnet mask to null for now
+        // Set the transmit power to 50 dBm and the maximum range to 100 meters
+        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
+                .ip(null)
+                .subnet(null)
+                .power(50)
+                .radius(100.0)
+                .create();
+
+        // Create an AdHocConfiguration object to associate the Ad-Hoc interface
+        // configuration
+        // with the infrastructure instance's ID
+        AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(reg.getInfrastructureId())
+                .addInterface(interfaceConfig)
+                .create();
+
+        // Create an AdHocCommunicationConfiguration object to specify the time and
+        // Ad-Hoc
+        // configuration for exchange with another vehicle or component
+        AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
+                adHocConfig);
+
+        try {
+            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
+            this.rti.triggerInteraction(communicationConfig);
+        } catch (InternalFederateException | IllegalValueException e) {
+            // Log error message if there was an issue with the RTI interaction
+            log.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Performs registration of a new infrastructure instance and sets up
+     * communication interfaces.
+     *
+     * @param reg The registration message of the new infrastructure instance.
+     */
+    private final void onRsuRegistrationRequest(InfrastructureRegistrationMessage reg) {
+
+        // Register the new infrastructure instance to the RTI as an RSU
+        RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, reg.getInfrastructureId(),
+                null, null,
+                reg.getLocation());
+        try {
+            // Trigger RTI interaction to MOSAIC
+            this.rti.triggerInteraction(rsuRegistration);
+        } catch (InternalFederateException | IllegalValueException e) {
+            // Log error message if there was an issue with the RTI interaction
+            log.error(e.getMessage());
+        }
+
+        
+    }
+
+    /**
+     * This method is called by the AbstractFederateAmbassador when the RTI grants a
+     * time advance to the federate. Any unprocessed interactions are forwarded to
+     * the federate using the processInteraction method before this call is made.
+     *
+     * @param time The timestamp indicating the time to which the federate can
+     *             advance its local time.
      */
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
 
+        // Process the time advance only if the time is equal or greater than the next
+        // simulation time step
         if (time < currentSimulationTime) {
-            // process time advance only if time is equal or greater than the next
-            // simulation time step
             return;
         }
-
         try {
-            
-            // 
+
+            // Handle any new infrastructure registration requests
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
-
-                // new instance registration to store to infrastructure instance manager
+                // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
-
-                // register RSU, currently one infrastructure pair with one RSU, the ID will be the same as result
-                // group and applications leave as null for now
-                RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, reg.getInfrastructureId(),
-                                                                      null, null,
-                                                                      reg.getLocation());
-                try {
-                    // trigger RTI interaction to MOSAIC
-                    this.rti.triggerInteraction(rsuRegistration);
-                } catch (InternalFederateException | IllegalValueException e) {
-                    log.error(e.getMessage());
-                }
-
-                //TODO actions to create DSRC parameter and then send to RTI interaction to MOSAIC
-
-                // Create an AdHocConfiguration object to represent the configuration of the Ad-Hoc interface
-                InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1) 
-                    .power(50) 
-                    .radius(100.0) 
-                    .secondChannel(AdHocChannel.SCH2) 
-                    .create(); 
-
-                AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(reg.getInfrastructureId())
-                        .addInterface(interfaceConfig)
-                        .create();
-
-                AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime, adHocConfig);
-
-                // Use the object to exchange the Ad-Hoc configuration with another vehicle or component
-                try {
-                    // trigger RTI interaction to MOSAIC
-                    this.rti.triggerInteraction(communicationConfig);
-                } catch (InternalFederateException | IllegalValueException e) {
-                    log.error(e.getMessage());
-                }
+                // Process registration requests for RSUs and DSRCs
+                onRsuRegistrationRequest(reg);
+                onDsrcRegistrationRequest(reg);
             }
 
-            // TODO actions to do on queued Infrastructure time sync messages
+            // TODO: Handle any queued Infrastructure time sync messages
 
-            // TODO actions to do on queued v2x message receiver's received messages
+            // TODO: Handle any queued V2X message receiver's received messages
 
+            // Advance the simulation time
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
 
+            // Request the next time advance from the RTI
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
 
-            // send RSU external message
+            // Send an external message to the RSU
             String message = "External Message to RSU: RSU sent message at time: " + currentSimulationTime;
             ExternalMessage rsuMessage = new ExternalMessage(currentSimulationTime, message,
                     infrastructureConfiguration.senderRSUId);
             try {
+                // Trigger RTI interaction to MOSAIC
                 this.rti.triggerInteraction(rsuMessage);
             } catch (InternalFederateException | IllegalValueException e) {
+                // Log an error message if there was an issue with the RTI interaction
                 log.error(e.getMessage());
             }
 
