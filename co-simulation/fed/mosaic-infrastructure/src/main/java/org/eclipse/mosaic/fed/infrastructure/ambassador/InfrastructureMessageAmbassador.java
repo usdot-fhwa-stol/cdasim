@@ -63,9 +63,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
     private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
-    private InfrastructureTimeInterface InfrastructureTimeInterface;
+    private InfrastructureTimeInterface infrastructureTimeInterface;
 
-    int Timesync_seq = 0;
+    private int timeSyncSeq = 0;
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.
@@ -112,10 +112,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             throw new InternalFederateException(e);
         }
 
-        // TODO Initialize listener socket and thread for Infrastructure Registration messages
+        // TODO Initialize listener socket and thread for Infrastructure Registration
+        // messages
 
-        // TODO Initialize listener socket and thread for Infrastructure time sync messages
-      
+        // TODO Initialize listener socket and thread for Infrastructure time sync
+        // messages
+
         // TODO Register any V2x infrastructures from config if any
 
     }
@@ -136,9 +138,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
-        // TODO Time sync message reception: needs to be implemented when time regulat....
+        // TODO Time sync message reception: needs to be implemented when time
+        // regulat....
 
-        // TODO V2xHub infrastructure Registration reception 
+        // TODO V2xHub infrastructure Registration reception
     }
 
     /**
@@ -174,17 +177,14 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
 
         try {
-            // TODO actions to do on queued Infrastructure  instance registration attempts
-           
-            Timesync_seq += 1;
-            InfrastructureTimeMessage timesync_message = new InfrastructureTimeMessage();
-            timesync_message.set_seq(Timesync_seq);
-            timesync_message.set_timestep(currentSimulationTime);
-            try {
-                InfrastructureTimeInterface.onTimestepUpdate(timesync_message);
-            } catch (IOException e) {
-                log.error(e.getMessage());
-            }
+            // TODO actions to do on queued Infrastructure instance registration attempts
+
+            timeSyncSeq += 1;
+            InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
+            timeSyncMessage.setSeq(timeSyncSeq);
+            timeSyncMessage.setTimestep(currentSimulationTime);
+            infrastructureTimeInterface.onTimeStepUpdate(timeSyncMessage);
+
             // TODO actions to do on queued v2x message receiver's received messages
 
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
@@ -204,6 +204,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
+        } catch (IOException e1) {
+            log.error("Error during updating timestep :" + e1.getMessage());
         }
     }
 

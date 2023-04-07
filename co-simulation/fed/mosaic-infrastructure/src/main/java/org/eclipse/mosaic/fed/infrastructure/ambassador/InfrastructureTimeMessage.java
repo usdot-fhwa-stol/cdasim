@@ -22,32 +22,31 @@ import java.nio.charset.StandardCharsets;
 /**
  * Message to be sent or received by the Infrastructure Device Adapter interface
  * NOTE: TODO See .ambassador for reference
- 
+ * 
  */
 public class InfrastructureTimeMessage {
     private long timestep;
     private int seq;
-    
- 
+
     public InfrastructureTimeMessage() {
     }
 
-    public long get_timestep()
-    {
+    public long getTimestep() {
         return timestep;
     }
-    public int get_seq()
-    {
+
+    public int getSeq() {
         return seq;
     }
-    public void set_timestep(long new_timestep)
-    {
-        this.timestep = new_timestep;
+
+    public void setTimestep(long newTimestep) {
+        this.timestep = newTimestep;
     }
-    public void set_seq(int new_seq)
-    {
-        this.seq = new_seq;
+
+    public void setSeq(int newSeq) {
+        this.seq = newSeq;
     }
+
     @Override
     public String toString() {
         return "InfrastructureTimeMessage [timestep=" + timestep + ", seq=" + seq + "]";

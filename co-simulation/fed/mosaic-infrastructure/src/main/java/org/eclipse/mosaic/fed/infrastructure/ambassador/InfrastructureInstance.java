@@ -72,7 +72,12 @@ public class InfrastructureInstance {
 
     }
 
-    public void sendTimesyncMsgs(byte[] data) throws IOException {
+    /**
+     * Sends time sync data to the Infrastructure Device communications interface configured at construction time.
+     * @param data The binary data to transmit
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
+    public void sendTimeSyncMsgs(byte[] data) throws IOException {
         if (rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }

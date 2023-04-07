@@ -15,50 +15,54 @@
  */
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
+
 import java.io.IOException;
 
-import org.apache.commons.logging.Log;
+import org.slf4j.Logger;
 
 import com.google.gson.Gson;
-public class InfrastructureTimeInterface{
-public InfrastructureInstanceManager manager;
-//private int target_port=12123;
-//set to false on init release
-private Boolean await_infrastructure_advance_request = false;
-public InfrastructureTimeInterface(InfrastructureInstanceManager manager){
-    this.manager = manager;
-}
 
-/**
- * This function implements the encoding of a json string consist of timestep and seq
- * 
- * @param message This is the class that gets encoded, which include the data of timestep and seq
- * @return return_json: encoded json string
- */
-public byte[] encodeTimeMessage(InfrastructureTimeMessage message)
-{
-    Gson gson = new Gson();
-    String json = gson.toJson(message);
-    byte[] return_json = json.getBytes();
-    return return_json;
-}
+public class InfrastructureTimeInterface {
+    private InfrastructureInstanceManager manager;
+    // set to false on init release
+    private boolean await_infrastructure_advance_request = false;
 
-/**
- * This function is used to send out encoded timestep update to all registered instances the manager has on the managed instances map
- * 
- * @param message This time message is used to store current seq and timestep from the ambassador side
- * @throws IOException
- */
-public void onTimestepUpdate(InfrastructureTimeMessage message) throws IOException 
-{
-    if(this.manager.get_managedInstances().size() == 0)
-    {
-        throw new IllegalAccessError("There are no registered instances!");
+    protected Logger log;
+
+    public InfrastructureTimeInterface(InfrastructureInstanceManager manager) {
+        this.manager = manager;
     }
 
-    for(InfrastructureInstance current_instance: this.manager.get_managedInstances().values())
-    {
-        current_instance.sendTimesyncMsgs(encodeTimeMessage(message));
+    /**
+     * This function implements the encoding of a json string consist of timestep
+     * and seq
+     * 
+     * @param message This is the class that gets encoded, which include the data of
+     *                timestep and seq
+     * @return return_json: encoded json string
+     */
+    public byte[] encodeTimeMessage(InfrastructureTimeMessage message) {
+        Gson gson = new Gson();
+        String json = gson.toJson(message);
+        byte[] returnJson = json.getBytes();
+        return returnJson;
     }
-}
+
+    /**
+     * This function is used to send out encoded timestep update to all registered
+     * instances the manager has on the managed instances map
+     * 
+     * @param message This time message is used to store current seq and timestep
+     *                from the ambassador side
+     * @throws IOException
+     */
+    public void onTimeStepUpdate(InfrastructureTimeMessage message) throws IOException {
+        if (this.manager.getManagedInstances().size() == 0) {
+            log.info("There are no registered instances");
+        }
+
+        for (InfrastructureInstance currentInstance : manager.getManagedInstances().values()) {
+            currentInstance.sendTimeSyncMsgs(encodeTimeMessage(message));
+        }
+    }
 }
