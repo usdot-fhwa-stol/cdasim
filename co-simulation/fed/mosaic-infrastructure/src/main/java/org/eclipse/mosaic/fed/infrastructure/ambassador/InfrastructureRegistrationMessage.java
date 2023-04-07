@@ -23,17 +23,15 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
  */
 public class InfrastructureRegistrationMessage {
     private String rxMessageIpAddress;
-    private String intersectionId = null;
     private String infrastructureId;
 
     private int rxMessagePort = 1536;
     private int timeSyncPort = 1517; // TODO
     private GeoPoint location = null;
 
-    public InfrastructureRegistrationMessage(String rxMessageIpAddress, String intersectionId, String infrastructureId,
+    public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId,
                                             int rxMessagePort, int timeSyncPort, GeoPoint location) {
         this.rxMessageIpAddress = rxMessageIpAddress;
-        this.intersectionId = intersectionId;
         this.infrastructureId = infrastructureId;
         this.rxMessagePort = rxMessagePort;
         this.timeSyncPort = timeSyncPort;
@@ -42,10 +40,6 @@ public class InfrastructureRegistrationMessage {
 
     public String getRxMessageIpAddress(){
         return this.rxMessageIpAddress;
-    }
-
-    public String getIntersectionId(){
-        return this.intersectionId;
     }
 
     public String getInfrastructureId(){
@@ -68,10 +62,6 @@ public class InfrastructureRegistrationMessage {
         this.rxMessageIpAddress = rxMessageIpAddress;
     }
 
-    public void setIntersectionId(String intersectionId){
-        this.intersectionId = intersectionId;
-    }
-
     public void setInfrastructureId(String infrastructureId){
         this.infrastructureId = infrastructureId;
     }
@@ -90,7 +80,7 @@ public class InfrastructureRegistrationMessage {
 
     @Override
     public String toString() {
-        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress + ", intersectionId=" + intersectionId
+        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress 
                 + ", infrastructureId=" + infrastructureId + ", rxMessagePort=" + rxMessagePort 
                 + ", timeSyncPort=" + timeSyncPort + ", location=" + location + "]";
     }
