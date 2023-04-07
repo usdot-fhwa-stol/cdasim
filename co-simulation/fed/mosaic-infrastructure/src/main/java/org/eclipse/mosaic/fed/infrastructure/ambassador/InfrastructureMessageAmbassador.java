@@ -1,14 +1,17 @@
 /*
- * Copyright (c) 2021 Old Dominion University. All rights reserved.
+ * Copyright (C) 2023 LEIDOS.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
  *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * SPDX-License-Identifier: EPL-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
@@ -26,6 +29,7 @@ import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageRecep
 
 import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +66,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private InfrastructureTimeMessageReceiver InfrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
     private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
+    private InfrastructureTimeInterface infrastructureTimeInterface;
+
+    private int timeSyncSeq = 0;
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.
@@ -108,10 +115,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             throw new InternalFederateException(e);
         }
 
-        // TODO Initialize listener socket and thread for Infrastructure Registration messages
+        // TODO Initialize listener socket and thread for Infrastructure Registration
+        // messages
 
-        // TODO Initialize listener socket and thread for Infrastructure time sync messages
-      
+        // TODO Initialize listener socket and thread for Infrastructure time sync
+        // messages
+
         // TODO Register any V2x infrastructures from config if any
 
     }
@@ -132,9 +141,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
-        // TODO Time sync message reception
+        // TODO Time sync message reception: needs to be implemented when time
+        // regulat....
 
-        // TODO V2xHub infrastructure Registration reception 
+        // TODO V2xHub infrastructure Registration reception
     }
 
     /**
@@ -170,9 +180,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
 
         try {
-            // TODO actions to do on queued Infrastructure  instance registration attempts
+            // TODO actions to do on queued Infrastructure instance registration attempts
 
-            // TODO actions to do on queued Infrastructure  time sync messages
+            timeSyncSeq += 1;
+            InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
+            timeSyncMessage.setSeq(timeSyncSeq);
+            timeSyncMessage.setTimestep(currentSimulationTime);
+            infrastructureTimeInterface.onTimeStepUpdate(timeSyncMessage);
 
             // TODO actions to do on queued v2x message receiver's received messages
 
@@ -193,6 +207,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
+        } catch (IOException e1) {
+            log.error("Error during updating timestep :" + e1.getMessage());
         }
     }
 
@@ -219,6 +235,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      */
     @Override
     public boolean isTimeRegulating() {
-        return true;
+        return false;
     }
 }

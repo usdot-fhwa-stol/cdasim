@@ -34,11 +34,15 @@ import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 
 /**
- * Session management class for Infrastructure instances communicating with MOSAIC
+ * Session management class for Infrastructure instances communicating with
+ * MOSAIC
  * NOTE: TODO See carma.ambassador for reference
  */
 public class InfrastructureInstanceManager {
-    private Map<String, InfrastructureInstance>  managedInstances = new HashMap<>();
+    private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
     private double currentSimulationTime;
- 
+
+    public Map<String, InfrastructureInstance> getManagedInstances() {
+        return managedInstances;
+    }
 }
