@@ -106,8 +106,7 @@ public class InfrastructureInstanceManager {
 
     /**
      * External helper function to allow the ambassador to check if a given vehicle
-     * ID is a registered CARMA Platform
-     * instance
+     * ID is a registered CARMA Platform instance
      * 
      * @param infrastructureId The id to check
      * @return True if managed by this object (e.g., is a registered CARMA Platform
