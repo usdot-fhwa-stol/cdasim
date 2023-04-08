@@ -59,8 +59,7 @@ public class InfrastructureRegistrationReceiver implements Runnable {
 
     /**
      * The main method of the worker thread. Listens for incoming messages and
-     * enqueues them for processing on the
-     * primary thread.
+     * enqueues them for processing on the primary thread.
      */
     @Override
     public void run() {
