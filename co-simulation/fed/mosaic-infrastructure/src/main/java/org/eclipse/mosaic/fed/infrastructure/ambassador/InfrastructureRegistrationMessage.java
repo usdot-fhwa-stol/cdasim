@@ -13,24 +13,49 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
- 
+
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
+
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 /**
- * A message to be sent by Infrastructure Device when it registers with the carma-mosaic ambassador
- * NOTE: TODO See carma.ambassador for reference
+ * A message to be sent by Infrastructure Device when it registers with the
+ * carma-mosaic ambassador
  */
 public class InfrastructureRegistrationMessage {
+
+    // IP address where the Infrastructure Device will be listening for inbound
+    // messages
     private String rxMessageIpAddress;
+    // Unique identifier for the Infrastructure Device
     private String infrastructureId;
 
+    // Port number where the Infrastructure Device will be listening for inbound
+    // messages
     private int rxMessagePort = 1536;
-    private int timeSyncPort = 1517; // TODO
+
+    // Port number where the Infrastructure Device will be listening for time
+    // synchronization messages
+    private int timeSyncPort = 1517;
+
+    // Geo-coordinate of the Infrastructure Device location
     private GeoPoint location = null;
 
+    /**
+     * Constructor for an `InfrastructureRegistrationMessage` instance
+     * 
+     * @param rxMessageIpAddress IP address where the Infrastructure Device will be
+     *                           listening for inbound messages
+     * @param infrastructureId   Unique identifier for the Infrastructure Device
+     * @param rxMessagePort      Port number where the Infrastructure Device will be
+     *                           listening for inbound messages
+     * @param timeSyncPort       Port number where the Infrastructure Device will be
+     *                           listening for time synchronization messages
+     * @param location           Geo-coordinate of the Infrastructure Device
+     *                           location
+     */
     public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId,
-                                            int rxMessagePort, int timeSyncPort, GeoPoint location) {
+            int rxMessagePort, int timeSyncPort, GeoPoint location) {
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.infrastructureId = infrastructureId;
         this.rxMessagePort = rxMessagePort;
@@ -38,52 +63,119 @@ public class InfrastructureRegistrationMessage {
         this.location = location;
     }
 
-    public String getRxMessageIpAddress(){
+    /**
+     * Returns the IP address where the Infrastructure Device will be listening for
+     * inbound messages
+     * 
+     * @return The IP address where the Infrastructure Device will be listening for
+     *         inbound messages
+     */
+    public String getRxMessageIpAddress() {
         return this.rxMessageIpAddress;
     }
 
-    public String getInfrastructureId(){
+    /**
+     * Returns the unique identifier for the Infrastructure Device
+     * 
+     * @return The unique identifier for the Infrastructure Device
+     */
+    public String getInfrastructureId() {
         return this.infrastructureId;
     }
 
-    public int getRxMessagePort(){
+    /**
+     * Returns the port number where the Infrastructure Device will be listening for
+     * inbound messages
+     * 
+     * @return The port number where the Infrastructure Device will be listening for
+     *         inbound messages
+     */
+    public int getRxMessagePort() {
         return this.rxMessagePort;
     }
 
-    public int getTimeSyncPort(){
+    /**
+     * Returns the port number where the Infrastructure Device will be listening for
+     * time synchronization messages
+     * 
+     * @return The port number where the Infrastructure Device will be listening for
+     *         time synchronization messages
+     */
+    public int getTimeSyncPort() {
         return this.timeSyncPort;
     }
 
-    public GeoPoint getLocation(){
+    /**
+     * Returns the Geo-coordinate of the Infrastructure Device location
+     * 
+     * @return The Geo-coordinate of the Infrastructure Device location
+     */
+    public GeoPoint getLocation() {
         return this.location;
     }
 
-    public void setRxMessageIpAddress(String rxMessageIpAddress){
+    /**
+     * Sets the IP address where the Infrastructure Device will be listening for
+     * inbound messages
+     * 
+     * @param rxMessageIpAddress The IP address where the Infrastructure Device will
+     *                           be listening for inbound messages
+     */
+    public void setRxMessageIpAddress(String rxMessageIpAddress) {
         this.rxMessageIpAddress = rxMessageIpAddress;
     }
 
-    public void setInfrastructureId(String infrastructureId){
+    /**
+     * Sets the unique identifier for the Infrastructure Device
+     * It currently is the same with RSU ID
+     * 
+     * @param infrastructureId The unique identifier for the Infrastructure Device
+     */
+    public void setInfrastructureId(String infrastructureId) {
         this.infrastructureId = infrastructureId;
     }
 
-    public void setRxMessagePort(int rxMessagePort){
+    /**
+     * Sets the port number where the Infrastructure Device will be listening for
+     * inbound messages
+     * 
+     * @param rxMessagePort The port number where the Infrastructure Device will be
+     *                      listening for inbound messages
+     */
+    public void setRxMessagePort(int rxMessagePort) {
         this.rxMessagePort = rxMessagePort;
     }
 
-    public void setTimeSyncPort(int timeSyncPort){
+    /**
+     * Set the time sync port for the InfrastructureRegistrationMessage
+     * 
+     * @param timeSyncPort the new time sync port to be set
+     */
+    public void setTimeSyncPort(int timeSyncPort) {
         this.timeSyncPort = timeSyncPort;
     }
 
-    public void setLocation(GeoPoint location){
+    /**
+     * Set the location for the InfrastructureRegistrationMessage
+     * 
+     * @param location the new GeoPoint object representing the location of the
+     *                 Infrastructure Device
+     */
+    public void setLocation(GeoPoint location) {
         this.location = location;
     }
 
+    /**
+     * Returns a string representation of the InfrastructureRegistrationMessage
+     * object
+     * 
+     * @return a string representation of the object
+     */
     @Override
     public String toString() {
-        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress 
-                + ", infrastructureId=" + infrastructureId + ", rxMessagePort=" + rxMessagePort 
+        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress
+                + ", infrastructureId=" + infrastructureId + ", rxMessagePort=" + rxMessagePort
                 + ", timeSyncPort=" + timeSyncPort + ", location=" + location + "]";
     }
-    
 
 }
