@@ -21,6 +21,7 @@ import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -28,6 +29,8 @@ import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
+
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -45,11 +48,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * InfrastructureMessageAmbassador configuration file.
      */
     InfrastructureConfiguration infrastructureConfiguration;
-
-    /**
-     * The number of CARMA vehicles.
-     */
-    int numberOfInfrastructureInstances = 0;
 
     private InfrastructureRegistrationReceiver infrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
@@ -141,17 +139,22 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
+     * 
      * Creates an Ad-Hoc configuration object to represent the configuration of the
      * Ad-Hoc interface used for communication between the infrastructure instance
      * and other vehicles or components, and sends it to the RTI for exchange.
      *
      * @param reg the infrastructure registration message received from the RTI
+     * 
+     *            Note: This function should be called after the
+     *            onRsuRegistrationRequest
      */
-    private final void onDsrcRegistrationRequest(InfrastructureRegistrationMessage reg) {
+    private void onDsrcRegistrationRequest(String infrastructureId) {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
         // Set the IP address and subnet mask to null for now
         // Set the transmit power to 50 dBm and the maximum range to 100 meters
+        // NOTE: TODO Setup the IP address and subnet
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
                 .ip(null)
                 .subnet(null)
@@ -160,15 +163,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 .create();
 
         // Create an AdHocConfiguration object to associate the Ad-Hoc interface
-        // configuration
-        // with the infrastructure instance's ID
-        AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(reg.getInfrastructureId())
+        // configuration with the infrastructure instance's ID
+        AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(infrastructureId)
                 .addInterface(interfaceConfig)
                 .create();
 
         // Create an AdHocCommunicationConfiguration object to specify the time and
-        // Ad-Hoc
-        // configuration for exchange with another vehicle or component
+        // Ad-Hoc configuration for exchange with another vehicle or component
         AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
                 adHocConfig);
 
@@ -187,12 +188,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      *
      * @param reg The registration message of the new infrastructure instance.
      */
-    private final void onRsuRegistrationRequest(InfrastructureRegistrationMessage reg) {
+    private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
 
         // Register the new infrastructure instance to the RTI as an RSU
-        RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, reg.getInfrastructureId(),
-                null, null,
-                reg.getLocation());
+        RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, infrastructureId, "",
+                Collections.emptyList(), location);
         try {
             // Trigger RTI interaction to MOSAIC
             this.rti.triggerInteraction(rsuRegistration);
@@ -200,8 +200,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             // Log error message if there was an issue with the RTI interaction
             log.error(e.getMessage());
         }
-
-        
     }
 
     /**
@@ -229,8 +227,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg);
-                onDsrcRegistrationRequest(reg);
+                onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation());
+                onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
             // TODO: Handle any queued Infrastructure time sync messages
