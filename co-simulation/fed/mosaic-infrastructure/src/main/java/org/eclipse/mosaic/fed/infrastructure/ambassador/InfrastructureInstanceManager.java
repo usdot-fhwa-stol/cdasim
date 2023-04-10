@@ -54,8 +54,6 @@ public class InfrastructureInstanceManager {
      * 
      * @param registration The InfrastructureRegistrationMessage to be registered.
      * 
-     * @throws RuntimeException if an error occurs while creating or adding the new
-     *                          instance.
      */
     public void onNewRegistration(InfrastructureRegistrationMessage registration) {
         if (!managedInstances.containsKey(registration.getInfrastructureId())) {
@@ -69,12 +67,12 @@ public class InfrastructureInstanceManager {
             } catch (UnknownHostException e) {
                 log.error("Failed to create infrastructure instance with ID '{}' due to an unknown host exception: {}",
                         registration.getInfrastructureId(), e.getMessage());
-                throw new RuntimeException(e);
+                log.error("Stack trace:", e);
             }
         } else {
             log.warn("Registration message received for already registered infrastructure with ID: {}",
                     registration.getInfrastructureId());
-        }
+        }        
     }
 
     /**
