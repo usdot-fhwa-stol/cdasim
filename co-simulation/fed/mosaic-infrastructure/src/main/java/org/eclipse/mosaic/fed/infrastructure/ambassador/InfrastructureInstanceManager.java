@@ -112,5 +112,8 @@ public class InfrastructureInstanceManager {
      */
     public boolean checkIfRegistered(String infrastructureId) {
         return managedInstances.keySet().contains(infrastructureId);
+
+    public Map<String, InfrastructureInstance> getManagedInstances() {
+        return managedInstances;
     }
 }

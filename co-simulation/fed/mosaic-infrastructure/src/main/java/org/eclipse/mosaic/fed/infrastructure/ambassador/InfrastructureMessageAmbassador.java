@@ -35,6 +35,12 @@ import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfigura
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 
 import java.util.Collections;
+import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -57,7 +63,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread registrationRxBackgroundThread;
     private InfrastructureTimeMessageReceiver infrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
-    private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
+
+    private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
+    private InfrastructureTimeInterface infrastructureTimeInterface;
+
+    private int timeSyncSeq = 0;
 
     /**
      * Create a new {@link InfrastructureMessageAmbassador} object.
@@ -108,6 +118,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         infrastructureRegistrationReceiver.init();
         registrationRxBackgroundThread = new Thread(infrastructureRegistrationReceiver);
         registrationRxBackgroundThread.start();
+
     }
 
     /**
@@ -235,7 +246,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
-            // TODO: Handle any queued Infrastructure time sync messages
+            timeSyncSeq += 1;
+            InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
+            timeSyncMessage.setSeq(timeSyncSeq);
+            timeSyncMessage.setTimestep(currentSimulationTime);
+            infrastructureTimeInterface.onTimeStepUpdate(timeSyncMessage);
 
             // TODO: Handle any queued V2X message receiver's received messages
 
@@ -260,6 +275,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
+        } catch (IOException e1) {
+            log.error("Error during updating timestep :" + e1.getMessage());
         }
     }
 
@@ -286,6 +303,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      */
     @Override
     public boolean isTimeRegulating() {
-        return true;
+        return false;
     }
 }
