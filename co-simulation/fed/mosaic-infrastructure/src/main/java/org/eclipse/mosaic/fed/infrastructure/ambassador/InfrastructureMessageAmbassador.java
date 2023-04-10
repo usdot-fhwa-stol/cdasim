@@ -64,7 +64,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private InfrastructureTimeMessageReceiver infrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
 
-    private InfrastructureInstanceManager InfrastructureInstanceManager = new InfrastructureInstanceManager();
+    private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
     private InfrastructureTimeInterface infrastructureTimeInterface;
 
     private int timeSyncSeq = 0;
