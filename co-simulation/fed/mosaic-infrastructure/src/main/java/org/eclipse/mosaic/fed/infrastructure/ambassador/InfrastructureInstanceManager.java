@@ -72,7 +72,7 @@ public class InfrastructureInstanceManager {
         } else {
             log.warn("Registration message received for already registered infrastructure with ID: {}",
                     registration.getInfrastructureId());
-        }        
+        }
     }
 
     /**
@@ -97,7 +97,9 @@ public class InfrastructureInstanceManager {
         try {
             tmp.bind();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to bind infrastructure instance with ID '{}' to its RX message socket: {}",
+                    infrastructureId, e.getMessage());
+            log.error("Stack trace:", e);
         }
         managedInstances.put(infrastructureId, tmp);
     }
