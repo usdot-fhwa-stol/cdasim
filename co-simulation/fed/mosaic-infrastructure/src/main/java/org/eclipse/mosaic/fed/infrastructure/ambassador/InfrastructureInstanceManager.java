@@ -87,8 +87,6 @@ public class InfrastructureInstanceManager {
      * @param timeSyncPort       The port for time synchronization.
      * @param location           The location of the instance.
      * 
-     * @throws RuntimeException if an error occurs while creating or adding the new
-     *                          instance.
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
             int timeSyncPort, GeoPoint location) {
