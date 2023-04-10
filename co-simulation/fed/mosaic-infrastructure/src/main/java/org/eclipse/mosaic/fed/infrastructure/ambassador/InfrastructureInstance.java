@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
- 
+
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import org.eclipse.mosaic.lib.geo.GeoPoint;
@@ -22,52 +22,156 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 
 /**
- * Connection manager and data object to associate with a single infrastructure instance in XIL
- * NOTE: TODO See carma.ambassador for reference
+ * InfrastructureInstance class represents a physical instance of an
+ * infrastructure node in the simulated environment.
+ * It contains information about the infrastructure node such as its ID,
+ * location, target address, and ports.
  */
 public class InfrastructureInstance {
-   
-    private DatagramSocket rxMsgsSocket = null;
+
+    private String infrastructureId;
     private InetAddress targetAddress;
-    private int registrationPort;
+    private int rxMessagePort;
     private int timeSyncPort;
     private GeoPoint location = null;
+    private DatagramSocket rxMsgsSocket = null;
 
-    public InfrastructureInstance() {
-        // TODO
-        // TODO Initialize Datagram Socket
+    /**
+     * Constructor for InfrastructureInstance
+     * 
+     * @param infrastructureId the ID of the infrastructure node
+     * @param targetAddress    the target IP address of the infrastructure node
+     * @param rxMessagePort    the receive message port of the infrastructure node
+     * @param timeSyncPort     the time synchronization port of the infrastructure
+     *                         node
+     * @param location         the location of the infrastructure node in the
+     *                         simulated environment
+     */
+    public InfrastructureInstance(String infrastructureId, InetAddress targetAddress,
+            int rxMessagePort, int timeSyncPort, GeoPoint location) {
+        this.infrastructureId = infrastructureId;
+        this.targetAddress = targetAddress;
+        this.rxMessagePort = rxMessagePort;
+        this.timeSyncPort = timeSyncPort;
+        this.location = location;
     }
 
+    /**
+     * Returns the target IP address of the infrastructure node
+     * 
+     * @return InetAddress the target IP address of the infrastructure node
+     */
     public InetAddress getTargetAddress() {
         return targetAddress;
     }
 
+    /**
+     * Sets the target IP address of the infrastructure node
+     * 
+     * @param targetAddress the target IP address to set
+     */
     public void setTargetAddress(InetAddress targetAddress) {
         this.targetAddress = targetAddress;
     }
 
-    public void setLocation(GeoPoint location) {
-        this.location = location;
-    }
-
+    /**
+     * Returns the location of the infrastructure node in the simulated environment
+     * 
+     * @return GeoPoint the location of the infrastructure node
+     */
     public GeoPoint getLocation() {
         return this.location;
     }
 
     /**
-     * Sends the data to the Infrastructure Device communications interface configured at construction time.
+     * Sets the location of the infrastructure node in the simulated environment
+     * 
+     * @param location the location to set
+     */
+    public void setLocation(GeoPoint location) {
+        this.location = location;
+    }
+
+    /**
+     * Returns the ID of the infrastructure node
+     * 
+     * @return String the ID of the infrastructure node
+     */
+    public String getInfrastructureId() {
+        return infrastructureId;
+    }
+
+    /**
+     * Sets the ID of the infrastructure node
+     * 
+     * @param infrastructureId the ID to set
+     */
+    public void setInfrastructureId(String infrastructureId) {
+        this.infrastructureId = infrastructureId;
+    }
+
+    /**
+     * Returns the receive message port of the infrastructure node
+     * 
+     * @return int the receive message port of the infrastructure node
+     */
+    public int getRxMessagePort() {
+        return rxMessagePort;
+    }
+
+    /**
+     * Sets the receive message port of the infrastructure node
+     * 
+     * @param rxMessagePort the port to set
+     */
+    public void setRxMessagePort(int rxMessagePort) {
+        this.rxMessagePort = rxMessagePort;
+    }
+
+    /**
+     * Returns the time synchronization port of the infrastructure node
+     * 
+     * @return int the time synchronization port of the infrastructure node
+     */
+    public int getTimeSyncPort() {
+        return timeSyncPort;
+    }
+
+    /**
+     * Sets the time synchronization port of the infrastructure node
+     * 
+     * @param timeSyncPort the port to set
+     */
+    public void setTimeSyncPort(int timeSyncPort) {
+        this.timeSyncPort = timeSyncPort;
+    }
+
+    /**
+     * Creates a DatagramSocket object and binds it to this infrastructure
+     * instance's receive message port
+     * 
+     * @throws IOException if there is an issue with the underlying socket object or
+     *                     methods
+     */
+    public void bind() throws IOException {
+        rxMsgsSocket = new DatagramSocket();
+    }
+
+    /**
+     * Sends the data to the Infrastructure Device communications interface
+     * configured at construction time.
+     * 
      * @param data The binary data to transmit
-     * @throws IOException If there is an issue with the underlying socket object or methods
+     * @throws IOException If there is an issue with the underlying socket object or
+     *                     methods
      */
     public void sendMsgs(byte[] data) throws IOException {
         if (rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
-
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, registrationPort);
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, rxMessagePort);
         rxMsgsSocket.send(packet);
 
     }

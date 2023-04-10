@@ -64,7 +64,7 @@ public class CarmaRegistrationReceiver implements Runnable {
             }
 
             // parse message
-            String receivedPacket = new String(msg.getData());
+            String receivedPacket = new String(msg.getData(), 0, msg.getLength());
             Gson gson = new Gson();
             CarmaRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaRegistrationMessage.class);
 
