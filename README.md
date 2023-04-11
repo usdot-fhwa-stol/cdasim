@@ -1,3 +1,7 @@
+| CI Build Status | Sonar Code Quality |
+|----------------------|---------------------|
+|[![CI](https://github.com/usdot-fhwa-stol/carma-simulation/actions/workflows/runtest.yml/badge.svg)](https://github.com/usdot-fhwa-stol/carma-simulation/actions/workflows/runtest.yml) | [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=usdot-fhwa-stol_carma-simulation&metric=alert_status)](https://sonarcloud.io/dashboard?id=usdot-fhwa-stol_carma-simulation) |
+
 # CARMASimulation
 This repository will host the CARMA Everything-in-the-Loop Co-Simulation tool. This XiL simulation platform will support CARLA and SUMO simulation environments as a co-simulation using the MOSAIC framework to facilitate coordination and data exchange. This co-simulation environment will also utilize NS-3 to simulate the communications used by the C-ADS systems.
 
