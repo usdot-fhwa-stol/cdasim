@@ -42,6 +42,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 RUN adduser $SUMO_USER --disabled-password
 
 # Enable sudo
+RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password

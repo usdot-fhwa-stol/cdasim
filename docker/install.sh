@@ -59,11 +59,10 @@ cd /home/carma/src
 #sudo make install
 
 # Install NS-3
-#cd "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/"
-# Added sudo cp -ar ns-3.28/build/ns /usr/include before "Build ns3-federate" in ns3_installer.sh
-#chmod +x ns3_installer.sh
-#set -x
-#./ns3_installer.sh -q
+cd "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/"
+chmod +x ns3_installer.sh
+set -x
+./ns3_installer.sh -q
 #TODO: Add expore NS3_HOME=path_to_run.sh to /bin/fed/ns3/run.sh
 
 # Install SUMO-1.12.0

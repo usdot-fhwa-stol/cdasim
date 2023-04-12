@@ -363,6 +363,7 @@ build_ns3()
   # ns-3 prior to 3.28.1 does not compile without warnings using g++ 10.2.0
   CXXFLAGS="-Wno-error" python3.6 ./build.py --disable-netanim
 
+  cp -ar ns-3.28/build/ns /usr/include
   log "Build ns3-federate"
   cd ${current_dir}/federate
   mv src/ClientServerChannel.h .
