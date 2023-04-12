@@ -54,4 +54,4 @@ COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
 RUN docker/install.sh
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
-CMD [ "mosaic.sh", "-s", "HelloWorld" ]
+CMD [ "mosaic.sh", "-s", "Tiergarten" ]
