@@ -58,23 +58,16 @@ cd /home/carma/src
 #make check
 #sudo make install
 
-# Install NS-3
-cd "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/"
-chmod +x ns3_installer.sh
-set -x
-./ns3_installer.sh -q
-#TODO: Add expore NS3_HOME=path_to_run.sh to /bin/fed/ns3/run.sh
-
 # Install SUMO-1.12.0
 cd /home/carma/src/
 wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_12_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
-tar xvf v1_12_0.tar.gz -C /opt/sumo
-sudo cp co-simulation/traci_update/constants.py /opt/sumo/sumo-1_12_0/tools/traci
-sudo cp co-simulation/traci_update/connection.py /opt/sumo/sumo-1_12_0/tools/traci
-sudo cp co-simulation/traci_update/main.py /opt/sumo/sumo-1_12_0/tools/traci
-cd /opt/sumo/sumo-1_12_0
+tar xvf v1_15_0.tar.gz -C /opt/sumo
+sudo cp co-simulation/patch/constants.py /opt/sumo/sumo-1_15_0/tools/traci
+sudo cp co-simulation/patch/connection.py /opt/sumo/sumo-1_15_0/tools/traci
+sudo cp co-simulation/patch/main.py /opt/sumo/sumo-1_15_0/tools/traci
+cd /opt/sumo/sumo-1_15_0
 mkdir -p build/cmake-build && cd build/cmake-build
 cmake ../..
 make -j$(nproc)
@@ -117,5 +110,12 @@ cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 # Deploy scenario files
 cd /home/carma/src/co-simulation
 unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
+
+# Install NS-3
+cd "/opt/carma-simulation/bin/fed/ns3/"
+chmod +x ns3_installer.sh
+set -x
+./ns3_installer.sh -q
+sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
 
 echo "Build complete!!!"
