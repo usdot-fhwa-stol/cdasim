@@ -58,15 +58,12 @@ cd /home/carma/src
 #make check
 #sudo make install
 
-# Install SUMO-1.12.0
+# Install SUMO-1.15.0
 cd /home/carma/src/
-wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_12_0.tar.gz"
+wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_15_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
 tar xvf v1_15_0.tar.gz -C /opt/sumo
-sudo cp co-simulation/patch/constants.py /opt/sumo/sumo-1_15_0/tools/traci
-sudo cp co-simulation/patch/connection.py /opt/sumo/sumo-1_15_0/tools/traci
-sudo cp co-simulation/patch/main.py /opt/sumo/sumo-1_15_0/tools/traci
 cd /opt/sumo/sumo-1_15_0
 mkdir -p build/cmake-build && cd build/cmake-build
 cmake ../..

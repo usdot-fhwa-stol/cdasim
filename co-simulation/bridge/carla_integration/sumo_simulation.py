@@ -501,19 +501,6 @@ class SumoSimulation(object):
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
         self.destroyed_actors = set(traci.simulation.getArrivedIDList())
 
-        # Show v2x messages received by CARLA vehicles
-        v2xMessageReceived = traci.getV2xMessage()
-        if v2xMessageReceived is not None:
-            for message in v2xMessageReceived:
-                print(message)
-
-         # Send V2x message to CARLA ambassador
-        if self.sendV2xInterval == 10:
-            traci.setV2xMessage("carla_0; A V2X messages from CARLA simulator.")
-            self.sendV2xInterval = 0
-
-        self.sendV2xInterval += 1
-
     @staticmethod
     def close():
         """
