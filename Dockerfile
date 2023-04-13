@@ -42,6 +42,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 RUN adduser $SUMO_USER --disabled-password
 
 # Enable sudo
+RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password
@@ -53,4 +54,4 @@ COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
 RUN docker/install.sh
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
-CMD [ "mosaic.sh", "-s", "HelloWorld" ]
+CMD [ "mosaic.sh", "-s", "Tiergarten" ]
