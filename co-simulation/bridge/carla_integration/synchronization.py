@@ -140,7 +140,7 @@ class SimulationSynchronization(object):
         elif self.tls_manager == 'EVC':
             common_landmarks = self.sumo.traffic_light_ids & self.carla.traffic_light_ids
             for landmark_id in common_landmarks:
-                sumo_tl_state = self.sumo.get_traffic_light_live_state(landmark_id)
+                sumo_tl_state = self.sumo.get_traffic_light_state_from_sumo(landmark_id)
                 carla_tl_state = BridgeHelper.get_carla_traffic_light_state(sumo_tl_state)
 
                 self.carla.synchronize_traffic_light(landmark_id, carla_tl_state)
