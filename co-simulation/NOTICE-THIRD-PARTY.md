@@ -245,6 +245,14 @@ Logback Core Module (1.2.3)
  * Source: https://github.com/ceki/logback/logback-core
 
 
+mosaic-carma-utils (22.1-SNAPSHOT)
+
+ * License: Eclipse Public License - v 2.0
+ * Maven artifact: `gov.dot.fhwa.saxton:mosaic-carma-utils:22.1-SNAPSHOT`
+ * Project: not available
+ * Source: https://github.com/eclipse/mosaic/lib/mosaic-carma-utils
+
+
 org.leadpony.justify (1.1.0)
 
  * License: The Apache Software License, Version 2.0

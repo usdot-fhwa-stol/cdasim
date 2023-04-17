@@ -60,10 +60,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     private InfrastructureRegistrationReceiver infrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
-    private InfrastructureTimeMessageReceiver infrastructureTimeMessageReceiver;
-    private Thread v2xTimeRxBackgroundThread;
 
-    private CarmaV2xMessageReceiver v2xMessageReceiver = new CarmaV2xMessageReceiver(1517);
+    private CarmaV2xMessageReceiver v2xMessageReceiver = new CarmaV2xMessageReceiver(1515);
     private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
@@ -109,12 +107,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     public void initialize(long startTime, long endTime) throws InternalFederateException {
         super.initialize(startTime, endTime);
         currentSimulationTime = startTime;
-        try {
-            rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
-        } catch (IllegalValueException e) {
-            log.error("Error during advanceTime request", e);
-            throw new InternalFederateException(e);
-        }
 
         infrastructureRegistrationReceiver = new InfrastructureRegistrationReceiver();
         infrastructureRegistrationReceiver.init();
@@ -126,6 +118,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         v2xMessageReceiver.init();
         v2xMessageBackgroundThread = new Thread(v2xMessageReceiver);
         v2xMessageBackgroundThread.start();
+
+        try {
+            rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
+        } catch (IllegalValueException e) {
+            log.error("Error during advanceTime request", e);
+            throw new InternalFederateException(e);
+        }
     }
 
     /**
@@ -317,5 +316,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     @Override
     public boolean isTimeRegulating() {
         return false;
+    }
+
+    /**
+     * Test helper function to cleanup sockets and threads.
+     */
+    protected void close() {
+        v2xMessageReceiver.stop();
+        infrastructureRegistrationReceiver.stop();
     }
 }
