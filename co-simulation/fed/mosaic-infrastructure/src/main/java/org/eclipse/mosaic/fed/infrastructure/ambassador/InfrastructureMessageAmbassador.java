@@ -16,30 +16,30 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
+import org.eclipse.mosaic.interactions.application.ExternalMessage;
+import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
+import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
+import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
+import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.misc.Tuple;
+import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
+import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
+import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
-import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
-import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
-import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
-import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
-import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
-import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
-import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
-
-import java.util.Collections;
-import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,6 +62,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread registrationRxBackgroundThread;
     private InfrastructureTimeMessageReceiver infrastructureTimeMessageReceiver;
     private Thread v2xTimeRxBackgroundThread;
+
+    private CarmaV2xMessageReceiver v2xMessageReceiver = new CarmaV2xMessageReceiver(1517);
+    private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
     private InfrastructureTimeInterface infrastructureTimeInterface;
@@ -118,6 +121,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         registrationRxBackgroundThread = new Thread(infrastructureRegistrationReceiver);
         registrationRxBackgroundThread.start();
 
+        // TODO: Port 1517 assumed to be available. Need to double check.
+        v2xMessageReceiver = new CarmaV2xMessageReceiver(1517);
+        v2xMessageReceiver.init();
+        v2xMessageBackgroundThread = new Thread(v2xMessageReceiver);
+        v2xMessageBackgroundThread.start();
     }
 
     /**
@@ -243,6 +251,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 // Process registration requests for RSUs and DSRCs
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation());
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
+            }
+
+            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                this.rti.triggerInteraction(msgInt);
             }
 
             timeSyncSeq += 1;

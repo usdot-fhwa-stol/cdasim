@@ -16,14 +16,7 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
@@ -32,6 +25,12 @@ import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Session management class for CARMA Platform instances communicating with MOSAIC
