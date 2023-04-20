@@ -43,8 +43,7 @@ import org.slf4j.LoggerFactory;
 public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
     private double currentSimulationTime;
-    private static final Logger log = LoggerFactory.getLogger(InfrastructureInstanceManager.class);
-
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
     /**
      * Register a new infrastructure instance with the MOSAIC system.
      * 
@@ -94,6 +93,7 @@ public class InfrastructureInstanceManager {
                 timeSyncPort, location);
         try {
             tmp.bind();
+            log.info("New infrastructure registration received with ID '{}'", infrastructureId);
         } catch (IOException e) {
             log.error("Failed to bind infrastructure instance with ID '{}' to its RX message socket: {}",
                     infrastructureId, e.getMessage());
