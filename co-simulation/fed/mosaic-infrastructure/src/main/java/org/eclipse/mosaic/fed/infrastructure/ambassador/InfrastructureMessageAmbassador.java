@@ -64,7 +64,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread v2xTimeRxBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
-    private InfrastructureTimeInterface infrastructureTimeInterface;
+    private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(infrastructureInstanceManager);
 
     private int timeSyncSeq = 0;
 
@@ -162,6 +162,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * 
      *            Note: This function should be called after the
      *            onRsuRegistrationRequest
+     * @throws UnknownHostException
      */
     private void onDsrcRegistrationRequest(String infrastructureId) {
         // Create an InterfaceConfiguration object to represent the configuration of the
