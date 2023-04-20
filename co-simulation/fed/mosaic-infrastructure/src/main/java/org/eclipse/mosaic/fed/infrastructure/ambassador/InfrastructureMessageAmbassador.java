@@ -37,7 +37,9 @@ import java.util.Collections;
 import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -164,15 +166,15 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      *            onRsuRegistrationRequest
      * @throws UnknownHostException
      */
-    private void onDsrcRegistrationRequest(String infrastructureId) {
+    private void onDsrcRegistrationRequest(String infrastructureId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
         // Set the IP address and subnet mask to null for now
         // Set the transmit power to 50 dBm and the maximum range to 100 meters
         // NOTE: TODO Setup the IP address and subnet
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
-                .ip(null)
-                .subnet(null)
+                .ip( (Inet4Address) Inet4Address.getByName("192.168.0.1") ) //TODO
+                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0")) //TODO
                 .power(50)
                 .radius(100.0)
                 .create();
