@@ -228,7 +228,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * time advance to the federate. Any unprocessed interactions are forwarded to
      * the federate using the processInteraction method before this call is made.
      *
-     * @param time The timestamp indicating the time to which the federate can
+     * @param time The timestamp (in nanoseconds) indicating the time to which the federate can
      *             advance its local time.
      */
     @Override
@@ -261,7 +261,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             timeSyncSeq += 1;
             InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
             timeSyncMessage.setSeq(timeSyncSeq);
-            timeSyncMessage.setTimestep(currentSimulationTime);
+            // nanoseconds to milliseconds for InfrastructureTimeMessage
+            timeSyncMessage.setTimestep(currentSimulationTime/1000000);
             infrastructureTimeInterface.onTimeStepUpdate(timeSyncMessage);
 
             // TODO: Handle any queued V2X message receiver's received messages
