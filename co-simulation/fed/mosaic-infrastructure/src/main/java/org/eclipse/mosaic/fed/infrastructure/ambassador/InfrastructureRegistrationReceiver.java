@@ -40,7 +40,7 @@ public class InfrastructureRegistrationReceiver implements Runnable {
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1515;
     private boolean running = false;
-    private static final int UDP_MTU = 1535;
+    private static final int UDP_MTU = 1534;
 
     /**
      * Initialize the listen socket for messages from the Infrastructure Device NS-3
