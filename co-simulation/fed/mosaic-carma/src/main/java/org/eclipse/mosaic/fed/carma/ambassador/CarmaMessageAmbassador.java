@@ -13,41 +13,36 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
+import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
+import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
+import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
+import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
+import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
+import org.eclipse.mosaic.lib.enums.DriveDirection;
 import org.eclipse.mosaic.lib.misc.Tuple;
-import org.eclipse.mosaic.lib.objects.addressing.DestinationAddressContainer;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
-import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
+import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
+import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
-
-import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
-import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
-import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
-
+import javax.xml.bind.DatatypeConverter;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import org.eclipse.mosaic.rti.api.Interaction;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
-import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
-import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
-import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
-import org.eclipse.mosaic.lib.enums.DriveDirection;
-
-import javax.xml.bind.DatatypeConverter;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for CARMA message

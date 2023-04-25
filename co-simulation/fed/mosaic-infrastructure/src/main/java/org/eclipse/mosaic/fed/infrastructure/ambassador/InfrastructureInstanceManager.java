@@ -16,20 +16,22 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
-
+import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
+import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Session management class for Infrastructure instances communicating with
@@ -100,6 +102,34 @@ public class InfrastructureInstanceManager {
             log.error("Stack trace:", e);
         }
         managedInstances.put(infrastructureId, tmp);
+    }
+
+    /**
+     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * @param sourceAddr The V2X Message received
+     * @param txMsg The Host ID of the vehicle receiving the data
+     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     */
+    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg) {
+        InfrastructureInstance sender = null;
+        for (InfrastructureInstance ci : managedInstances.values()) {
+            if (ci.getTargetAddress().equals(sourceAddr)) {
+                sender = ci;
+            }
+        }
+
+        if (sender == null) {
+            // Unregistered instance attempting to send messages
+            throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
+        }
+
+        AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
+                sender.getInfrastructureId(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
+
+        MessageRouting routing = messageRoutingBuilder.topoBroadCast(1);
+
+        return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
+                new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
     }
 
     /**

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package org.eclipse.mosaic.fed.carma.ambassador;
+package gov.dot.fhwa.saxton;
 
 import org.eclipse.mosaic.lib.misc.Tuple;
 
@@ -38,9 +38,30 @@ public class CarmaV2xMessageReceiver implements Runnable {
 
     private Queue<Tuple<InetAddress, CarmaV2xMessage>> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1516;
+    private int listenPort;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
+
+    /**
+     * Default constructor added to preserve prior behavior after refactor into new package for re-use in Infrastructure
+     * Ambassador.
+     *
+     * Assumes a desired listen port of 1516.
+     */
+    public CarmaV2xMessageReceiver() {
+        this.listenPort = 1516;
+    }
+
+    /**
+     * Recommended constructor for CarmaV2XMessageReceiver.
+     *
+     * @param listenPort The host port that should be used to bind a UDP socket for receiving V2X message transmission
+     *                   events from connected CARMA software instances. An exception will be thrown in init() if this
+     *                   port is unavailable or socket binding fails for other reasons.
+     */
+    public CarmaV2xMessageReceiver(int listenPort) {
+        this.listenPort = listenPort;
+    }
 
     /**
      * Initialize the listen socket for messages from the CARMA Platform NS-3 Adapter

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package org.eclipse.mosaic.fed.carma.ambassador;
+package gov.dot.fhwa.saxton;
 
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
