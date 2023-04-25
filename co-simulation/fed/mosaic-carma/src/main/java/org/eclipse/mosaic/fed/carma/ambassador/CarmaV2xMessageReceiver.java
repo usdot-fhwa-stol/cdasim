@@ -40,7 +40,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1516;
     private boolean running = true;
-    private static final int UDP_MTU = 1535;
+    private static final int UDP_MTU = 1536;
 
     /**
      * Initialize the listen socket for messages from the CARMA Platform NS-3 Adapter

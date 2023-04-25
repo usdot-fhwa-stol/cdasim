@@ -38,7 +38,7 @@ import com.google.gson.Gson;
 public class InfrastructureRegistrationReceiver implements Runnable {
     private Queue<InfrastructureRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1515;
+    private static final int listenPort = 1615;
     private boolean running = false;
     private static final int UDP_MTU = 1534;
 
