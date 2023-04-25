@@ -16,25 +16,26 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
+import org.eclipse.mosaic.interactions.application.ExternalMessage;
+import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
+import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
+import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
+import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.misc.Tuple;
+import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
+import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
+import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
-import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
-import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
-import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
-import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
-import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
-import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
-import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
-
-import java.util.Collections;
-import org.eclipse.mosaic.fed.infrastructure.ambassador.InfrastructureRegistrationMessage;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -42,6 +43,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,8 +64,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     private InfrastructureRegistrationReceiver infrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
-    private InfrastructureTimeMessageReceiver infrastructureTimeMessageReceiver;
-    private Thread v2xTimeRxBackgroundThread;
+
+    private CarmaV2xMessageReceiver v2xMessageReceiver = new CarmaV2xMessageReceiver(1515);
+    private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
     private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(infrastructureInstanceManager);
@@ -98,7 +101,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     /**
      * This method is called to tell the federate the start time and the end time.
-     * 
+     *
      * @param startTime Start time of the simulation run in nano seconds.
      * @param endTime   End time of the simulation run in nano seconds.
      * @throws InternalFederateException Exception is thrown if an error is occurred
@@ -108,18 +111,24 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     public void initialize(long startTime, long endTime) throws InternalFederateException {
         super.initialize(startTime, endTime);
         currentSimulationTime = startTime;
-        try {
-            rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
-        } catch (IllegalValueException e) {
-            log.error("Error during advanceTime request", e);
-            throw new InternalFederateException(e);
-        }
 
         infrastructureRegistrationReceiver = new InfrastructureRegistrationReceiver();
         infrastructureRegistrationReceiver.init();
         registrationRxBackgroundThread = new Thread(infrastructureRegistrationReceiver);
         registrationRxBackgroundThread.start();
 
+        // TODO: Port 1517 assumed to be available. Need to double check.
+        v2xMessageReceiver = new CarmaV2xMessageReceiver(1517);
+        v2xMessageReceiver.init();
+        v2xMessageBackgroundThread = new Thread(v2xMessageReceiver);
+        v2xMessageBackgroundThread.start();
+
+        try {
+            rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
+        } catch (IllegalValueException e) {
+            log.error("Error during advanceTime request", e);
+            throw new InternalFederateException(e);
+        }
     }
 
     /**
@@ -155,13 +164,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
-     * 
+     *
      * Creates an Ad-Hoc configuration object to represent the configuration of the
      * Ad-Hoc interface used for communication between the infrastructure instance
      * and other vehicles or components, and sends it to the RTI for exchange.
      *
      * @param reg the infrastructure registration message received from the RTI
-     * 
+     *
      *            Note: This function should be called after the
      *            onRsuRegistrationRequest
      * @throws UnknownHostException
@@ -247,6 +256,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
+            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                this.rti.triggerInteraction(msgInt);
+            }
+
             timeSyncSeq += 1;
             InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
             timeSyncMessage.setSeq(timeSyncSeq);
@@ -305,5 +320,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     @Override
     public boolean isTimeRegulating() {
         return false;
+    }
+
+    /**
+     * Test helper function to cleanup sockets and threads.
+     */
+    protected void close() {
+        v2xMessageReceiver.stop();
+        infrastructureRegistrationReceiver.stop();
     }
 }

@@ -80,6 +80,7 @@
         <module>app/tutorials/traffic-light-communication</module>
         <module>app/tutorials/weather-warning</module>
         <module>app/tutorials/external-communication</module>
+        <module>lib/mosaic-carma-utils</module>
     </modules>
 
     <properties>

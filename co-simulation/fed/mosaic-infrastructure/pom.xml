@@ -26,6 +26,11 @@
       <version>${mosaic.version}</version>
     </dependency>
     <dependency>
+        <groupId>gov.dot.fhwa.saxton</groupId>
+        <artifactId>mosaic-carma-utils</artifactId>
+        <version>${mosaic.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.mosaic</groupId>
       <artifactId>mosaic-interactions</artifactId>
       <version>${mosaic.version}</version>
