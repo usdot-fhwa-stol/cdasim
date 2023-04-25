@@ -171,10 +171,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         // Ad-Hoc interface
         // Set the IP address and subnet mask to null for now
         // Set the transmit power to 50 dBm and the maximum range to 100 meters
-        // NOTE: TODO Setup the IP address and subnet
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
-                .ip( (Inet4Address) Inet4Address.getByName("192.168.0.1") ) //TODO
-                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0")) //TODO
+                .ip( (Inet4Address) Inet4Address.getByName("192.168.0.1") ) //TODO: set IP address if needed
+                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0")) //TODO: set subnet if needed
                 .power(50)
                 .radius(100.0)
                 .create();
