@@ -24,7 +24,12 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+
+
 import com.google.gson.Gson;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Worker thread Runnable for operating a listen socket to receive outbound
@@ -41,6 +46,7 @@ public class InfrastructureRegistrationReceiver implements Runnable {
     private static final int listenPort = 1615;
     private boolean running = false;
     private static final int UDP_MTU = 1635;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Initialize the listen socket for messages from the Infrastructure Device NS-3
@@ -82,6 +88,7 @@ public class InfrastructureRegistrationReceiver implements Runnable {
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
+                log.info("New Infrastructure instance '{}' received with Infrastructure Registration Receiver.", parsedMessage.getInfrastructureId());
                 rxQueue.add(parsedMessage);
             }
         }
