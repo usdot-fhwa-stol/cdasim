@@ -29,7 +29,7 @@
  
  public class InfrastructureRegistrationReceiverTest {
  
-     private static final int TEST_PORT = 1515;
+     private static final int TEST_PORT = 1615;
  
      private DatagramSocket sendSocket;
      private InfrastructureRegistrationReceiver receiver;
