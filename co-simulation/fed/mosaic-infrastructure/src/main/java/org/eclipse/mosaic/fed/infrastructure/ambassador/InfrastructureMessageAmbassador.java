@@ -69,7 +69,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
-    private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(infrastructureInstanceManager);
+    private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(
+            infrastructureInstanceManager);
 
     private int timeSyncSeq = 0;
 
@@ -178,11 +179,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private void onDsrcRegistrationRequest(String infrastructureId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
-        // Set the IP address and subnet mask to null for now
-        // Set the transmit power to 50 dBm and the maximum range to 100 meters
+        // TODO: Replace the IP address of the ad-hoc interface if necessary
+        // TODO: Replace the subnet mask of the ad-hoc interface if necessary
+        // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
+        // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
-                .ip( (Inet4Address) Inet4Address.getByName("192.168.0.1") ) //TODO: set IP address if needed
-                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0")) //TODO: set subnet if needed
+                .ip((Inet4Address) Inet4Address.getByName("192.168.0.1"))
+                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
                 .power(50)
                 .radius(100.0)
                 .create();
@@ -206,6 +209,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             log.error(e.getMessage());
         }
     }
+
 
     /**
      * Performs registration of a new infrastructure instance and sets up
