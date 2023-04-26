@@ -108,6 +108,7 @@
             <outputDirectory>lib/mosaic</outputDirectory>
             <includes>
                 <include>org.eclipse.mosaic:mosaic-*</include>
+                <include>gov.dot.fhwa.saxton:mosaic-carma-utils</include>
             </includes>
         </dependencySet>
 
