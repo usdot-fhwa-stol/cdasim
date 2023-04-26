@@ -25,7 +25,9 @@ import java.nio.charset.StandardCharsets;
  * 
  */
 public class InfrastructureTimeMessage {
+    // Timestamp in milliseconds
     private long timestep;
+    // Sequence number for time message
     private int seq;
 
     public InfrastructureTimeMessage() {
