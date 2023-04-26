@@ -19,6 +19,7 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
 import java.io.IOException;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
@@ -27,7 +28,7 @@ public class InfrastructureTimeInterface {
     // set to false on init release
     private boolean await_infrastructure_advance_request = false;
 
-    protected Logger log;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public InfrastructureTimeInterface(InfrastructureInstanceManager manager) {
         this.manager = manager;
@@ -58,7 +59,7 @@ public class InfrastructureTimeInterface {
      */
     public void onTimeStepUpdate(InfrastructureTimeMessage message) throws IOException {
         if (this.manager.getManagedInstances().size() == 0) {
-            log.info("There are no registered instances");
+            log.debug("There are no registered instances");
         }
 
         for (InfrastructureInstance currentInstance : manager.getManagedInstances().values()) {

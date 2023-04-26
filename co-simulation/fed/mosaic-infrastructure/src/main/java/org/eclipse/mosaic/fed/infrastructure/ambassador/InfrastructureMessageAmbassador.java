@@ -38,7 +38,11 @@ import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Collections;
 import java.util.List;
 
@@ -65,7 +69,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
-    private InfrastructureTimeInterface infrastructureTimeInterface;
+    private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(
+            infrastructureInstanceManager);
 
     private int timeSyncSeq = 0;
 
@@ -97,7 +102,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     /**
      * This method is called to tell the federate the start time and the end time.
-     * 
+     *
      * @param startTime Start time of the simulation run in nano seconds.
      * @param endTime   End time of the simulation run in nano seconds.
      * @throws InternalFederateException Exception is thrown if an error is occurred
@@ -160,25 +165,27 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
-     * 
+     *
      * Creates an Ad-Hoc configuration object to represent the configuration of the
      * Ad-Hoc interface used for communication between the infrastructure instance
      * and other vehicles or components, and sends it to the RTI for exchange.
      *
      * @param reg the infrastructure registration message received from the RTI
-     * 
+     *
      *            Note: This function should be called after the
      *            onRsuRegistrationRequest
+     * @throws UnknownHostException
      */
-    private void onDsrcRegistrationRequest(String infrastructureId) {
+    private void onDsrcRegistrationRequest(String infrastructureId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
-        // Set the IP address and subnet mask to null for now
-        // Set the transmit power to 50 dBm and the maximum range to 100 meters
-        // NOTE: TODO Setup the IP address and subnet
+        // TODO: Replace the IP address of the ad-hoc interface if necessary
+        // TODO: Replace the subnet mask of the ad-hoc interface if necessary
+        // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
+        // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
-                .ip(null)
-                .subnet(null)
+                .ip((Inet4Address) Inet4Address.getByName("192.168.0.1"))
+                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
                 .power(50)
                 .radius(100.0)
                 .create();
@@ -202,6 +209,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             log.error(e.getMessage());
         }
     }
+
 
     /**
      * Performs registration of a new infrastructure instance and sets up

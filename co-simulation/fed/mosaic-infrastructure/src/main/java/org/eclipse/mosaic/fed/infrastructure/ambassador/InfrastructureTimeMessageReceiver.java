@@ -39,9 +39,9 @@ public class InfrastructureTimeMessageReceiver implements Runnable {
 
     private Queue<Tuple<InetAddress, InfrastructureTimeMessage>> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1516; // TODO 
+    private static final int listenPort = 1616;
     private boolean running = false;
-    private static final int UDP_MTU = 1535; // TOD OMaximum Transmission Unit
+    private static final int UDP_MTU = 1636;
 
     /**
      * Initialize the listen socket for messages from the Infrastructure Device NS-3 Adapter

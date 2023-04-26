@@ -26,6 +26,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Worker thread Runnable for operating a listen socket to receive outbound V2X Messages from CARMA Platform instances
@@ -39,6 +41,7 @@ public class CarmaRegistrationReceiver implements Runnable {
     private static final int listenPort = 1515;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Initialize the listen socket for messages from the CARMA Platform NS-3 Adapter
@@ -70,6 +73,7 @@ public class CarmaRegistrationReceiver implements Runnable {
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
+                log.info("New Infrastructure instance '{}' received with Infrastructure Registration Receiver.", parsedMessage.getCarmaVehicleId());
                 rxQueue.add(parsedMessage);
             }
        }

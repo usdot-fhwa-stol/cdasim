@@ -40,7 +40,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
     private DatagramSocket listenSocket = null;
     private int listenPort;
     private boolean running = true;
-    private static final int UDP_MTU = 1535;
+    private static final int UDP_MTU = 1536;
 
     /**
      * Default constructor added to preserve prior behavior after refactor into new package for re-use in Infrastructure

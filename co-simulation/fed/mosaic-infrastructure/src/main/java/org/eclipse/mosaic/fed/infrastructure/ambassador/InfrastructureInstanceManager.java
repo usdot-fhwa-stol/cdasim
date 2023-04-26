@@ -45,8 +45,7 @@ import java.util.Map;
 public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
     private double currentSimulationTime;
-    private static final Logger log = LoggerFactory.getLogger(InfrastructureInstanceManager.class);
-
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
     /**
      * Register a new infrastructure instance with the MOSAIC system.
      * 
@@ -96,6 +95,7 @@ public class InfrastructureInstanceManager {
                 timeSyncPort, location);
         try {
             tmp.bind();
+            log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.", infrastructureId);
         } catch (IOException e) {
             log.error("Failed to bind infrastructure instance with ID '{}' to its RX message socket: {}",
                     infrastructureId, e.getMessage());

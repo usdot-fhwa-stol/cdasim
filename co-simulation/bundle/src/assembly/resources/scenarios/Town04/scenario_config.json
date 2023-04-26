@@ -1,16 +1,16 @@
 {
     "simulation": {
-        "id": "Tiergarten",
-        "duration": "9999s",
-        "randomSeed": 268965854,
+        "id": "Town04",
+        "duration": "600s",
+        "randomSeed": 212323853,
         "projection": {
             "centerCoordinates": {
-                "latitude": 52.0,
-                "longitude": 13.0
+                "latitude": 52.63,
+                "longitude": 13.56
             },
             "cartesianOffset": {
-                "x": -385769.05,
-                "y": -5819239.15
+                "x": 503.02,
+                "y": 423.76
             }
         },
         "network": {
@@ -26,12 +26,15 @@
     "federates": {
         "application": true,
         "cell": false,
-        "environment": true,
-        "sns": true,
+        "environment": false,
+        "sns": false,
         "ns3": true,
         "omnetpp": false,
-        "output": true,
+        "output": false,
         "sumo": true,
+        "carla": true,
+        "carma": true,
         "infrastructure": true
+        
     }
 }
