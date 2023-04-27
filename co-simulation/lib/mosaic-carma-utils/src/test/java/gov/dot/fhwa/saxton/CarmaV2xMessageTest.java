@@ -45,4 +45,11 @@ public class CarmaV2xMessageTest {
         assert(test != null);
     }
 
+    @Test
+    public void testCarmaV2xMessageParse2() {
+        String sampleMessage2 = "jaksldfjkl;asdfjkl;asdfjkalsdfjkdjjsdjdf" + sampleMessage;
+        CarmaV2xMessage test = new CarmaV2xMessage(sampleMessage.getBytes());
+        assert(test != null);
+    }
+
 }
