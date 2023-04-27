@@ -17,6 +17,8 @@
 package gov.dot.fhwa.saxton;
 
 import org.eclipse.mosaic.lib.misc.Tuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -41,6 +43,8 @@ public class CarmaV2xMessageReceiver implements Runnable {
     private int listenPort;
     private boolean running = true;
     private static final int UDP_MTU = 1536;
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Default constructor added to preserve prior behavior after refactor into new package for re-use in Infrastructure
@@ -70,6 +74,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
+            log.info("CarmaV2xMessageReceiver started listening on UDP port: " + listenPort);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -86,17 +91,23 @@ public class CarmaV2xMessageReceiver implements Runnable {
 
            try {
                listenSocket.receive(msg);
+               log.info("CarmaV2xMessageReceiver received message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
            } catch (IOException e) {
                throw new RuntimeException(e);
            }
 
            // parse message
-            CarmaV2xMessage parsedMessage = new CarmaV2xMessage(msg.getData());
+           try {
+               CarmaV2xMessage parsedMessage = new CarmaV2xMessage(msg.getData());
 
-            // Enqueue message for processing on main thread
-            synchronized (rxQueue) {
-                rxQueue.add(new Tuple<>(senderAddr, parsedMessage));
-            }
+               // Enqueue message for processing on main thread
+               synchronized (rxQueue) {
+                   rxQueue.add(new Tuple<>(senderAddr, parsedMessage));
+                   log.info("CarmaV2xMessageReceiver enqueued message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
+               }
+           } catch (IllegalArgumentException parseError) {
+               log.warn("CarmaV2xMessageReceiver received malformed message with length: " + msg.getLength() + " from client " + msg.getAddress().toString() + "! Reason: " + parseError.getMessage() +". Discarding...");
+           }
        }
     }
 
