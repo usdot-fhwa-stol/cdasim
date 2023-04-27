@@ -18,6 +18,8 @@ package gov.dot.fhwa.saxton;
 
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 /**
  * Message to be sent or received by the CARMA Platform NS-3 Adapater interface
@@ -122,7 +124,16 @@ public class CarmaV2xMessage {
      */
     private void parseV2xMessage(byte[] buf)  {
         String msg = new String(buf, StandardCharsets.UTF_8);
-        String[] msgParts = msg.split("=");
+
+        // Modeled after Stackoverflow answer by user Eritrean: https://stackoverflow.com/users/5176992/eritrean
+        // On Question: https://stackoverflow.com/questions/61029164/how-to-split-string-by-comma-and-newline-n-in-java
+        // Asked by user: https://stackoverflow.com/users/12315939/kopite1905
+        // Used under CC BY-SA 4.0 license: https://creativecommons.org/licenses/by-sa/4.0/
+        String[] msgParts = Pattern.compile("\\R")
+                .splitAsStream(msg)
+                .map(s -> s.split("="))
+                .flatMap(Arrays::stream)
+                .toArray(String[]::new);
         
         for (int i = 0; i < msgParts.length; i++) {
             if (msgParts[i].equals("Version")) {
