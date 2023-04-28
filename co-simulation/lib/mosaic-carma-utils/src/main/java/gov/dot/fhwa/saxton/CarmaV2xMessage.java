@@ -17,7 +17,6 @@
 package gov.dot.fhwa.saxton;
 
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -123,7 +122,7 @@ public class CarmaV2xMessage {
      * @param buf A binary array containing the data sent from the CARMA Platform's ns3 adapter
      */
     private void parseV2xMessage(byte[] buf)  {
-        String rawMsg = new String(buf, StandardCharsets.UTF_8);
+        String rawMsg = new String(buf);
         String msg = rawMsg.substring(rawMsg.indexOf("Version"), rawMsg.length());
 
         // Modeled after Stackoverflow answer by user Eritrean: https://stackoverflow.com/users/5176992/eritrean
@@ -161,6 +160,7 @@ public class CarmaV2xMessage {
                 encryption = Boolean.parseBoolean(msgParts[++i]);
             } else if (msgParts[i].equals("Payload")) {
                 payload = msgParts[++i];
+                break; // Break on the final field of the message
             } else {
                 throw new IllegalArgumentException("No such field in CarmaV2xMessage: " + msgParts[i]);
             }
