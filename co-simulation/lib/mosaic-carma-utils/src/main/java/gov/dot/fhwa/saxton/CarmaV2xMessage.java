@@ -123,7 +123,8 @@ public class CarmaV2xMessage {
      * @param buf A binary array containing the data sent from the CARMA Platform's ns3 adapter
      */
     private void parseV2xMessage(byte[] buf)  {
-        String msg = new String(buf, StandardCharsets.UTF_8);
+        String rawMsg = new String(buf, StandardCharsets.UTF_8);
+        String msg = rawMsg.substring(rawMsg.indexOf("Version"), rawMsg.length());
 
         // Modeled after Stackoverflow answer by user Eritrean: https://stackoverflow.com/users/5176992/eritrean
         // On Question: https://stackoverflow.com/questions/61029164/how-to-split-string-by-comma-and-newline-n-in-java
@@ -161,7 +162,7 @@ public class CarmaV2xMessage {
             } else if (msgParts[i].equals("Payload")) {
                 payload = msgParts[++i];
             } else {
-                throw new IllegalArgumentException("No such field in CarmaV2xMessage.");
+                throw new IllegalArgumentException("No such field in CarmaV2xMessage: " + msgParts[i]);
             }
         }
     }
