@@ -133,6 +133,25 @@ public class InfrastructureInstanceManager {
     }
 
     /**
+     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * @param rxMsg The V2X Message received
+     * @param rxRsuId The Host ID of the vehicle receiving the data
+     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     */
+    public void onV2XMessageRx(byte[] rxMsg, String rxRsuId) {
+        if (!managedInstances.containsKey(rxRsuId))  {
+            return;
+        }
+
+        InfrastructureInstance rsu = managedInstances.get(rxRsuId);
+        try {
+            rsu.sendMsgs(rxMsg);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * External helper function to allow the ambassador to check if a given vehicle
      * ID is a registered CARMA Platform instance
      * 
