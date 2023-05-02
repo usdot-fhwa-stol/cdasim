@@ -29,6 +29,7 @@ import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
+import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
@@ -186,7 +187,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * Ad-Hoc interface used for communication between the infrastructure instance
      * and other vehicles or components, and sends it to the RTI for exchange.
      *
-     * @param reg the infrastructure registration message received from the RTI
+     * @param infrastructureId the infrastructure registration message received from the RTI
      *
      *            Note: This function should be called after the
      *            onRsuRegistrationRequest
@@ -195,12 +196,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private void onDsrcRegistrationRequest(String infrastructureId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
-        // TODO: Replace the IP address of the ad-hoc interface if necessary
         // TODO: Replace the subnet mask of the ad-hoc interface if necessary
         // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
         // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
+        Inet4Address rsuAddress = IpResolver.getSingleton().registerHost(infrastructureId);
+        log.info("Assigned registered comms device " + infrastructureId + " with IP address " + rsuAddress.toString());
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
-                .ip((Inet4Address) Inet4Address.getByName("192.168.0.1"))
+                .ip(rsuAddress)
                 .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
                 .power(50)
                 .radius(100.0)
@@ -216,7 +218,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         // Ad-Hoc configuration for exchange with another vehicle or component
         AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
                 adHocConfig);
-
+        log.info("Communications comms device " +infrastructureId + " with IP address " + rsuAddress.toString() + " success!");
         try {
             // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
             this.rti.triggerInteraction(communicationConfig);

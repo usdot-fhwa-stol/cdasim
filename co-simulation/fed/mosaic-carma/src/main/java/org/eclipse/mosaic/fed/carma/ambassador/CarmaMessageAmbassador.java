@@ -17,19 +17,18 @@ import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
-import org.eclipse.mosaic.fed.carma.configuration.CarmaVehicleConfiguration;
 import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
+import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
-import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
-import org.eclipse.mosaic.lib.enums.DriveDirection;
+import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.misc.Tuple;
+import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
+import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
+import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -39,9 +38,9 @@ import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import javax.xml.bind.DatatypeConverter;
+import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -59,16 +58,6 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
      * CarmaMessageAmbassador configuration file.
      */
     CarmaConfiguration carmaConfiguration;
-
-    /**
-     * List of vehicles that are controlled by CARMA platform.
-     */
-    private final HashMap<String, Boolean> carmaVehicleMap = new HashMap<>();
-
-    /**
-     * The number of CARMA vehicles.
-     */
-    int numberOfCarmaVehicle = 0;
 
     private CarmaRegistrationReceiver carmaRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
@@ -133,28 +122,6 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         v2xMessageReceiver.init();
         v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
         v2xRxBackgroundThread.start();
-
-        // Register CARMA vehicles
-        for (CarmaVehicleConfiguration carmaVehicleConfiguration : carmaConfiguration.carmaVehicles) {
-            VehicleDeparture vehicleDeparture = new VehicleDeparture.Builder(carmaVehicleConfiguration.routeID)
-                    .departureLane(VehicleDeparture.LaneSelectionMode.BEST, carmaVehicleConfiguration.lane,
-                            carmaVehicleConfiguration.position)
-                    .departureSpeed(VehicleDeparture.DepartSpeedMode.MAXIMUM, carmaVehicleConfiguration.departSpeed)
-                    .create();
-
-            VehicleFederateAssignment carmaVehicleRegistration = new VehicleFederateAssignment(currentSimulationTime,
-                    "carma_" + numberOfCarmaVehicle, "carma", 50, carmaVehicleConfiguration.vehicleType,
-                    vehicleDeparture, carmaVehicleConfiguration.applications);
-
-            numberOfCarmaVehicle++;
-
-            try {
-                this.rti.triggerInteraction(carmaVehicleRegistration);
-                carmaVehicleMap.put(carmaVehicleRegistration.getVehicleId(), false);
-            } catch (InternalFederateException | IllegalValueException e) {
-                log.error(e.getMessage());
-            }
-        }
     }
 
     /**
@@ -179,33 +146,23 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
             for (CarmaRegistrationMessage reg : newRegistrations) {
                 carmaInstanceManager.onNewRegistration(reg);
+                onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
             }
 
             List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
             for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                 V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
-                this.rti.triggerInteraction(msgInt);
+                rti.triggerInteraction(msgInt);
             }
 
-            // Update CARMA vehicle
-            updateCarmaVehicles();
 
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
 
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
-
-            // Send CARMA external messages
-            String message = "Message to CARMA vehicles: Carma Vehicles update at time: " + currentSimulationTime;
-            ExternalMessage externalMessage = new ExternalMessage(currentSimulationTime, message,
-                    carmaConfiguration.senderCarmaVehicleId);
-            try {
-                this.rti.triggerInteraction(externalMessage);
-            } catch (InternalFederateException | IllegalValueException e) {
-                log.error(e.getMessage());
-            }
-            log.debug("trigger external message interaction at time: " + currentSimulationTime + " .");
-
         } catch (IllegalValueException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
+        } catch (UnknownHostException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
         }
@@ -256,8 +213,12 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             receiveInteraction((CarmaV2xMessageReception) interaction);
         }
         if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
-            carmaInstanceManager.onVehicleUpdates((VehicleUpdates) interaction);
+            receiveVehicleUpdateInteraction((VehicleUpdates) interaction);
         }
+    }
+
+    private synchronized void receiveVehicleUpdateInteraction(VehicleUpdates interaction) {
+        carmaInstanceManager.onVehicleUpdates(interaction);
     }
 
     /**
@@ -275,11 +236,11 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
      */
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
         String carlaRoleName = interaction.getReceiverName();
-
         if (!carmaInstanceManager.checkIfRegistered(carlaRoleName)) {
             // Abort early as we only are concerned with CARMA Platform vehicles
             return;
         }
+        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId());
 
         int messageId = interaction.getMessageId();
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
@@ -287,65 +248,43 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
             carmaInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
+            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
         } else {
-            // TODO: Log warning as message was no longer in buffer to be received
+            log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
     }
 
-    /**
-     * Extract external message from received {@link CarmaV2xMessageReception}
-     * interaction.
-     *
-     * @param carmaV2xMessageReception Interaction indicates that the external
-     *                                 message is received by a CARMA vehicle.
-     * @throws InternalFederateException Exception if a invalid value is used.
-     */
-    private synchronized void receiveInteraction(CarmaV2xMessageReception carmaV2xMessageReception)
-            throws InternalFederateException {
-        log.info("CARMA vehicle: " + carmaV2xMessageReception.getReceiverID()
-                + " received an external message at time: " + carmaV2xMessageReception.getTime() + ".");
-        log.info("The received message is " + carmaV2xMessageReception.getMessage() + " .");
+    private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
+        // Create an InterfaceConfiguration object to represent the configuration of the
+        // Ad-Hoc interface
+        // TODO: Replace the subnet mask of the ad-hoc interface if necessary
+        // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
+        // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
+        Inet4Address vehAddress = IpResolver.getSingleton().registerHost(vehicleId);
+        log.info("Assigned registered comms device " + vehicleId + " with IP address " + vehAddress.toString());
+        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
+                .ip(vehAddress)
+                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
+                .power(50)
+                .radius(100.0)
+                .create();
 
-    }
+        // Create an AdHocConfiguration object to associate the Ad-Hoc interface
+        // configuration with the infrastructure instance's ID
+        AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(vehicleId)
+                .addInterface(interfaceConfig)
+                .create();
 
-    /**
-     * Update CARMA vehicles position.
-     */
-    private final void updateCarmaVehicles() {
-
-        List<VehicleData> addedVehicle = new ArrayList<>();
-        List<VehicleData> updatedVehicle = new ArrayList<>();
-        List<String> removedNames = new ArrayList<>();
-
-        for (String vehicleName : carmaVehicleMap.keySet()) {
-            final int firstUnderscorePosition = vehicleName.indexOf('_');
-            final int vehicleNumber = Integer.parseInt(vehicleName.substring(firstUnderscorePosition + 1));
-
-            VehicleData vehicleData = new VehicleData.Builder(currentSimulationTime, vehicleName)
-                    .position(carmaConfiguration.carmaVehicles.get(vehicleNumber).geoPosition,
-                            carmaConfiguration.carmaVehicles.get(vehicleNumber).projectedPosition)
-                    .orientation(DriveDirection.UNAVAILABLE,
-                            carmaConfiguration.carmaVehicles.get(vehicleNumber).heading,
-                            carmaConfiguration.carmaVehicles.get(vehicleNumber).slope)
-                    .create();
-
-            if (!carmaVehicleMap.get(vehicleName)) {
-                // update the new added CARMA vehicles
-                addedVehicle.add(vehicleData);
-                carmaVehicleMap.put(vehicleName, true);
-            } else {
-                // update the registed CARMA vehicles
-                updatedVehicle.add(vehicleData);
-            }
-        }
-
-        VehicleUpdates vehicleUpdates = new VehicleUpdates(currentSimulationTime, addedVehicle, updatedVehicle,
-                removedNames);
-
-        // trigger VehicleUpdates interaction
+        // Create an AdHocCommunicationConfiguration object to specify the time and
+        // Ad-Hoc configuration for exchange with another vehicle or component
+        AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
+                adHocConfig);
+        log.info("Communications comms device " + vehicleId + " with IP address " + vehAddress.toString() + " success!");
         try {
-            this.rti.triggerInteraction(vehicleUpdates);
+            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
+            this.rti.triggerInteraction(communicationConfig);
         } catch (InternalFederateException | IllegalValueException e) {
+            // Log error message if there was an issue with the RTI interaction
             log.error(e.getMessage());
         }
     }
