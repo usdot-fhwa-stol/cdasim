@@ -85,10 +85,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
         byte[] buf = new byte[UDP_MTU];
        while (running) {
            DatagramPacket msg = new DatagramPacket(buf, buf.length);
-           InetAddress senderAddr = msg.getAddress();
-
-
-
+           
            try {
                listenSocket.receive(msg);
                log.info("CarmaV2xMessageReceiver received message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
@@ -102,7 +99,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
 
                // Enqueue message for processing on main thread
                synchronized (rxQueue) {
-                   rxQueue.add(new Tuple<>(senderAddr, parsedMessage));
+                   rxQueue.add(new Tuple<>(msg.getAddress(), parsedMessage));
                    log.info("CarmaV2xMessageReceiver enqueued message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
                }
            } catch (IllegalArgumentException parseError) {
