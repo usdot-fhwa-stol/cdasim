@@ -225,7 +225,7 @@
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>
             
-            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorError" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador" additivity="false" level="INFO">
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>
             <!-- All other stuff, which was not logged by other loggers before goes
