@@ -154,7 +154,6 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 rti.triggerInteraction(msgInt);
             }
 
-
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
 
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);

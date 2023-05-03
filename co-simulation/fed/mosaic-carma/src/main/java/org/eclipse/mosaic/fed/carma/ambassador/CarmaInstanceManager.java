@@ -93,6 +93,12 @@ public class CarmaInstanceManager {
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
+        log.info("Preparing to generate V2XMessageTransmission interaction for transmission on MOSAIC event bus...");
+        log.info("sim time: " + currentSimulationTime);
+        log.info("sender id: " + sender.getCarlaRoleName());
+        log.info("location: " + sender.getLocation().toString());
+        log.info("txMsg non-null? " + (txMsg != null));
+        log.info("payload: " + txMsg.getPayload());
         return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
                 new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
 
