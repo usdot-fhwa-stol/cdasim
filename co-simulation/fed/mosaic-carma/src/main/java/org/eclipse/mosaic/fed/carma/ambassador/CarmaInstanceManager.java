@@ -101,7 +101,6 @@ public class CarmaInstanceManager {
         log.info("payload: " + txMsg.getPayload());
         return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
                 new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
-
     }
 
     /**
