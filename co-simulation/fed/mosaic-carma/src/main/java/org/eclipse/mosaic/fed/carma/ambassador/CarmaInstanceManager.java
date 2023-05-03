@@ -26,6 +26,8 @@ import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -42,6 +44,7 @@ public class CarmaInstanceManager {
 
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
     private static final int TARGET_PORT = 5374;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
@@ -74,7 +77,9 @@ public class CarmaInstanceManager {
         for (CarmaInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {
                 sender = ci;
+                break;
             }
+            log.info("Instance {} with target address {} can not match with source address {}", ci.getCarlaRoleName(), ci.getTargetAddress(), sourceAddr.toString());
         }
 
         if (sender == null) {
@@ -136,7 +141,11 @@ public class CarmaInstanceManager {
         CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, targetPort);
         try {
             tmp.bind();
+            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", carlaRoleName);
         } catch (IOException e) {
+            log.error("Failed to bind CARMA instance with ID '{}' to its RX message socket: {}",
+            carlaRoleName, e.getMessage());
+            log.error("Stack trace:", e);
             throw new RuntimeException(e);
         }
         managedInstances.put(carlaRoleName, tmp);

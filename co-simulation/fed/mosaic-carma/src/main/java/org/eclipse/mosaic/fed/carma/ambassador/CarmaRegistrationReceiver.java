@@ -73,7 +73,7 @@ public class CarmaRegistrationReceiver implements Runnable {
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                log.info("New Infrastructure instance '{}' received with Infrastructure Registration Receiver.", parsedMessage.getCarmaVehicleId());
+                log.info("New CARMA instance '{}' received with CARMA Registration Receiver.", parsedMessage.getCarmaVehicleId());
                 rxQueue.add(parsedMessage);
             }
        }
