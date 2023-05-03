@@ -19,6 +19,7 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
@@ -120,13 +121,14 @@ public class InfrastructureInstanceManager {
 
         if (sender == null) {
             // Unregistered instance attempting to send messages
-            throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
+            throw new IllegalStateException("Unregistered CARMA Streets/V2XHub instance attempting to send messages via MOSAIC");
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
-                sender.getInfrastructureId(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
+                sender.getInfrastructureId(), sender.getLocation()).viaChannel(AdHocChannel.SCH4);
 
-        MessageRouting routing = messageRoutingBuilder.topoBroadCast(1);
+        // TODO: Get maximum broadcast radius from configuration file.
+        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
         return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
                 new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));

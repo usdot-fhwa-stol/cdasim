@@ -196,14 +196,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private void onDsrcRegistrationRequest(String infrastructureId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
-        // TODO: Replace the subnet mask of the ad-hoc interface if necessary
         // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
         // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
         Inet4Address rsuAddress = IpResolver.getSingleton().registerHost(infrastructureId);
         log.info("Assigned registered comms device " + infrastructureId + " with IP address " + rsuAddress.toString());
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
                 .ip(rsuAddress)
-                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
+                .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
                 .radius(100.0)
                 .create();

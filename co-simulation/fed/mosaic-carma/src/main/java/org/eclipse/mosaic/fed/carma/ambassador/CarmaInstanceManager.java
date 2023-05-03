@@ -20,6 +20,7 @@ import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
@@ -82,9 +83,10 @@ public class CarmaInstanceManager {
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
-                sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
+                sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.SCH4);
 
-        MessageRouting routing = messageRoutingBuilder.topoBroadCast(1);
+        // TODO: Get maximum broadcast radius from configuration file.
+        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
         return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
                 new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));

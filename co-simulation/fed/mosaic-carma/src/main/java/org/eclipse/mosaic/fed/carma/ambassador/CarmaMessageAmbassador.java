@@ -142,7 +142,6 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-
             List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
             for (CarmaRegistrationMessage reg : newRegistrations) {
                 carmaInstanceManager.onNewRegistration(reg);
@@ -257,14 +256,13 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
-        // TODO: Replace the subnet mask of the ad-hoc interface if necessary
         // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
         // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
         Inet4Address vehAddress = IpResolver.getSingleton().registerHost(vehicleId);
         log.info("Assigned registered comms device " + vehicleId + " with IP address " + vehAddress.toString());
         InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
                 .ip(vehAddress)
-                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
+                .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
                 .radius(100.0)
                 .create();
