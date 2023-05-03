@@ -125,7 +125,7 @@ public class InfrastructureInstanceManager {
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
-                sender.getInfrastructureId(), sender.getLocation()).viaChannel(AdHocChannel.SCH4);
+                sender.getInfrastructureId(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
 
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));

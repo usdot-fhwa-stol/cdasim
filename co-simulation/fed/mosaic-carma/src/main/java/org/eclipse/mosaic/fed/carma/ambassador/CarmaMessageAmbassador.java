@@ -259,7 +259,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
         Inet4Address vehAddress = IpResolver.getSingleton().registerHost(vehicleId);
         log.info("Assigned registered comms device " + vehicleId + " with IP address " + vehAddress.toString());
-        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
+        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.CCH)
                 .ip(vehAddress)
                 .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
