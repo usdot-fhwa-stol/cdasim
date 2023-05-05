@@ -24,14 +24,20 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.enums.DriveDirection;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
+import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
+import org.eclipse.mosaic.lib.objects.road.SimpleRoadPosition;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleType;
+import org.eclipse.mosaic.lib.objects.vehicle.*;
+import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
+import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -44,6 +50,8 @@ import javax.xml.bind.DatatypeConverter;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -270,6 +278,68 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         try {
             // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
             this.rti.triggerInteraction(tempRegistration);
+        } catch (InternalFederateException | IllegalValueException e) {
+            // Log error message if there was an issue with the RTI interaction
+            log.error(e.getMessage());
+        }
+
+        VehicleSignals tmpSignals  = new VehicleSignals(
+                false,
+                false,
+                false,
+                false,
+                false);
+
+        VehicleEmissions tmpEmissions = new VehicleEmissions(
+                new Emissions(
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                ),
+                new Emissions(
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                ));
+
+        VehicleBatteryState tmpBattery = new VehicleBatteryState("", currentSimulationTime);
+        IRoadPosition tmpPos = new SimpleRoadPosition("", 0, 0.0, 0.0);
+        VehicleSensors tmpSensors = new VehicleSensors(
+                new DistanceSensor(0.0,
+                        0.0,
+                        0.0,
+                        0.0),
+                new RadarSensor(0.0));
+        VehicleConsumptions tmpConsumptions = new VehicleConsumptions(
+                new Consumptions(0.0, 0.0),
+                new Consumptions(0.0, 0.0));
+        VehicleData tmpVehicle = new VehicleData.Builder(currentSimulationTime, vehicleId)
+                .position(GeoPoint.ORIGO, CartesianPoint.ORIGO)
+                .movement(0.0, 0.0, 0.0)
+                .consumptions(tmpConsumptions)
+                .emissions(tmpEmissions)
+                .electric(tmpBattery)
+                .laneArea("")
+                .sensors(tmpSensors)
+                .road(tmpPos)
+                .signals(tmpSignals)
+                .orientation(DriveDirection.FORWARD, 0.0, 0.0)
+                .stopped(false)
+                .route("")
+                .create();
+        VehicleUpdates tempUpdates = new VehicleUpdates(
+                currentSimulationTime,
+                new ArrayList<>(Arrays.asList(tmpVehicle)),
+                new ArrayList<>(),
+                new ArrayList<>());
+
+        try {
+            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
+            this.rti.triggerInteraction(tempUpdates);
         } catch (InternalFederateException | IllegalValueException e) {
             // Log error message if there was an issue with the RTI interaction
             log.error(e.getMessage());
