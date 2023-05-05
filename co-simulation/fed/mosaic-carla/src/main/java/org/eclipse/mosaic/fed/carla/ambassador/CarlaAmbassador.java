@@ -13,6 +13,25 @@
 
 package org.eclipse.mosaic.fed.carla.ambassador;
 
+import com.google.common.collect.Lists;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
+import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
+import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
+import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
+import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
+import org.eclipse.mosaic.interactions.application.*;
+import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
+import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
+import org.eclipse.mosaic.rti.TIME;
+import org.eclipse.mosaic.rti.api.*;
+import org.eclipse.mosaic.rti.api.federatestarter.ExecutableFederateExecutor;
+import org.eclipse.mosaic.rti.api.federatestarter.NopFederateExecutor;
+import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+import org.eclipse.mosaic.rti.config.CLocalHost;
+
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -20,35 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nonnull;
-
-import com.google.common.collect.Lists;
-
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
-import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
-import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
-import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
-import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
-import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
-import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
-import org.eclipse.mosaic.interactions.application.CarlaV2xMessageReception;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
-import org.eclipse.mosaic.interactions.application.SimulationStep;
-import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
-import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
-import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-import org.eclipse.mosaic.rti.TIME;
-import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
-import org.eclipse.mosaic.rti.api.FederateExecutor;
-import org.eclipse.mosaic.rti.api.IllegalValueException;
-import org.eclipse.mosaic.rti.api.Interaction;
-import org.eclipse.mosaic.rti.api.InternalFederateException;
-import org.eclipse.mosaic.rti.api.federatestarter.ExecutableFederateExecutor;
-import org.eclipse.mosaic.rti.api.federatestarter.NopFederateExecutor;
-import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-import org.eclipse.mosaic.rti.config.CLocalHost;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -448,6 +438,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     // message: {}", message[0],
                     // message[1]);
                 }
+            } else if (command[5] == 0x85) {
+                log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
             } else {
                 rti.triggerInteraction(new CarlaTraciRequest(this.nextTimeStep, length, command));
             }

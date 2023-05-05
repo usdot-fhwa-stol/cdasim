@@ -13,6 +13,14 @@ Apache Commons CLI (1.4)
  * Source: https://svn.apache.org/viewvc/commons/proper/cli/trunk/
 
 
+Apache Commons Codec (1.15)
+
+ * License: Apache License, Version 2.0
+ * Maven artifact: `commons-codec:commons-codec:1.15`
+ * Project: https://commons.apache.org/proper/commons-codec/
+ * Source: https://github.com/apache/commons-codec
+
+
 Apache Commons Configuration (2.5)
 
  * License: Apache License, Version 2.0
