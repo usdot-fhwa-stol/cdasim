@@ -174,7 +174,8 @@
                 "TrafficLightRegistration",
                 "VehicleUpdates",
                 "V2xMessageTransmission",
-                "AdHocCommunicationConfiguration"
+                "AdHocCommunicationConfiguration",
+                "ExternalVehicleRegistration"
             ],
             "javaClasspathEntries": []
         },
