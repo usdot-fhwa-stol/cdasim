@@ -40,7 +40,6 @@ import java.util.Map;
  */
 public class CarmaInstanceManager {
     private Map<String, CarmaInstance>  managedInstances = new HashMap<>();
-    private double currentSimulationTime;
 
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
     private static final int TARGET_PORT = 5374;
@@ -70,9 +69,10 @@ public class CarmaInstanceManager {
      * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
      * @param sourceAddr The V2X Message received
      * @param txMsg The Host ID of the vehicle receiving the data
+     * @param time The timestamp at which the interaction occurs
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
-    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg) {
+    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         CarmaInstance sender = null;
         for (CarmaInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {
@@ -94,13 +94,13 @@ public class CarmaInstanceManager {
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
         log.info("Preparing to generate V2XMessageTransmission interaction for transmission on MOSAIC event bus...");
-        log.info("sim time: " + currentSimulationTime);
+        log.info("sim time: " + time);
         log.info("sender id: " + sender.getCarlaRoleName());
         log.info("location: " + sender.getLocation().toString());
         log.info("txMsg non-null? " + (txMsg != null));
         log.info("payload: " + txMsg.getPayload());
-        return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
-                new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
+        return new V2xMessageTransmission((long) time, new ExternalV2xMessage(routing,
+                new ExternalV2xContent((long) time, sender.getLocation(), txMsg.getPayload())));
     }
 
     /**
