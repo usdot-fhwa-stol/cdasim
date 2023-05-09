@@ -21,7 +21,7 @@ import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
-import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
+import org.eclipse.mosaic.interactions.mapping.advanced.ExternalVehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.enums.DriveDirection;
@@ -264,15 +264,11 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     }
 
     private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
-        VehicleRegistration tempRegistration = new VehicleRegistration(
+        ExternalVehicleRegistration tempRegistration = new ExternalVehicleRegistration(
                 currentSimulationTime,
                 vehicleId,
                 "carma",
                 null,
-                new VehicleDeparture.Builder("")
-                        .departureLane(VehicleDeparture.LaneSelectionMode.FREE, 0, 0.0)
-                        .departureSpeed(0.0)
-                        .create(),
                 new VehicleType("carma"));
 
         try {
