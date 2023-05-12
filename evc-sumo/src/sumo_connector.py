@@ -26,7 +26,7 @@ import traci
 from contextlib import contextmanager
 
 class SumoConnector:
-    def __init__(self, port, order_num):
+    def __init__(self, ip, port, order_num):
         """
         Initialize SumoConnector object
 
@@ -37,6 +37,7 @@ class SumoConnector:
         - order_num: The priority order number of the connection to SUMO, which should be consistent with other SUMO connections if any
         type: string
         """
+        self.ip = ip
         self.port = port
         self.order_num = order_num
         self.traci = traci
@@ -52,7 +53,7 @@ class SumoConnector:
         """
         Initialize traci
         """
-        self.traci.init(int(self.port))
+        self.traci.init(self.ip, int(self.port))
         self.traci.setOrder(self.order_num)
         yield
         self.traci.close()

@@ -23,7 +23,7 @@ from evc_connector import EvcConnector
 from sumo_connector import SumoConnector
 
 def run(args):
-    sumo_connector = SumoConnector(args.traci_port, args.traci_order_num)
+    sumo_connector = SumoConnector(arg.traci_ip, args.traci_port, args.traci_order_num)
     evc_connector = EvcConnector(args.asc3app_path, args.evc_sumo_cfg_path)
     evc_connector.run(sumo_connector)
 
@@ -32,6 +32,9 @@ if __name__ == "__main__":
     arg.add_argument('--asc3app-path',
                      required=True,
                      help='asc3app-application file path')
+    arg.add_argument('--traci-ip',
+                     default="localhost",
+                     help='Traci ip to connect to SUMO')
     arg.add_argument('--traci-port',
                      default=2010,
                      help='Traci port to connect to SUMO')
