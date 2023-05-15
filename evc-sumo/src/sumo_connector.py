@@ -53,7 +53,7 @@ class SumoConnector:
         """
         Initialize traci
         """
-        self.traci.init(self.ip, int(self.port))
+        self.traci.init(host=self.ip, port=int(self.port))
         self.traci.setOrder(self.order_num)
         yield
         self.traci.close()
