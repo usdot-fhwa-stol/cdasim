@@ -149,8 +149,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
         // Infrastructure message reception
-        if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
-            this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
+        if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
+            this.receiveInteraction((V2xMessageReception) interaction);
         }
     }
 
