@@ -63,6 +63,7 @@ public class CarmaInstanceManager {
             }
         } else {
             // log warning
+            log.warn("Received duplicate registration for vehicle " + registration.getCarlaVehicleRole());
         }
     }
     /**

@@ -204,7 +204,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 .ip(rsuAddress)
                 .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
-                .radius(100.0)
+                .radius(300.0)
                 .create();
 
         // Create an AdHocConfiguration object to associate the Ad-Hoc interface
