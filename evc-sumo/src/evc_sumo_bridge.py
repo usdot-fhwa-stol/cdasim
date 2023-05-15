@@ -23,7 +23,7 @@ from evc_connector import EvcConnector
 from sumo_connector import SumoConnector
 
 def run(args):
-    sumo_connector = SumoConnector(arg.traci_ip, args.traci_port, args.traci_order_num)
+    sumo_connector = SumoConnector(args.traci_ip, args.traci_port, args.traci_order_num)
     evc_connector = EvcConnector(args.asc3app_path, args.evc_sumo_cfg_path)
     evc_connector.run(sumo_connector)
 
