@@ -283,8 +283,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
             for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                 log.info("Processing new V2X transmit event of type " + msg.getB().getType());
-                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
-                this.rti.triggerInteraction(msgInt);
+                try {
+                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                    this.rti.triggerInteraction(msgInt);
+                } 
+                catch (IllegalStateException exception ) {
+                    log.warn("Exception : '{}' occured processing msg '{}'. Message discarded.", exception.getMessage(), msg.toString());
+                }
             }
 
             timeSyncSeq += 1;
