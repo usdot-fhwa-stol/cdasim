@@ -27,6 +27,7 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
@@ -276,7 +277,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation());
+                double x = reg.getLocation().getLatitude();
+                double y = reg.getLocation().getLongitude();
+                double z = reg.getLocation().getAltitude();
+                onRsuRegistrationRequest(reg.getInfrastructureId(), CartesianPoint.xyz(x, y,z).toGeo());
+                log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + x + ", " + y + ", " + z+ ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
