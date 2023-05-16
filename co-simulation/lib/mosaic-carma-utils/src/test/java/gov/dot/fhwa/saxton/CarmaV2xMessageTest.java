@@ -55,6 +55,20 @@ public class CarmaV2xMessageTest {
                     "61313030376666663830303039363066" +
                     "61300a";
 
+    private final String sampleMessage3 =
+            "Version=0.7\n" +
+                    "Type=BSM\n" +
+                    "PSID=0x0020\n" +
+                    "Priority=6\n" +
+                    "TxMode=ALT\n" +
+                    "TxChannel=172\n" +
+                    "TxInterval=0\n" +
+                    "DeliveryStart=\n" +
+                    "DeliveryStop=\n" +
+                    "Signature=False\n" +
+                    "Encryption=False\n" +
+                    "Payload=00142500400000000f0e35a4e900eb49d20000007fffffff8ffff080fdfa1fa1007fff8000960fa0\n";
+
     @Before
     public void setUp() throws Exception {
     }
@@ -75,6 +89,12 @@ public class CarmaV2xMessageTest {
     @Test
     public void testCarmaV2xMessageParse3() throws DecoderException {
         byte[] bytes = Hex.decodeHex(sampleMessage2.toCharArray());
+        CarmaV2xMessage test = new CarmaV2xMessage(bytes);
+        assert(test != null);
+    }
+
+    public void testCarmaV2xMessageParse4() throws DecoderException {
+        byte[] bytes = Hex.decodeHex(sampleMessage3.toCharArray());
         CarmaV2xMessage test = new CarmaV2xMessage(bytes);
         assert(test != null);
     }

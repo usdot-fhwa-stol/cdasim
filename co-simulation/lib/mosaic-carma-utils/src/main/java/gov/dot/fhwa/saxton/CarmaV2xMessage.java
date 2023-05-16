@@ -141,7 +141,11 @@ public class CarmaV2xMessage {
             } else if (msgParts[i].equals("Type")) {
                 type = msgParts[++i];
             } else if (msgParts[i].equals("PSID")) {
-                psid = Integer.parseInt(msgParts[++i]);
+                if (msgParts[i].startsWith("0x")) {
+                    psid = Integer.parseInt(msgParts[i].split("0x")[1]);
+                } else {
+                    psid = Integer.parseInt(msgParts[++i]);
+                }
             } else if (msgParts[i].equals("Priority")) {
                 priority = Integer.parseInt(msgParts[++i]);
             } else if (msgParts[i].equals("TxMode")) {
