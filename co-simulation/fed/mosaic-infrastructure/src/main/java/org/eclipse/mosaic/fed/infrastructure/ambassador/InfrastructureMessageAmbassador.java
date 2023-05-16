@@ -285,11 +285,16 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
-            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
-            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                log.info("Processing new V2X transmit event of type " + msg.getB().getType());
-                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
-                this.rti.triggerInteraction(msgInt);
+            if (currentSimulationTime == 0) {
+                // For the first timestep, clear the message receive queues.
+                v2xMessageReceiver.getReceivedMessages(); // Automatically empties the queues.
+            } else {
+                List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+                for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                    log.info("Processing new V2X transmit event of type " + msg.getB().getType());
+                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                    this.rti.triggerInteraction(msgInt);
+                }
             }
 
             timeSyncSeq += 1;
