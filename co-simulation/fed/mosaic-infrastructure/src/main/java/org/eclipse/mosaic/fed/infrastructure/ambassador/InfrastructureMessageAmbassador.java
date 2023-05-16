@@ -283,13 +283,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
             for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                 log.info("Processing new V2X transmit event of type " + msg.getB().getType());
-                try {
-                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
-                    this.rti.triggerInteraction(msgInt);
-                } 
-                catch (IllegalStateException exception ) {
-                    log.warn("Exception : '{}' occured processing msg '{}'. Message discarded.", exception.getMessage(), msg.toString());
-                }
+                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                this.rti.triggerInteraction(msgInt);
+               
+                
             }
 
             timeSyncSeq += 1;
@@ -320,12 +317,18 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 log.error(e.getMessage());
             }
 
-        } catch (IllegalValueException e) {
+        } 
+        catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
-        } catch (IOException e1) {
+        } 
+        catch (IOException e1) {
             log.error("Error during updating timestep :" + e1.getMessage());
         }
+        catch (IllegalStateException exception ) {
+            log.warn("Exception : '{}' occured processing msg '{}'. Message discarded.", exception.getMessage());
+        }
+
     }
 
     /**
