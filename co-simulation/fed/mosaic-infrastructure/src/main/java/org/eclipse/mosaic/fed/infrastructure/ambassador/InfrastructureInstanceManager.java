@@ -45,7 +45,7 @@ import java.util.Map;
  */
 public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
-    private double currentSimulationTime;
+
     private final Logger log = LoggerFactory.getLogger(this.getClass());
     /**
      * Register a new infrastructure instance with the MOSAIC system.
@@ -111,7 +111,7 @@ public class InfrastructureInstanceManager {
      * @param txMsg The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
-    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg) {
+    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         InfrastructureInstance sender = null;
         for (InfrastructureInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {
@@ -130,8 +130,8 @@ public class InfrastructureInstanceManager {
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
-        return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
-                new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
+        return new V2xMessageTransmission(time, new ExternalV2xMessage(routing,
+                new ExternalV2xContent(time, sender.getLocation(), txMsg.getPayload())));
     }
 
     /**

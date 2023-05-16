@@ -231,9 +231,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     /**
      * Performs registration of a new infrastructure instance and sets up
-     * communication interfaces.
-     *
-     * @param reg The registration message of the new infrastructure instance.
+     * communication interfaces
      */
     private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
 
@@ -292,7 +290,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                     log.info("Processing new V2X transmit event of type " + msg.getB().getType());
-                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
+                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
                     this.rti.triggerInteraction(msgInt);
                 }
             }
