@@ -200,7 +200,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
         Inet4Address rsuAddress = IpResolver.getSingleton().registerHost(infrastructureId);
         log.info("Assigned registered comms device " + infrastructureId + " with IP address " + rsuAddress.toString());
-        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
+        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.CCH)
                 .ip(rsuAddress)
                 .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
