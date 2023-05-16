@@ -141,8 +141,8 @@ public class CarmaV2xMessage {
             } else if (msgParts[i].equals("Type")) {
                 type = msgParts[++i];
             } else if (msgParts[i].equals("PSID")) {
-                if (msgParts[i].startsWith("0x")) {
-                    psid = Integer.parseInt(msgParts[i].split("0x")[1]);
+                if (msgParts[i + 1].startsWith("0x")) {
+                    psid = Integer.parseInt(msgParts[++i].split("0x")[1]);
                 } else {
                     psid = Integer.parseInt(msgParts[++i]);
                 }

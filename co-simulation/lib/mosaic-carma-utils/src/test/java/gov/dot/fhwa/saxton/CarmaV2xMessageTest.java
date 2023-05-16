@@ -93,9 +93,9 @@ public class CarmaV2xMessageTest {
         assert(test != null);
     }
 
+    @Test
     public void testCarmaV2xMessageParse4() throws DecoderException {
-        byte[] bytes = Hex.decodeHex(sampleMessage3.toCharArray());
-        CarmaV2xMessage test = new CarmaV2xMessage(bytes);
+        CarmaV2xMessage test = new CarmaV2xMessage(sampleMessage3.getBytes());
         assert(test != null);
     }
 
