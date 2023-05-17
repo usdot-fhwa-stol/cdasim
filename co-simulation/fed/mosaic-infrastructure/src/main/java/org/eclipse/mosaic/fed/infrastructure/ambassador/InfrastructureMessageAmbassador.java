@@ -20,7 +20,6 @@ import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
@@ -236,7 +235,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
 
         // Register the new infrastructure instance to the RTI as an RSU
-        log.info("Attemtping to registere RSU ID: " + infrastructureId + " @ " + location.toString());
+        log.info("Attemtping to register RSU ID: " + infrastructureId + " @ " + location.toString());
         RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, infrastructureId, "",
                 Collections.emptyList(), location);
         try {
@@ -291,6 +290,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                     log.info("Processing new V2X transmit event of type " + msg.getB().getType());
                     V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
+                    SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(9 * TIME.SECOND, msgInt.getMessage());
                     this.rti.triggerInteraction(msgInt);
                 }
             }
@@ -310,19 +310,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             // Request the next time advance from the RTI
             log.info("Requesting timestep updated to " + currentSimulationTime);
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
-
-            // Send an external message to the RSU
-            String message = "External Message to RSU: RSU sent message at time: " + currentSimulationTime;
-            ExternalMessage rsuMessage = new ExternalMessage(currentSimulationTime, message,
-                    infrastructureConfiguration.senderRSUId);
-            try {
-                // Trigger RTI interaction to MOSAIC
-                this.rti.triggerInteraction(rsuMessage);
-            } catch (InternalFederateException | IllegalValueException e) {
-                // Log an error message if there was an issue with the RTI interaction
-                log.error(e.getMessage());
-            }
-
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);

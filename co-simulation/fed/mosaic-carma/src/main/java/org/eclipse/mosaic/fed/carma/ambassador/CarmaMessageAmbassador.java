@@ -167,6 +167,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                     V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), time);
+                    SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(9 * TIME.SECOND, msgInt.getMessage());
                     rti.triggerInteraction(msgInt);
                 }
             }
