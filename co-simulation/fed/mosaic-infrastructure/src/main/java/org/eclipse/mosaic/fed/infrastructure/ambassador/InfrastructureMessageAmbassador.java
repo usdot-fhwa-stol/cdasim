@@ -301,7 +301,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                     log.info("Processing new V2X transmit event of type " + msg.getB().getType());
                     V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
-                    SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(9 * TIME.SECOND, msgInt.getMessage());
+                    SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     log.info("Inserted message ID {} into v2xmessage cache.", msgInt.getMessageId());
                     this.rti.triggerInteraction(msgInt);
                 }
