@@ -18,17 +18,22 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
-import org.eclipse.mosaic.interactions.application.ExternalMessage;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
+import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
+import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
+import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -37,12 +42,11 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Collections;
 import java.util.List;
 
@@ -145,6 +149,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
         // Infrastructure message reception
+        if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
+            this.receiveV2xReceptionInteraction((V2xMessageReception) interaction);
+        }
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
@@ -154,14 +161,35 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * Extract external message from received
      * {@link InfrastructureV2xMessageReception} interaction.
      *
-     * @param infrastructureV2xMessageReception Interaction indicates that the
+     * @param interaction Interaction indicates that the
      *                                          external message is received by a
      *                                          rsu.
      */
-    private synchronized void receiveInteraction(InfrastructureV2xMessageReception infrastructureV2xMessageReception) {
-        log.info(infrastructureV2xMessageReception.getReceiverID() + " received V2X messages at time: "
-                + infrastructureV2xMessageReception.getTime() + ".");
-        log.info("The received message is " + infrastructureV2xMessageReception.getMessage() + " .");
+    private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
+        String rsuId = interaction.getReceiverName();
+
+        if (!infrastructureInstanceManager.checkIfRegistered(rsuId)) {
+            // Abort early as we only are concerned with CARMA Platform vehicles
+
+            log.info("Abort V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
+            return;
+        }
+        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
+
+        int messageId = interaction.getMessageId();
+        log.info("Querying v2x message cache for message id: {}", messageId);
+        V2xMessage msg = SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(messageId);
+
+        log.info("Is msg null ? {}", msg == null);
+        log.info("Is msg instanceof ExternalV2xMessage ? {}", msg instanceof ExternalV2xMessage);
+
+        if (msg != null && msg instanceof ExternalV2xMessage) {
+            ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
+            infrastructureInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), rsuId);
+            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
+        } else {
+            log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
+        }
     }
 
     /**
@@ -170,7 +198,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * Ad-Hoc interface used for communication between the infrastructure instance
      * and other vehicles or components, and sends it to the RTI for exchange.
      *
-     * @param reg the infrastructure registration message received from the RTI
+     * @param infrastructureId the infrastructure registration message received from the RTI
      *
      *            Note: This function should be called after the
      *            onRsuRegistrationRequest
@@ -179,15 +207,15 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private void onDsrcRegistrationRequest(String infrastructureId) throws UnknownHostException {
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
-        // TODO: Replace the IP address of the ad-hoc interface if necessary
-        // TODO: Replace the subnet mask of the ad-hoc interface if necessary
         // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
         // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
-        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.SCH1)
-                .ip((Inet4Address) Inet4Address.getByName("192.168.0.1"))
-                .subnet((Inet4Address) Inet4Address.getByName("255.255.255.0"))
+        Inet4Address rsuAddress = IpResolver.getSingleton().registerHost(infrastructureId);
+        log.info("Assigned registered comms device " + infrastructureId + " with IP address " + rsuAddress.toString());
+        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.CCH)
+                .ip(rsuAddress)
+                .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
-                .radius(100.0)
+                .radius(300.0)
                 .create();
 
         // Create an AdHocConfiguration object to associate the Ad-Hoc interface
@@ -200,7 +228,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         // Ad-Hoc configuration for exchange with another vehicle or component
         AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
                 adHocConfig);
-
+        log.info("Communications comms device " +infrastructureId + " with IP address " + rsuAddress.toString() + " success!");
         try {
             // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
             this.rti.triggerInteraction(communicationConfig);
@@ -213,13 +241,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     /**
      * Performs registration of a new infrastructure instance and sets up
-     * communication interfaces.
-     *
-     * @param reg The registration message of the new infrastructure instance.
+     * communication interfaces
      */
     private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
 
         // Register the new infrastructure instance to the RTI as an RSU
+        log.info("Attemtping to register RSU ID: " + infrastructureId + " @ " + location.toString());
         RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, infrastructureId, "",
                 Collections.emptyList(), location);
         try {
@@ -247,23 +274,37 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (time < currentSimulationTime) {
             return;
         }
+        log.info("Infrastructure message ambassador processing timestep to " + time);
         try {
 
             // Handle any new infrastructure registration requests
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
+                log.info("Processing new registration request for " + reg.getInfrastructureId());
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation());
+                double x = reg.getLocation().getLatitude();
+                double y = reg.getLocation().getLongitude();
+                double z = reg.getLocation().getAltitude();
+                onRsuRegistrationRequest(reg.getInfrastructureId(), CartesianPoint.xyz(x, y,z).toGeo());
+                log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + x + ", " + y + ", " + z+ ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
-            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
-            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
-                this.rti.triggerInteraction(msgInt);
+            if (currentSimulationTime == 0) {
+                // For the first timestep, clear the message receive queues.
+                v2xMessageReceiver.getReceivedMessages(); // Automatically empties the queues.
+            } else {
+                List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+                for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                    log.info("Processing new V2X transmit event of type " + msg.getB().getType());
+                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
+                    SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
+                    log.info("Inserted message ID {} into v2xmessage cache.", msgInt.getMessageId());
+                    this.rti.triggerInteraction(msgInt);
+                }
             }
 
             timeSyncSeq += 1;
@@ -279,20 +320,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
 
             // Request the next time advance from the RTI
+            log.info("Requesting timestep updated to " + currentSimulationTime);
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
-
-            // Send an external message to the RSU
-            String message = "External Message to RSU: RSU sent message at time: " + currentSimulationTime;
-            ExternalMessage rsuMessage = new ExternalMessage(currentSimulationTime, message,
-                    infrastructureConfiguration.senderRSUId);
-            try {
-                // Trigger RTI interaction to MOSAIC
-                this.rti.triggerInteraction(rsuMessage);
-            } catch (InternalFederateException | IllegalValueException e) {
-                // Log an error message if there was an issue with the RTI interaction
-                log.error(e.getMessage());
-            }
-
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 
 /**
  * Connection manager and data object to associate with a single CARMA Platform instance in XIL
@@ -34,7 +33,7 @@ public class CarmaInstance {
 
     private InetAddress targetAddress;
     private int port;
-    private GeoPoint location = null;
+    private GeoPoint location = GeoPoint.ORIGO;
 
     public CarmaInstance(String carmaVehicleId, String carlaRoleName, InetAddress targetAddress, int port) {
         this.carmaVehicleId = carmaVehicleId;
