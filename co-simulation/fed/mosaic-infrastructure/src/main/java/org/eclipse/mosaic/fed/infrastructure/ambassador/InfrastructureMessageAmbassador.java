@@ -150,7 +150,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
         // Infrastructure message reception
         if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
-            this.receiveInteraction((V2xMessageReception) interaction);
+            this.receiveV2xReceptionInteraction((V2xMessageReception) interaction);
+        }
+        if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
+            this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
     }
 
@@ -162,22 +165,29 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      *                                          external message is received by a
      *                                          rsu.
      */
-    private synchronized void receiveInteraction(V2xMessageReception interaction) {
+    private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
         String rsuId = interaction.getReceiverName();
 
         if (!infrastructureInstanceManager.checkIfRegistered(rsuId)) {
             // Abort early as we only are concerned with CARMA Platform vehicles
+
+            log.info("Abort V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
             return;
         }
+        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
 
         int messageId = interaction.getMessageId();
         V2xMessage msg = SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(messageId);
 
+        log.info("Is msg null ? {}", msg == null);
+        log.info("Is msg instanceof ExternalV2xMessage ? {}", msg instanceof ExternalV2xMessage);
+
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
             infrastructureInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), rsuId);
+            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
         } else {
-            // TODO: Log warning as message was no longer in buffer to be received
+            log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
     }
 
