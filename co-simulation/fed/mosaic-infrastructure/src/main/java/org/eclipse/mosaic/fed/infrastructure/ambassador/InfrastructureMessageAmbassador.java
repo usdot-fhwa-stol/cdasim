@@ -177,6 +177,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
 
         int messageId = interaction.getMessageId();
+        log.info("Querying v2x message cache for message id: {}", messageId);
         V2xMessage msg = SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(messageId);
 
         log.info("Is msg null ? {}", msg == null);
@@ -301,6 +302,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                     log.info("Processing new V2X transmit event of type " + msg.getB().getType());
                     V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(9 * TIME.SECOND, msgInt.getMessage());
+                    log.info("Inserted message ID {} into v2xmessage cache.", msgInt.getMessageId());
                     this.rti.triggerInteraction(msgInt);
                 }
             }
