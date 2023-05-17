@@ -27,6 +27,7 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
@@ -240,9 +241,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     /**
      * Performs registration of a new infrastructure instance and sets up
-     * communication interfaces.
-     *
-     * @param reg The registration message of the new infrastructure instance.
+     * communication interfaces
      */
     private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
 
@@ -286,15 +285,24 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation());
+                double x = reg.getLocation().getLatitude();
+                double y = reg.getLocation().getLongitude();
+                double z = reg.getLocation().getAltitude();
+                onRsuRegistrationRequest(reg.getInfrastructureId(), CartesianPoint.xyz(x, y,z).toGeo());
+                log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + x + ", " + y + ", " + z+ ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
             }
 
-            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
-            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                log.info("Processing new V2X transmit event of type " + msg.getB().getType());
-                V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB());
-                this.rti.triggerInteraction(msgInt);
+            if (currentSimulationTime == 0) {
+                // For the first timestep, clear the message receive queues.
+                v2xMessageReceiver.getReceivedMessages(); // Automatically empties the queues.
+            } else {
+                List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+                for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                    log.info("Processing new V2X transmit event of type " + msg.getB().getType());
+                    V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
+                    this.rti.triggerInteraction(msgInt);
+                }
             }
 
             timeSyncSeq += 1;

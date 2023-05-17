@@ -89,7 +89,7 @@ public class CarmaInstanceManager {
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
-                sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.SCH4);
+                sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
 
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));

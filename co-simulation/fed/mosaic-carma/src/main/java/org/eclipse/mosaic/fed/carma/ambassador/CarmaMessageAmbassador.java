@@ -159,10 +159,16 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
             }
 
-            List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
-            for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), time);
-                rti.triggerInteraction(msgInt);
+
+            if (currentSimulationTime == 0) {
+                // For the first timestep, clear the message receive queues.
+                v2xMessageReceiver.getReceivedMessages(); // Automatically empties the queues.
+            } else {
+                List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
+                for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
+                    V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), time);
+                    rti.triggerInteraction(msgInt);
+                }
             }
 
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
