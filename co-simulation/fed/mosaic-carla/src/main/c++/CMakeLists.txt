@@ -19,6 +19,7 @@ set_target_properties(carla-jni PROPERTIES SUFFIX ".so")
 include_directories(
     ${JNI_INCLUDE_DIRS}
     include
+    carla
 )
 
 #ADD_LIBRARY(libcarla_client STATIC IMPORTED)
