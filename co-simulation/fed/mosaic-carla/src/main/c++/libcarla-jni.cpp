@@ -1,5 +1,6 @@
 #include "include/org_eclipse_mosaic_fed_carla_libcarla_CarlaClient.h"
 #include <boost/asio.hpp>
+#include "carla/client/Client.h"
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -8,7 +9,8 @@
  */
 JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_tick_1
   (JNIEnv *, jobject) {
-        boost::asio::ip:address target_ip = boost::asio::ip::address:make_address("127.0.0.1");
+    carla::client::Client target_client{"127.0.0.1", 1516, 0};
+    target_client.GetClientVersion();
   }
 
 /*
