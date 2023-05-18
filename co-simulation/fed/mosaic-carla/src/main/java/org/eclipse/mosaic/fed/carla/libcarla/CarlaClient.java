@@ -19,10 +19,17 @@ package org.eclipse.mosaic.fed.carla.libcarla;
 public class CarlaClient {
 
     static {
-        System.loadLibrary("carla");
+        System.loadLibrary("carla-jni");
     }
 
+    public String getClientVersion() {
+        return getClientVersion_();
+    }
+
+    private native void init_();
+
     private native void tick_();
+
     private native void setSynchronous_();
 
     private native boolean connect_(String serverIp, int serverPort);
@@ -35,7 +42,17 @@ public class CarlaClient {
 
     private native int[] getActorIds_();
 
+    private native int[] getManagedActors_();
+
+    private native boolean createActor_();
+
     private native long getCurrentTimestep_();
 
     private native boolean applySettings_();
+
+    private native void loadTransform_();
+
+    private native String getClientVersion_();
+
+    private native String getServerVersion_();
 }

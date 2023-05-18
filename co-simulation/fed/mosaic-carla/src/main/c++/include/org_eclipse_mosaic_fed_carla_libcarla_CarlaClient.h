@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
+ * Method:    init_
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_init_1
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
  * Method:    tick_
  * Signature: ()V
  */
@@ -65,6 +73,22 @@ JNIEXPORT jintArray JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClie
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
+ * Method:    getManagedActors_
+ * Signature: ()[I
+ */
+JNIEXPORT jintArray JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_getManagedActors_1
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
+ * Method:    createActor_
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_createActor_1
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
  * Method:    getCurrentTimestep_
  * Signature: ()J
  */
@@ -77,6 +101,30 @@ JNIEXPORT jlong JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_g
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_applySettings_1
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
+ * Method:    loadTransform_
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_loadTransform_1
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
+ * Method:    getClientVersion_
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_getClientVersion_1
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
+ * Method:    getServerVersion_
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_getServerVersion_1
   (JNIEnv *, jobject);
 
 #ifdef __cplusplus
