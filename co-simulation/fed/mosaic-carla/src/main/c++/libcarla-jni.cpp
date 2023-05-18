@@ -1,6 +1,13 @@
 #include "include/org_eclipse_mosaic_fed_carla_libcarla_CarlaClient.h"
 #include <boost/asio.hpp>
 #include "carla/client/Client.h"
+#include "carla/Time.h"
+
+
+std::unique_ptr<carla::client::Client> client_instance = nullptr;
+bool connected = false;
+long current_sim_timestep_ns = 0;
+bool running = false;
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -10,7 +17,7 @@
 JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_tick_1
   (JNIEnv *, jobject) {
     carla::client::Client target_client{"127.0.0.1", 1516, 0};
-    target_client.GetClientVersion();
+    target_client.GetWorld().Tick(carla::time_duration::milliseconds(50));
   }
 
 /*
