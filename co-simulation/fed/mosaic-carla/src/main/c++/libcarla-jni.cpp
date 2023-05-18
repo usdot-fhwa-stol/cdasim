@@ -6,7 +6,9 @@
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_tick_1
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -14,7 +16,9 @@ JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_ti
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_setSynchronous_1
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -22,7 +26,9 @@ JNIEXPORT void JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_se
  * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_connect_1
-  (JNIEnv *, jobject, jstring, jint);
+  (JNIEnv *, jobject, jstring, jint) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -30,7 +36,9 @@ JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClien
  * Signature: (Ljava/lang/String;Z)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_loadWorld_1
-  (JNIEnv *, jobject, jstring, jboolean);
+  (JNIEnv *, jobject, jstring, jboolean) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -38,7 +46,9 @@ JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClien
  * Signature: (Z)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_reloadWorld_1
-  (JNIEnv *, jobject, jboolean);
+  (JNIEnv *, jobject, jboolean) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -46,7 +56,9 @@ JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClien
  * Signature: (I)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_getActor_1
-  (JNIEnv *, jobject, jint);
+  (JNIEnv *, jobject, jint) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -54,7 +66,9 @@ JNIEXPORT jbyteArray JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaCli
  * Signature: ()[I
  */
 JNIEXPORT jintArray JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_getActorIds_1
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -62,7 +76,9 @@ JNIEXPORT jintArray JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClie
  * Signature: ()J
  */
 JNIEXPORT jlong JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_getCurrentTimestep_1
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject) {
+
+  }
 
 /*
  * Class:     org_eclipse_mosaic_fed_carla_libcarla_CarlaClient
@@ -70,4 +86,6 @@ JNIEXPORT jlong JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_g
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_eclipse_mosaic_fed_carla_libcarla_CarlaClient_applySettings_1
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject) {
+    
+  }
