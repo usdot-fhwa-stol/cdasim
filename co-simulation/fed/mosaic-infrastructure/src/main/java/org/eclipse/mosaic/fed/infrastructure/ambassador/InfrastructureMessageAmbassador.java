@@ -69,7 +69,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private InfrastructureRegistrationReceiver infrastructureRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
 
-    private CarmaV2xMessageReceiver v2xMessageReceiver = new CarmaV2xMessageReceiver(1515);
+    private CarmaV2xMessageReceiver v2xMessageReceiver = new CarmaV2xMessageReceiver(1616);
     private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
