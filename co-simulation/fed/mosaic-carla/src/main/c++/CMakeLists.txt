@@ -12,9 +12,15 @@ if (JNI_FOUND)
 endif()
 include(UseJava)
 
+FIND_PACKAGE( Boost 1.71 COMPONENTS thread filesystem REQUIRED )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+
 add_library(carla-jni SHARED
     libcarla-jni.cpp)
 set_target_properties(carla-jni PROPERTIES SUFFIX ".so")
+
+add_executable(libcarla-test
+	libcarla-test.cpp)
 
 include_directories(
     ${JNI_INCLUDE_DIRS}
@@ -22,7 +28,31 @@ include_directories(
     carla)
 
 target_link_libraries(carla-jni
-    ${CMAKE_SOURCE_DIR}/libcarla_client.a
+    ${CMAKE_SOURCE_DIR}/lib/libcarla_client.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_atomic.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_filesystem.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_numpy38.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_program_options.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_system.a
+    ${CMAKE_SOURCE_DIR}/lib/libDetour.a
+    ${CMAKE_SOURCE_DIR}/lib/libDetourCrowd.a
+    ${CMAKE_SOURCE_DIR}/lib/libDetourTileCache.a
+    ${CMAKE_SOURCE_DIR}/lib/libRecast.a
+    ${CMAKE_SOURCE_DIR}/lib/librpc.a
+    ${JNI_LIBRARIES})
+
+target_link_libraries(libcarla-test
+    ${CMAKE_SOURCE_DIR}/lib/libcarla_client.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_atomic.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_filesystem.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_numpy38.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_program_options.a
+    ${CMAKE_SOURCE_DIR}/lib/libboost_system.a
+    ${CMAKE_SOURCE_DIR}/lib/libDetour.a
+    ${CMAKE_SOURCE_DIR}/lib/libDetourCrowd.a
+    ${CMAKE_SOURCE_DIR}/lib/libDetourTileCache.a
+    ${CMAKE_SOURCE_DIR}/lib/libRecast.a
+    ${CMAKE_SOURCE_DIR}/lib/librpc.a
     ${JNI_LIBRARIES})
 
 install(TARGETS carla-jni
