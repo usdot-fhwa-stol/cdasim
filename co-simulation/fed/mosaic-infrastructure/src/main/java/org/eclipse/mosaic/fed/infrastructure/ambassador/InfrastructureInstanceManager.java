@@ -20,7 +20,7 @@ import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoCircle;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
@@ -91,7 +91,7 @@ public class InfrastructureInstanceManager {
      * 
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
-            int timeSyncPort, GeoPoint location) {
+            int timeSyncPort, CartesianPoint location) {
         InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
                 timeSyncPort, location);
         try {
@@ -125,13 +125,13 @@ public class InfrastructureInstanceManager {
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
-                sender.getInfrastructureId(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
+                sender.getInfrastructureId(), sender.getLocation().toGeo()).viaChannel(AdHocChannel.CCH);
 
         // TODO: Get maximum broadcast radius from configuration file.
-        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
+        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation().toGeo(), 300));
 
         return new V2xMessageTransmission(time, new ExternalV2xMessage(routing,
-                new ExternalV2xContent(time, sender.getLocation(), txMsg.getPayload())));
+                new ExternalV2xContent(time, sender.getLocation().toGeo(), txMsg.getPayload())));
     }
 
     /**

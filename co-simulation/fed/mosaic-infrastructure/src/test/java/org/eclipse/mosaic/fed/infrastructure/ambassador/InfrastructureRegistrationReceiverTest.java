@@ -56,7 +56,7 @@
      @Test
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
-         String json = "{\"rxMessageIpAddress\":\"192.168.0.1\",\"infrastructureId\":\"5678\",\"rxMessagePort\":1234,\"timeSyncPort\":5678,\"location\":{\"latitude\":37.3382,\"longitude\":121.8863}}";
+         String json = "{\"rxMessageIpAddress\":\"192.168.0.1\",\"infrastructureId\":\"rsu_1\",\"rxMessagePort\":1234,\"timeSyncPort\":5678,\"location\":{\"x\":37.3382,\"y\":121.8863, \"z\":1.0}}";
          byte[] buffer = json.getBytes();
  
          // Send the test message to the receiver
@@ -75,11 +75,12 @@
          double delta = 0.001; // maximum allowed difference for GeoLocation lat and lon
  
          assertEquals("192.168.0.1", msg.getRxMessageIpAddress());
-         assertEquals("5678", msg.getInfrastructureId());
+         assertEquals("rsu_1", msg.getInfrastructureId());
          assertEquals(1234, msg.getRxMessagePort());
          assertEquals(5678, msg.getTimeSyncPort());
-         assertEquals(37.3382, msg.getLocation().getLatitude(), delta);
-         assertEquals(121.8863, msg.getLocation().getLongitude(), delta);
+         assertEquals(37.3382, msg.getLocation().getX(), delta);
+         assertEquals(121.8863, msg.getLocation().getY(), delta);
+         assertEquals(1.0, msg.getLocation().getZ(), delta);
      }
  
  }

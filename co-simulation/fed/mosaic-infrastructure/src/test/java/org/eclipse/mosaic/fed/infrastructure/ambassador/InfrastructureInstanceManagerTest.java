@@ -21,7 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import java.net.InetAddress;
 
-import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -31,14 +31,14 @@ public class InfrastructureInstanceManagerTest {
     private InfrastructureInstanceManager manager;
     private InfrastructureRegistrationMessage registration;
     private InetAddress ipAddress;
-    private GeoPoint location;
+    private CartesianPoint location;
 
     @Before
     public void setUp() throws Exception {
         manager = new InfrastructureInstanceManager();
         registration = mock(InfrastructureRegistrationMessage.class);
         ipAddress = mock(InetAddress.class);
-        location = mock(GeoPoint.class);
+        location = mock(CartesianPoint.class);
     }
 
     @Test
@@ -48,7 +48,7 @@ public class InfrastructureInstanceManagerTest {
         int rxMessagePort = 1234;
         int timeSyncPort = 5678;
         String ipAddressString = "127.0.0.1";
-        GeoPoint pt = GeoPoint.latLon(37.3382, -121.8863);
+        CartesianPoint pt = CartesianPoint.xyz(37.3382, -121.8863, 1.0);
 
         // Mock the behavior of the registration object
         mockRegistrationObject(infrastructureId, rxMessagePort, timeSyncPort, ipAddressString, pt);
@@ -61,7 +61,7 @@ public class InfrastructureInstanceManagerTest {
     }
 
     private void mockRegistrationObject(String infrastructureId, int rxMessagePort, int timeSyncPort,
-            String ipAddressString, GeoPoint pt) {
+            String ipAddressString, CartesianPoint pt) {
         // Mock the behavior of the registration object
         Mockito.when(registration.getInfrastructureId()).thenReturn(infrastructureId);
         Mockito.when(registration.getRxMessagePort()).thenReturn(rxMessagePort);

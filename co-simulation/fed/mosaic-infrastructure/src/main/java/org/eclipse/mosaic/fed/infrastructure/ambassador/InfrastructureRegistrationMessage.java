@@ -16,7 +16,7 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
 /**
  * A message to be sent by Infrastructure Device when it registers with the
@@ -39,7 +39,7 @@ public class InfrastructureRegistrationMessage {
     private int timeSyncPort = 1517;
 
     // Geo-coordinate of the Infrastructure Device location
-    private GeoPoint location = null;
+    private CartesianPoint location = null;
 
     /**
      * Constructor for an `InfrastructureRegistrationMessage` instance
@@ -55,7 +55,7 @@ public class InfrastructureRegistrationMessage {
      *                           location
      */
     public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId,
-            int rxMessagePort, int timeSyncPort, GeoPoint location) {
+            int rxMessagePort, int timeSyncPort, CartesianPoint location) {
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.infrastructureId = infrastructureId;
         this.rxMessagePort = rxMessagePort;
@@ -110,7 +110,7 @@ public class InfrastructureRegistrationMessage {
      * 
      * @return The Geo-coordinate of the Infrastructure Device location
      */
-    public GeoPoint getLocation() {
+    public CartesianPoint getLocation() {
         return this.location;
     }
 
@@ -161,7 +161,7 @@ public class InfrastructureRegistrationMessage {
      * @param location the new GeoPoint object representing the location of the
      *                 Infrastructure Device
      */
-    public void setLocation(GeoPoint location) {
+    public void setLocation(CartesianPoint location) {
         this.location = location;
     }
 

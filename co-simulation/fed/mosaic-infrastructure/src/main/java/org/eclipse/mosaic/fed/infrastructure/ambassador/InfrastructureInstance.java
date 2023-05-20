@@ -16,7 +16,7 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -35,7 +35,7 @@ public class InfrastructureInstance {
     private InetAddress targetAddress;
     private int rxMessagePort;
     private int timeSyncPort;
-    private GeoPoint location = null;
+    private CartesianPoint location = null;
     private DatagramSocket rxMsgsSocket = null;
 
     /**
@@ -50,7 +50,7 @@ public class InfrastructureInstance {
      *                         simulated environment
      */
     public InfrastructureInstance(String infrastructureId, InetAddress targetAddress,
-            int rxMessagePort, int timeSyncPort, GeoPoint location) {
+            int rxMessagePort, int timeSyncPort, CartesianPoint location) {
         this.infrastructureId = infrastructureId;
         this.targetAddress = targetAddress;
         this.rxMessagePort = rxMessagePort;
@@ -79,9 +79,9 @@ public class InfrastructureInstance {
     /**
      * Returns the location of the infrastructure node in the simulated environment
      * 
-     * @return GeoPoint the location of the infrastructure node
+     * @return CartesianPoint the location of the infrastructure node
      */
-    public GeoPoint getLocation() {
+    public CartesianPoint getLocation() {
         return this.location;
     }
 
@@ -90,7 +90,7 @@ public class InfrastructureInstance {
      * 
      * @param location the location to set
      */
-    public void setLocation(GeoPoint location) {
+    public void setLocation(CartesianPoint location) {
         this.location = location;
     }
 
