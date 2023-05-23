@@ -64,8 +64,9 @@ public class MosaicConformVehicleIdTransformer implements IdTransformer<String, 
     @Override
     public String fromExternalId(String sumoVehicleId) {
         // do not change Carla vehicle ID
-        if (sumoVehicleId.startsWith("carla")) {
+        if (sumoVehicleId.startsWith("carma")) {
             sumoToMosaicVehicleIdMap.put(sumoVehicleId, sumoVehicleId);
+            log.info("Assigned vehicle id {}", sumoVehicleId);
             return sumoVehicleId;
         }
 

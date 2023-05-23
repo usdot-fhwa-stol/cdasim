@@ -331,9 +331,6 @@ class SumoSimulation(object):
 
         self.net = sumo_net
 
-        # Variable to asign an id to new added actors.
-        self._sequential_id = 0
-
         # Structures to keep track of the spawned and destroyed vehicles at each time step.
         self.spawned_actors = set()
         self.destroyed_actors = set()
@@ -411,15 +408,16 @@ class SumoSimulation(object):
 
         return SumoActor(type_id, vclass, transform, signals, extent, color)
 
-    def spawn_actor(self, type_id, color=None):
+    def spawn_actor(self, type_id, role_name, color=None):
         """
         Spawns a new actor.
 
             :param type_id: vtype to be spawned.
+            :param role_name: vehicle role name to register to carla ambassador
             :param color: color attribute for this specific actor.
             :return: actor id if the actor is successfully spawned. Otherwise, INVALID_ACTOR_ID.
         """
-        actor_id = 'carla_' + str(self._sequential_id)
+        actor_id = role_name
         try:
             traci.vehicle.add(actor_id, 'carla_route', typeID=type_id)
         except traci.exceptions.TraCIException as error:
@@ -429,8 +427,6 @@ class SumoSimulation(object):
         if color is not None:
             color = color.split(',')
             traci.vehicle.setColor(actor_id, color)
-
-        self._sequential_id += 1
 
         return actor_id
 
