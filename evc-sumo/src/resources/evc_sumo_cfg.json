@@ -14,38 +14,6 @@
       "evcPhases": [{"evcPhaseId": 2, "sumoTlStateIndex":[0,3], "sumoInductionLoopId": "e1_0"},
                     {"evcPhaseId": 6, "sumoTlStateIndex":[1,4], "sumoInductionLoopId": "e1_1"},
                     {"evcPhaseId": 4, "sumoTlStateIndex":[2,5], "sumoInductionLoopId": "e1_2"} ]
-    },
-    {
-      "controllerId": 2,
-      "controllerCfgPath": "resources/148.cfg",
-      "start_time": null,
-      "https_port": 0,
-      "web_port": 0,
-      "snmp_port": 0,
-      "harness_port": 0,
-      "controller_speed": null,
-      "sumoTlId": 148,
-      "enableWebPanel": true,
-      "evcPhases": [{"evcPhaseId": 2, "sumoTlStateIndex":[7,8,10], "sumoInductionLoopId": "e1_3"},
-                    {"evcPhaseId": 6, "sumoTlStateIndex":[4,5,6], "sumoInductionLoopId": "e1_4"},
-                    {"evcPhaseId": 4, "sumoTlStateIndex":[2,3,11], "sumoInductionLoopId": "e1_5"},
-                    {"evcPhaseId": 8, "sumoTlStateIndex":[0,1,9], "sumoInductionLoopId": "e1_6"} ]
-    },
-    {
-      "controllerId": 3,
-      "controllerCfgPath": "resources/916.cfg",
-      "start_time": null,
-      "https_port": 0,
-      "web_port": 0,
-      "snmp_port": 0,
-      "harness_port": 0,
-      "controller_speed": null,
-      "sumoTlId": 916,
-      "enableWebPanel": true,
-      "evcPhases": [{"evcPhaseId": 2, "sumoTlStateIndex":[4,10,11], "sumoInductionLoopId": "e1_7"},
-                    {"evcPhaseId": 6, "sumoTlStateIndex":[0,2,6], "sumoInductionLoopId": "e1_8"},
-                    {"evcPhaseId": 4, "sumoTlStateIndex":[1,3,8], "sumoInductionLoopId": "e1_9"},
-                    {"evcPhaseId": 8, "sumoTlStateIndex":[5,7,9], "sumoInductionLoopId": "e1_10"} ]
     }
   ]
 }
