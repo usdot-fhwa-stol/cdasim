@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-03-26 13:56:24 by Eclipse SUMO netedit Version 1.15.0
+<!-- generated on 2023-05-23 13:36:19 by Eclipse SUMO netedit Version 1.16.0
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- Routes -->
+    <route id="r_0" edges="-7 -8 -9 -10 -11 -12 -13 -14 -36 -37 -38 -39 33 47 44 39 38 37 36 35"/>
     <!-- Vehicles, persons and containers (sorted by depart) -->
-    <flow id="f_0" begin="0.00" from="51" to="-1" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_1" begin="0.00" from="52" to="15" via="16" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_2" begin="0.00" from="-15" to="-51" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_3" begin="0.00" from="-29" to="-17" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_4" begin="0.00" from="-15" to="-17" via="-16" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_5" begin="0.00" from="1" to="-52" via="0" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_6" begin="0.00" from="17" to="-1" via="-30" end="3600.00" vehsPerHour="1800.00"/>
-    <flow id="f_7" begin="0.00" from="51" to="29" via="30" end="3600.00" vehsPerHour="1800.00"/>
+    <vehicle id="v_0" depart="999.00" route="r_0"/>
 </routes>
