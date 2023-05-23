@@ -53,6 +53,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for CARMA message
@@ -154,11 +155,14 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
 
         try {
             List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
-            for (CarmaRegistrationMessage reg : newRegistrations) {
-                carmaInstanceManager.onNewRegistration(reg);
-                onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
+            // Filter for new registrations, ignore ones we've received before even if they shouldn't hurt anything
+            for (CarmaRegistrationMessage reg :
+                        newRegistrations.stream()
+                            .filter(a -> !carmaInstanceManager.checkIfRegistered(a.getCarlaVehicleRole()))
+                            .collect(Collectors.toList())) {
+                    carmaInstanceManager.onNewRegistration(reg);
+                    onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
             }
-
 
             if (currentSimulationTime == 0) {
                 // For the first timestep, clear the message receive queues.

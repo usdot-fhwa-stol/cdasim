@@ -23,6 +23,8 @@ public class CarlaClient {
     }
 
     public String getClientVersion() {
+        libpython_clj2.java_api.importModule("carla_mosaic_bridge.py");
+        libpython_clj2.java_api.call()
         return getClientVersion_();
     }
 
