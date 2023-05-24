@@ -2,11 +2,11 @@
   "controllers": [
     {
       "controllerId": 1,
-      "controllerCfgPath": "resources/278.cfg",
+      "controllerCfgPath": "resources/test_3.cfg",
       "start_time": null,
       "https_port": 0,
       "web_port": 0,
-      "snmp_port": 0,
+      "snmp_port": 5050,
       "harness_port": 0,
       "controller_speed": null,
       "sumoTlId": 278,
