@@ -5,12 +5,12 @@
         "randomSeed": 212323853,
         "projection": {
             "centerCoordinates": {
-                "latitude": 52.63,
-                "longitude": 13.56
+                "latitude": 0,
+                "longitude": 0
             },
             "cartesianOffset": {
-                "x": 503.02,
-                "y": 423.76
+                "x": 0,
+                "y": 0
             }
         },
         "network": {
