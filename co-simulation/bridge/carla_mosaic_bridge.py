@@ -99,9 +99,13 @@ def main(args):
                                                 args.sync_vehicle_color, args.sync_vehicle_lights)
 
     # start simulation synchronization
+    init_time = 0.0
     try:
         while True:
             synchronization.tick()
+            if init_time == 0.0:
+                init_time = world.get_snapshot().timestamp.elapsed_seconds
+            print("CARLA Simulation Time:" + str(world.get_snapshot().timestamp.elapsed_seconds - init_time))
 
     except KeyboardInterrupt:
         logging.info('Cancelled by user.')
