@@ -80,9 +80,20 @@
         <module>app/tutorials/traffic-light-communication</module>
         <module>app/tutorials/weather-warning</module>
         <module>app/tutorials/external-communication</module>
+        <module>lib/mosaic-carma-utils</module>
     </modules>
 
     <properties>
+        <java.version>11</java.version>
+        <sonar.organization>usdot-fhwa-stol</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        
+        <!-- JaCoCo Properties -->
+        <jacoco.version>0.8.8</jacoco.version>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.language>java</sonar.language>	    
         <mosaic.version>22.1-SNAPSHOT</mosaic.version>
         <parent.dir>.</parent.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -459,6 +470,8 @@
                             <header>${parent.dir}/legal/templates/license-header-2020.txt</header>
                             <header>${parent.dir}/legal/templates/license-header-2021.txt</header>
                             <header>${parent.dir}/legal/templates/cosimulation-license-header-2021.txt</header>
+                            <header>${parent.dir}/legal/templates/leidos-license-header-2022.txt</header>
+                            <header>${parent.dir}/legal/templates/leidos-license-header-2023.txt</header>
                         </validHeaders>
                         <headerDefinitions>
                         </headerDefinitions>

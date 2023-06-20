@@ -1,0 +1,13 @@
+name: Docker build
+
+on:
+  push:
+    branches-ignore:
+      - "develop"
+      - "release/*"
+  pull_request:
+      types: [opened, synchronize, reopened]
+
+jobs:
+  docker:
+    uses: usdot-fhwa-stol/actions/.github/workflows/docker.yml@main

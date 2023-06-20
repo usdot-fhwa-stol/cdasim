@@ -18,6 +18,7 @@ import org.eclipse.mosaic.lib.util.gson.TimeFieldAdapter;
 import com.google.gson.annotations.JsonAdapter;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * The Infrastructure Message Ambassador configuration class.
@@ -33,6 +34,8 @@ public class InfrastructureConfiguration implements Serializable {
     @JsonAdapter(TimeFieldAdapter.LegacyMilliSeconds.class)
     public Long updateInterval = 1000L;
 
-    // The RSU id which sends messages.
+    /**
+     * The ID of the RSU that sends messages.
+     */
     public String senderRSUId;
 }

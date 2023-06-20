@@ -138,17 +138,17 @@
             <!--######################## LOGGER ############################### -->
 
             <!-- new appenders for anything from Eclipse MOSAIC -->
-            <logger name="SimulationProgress" additivity="false" level="INFO">
+            <logger name="SimulationProgress" additivity="false" level="TRACE">
                 <appender-ref ref="STDOUT-Progress"/>
             </logger>
-            <logger name="MosaicStarter" additivity="false" level="INFO">
+            <logger name="MosaicStarter" additivity="false" level="TRACE">
                 <appender-ref ref="MosaicLog"/>
             </logger>
             <logger name="org.eclipse.mosaic.rti" additivity="false" level="INFO">
                 <appender-ref ref="STDOUT"/>
                 <appender-ref ref="MosaicLog"/>
             </logger>
-            <logger name="org.eclipse.mosaic.rti.time" additivity="false" level="DEBUG">
+            <logger name="org.eclipse.mosaic.rti.time" additivity="false" level="INFO">
                 <appender-ref ref="MosaicLog"/>
             </logger>
             <logger name="org.eclipse.mosaic.lib" additivity="false" level="INFO">
@@ -175,37 +175,37 @@
                 <appender-ref ref="CellLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.application.ambassador.navigation" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.application.ambassador.navigation" additivity="false" level="TRACE">
                 <appender-ref ref="NavigationLog"/>
             </logger>
-            <logger name="org.eclipse.mosaic.lib.routing" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.lib.routing" additivity="false" level="TRACE">
                 <appender-ref ref="NavigationLog"/>
             </logger>
-            <logger name="com.graphhopper" additivity="false" level="INFO">
+            <logger name="com.graphhopper" additivity="false" level="TRACE">
                 <appender-ref ref="NavigationLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.mapping" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.mapping" additivity="false" level="TRACE">
                 <appender-ref ref="MappingLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.environment" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.environment" additivity="false" level="TRACE">
                 <appender-ref ref="EnvironmentLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.sumo" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.sumo" additivity="false" level="TRACE">
                 <appender-ref ref="TrafficLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.carla" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.carla" additivity="false" level="TRACE">
                 <appender-ref ref="CarlaLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.carma" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.carma" additivity="false" level="TRACE">
                 <appender-ref ref="CarmaLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.infrastructure" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.infrastructure" additivity="false" level="TRACE">
                 <appender-ref ref="InfrastructureLog"/>
             </logger>
 
@@ -213,15 +213,19 @@
                 <appender-ref ref="MosaicLog"/>
             </logger>
 
-            <logger name="activities" additivity="false" level="OFF">
+            <logger name="activities" additivity="false" level="TRACE">
                 <appender-ref ref="ActivityLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorOutput" additivity="false" level="WARN">
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorOutput" additivity="false" level="INFO">
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorError" additivity="false" level="ERROR">
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorError" additivity="false" level="INFO">
+                <appender-ref ref="CommunicationDetailsLog"/>
+            </logger>
+            
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador" additivity="false" level="INFO">
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>
             <!-- All other stuff, which was not logged by other loggers before goes

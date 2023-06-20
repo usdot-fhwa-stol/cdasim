@@ -427,6 +427,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             // just to be sure make a failsafe
             traci = new TraciClient(sumoConfig, socket);
 
+            // set traci client order number for multi-clinets case
+            traci.setOrder(1);
+
             if (traci.getCurrentVersion().getApiVersion() < SumoVersion.LOWEST.getApiVersion()) {
                 throw new InternalFederateException(String.format(
                         "The installed version of SUMO ( <= %s) is not compatible with Eclipse MOSAIC."

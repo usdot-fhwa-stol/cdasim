@@ -28,17 +28,16 @@ sudo apt-get update
 sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar python3.6-dev \
   pkg-config sqlite3 autoconf libtool curl make libxml2 libsqlite3-dev \
   libxml2-dev cmake libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev \
-  libgl2ps-dev python3.7 python3-pip automake openjdk-8-jdk ant python3.7-dev \
+  libgl2ps-dev python3.7 python3-pip automake openjdk-11-jdk ant python3.7-dev \
   python3.7-distutils x11-xserver-utils dconf-editor dbus-x11 libglvnd0 libgl1 \
   libglx0 libegl1 libxext6 libx11-6 python3-dev \
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
-  wget vim nano xterm default-jdk libprotobuf-dev
+  wget vim nano xterm libprotobuf-dev
 sudo rm -rf /var/lib/apt/lists/*
 export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
 #update-alternatives --set python /usr/bin/python3.7
 sudo apt-get clean
-sudo rm -rf /var/cache/oracle-jdk8-installer
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 sudo update-alternatives --set python /usr/bin/python3.7
@@ -59,24 +58,13 @@ cd /home/carma/src
 #make check
 #sudo make install
 
-# Install NS-3
-#cd "/home/carma/src/co-simulation tool/bundle/src/assembly/resources/fed/ns3/"
-# Added sudo cp -ar ns-3.28/build/ns /usr/include before "Build ns3-federate" in ns3_installer.sh
-#chmod +x ns3_installer.sh
-#set -x
-#./ns3_installer.sh -q
-#TODO: Add expore NS3_HOME=path_to_run.sh to /bin/fed/ns3/run.sh
-
-# Install SUMO-1.12.0
+# Install SUMO-1.15.0
 cd /home/carma/src/
-wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_12_0.tar.gz"
+wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_15_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
-tar xvf v1_12_0.tar.gz -C /opt/sumo
-sudo cp co-simulation/traci_update/constants.py /opt/sumo/sumo-1_12_0/tools/traci
-sudo cp co-simulation/traci_update/connection.py /opt/sumo/sumo-1_12_0/tools/traci
-sudo cp co-simulation/traci_update/main.py /opt/sumo/sumo-1_12_0/tools/traci
-cd /opt/sumo/sumo-1_12_0
+tar xvf v1_15_0.tar.gz -C /opt/sumo
+cd /opt/sumo/sumo-1_15_0
 mkdir -p build/cmake-build && cd build/cmake-build
 cmake ../..
 make -j$(nproc)
@@ -87,16 +75,16 @@ python3.7 -m pip install pip
 python3.7 -m pip install lxml==4.5.0
 
 # Install CARLA
+CARLA_TAR="CARLA_0.9.10.tar.gz"
 cd /home/carma/src/
-wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
-if [[ ! -f '/home/carma/src/CARLA_0.9.10.tar.gz' ]]; then
-    echo "!!! CARLA not present in the installation directy, please download CARLA_0.9.10.tar.gz into the work directory and rebuild. !!!"
-    exit -1
+if [[ ! -f "$CARLA_TAR" ]]; then
+    echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
+    wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
 fi
 
 sudo mkdir -p /opt/carla
 sudo chown -R carma:carma /opt/carla
-tar xzvf CARLA_0.9.10.tar.gz -C /opt/carla
+tar xzvf "$CARLA_TAR" -C /opt/carla
 
 # Installation of Co-Simulation Tool
 wget "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
@@ -119,5 +107,12 @@ cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 # Deploy scenario files
 cd /home/carma/src/co-simulation
 unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
+
+# Install NS-3
+cd "/opt/carma-simulation/bin/fed/ns3/"
+chmod +x ns3_installer.sh
+set -x
+./ns3_installer.sh -q
+sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
 
 echo "Build complete!!!"

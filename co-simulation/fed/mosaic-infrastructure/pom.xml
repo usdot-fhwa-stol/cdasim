@@ -26,6 +26,11 @@
       <version>${mosaic.version}</version>
     </dependency>
     <dependency>
+        <groupId>gov.dot.fhwa.saxton</groupId>
+        <artifactId>mosaic-carma-utils</artifactId>
+        <version>${mosaic.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.mosaic</groupId>
       <artifactId>mosaic-interactions</artifactId>
       <version>${mosaic.version}</version>
@@ -54,6 +59,22 @@
       <version>4.11</version>
       <scope>test</scope>
     </dependency>
+      <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-application</artifactId>
+          <version>22.1-SNAPSHOT</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
+          <groupId>jakarta.xml.bind</groupId>
+          <artifactId>jakarta.xml.bind-api</artifactId>
+          <version>2.3.2</version>
+      </dependency>
+      <dependency>
+          <groupId>org.glassfish.jaxb</groupId>
+          <artifactId>jaxb-runtime</artifactId>
+          <version>2.3.2</version>
+      </dependency>
   </dependencies>
 
   <profiles>

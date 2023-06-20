@@ -14,7 +14,7 @@
     <name>Eclipse MOSAIC Runtime Infrastructure Implementation</name>
 
     <properties>
-        <skip.jar-test-creation>true</skip.jar-test-creation>
+        <skip.jar-test-creation>false</skip.jar-test-creation>
     </properties>
 
     <dependencies>
@@ -60,7 +60,7 @@
                             </excludes>
                             <classifier/>
                             <finalName>TestFederate</finalName>
-                            <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
+                            <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
                         </configuration>
                         <goals>
                             <goal>test-jar</goal>

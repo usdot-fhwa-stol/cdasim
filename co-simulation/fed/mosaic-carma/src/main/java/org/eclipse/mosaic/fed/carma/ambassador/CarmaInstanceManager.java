@@ -16,32 +16,34 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Session management class for CARMA Platform instances communicating with MOSAIC
  */
 public class CarmaInstanceManager {
     private Map<String, CarmaInstance>  managedInstances = new HashMap<>();
-    private double currentSimulationTime;
 
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
     private static final int TARGET_PORT = 5374;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
@@ -61,20 +63,24 @@ public class CarmaInstanceManager {
             }
         } else {
             // log warning
+            log.warn("Received duplicate registration for vehicle " + registration.getCarlaVehicleRole());
         }
     }
     /**
      * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
      * @param sourceAddr The V2X Message received
      * @param txMsg The Host ID of the vehicle receiving the data
+     * @param time The timestamp at which the interaction occurs
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
      */
-    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg) {
+    public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         CarmaInstance sender = null;
         for (CarmaInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {
                 sender = ci;
+                break;
             }
+            log.info("Instance {} with target address {} can not match with source address {}", ci.getCarlaRoleName(), ci.getTargetAddress(), sourceAddr.toString());
         }
 
         if (sender == null) {
@@ -85,11 +91,17 @@ public class CarmaInstanceManager {
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
                 sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
 
-        MessageRouting routing = messageRoutingBuilder.topoBroadCast(1);
+        // TODO: Get maximum broadcast radius from configuration file.
+        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
-        return new V2xMessageTransmission((long) currentSimulationTime, new ExternalV2xMessage(routing,
-                new ExternalV2xContent((long) currentSimulationTime, sender.getLocation(), txMsg.getPayload())));
-
+        log.info("Preparing to generate V2XMessageTransmission interaction for transmission on MOSAIC event bus...");
+        log.info("sim time: " + time);
+        log.info("sender id: " + sender.getCarlaRoleName());
+        log.info("location: " + sender.getLocation().toString());
+        log.info("txMsg non-null? " + (txMsg != null));
+        log.info("payload: " + txMsg.getPayload());
+        return new V2xMessageTransmission((long) time, new ExternalV2xMessage(routing,
+                new ExternalV2xContent((long) time, sender.getLocation(), txMsg.getPayload())));
     }
 
     /**
@@ -135,7 +147,11 @@ public class CarmaInstanceManager {
         CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, targetPort);
         try {
             tmp.bind();
+            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", carlaRoleName);
         } catch (IOException e) {
+            log.error("Failed to bind CARMA instance with ID '{}' to its RX message socket: {}",
+            carlaRoleName, e.getMessage());
+            log.error("Stack trace:", e);
             throw new RuntimeException(e);
         }
         managedInstances.put(carlaRoleName, tmp);

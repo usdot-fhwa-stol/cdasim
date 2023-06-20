@@ -15,12 +15,14 @@
 
 package org.eclipse.mosaic.lib.coupling;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.interactions.mapping.TrafficLightRegistration;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
+import org.eclipse.mosaic.interactions.mapping.advanced.ExternalVehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.coupling.ClientServerChannel.CMD;
 import org.eclipse.mosaic.lib.coupling.ClientServerChannel.NodeDataContainer;
@@ -43,20 +45,12 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.federatestarter.DockerFederateExecutor;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * The Ambassador for coupling a network simulator to MOSAIC RTI.
@@ -283,6 +277,8 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             this.receiveTypedInteraction((V2xMessageTransmission) interaction);
         } else if (interaction.getTypeId().equals(AdHocCommunicationConfiguration.TYPE_ID)) {
             this.receiveTypedInteraction((AdHocCommunicationConfiguration) interaction);
+        } else if (interaction.getTypeId().equals((ExternalVehicleRegistration.TYPE_ID))) {
+            this.receiveTypedInteraction((ExternalVehicleRegistration) interaction);
         }
     }
 
@@ -359,6 +355,30 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
     private synchronized void receiveTypedInteraction(VehicleRegistration interaction) {
         this.log.debug(
                 "Received VehicleRegistration for vehicle {} at simulation time {} ",
+                interaction.getMapping().getName(),
+                interaction.getTime()
+        );
+        VehicleMapping av = interaction.getMapping();
+        // We have got this Vehicle already
+        if (idTransformer.containsInternalId(av.getName()) || newVirtualVehicles.containsKey(av.getName())) {
+            this.log.warn("A vehicle with ID {} was already added. Ignoring message.", av.getName());
+            return;
+        }
+        // Add new virtual vehicle-container without config message or position
+        newVirtualVehicles.put(av.getName(), new VirtualNodeContainer(null, null));
+    }
+
+    /**
+     * Store nodes for later adding based on received vehicle mappings.
+     * <br>
+     * The unique mapping of RTI string-ids to federate integer-ids
+     * is also done in the handling of the vehicle movements
+     *
+     * @param interaction interaction containing a mapping of added vehicles
+     */
+    private synchronized void receiveTypedInteraction(ExternalVehicleRegistration interaction) {
+        this.log.debug(
+                "Received ExternalVehicleRegistration for vehicle {} at simulation time {} ",
                 interaction.getMapping().getName(),
                 interaction.getTime()
         );

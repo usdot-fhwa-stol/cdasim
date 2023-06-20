@@ -66,6 +66,9 @@ class SimulationSynchronization(object):
             self.sumo.switch_off_traffic_lights()
         elif tls_manager == 'sumo':
             self.carla.switch_off_traffic_lights()
+        elif tls_manager == 'EVC':
+            # self.sumo.switch_off_traffic_lights()
+            self.carla.switch_off_traffic_lights()
 
         # Mapped actor ids.
         self.sumo2carla_ids = {}  # Contains only actors controlled by sumo.
@@ -134,7 +137,13 @@ class SimulationSynchronization(object):
                 carla_tl_state = BridgeHelper.get_carla_traffic_light_state(sumo_tl_state)
 
                 self.carla.synchronize_traffic_light(landmark_id, carla_tl_state)
+        elif self.tls_manager == 'EVC':
+            common_landmarks = self.sumo.traffic_light_ids & self.carla.traffic_light_ids
+            for landmark_id in common_landmarks:
+                sumo_tl_state = self.sumo.get_traffic_light_state_from_sumo(landmark_id)
+                carla_tl_state = BridgeHelper.get_carla_traffic_light_state(sumo_tl_state)
 
+                self.carla.synchronize_traffic_light(landmark_id, carla_tl_state)
         # # -----------------
         # # carla-->sumo sync
         # # -----------------
@@ -144,11 +153,11 @@ class SimulationSynchronization(object):
         carla_spawned_actors = self.carla.spawned_actors - set(self.sumo2carla_ids.values())
         for carla_actor_id in carla_spawned_actors:
             carla_actor = self.carla.get_actor(carla_actor_id)
-
+            role_name = self.carla.get_actor(carla_actor_id).attributes["role_name"]
             type_id = BridgeHelper.get_sumo_vtype(carla_actor)
             color = carla_actor.attributes.get('color', None) if self.sync_vehicle_color else None
             if type_id is not None:
-                sumo_actor_id = self.sumo.spawn_actor(type_id, color)
+                sumo_actor_id = self.sumo.spawn_actor(type_id, role_name, color)
                 if sumo_actor_id != INVALID_ACTOR_ID:
                     self.carla2sumo_ids[carla_actor_id] = sumo_actor_id
 
@@ -208,4 +217,3 @@ class SimulationSynchronization(object):
         # Closing sumo and carla client.
         self.carla.close()
         self.sumo.close()
-

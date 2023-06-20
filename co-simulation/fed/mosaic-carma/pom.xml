@@ -26,6 +26,11 @@
       <version>${mosaic.version}</version>
     </dependency>
     <dependency>
+        <groupId>gov.dot.fhwa.saxton</groupId>
+        <artifactId>mosaic-carma-utils</artifactId>
+        <version>${mosaic.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.8.9</version>
@@ -69,6 +74,21 @@
           <groupId>javax.xml.bind</groupId>
           <artifactId>jaxb-api</artifactId>
           <version>2.3.1</version>
+      </dependency>
+      <dependency>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+          <version>1.15</version>
+      </dependency>
+      <dependency>
+          <groupId>jakarta.xml.bind</groupId>
+          <artifactId>jakarta.xml.bind-api</artifactId>
+          <version>2.3.2</version>
+      </dependency>
+      <dependency>
+          <groupId>org.glassfish.jaxb</groupId>
+          <artifactId>jaxb-runtime</artifactId>
+          <version>2.3.2</version>
       </dependency>
   </dependencies>
 

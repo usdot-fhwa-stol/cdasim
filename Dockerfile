@@ -25,17 +25,15 @@ ARG VCS_REF
 ARG BUILD_DATE
 
 LABEL org.label-schema.schema-version="1.0"
-LABEL org.label-schema.name="carma-simulation"
+LABEL org.label-schema.name="cdasim"
 LABEL org.label-schema.description="XIL Simulation environment for evaluation and testing of the CARMA Platform"
 LABEL org.label-schema.vendor="Leidos"
 LABEL org.label-schema.version=${VERSION}
 LABEL org.label-schema.url="https://highways.dot.gov/research/research-programs/operations/CARMA"
-LABEL org.label-schema.vcs-url="https://github.com/usdot-fhwa-stol/carma-simulation/"
+LABEL org.label-schema.vcs-url="https://github.com/usdot-fhwa-stol/cdasim/"
 LABEL org.label-schema.vcs-ref=${VCS_REF}
 LABEL org.label-schema.build-date=${BUILD_DATE}
 
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
-RUN export JAVA_HOME
 
 # Env vars for the nvidia-container-runtime.
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -44,6 +42,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 RUN adduser $SUMO_USER --disabled-password
 
 # Enable sudo
+RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password
@@ -55,4 +54,4 @@ COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
 RUN docker/install.sh
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
-CMD [ "mosaic.sh", "-s", "HelloWorld" ]
+CMD [ "mosaic.sh", "-s", "Tiergarten" ]

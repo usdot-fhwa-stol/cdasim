@@ -163,19 +163,20 @@ class SumoTLManager(object):
         self._current_phase = {}  # {tlid: index_phase}
 
         for tlid in traci.trafficlight.getIDList():
-            self.subscribe(tlid)
 
             self._tls[tlid] = {}
             for tllogic in traci.trafficlight.getAllProgramLogics(tlid):
+
                 states = [phase.state for phase in tllogic.getPhases()]
                 parameters = tllogic.getParameters()
                 tl = SumoTLLogic(tlid, states, parameters)
                 self._tls[tlid][tllogic.programID] = tl
 
+
             # Get current status of the traffic lights.
             self._current_program[tlid] = traci.trafficlight.getProgram(tlid)
             self._current_phase[tlid] = traci.trafficlight.getPhase(tlid)
-
+        # print(self._tls)
         self._off = False
 
     @staticmethod
@@ -190,6 +191,7 @@ class SumoTLManager(object):
             traci.constants.TL_CURRENT_PROGRAM,
             traci.constants.TL_CURRENT_PHASE,
         ])
+
 
     @staticmethod
     def unsubscribe(tlid):
@@ -225,6 +227,43 @@ class SumoTLManager(object):
         for tlid, program_id in self._current_program.items():
             signals.update(self._tls[tlid][program_id].get_associated_signals(landmark_id))
         return signals
+
+
+    def get_state_from_sumo(self, landmark_id):
+        """
+        This function will send a request to get sumo current traffic light state via MOSAIC
+        Returns the traffic light state of the signals associated with the given landmark.
+        """
+        link_index_list = []
+        _tlid = -1
+        for tlid, link_index in self.get_all_associated_signals(landmark_id):
+            _tlid = tlid
+            link_index_list.append(link_index)
+
+        ## SUMO traffic light state, ex 'rrggrr' in a intersection
+        sumo_tl_state_string = traci.trafficlight.getRedYellowGreenState(_tlid)
+
+        ## Collect state for the current phase from a intersection,
+        ## ex, if intersection tl state 'rrggrr' and current phase (west=>east) occupies index 1 and 2
+        ## then phase_state_list will be ['g','g']
+        phase_state_list = []
+        for link_index in link_index_list:
+            phase_state_list.append(sumo_tl_state_string[link_index])
+
+        ## Since CARLA traffic light 3D model currently only have green, red and yellow states
+        ## which left and right turn arrow can not be shown. As a result, if one of state
+        ## in a phase is green or yellow then return green or yellow state for CARLA traffic light
+        ## when all states in a phase are red then set red to CARLA traffic light
+
+        # if one of the state in the list is 'g' then return green for CARLA
+        if 'g' in phase_state_list or 'G' in phase_state_list:
+            return SumoSignalState.GREEN_WITHOUT_PRIORITY
+        # else if one of the state in the list is 'y' then return yellow for CARLA
+        elif 'y' in phase_state_list:
+            return SumoSignalState.YELLOW
+        # else if all of the states in the list are 'r' then return r for CARLA
+        else:
+            return SumoSignalState.RED
 
     def get_state(self, landmark_id):
         """
@@ -291,9 +330,6 @@ class SumoSimulation(object):
         traci.init(host=host, port=port)
 
         self.net = sumo_net
-
-        # Variable to asign an id to new added actors.
-        self._sequential_id = 0
 
         # Structures to keep track of the spawned and destroyed vehicles at each time step.
         self.spawned_actors = set()
@@ -372,15 +408,16 @@ class SumoSimulation(object):
 
         return SumoActor(type_id, vclass, transform, signals, extent, color)
 
-    def spawn_actor(self, type_id, color=None):
+    def spawn_actor(self, type_id, role_name, color=None):
         """
         Spawns a new actor.
 
             :param type_id: vtype to be spawned.
+            :param role_name: vehicle role name to register to carla ambassador
             :param color: color attribute for this specific actor.
             :return: actor id if the actor is successfully spawned. Otherwise, INVALID_ACTOR_ID.
         """
-        actor_id = 'carla_' + str(self._sequential_id)
+        actor_id = role_name
         try:
             traci.vehicle.add(actor_id, 'carla_route', typeID=type_id)
         except traci.exceptions.TraCIException as error:
@@ -391,8 +428,6 @@ class SumoSimulation(object):
             color = color.split(',')
             traci.vehicle.setColor(actor_id, color)
 
-        self._sequential_id += 1
-
         return actor_id
 
     @staticmethod
@@ -401,6 +436,9 @@ class SumoSimulation(object):
         Destroys the given actor.
         """
         traci.vehicle.remove(actor_id)
+
+    def get_traffic_light_state_from_sumo(self, landmark_id):
+        return self.traffic_light_manager.get_state_from_sumo(landmark_id)
 
     def get_traffic_light_state(self, landmark_id):
         """
@@ -454,22 +492,10 @@ class SumoSimulation(object):
             self.firstTime = False
         traci.simulationStep()
         self.traffic_light_manager.tick()
+
         # Update data structures for the current frame.
         self.spawned_actors = set(traci.simulation.getDepartedIDList())
         self.destroyed_actors = set(traci.simulation.getArrivedIDList())
-
-        # Show v2x messages received by CARLA vehicles
-        v2xMessageReceived = traci.getV2xMessage()
-        if v2xMessageReceived is not None:
-            for message in v2xMessageReceived:
-                print(message)
-
-         # Send V2x message to CARLA ambassador
-        if self.sendV2xInterval == 10:
-            traci.setV2xMessage("carla_0; A V2X messages from CARLA simulator.")
-            self.sendV2xInterval = 0
-
-        self.sendV2xInterval += 1
 
     @staticmethod
     def close():

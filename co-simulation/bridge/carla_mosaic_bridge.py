@@ -160,7 +160,7 @@ if __name__ == '__main__':
                            help='synchronize all vehicle properties (default: False)')
     argparser.add_argument('--tls-manager',
                            type=str,
-                           choices=['none', 'sumo', 'carla'],
+                           choices=['none', 'sumo', 'carla','EVC'],
                            help="select traffic light manager (default: none)",
                            default='none')
     argparser.add_argument('--debug', action='store_true', help='enable debug messages')
