@@ -111,7 +111,7 @@ class BridgeHelper(object):
         return random.choice(blueprints)
 
     @staticmethod
-    def get_carla_blueprint(sumo_actor, sync_color=False):
+    def get_carla_blueprint(sumo_actor, sumo_id, sync_color=False):
         """
         Returns an appropriate blueprint based on the received sumo actor.
         """
@@ -144,7 +144,7 @@ class BridgeHelper(object):
             driver_id = random.choice(blueprint.get_attribute('driver_id').recommended_values)
             blueprint.set_attribute('driver_id', driver_id)
 
-        blueprint.set_attribute('role_name', 'sumo_driver')
+        blueprint.set_attribute('role_name', sumo_id)
 
         logging.debug(
             '''[BridgeHelper] sumo vtype %s will be spawned in carla with the following attributes:
