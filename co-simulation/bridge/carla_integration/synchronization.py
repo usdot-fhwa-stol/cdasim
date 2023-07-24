@@ -99,7 +99,7 @@ class SimulationSynchronization(object):
         sumo_spawned_actors = self.sumo.spawned_actors - set(self.carla2sumo_ids.values())
         for sumo_actor_id in sumo_spawned_actors:
             sumo_actor = self.sumo.get_actor(sumo_actor_id)
-            carla_blueprint = BridgeHelper.get_carla_blueprint(sumo_actor, self.sync_vehicle_color)
+            carla_blueprint = BridgeHelper.get_carla_blueprint(sumo_actor, sumo_actor_id, self.sync_vehicle_color)
             if carla_blueprint is not None:
                 carla_transform = BridgeHelper.get_carla_transform(sumo_actor.transform,
                                                                    sumo_actor.extent)
