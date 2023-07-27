@@ -21,9 +21,9 @@ public class SensorRegistration extends Interaction {
     public final static String TYPE_ID = createTypeIdentifier(SensorRegistration.class);
 
     private Sensor sensor;
-    protected SensorRegistration(long time) {
+    public SensorRegistration(long time, Sensor sensor) {
         super(time);
-        //TODO Auto-generated constructor stub
+        this.sensor = sensor;
     }
     public Sensor getSensor() {
         return sensor;

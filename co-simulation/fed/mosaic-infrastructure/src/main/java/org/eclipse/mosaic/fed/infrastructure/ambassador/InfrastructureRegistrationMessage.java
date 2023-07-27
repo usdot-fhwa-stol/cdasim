@@ -17,6 +17,7 @@
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
@@ -46,7 +47,7 @@ public class InfrastructureRegistrationMessage {
     // Geo-coordinate of the Infrastructure Device location
     private CartesianPoint location = null;
 
-    private ArrayList<Sensor> sensors;
+    private List<Sensor> sensors;
 
 
     /**
@@ -67,7 +68,7 @@ public class InfrastructureRegistrationMessage {
      *                                  Device
      */
     public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId, int rxMessagePort,
-            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, ArrayList<Sensor> sensors) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Sensor> sensors) {
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.infrastructureId = infrastructureId;
         this.rxMessagePort = rxMessagePort;
@@ -181,11 +182,11 @@ public class InfrastructureRegistrationMessage {
         this.location = location;
     }
 
-    public ArrayList<Sensor> getSensors() {
+    public List<Sensor> getSensors() {
         return sensors;
     }
 
-    public void setSensors(ArrayList<Sensor> sensors) {
+    public void setSensors(List<Sensor> sensors) {
         this.sensors = sensors;
     }
 

@@ -27,6 +27,8 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.interactions.sensor.DetectedObject;
 import org.eclipse.mosaic.interactions.sensor.DetectedObjectInteraction;
+import org.eclipse.mosaic.interactions.sensor.Sensor;
+import org.eclipse.mosaic.interactions.sensor.SensorRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
@@ -298,6 +300,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
                 log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + reg.getLocation().getX() + ", " + reg.getLocation().getY() + ", " + reg.getLocation().getZ() + ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
+                log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors().toString());
+                for (Sensor sensor : reg.getSensors()) {
+                    // Trigger Sensor registrations for all listed sensors.
+                    this.rti.triggerInteraction(new SensorRegistration(time,sensor));
+                }
             }
 
             if (currentSimulationTime == 0) {

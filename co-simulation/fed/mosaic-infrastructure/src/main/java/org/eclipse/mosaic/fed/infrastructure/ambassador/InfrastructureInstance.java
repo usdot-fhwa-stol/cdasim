@@ -17,7 +17,6 @@
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import org.eclipse.mosaic.interactions.sensor.Sensor;
-import org.eclipse.mosaic.interactions.sensor.SensorRegistration;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
 import java.io.IOException;
@@ -25,6 +24,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * InfrastructureInstance class represents a physical instance of an
@@ -41,7 +41,7 @@ public class InfrastructureInstance {
     private int simulatedInteractionPort;
     private CartesianPoint location = null;
     private DatagramSocket rxMsgsSocket = null;
-    private ArrayList<Sensor> sensors;
+    private List<Sensor> sensors;
 
     /**
      * Constructor for InfrastructureInstance
@@ -56,7 +56,7 @@ public class InfrastructureInstance {
      *                         simulated environment
      */ 
     public InfrastructureInstance(String infrastructureId, InetAddress targetAddress, int rxMessagePort,
-            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, ArrayList<Sensor> sensors) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Sensor> sensors) {
         this.infrastructureId = infrastructureId;
         this.targetAddress = targetAddress;
         this.rxMessagePort = rxMessagePort;

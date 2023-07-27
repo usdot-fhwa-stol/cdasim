@@ -21,7 +21,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.sensor.DetectedObject;
@@ -100,7 +103,7 @@ public class InfrastructureInstanceManager {
      * 
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
-            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, ArrayList<Sensor> sensors) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Sensor> sensors) {
         InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
                 timeSyncPort, simulatedInteractionPort, location, sensors);
         try {
@@ -111,6 +114,7 @@ public class InfrastructureInstanceManager {
                     infrastructureId, e.getMessage());
             log.error("Stack trace:", e);
         }
+        
         managedInstances.put(infrastructureId, tmp);
     }
 
