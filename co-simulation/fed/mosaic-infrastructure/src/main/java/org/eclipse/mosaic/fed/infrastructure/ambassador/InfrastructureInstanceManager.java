@@ -16,11 +16,19 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.sensor.DetectedObject;
+import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
@@ -28,11 +36,9 @@ import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.Gson;
+
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
 
 /**
  * Session management class for Infrastructure instances communicating with
@@ -65,7 +71,10 @@ public class InfrastructureInstanceManager {
                         InetAddress.getByName(registration.getRxMessageIpAddress()),
                         registration.getRxMessagePort(),
                         registration.getTimeSyncPort(),
-                        registration.getLocation());
+                        registration.getSimulatedInteractionPort(),
+                        registration.getLocation(),
+                        registration.getSensors());
+                
             } catch (UnknownHostException e) {
                 log.error("Failed to create infrastructure instance with ID '{}' due to an unknown host exception: {}",
                         registration.getInfrastructureId(), e.getMessage());
@@ -91,9 +100,9 @@ public class InfrastructureInstanceManager {
      * 
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
-            int timeSyncPort, CartesianPoint location) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, ArrayList<Sensor> sensors) {
         InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
-                timeSyncPort, location);
+                timeSyncPort, simulatedInteractionPort, location, sensors);
         try {
             tmp.bind();
             log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.", infrastructureId);
@@ -104,6 +113,7 @@ public class InfrastructureInstanceManager {
         }
         managedInstances.put(infrastructureId, tmp);
     }
+
 
     /**
      * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
@@ -135,7 +145,7 @@ public class InfrastructureInstanceManager {
     }
 
     /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * Callback to be invoked when an RSU receives a V2X Message from the NS-3 simulation
      * @param rxMsg The V2X Message received
      * @param rxRsuId The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform experiences failure
@@ -150,6 +160,59 @@ public class InfrastructureInstanceManager {
             rsu.sendMsgs(rxMsg);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Callback to be invoked when a infrastructure instance receives a simulated object detection from 
+     * a registered simulated sensors.
+     * @param detection
+     * @param sensorId
+     */
+    public void onObjectDetectionInteraction(DetectedObject detection) {
+        for (InfrastructureInstance instance : managedInstances.values()) {
+            if ( instance.containsSensor(detection.getSensorId()) ) {    
+                try {            
+                    instance.sendInteraction(encodeObjectDetection(detection));
+                    // Assuming each sensor would only ever be registered to a single infrastructure instance
+                    // break out of loop.
+                    break;
+                }
+                catch( IOException e ) {
+                    log.error("Error occured:  {}", e);
+                }
+            }
+        }
+    }
+
+    private byte[] encodeTimeMessage(InfrastructureTimeMessage message ) {
+        return asJson(message).getBytes();
+    }
+
+    private String asJson( Object obj) {
+        Gson gson = new Gson();
+        return gson.toJson(obj);
+    }
+    private byte[] encodeObjectDetection(DetectedObject detection) {
+        return asJson(detection).getBytes();
+    }
+
+
+    /**
+     * This function is used to send out encoded timestep update to all registered
+     * instances the manager has on the managed instances map
+     * 
+     * @param message This time message is used to store current seq and timestep
+     *                from the ambassador side
+     * @throws IOException
+     */
+    public void onTimeStepUpdate(InfrastructureTimeMessage message) throws IOException {
+        if (managedInstances.size() == 0) {
+            log.debug("There are no registered instances");
+        }
+
+        for (InfrastructureInstance currentInstance : managedInstances.values()) {
+            currentInstance.sendTimeSyncMsgs(encodeTimeMessage(message));
         }
     }
 

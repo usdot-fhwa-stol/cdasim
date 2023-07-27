@@ -25,6 +25,8 @@ import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfigura
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
+import org.eclipse.mosaic.interactions.sensor.DetectedObject;
+import org.eclipse.mosaic.interactions.sensor.DetectedObjectInteraction;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
@@ -40,6 +42,8 @@ import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+
+import com.google.gson.Gson;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
@@ -72,8 +76,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
-    private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(
-            infrastructureInstanceManager);
 
     private int timeSyncSeq = 0;
 
@@ -154,8 +156,16 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
+        if (interaction.getTypeId().equals(DetectedObjectInteraction.TYPE_ID)) {
+            this.receiveDetectedObjectInteraction((DetectedObjectInteraction) interaction);
+        }
     }
 
+
+    private synchronized void receiveDetectedObjectInteraction( DetectedObjectInteraction interaction) {
+        log.trace("Process Detected Object Interaction {}", interaction.toString());
+        infrastructureInstanceManager.onObjectDetectionInteraction(interaction.getDetectedObject());
+    }
     /**
      * Extract external message from received
      * {@link InfrastructureV2xMessageReception} interaction.
@@ -190,6 +200,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
     }
+
 
     /**
      *
@@ -308,7 +319,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             timeSyncMessage.setSeq(timeSyncSeq);
             // nanoseconds to milliseconds for InfrastructureTimeMessage
             timeSyncMessage.setTimestep(currentSimulationTime/1000000);
-            infrastructureTimeInterface.onTimeStepUpdate(timeSyncMessage);
+            infrastructureInstanceManager.onTimeStepUpdate(timeSyncMessage);
 
             // TODO: Handle any queued V2X message receiver's received messages
 

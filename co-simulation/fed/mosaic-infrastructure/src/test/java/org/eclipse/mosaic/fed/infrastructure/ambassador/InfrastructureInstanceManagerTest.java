@@ -17,10 +17,16 @@
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 
+import org.eclipse.mosaic.interactions.sensor.Orientation;
+import org.eclipse.mosaic.interactions.sensor.Sensor;
+import org.eclipse.mosaic.interactions.sensor.SensorType;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +42,6 @@ public class InfrastructureInstanceManagerTest {
     @Before
     public void setUp() throws Exception {
         manager = new InfrastructureInstanceManager();
-        registration = mock(InfrastructureRegistrationMessage.class);
         ipAddress = mock(InetAddress.class);
         location = mock(CartesianPoint.class);
     }
@@ -47,27 +52,36 @@ public class InfrastructureInstanceManagerTest {
         String infrastructureId = "infrastructure-123";
         int rxMessagePort = 1234;
         int timeSyncPort = 5678;
+        int simulatedInteractionPort = 2355;
         String ipAddressString = "127.0.0.1";
         CartesianPoint pt = CartesianPoint.xyz(37.3382, -121.8863, 1.0);
+        ArrayList<Sensor> sensors = new ArrayList<>();
+        sensors.add(
+            new Sensor(
+                "String sensorId", 
+                SensorType.SEMANTIC_LIDAR, 
+                new Orientation( 0.0,0.0,0.0),
+                CartesianPoint.ORIGO));
 
         // Mock the behavior of the registration object
-        mockRegistrationObject(infrastructureId, rxMessagePort, timeSyncPort, ipAddressString, pt);
+        InfrastructureRegistrationMessage registration = new InfrastructureRegistrationMessage(
+                                                                            ipAddressString, 
+                                                                            infrastructureId, 
+                                                                            rxMessagePort, 
+                                                                            timeSyncPort, 
+                                                                            simulatedInteractionPort ,
+                                                                            pt, 
+                                                                            sensors);
+        // Ensure checkIfRegistered returns false for infrastructure ID before registering 
+        assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
         manager.onNewRegistration(registration);
 
         // Verify that the infrastructure instance was added to the manager
-        assertEquals(true, manager.checkIfRegistered(infrastructureId));
+        assertTrue( manager.checkIfRegistered(infrastructureId) );
+        // Ensure checkIfRegistered returns false for other Ids
+        assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
     }
 
-    private void mockRegistrationObject(String infrastructureId, int rxMessagePort, int timeSyncPort,
-            String ipAddressString, CartesianPoint pt) {
-        // Mock the behavior of the registration object
-        Mockito.when(registration.getInfrastructureId()).thenReturn(infrastructureId);
-        Mockito.when(registration.getRxMessagePort()).thenReturn(rxMessagePort);
-        Mockito.when(registration.getTimeSyncPort()).thenReturn(timeSyncPort);
-        Mockito.when(registration.getRxMessageIpAddress()).thenReturn(ipAddressString);
-        Mockito.when(registration.getLocation()).thenReturn(pt);
-        Mockito.when(ipAddress.getHostAddress()).thenReturn(ipAddressString);
-    }
 }

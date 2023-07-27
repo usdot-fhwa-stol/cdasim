@@ -16,12 +16,15 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
+import org.eclipse.mosaic.interactions.sensor.Sensor;
+import org.eclipse.mosaic.interactions.sensor.SensorRegistration;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
 
 /**
  * InfrastructureInstance class represents a physical instance of an
@@ -35,8 +38,10 @@ public class InfrastructureInstance {
     private InetAddress targetAddress;
     private int rxMessagePort;
     private int timeSyncPort;
+    private int simulatedInteractionPort;
     private CartesianPoint location = null;
     private DatagramSocket rxMsgsSocket = null;
+    private ArrayList<Sensor> sensors;
 
     /**
      * Constructor for InfrastructureInstance
@@ -44,19 +49,24 @@ public class InfrastructureInstance {
      * @param infrastructureId the ID of the infrastructure node
      * @param targetAddress    the target IP address of the infrastructure node
      * @param rxMessagePort    the receive message port of the infrastructure node
-     * @param timeSyncPort     the time synchronization port of the infrastructure
+     * @param timeSyncPort     the tiyhuuuuuuuuuuuuuuuuuuuuuu----------me synchronization port of the infrastructure
      *                         node
+     * @param simulatedInteractionPort 
      * @param location         the location of the infrastructure node in the
      *                         simulated environment
-     */
-    public InfrastructureInstance(String infrastructureId, InetAddress targetAddress,
-            int rxMessagePort, int timeSyncPort, CartesianPoint location) {
+     */ 
+    public InfrastructureInstance(String infrastructureId, InetAddress targetAddress, int rxMessagePort,
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, ArrayList<Sensor> sensors) {
         this.infrastructureId = infrastructureId;
         this.targetAddress = targetAddress;
         this.rxMessagePort = rxMessagePort;
         this.timeSyncPort = timeSyncPort;
+        this.simulatedInteractionPort = simulatedInteractionPort;
         this.location = location;
+        this.sensors = sensors;
     }
+
+
 
     /**
      * Returns the target IP address of the infrastructure node
@@ -148,6 +158,15 @@ public class InfrastructureInstance {
         this.timeSyncPort = timeSyncPort;
     }
 
+    public boolean containsSensor(String sensorId) {
+        for (Sensor sensor : sensors) {
+            if (sensor.getSensorId().equals(sensorId) ) {
+                return true;
+            } 
+        }
+        return false;
+    }
+
     /**
      * Creates a DatagramSocket object and binds it to this infrastructure
      * instance's receive message port
@@ -189,5 +208,13 @@ public class InfrastructureInstance {
         DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, timeSyncPort);
         rxMsgsSocket.send(packet);
 
+    }
+
+    public void sendInteraction(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, simulatedInteractionPort);
+        rxMsgsSocket.send(packet);
     }
 }

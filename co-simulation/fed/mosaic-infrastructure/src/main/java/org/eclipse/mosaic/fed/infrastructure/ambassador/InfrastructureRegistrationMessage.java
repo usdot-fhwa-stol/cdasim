@@ -16,6 +16,9 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
+import java.util.ArrayList;
+
+import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
 /**
@@ -32,36 +35,49 @@ public class InfrastructureRegistrationMessage {
 
     // Port number where the Infrastructure Device will be listening for inbound
     // messages
-    private int rxMessagePort = 1536;
+    private int rxMessagePort;
 
     // Port number where the Infrastructure Device will be listening for time
     // synchronization messages
-    private int timeSyncPort = 1517;
+    private int timeSyncPort;
+
+    private int simulatedInteractionPort;
 
     // Geo-coordinate of the Infrastructure Device location
     private CartesianPoint location = null;
 
+    private ArrayList<Sensor> sensors;
+
+
     /**
      * Constructor for an `InfrastructureRegistrationMessage` instance
      * 
-     * @param rxMessageIpAddress IP address where the Infrastructure Device will be
-     *                           listening for inbound messages
-     * @param infrastructureId   Unique identifier for the Infrastructure Device
-     * @param rxMessagePort      Port number where the Infrastructure Device will be
-     *                           listening for inbound messages
-     * @param timeSyncPort       Port number where the Infrastructure Device will be
-     *                           listening for time synchronization messages
-     * @param location           Geo-coordinate of the Infrastructure Device
-     *                           location
+     * @param rxMessageIpAddress        IP address where the Infrastructure Device will be
+     *                                  listening for inbound messages
+     * @param infrastructureId          Unique identifier for the Infrastructure Device
+     * @param rxMessagePort             Port number where the Infrastructure Device will be
+     *                                  listening for inbound messages
+     * @param simulatedInteractionPort  Port number where Infrastructure Device will be listening
+     *                                  for simulated interactions.
+     * @param timeSyncPort              Port number where the Infrastructure Device will be
+     *                                  listening for time synchronization messages
+     * @param location                  Geo-coordinate of the Infrastructure Device
+     *                                  location
+     * @param sensors                   ArrayList of sensors to register for a given infrastructure
+     *                                  Device
      */
-    public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId,
-            int rxMessagePort, int timeSyncPort, CartesianPoint location) {
+    public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId, int rxMessagePort,
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, ArrayList<Sensor> sensors) {
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.infrastructureId = infrastructureId;
         this.rxMessagePort = rxMessagePort;
         this.timeSyncPort = timeSyncPort;
+        this.simulatedInteractionPort = simulatedInteractionPort;
         this.location = location;
+        this.sensors = sensors;
     }
+
+
 
     /**
      * Returns the IP address where the Infrastructure Device will be listening for
@@ -165,17 +181,44 @@ public class InfrastructureRegistrationMessage {
         this.location = location;
     }
 
-    /**
-     * Returns a string representation of the InfrastructureRegistrationMessage
-     * object
-     * 
-     * @return a string representation of the object
-     */
+    public ArrayList<Sensor> getSensors() {
+        return sensors;
+    }
+
+    public void setSensors(ArrayList<Sensor> sensors) {
+        this.sensors = sensors;
+    }
+
+  
+    public int getSimulatedInteractionPort() {
+        return simulatedInteractionPort;
+    }
+
+
+
+    public void setSimulatedInteractionPort(int simulatedInteractionPort) {
+        this.simulatedInteractionPort = simulatedInteractionPort;
+    }
+
+
+
     @Override
     public String toString() {
-        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress
-                + ", infrastructureId=" + infrastructureId + ", rxMessagePort=" + rxMessagePort
-                + ", timeSyncPort=" + timeSyncPort + ", location=" + location + "]";
+        return "InfrastructureRegistrationMessage [rxMessageIpAddress=" + rxMessageIpAddress + ", infrastructureId="
+                + infrastructureId + ", rxMessagePort=" + rxMessagePort + ", timeSyncPort=" + timeSyncPort
+                + ", simulatedInteractionPort=" + simulatedInteractionPort + ", location=" + location + ", sensors="
+                + sensors + "]";
     }
+
+
+
+
+
+
+    
+
+    
+
+
 
 }
