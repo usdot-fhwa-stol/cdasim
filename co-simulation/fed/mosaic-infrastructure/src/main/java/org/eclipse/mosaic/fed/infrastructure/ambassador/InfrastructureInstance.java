@@ -187,12 +187,7 @@ public class InfrastructureInstance {
      *                     methods
      */
     public void sendMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, rxMessagePort);
-        rxMsgsSocket.send(packet);
-
+        sendPacket(data, rxMessagePort);
     }
 
     /**
@@ -201,20 +196,18 @@ public class InfrastructureInstance {
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
     public void sendTimeSyncMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, timeSyncPort);
-        rxMsgsSocket.send(packet);
-
+        sendPacket(data, timeSyncPort);
     }
 
     public void sendInteraction(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
+        sendPacket(data, simulatedInteractionPort);
+    }
+
+    public void sendPacket(byte[] data, int port) throws IOException {
+         if (rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, simulatedInteractionPort);
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, port);
         rxMsgsSocket.send(packet);
     }
 }
