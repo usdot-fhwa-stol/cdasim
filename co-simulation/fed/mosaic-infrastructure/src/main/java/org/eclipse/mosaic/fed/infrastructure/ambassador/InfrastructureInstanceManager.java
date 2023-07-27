@@ -19,12 +19,9 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.sensor.DetectedObject;
@@ -56,6 +53,7 @@ public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+
     /**
      * Register a new infrastructure instance with the MOSAIC system.
      * 
@@ -77,7 +75,7 @@ public class InfrastructureInstanceManager {
                         registration.getSimulatedInteractionPort(),
                         registration.getLocation(),
                         registration.getSensors());
-                
+
             } catch (UnknownHostException e) {
                 log.error("Failed to create infrastructure instance with ID '{}' due to an unknown host exception: {}",
                         registration.getInfrastructureId(), e.getMessage());
@@ -108,22 +106,25 @@ public class InfrastructureInstanceManager {
                 timeSyncPort, simulatedInteractionPort, location, sensors);
         try {
             tmp.bind();
-            log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.", infrastructureId);
+            log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.",
+                    infrastructureId);
         } catch (IOException e) {
             log.error("Failed to bind infrastructure instance with ID '{}' to its RX message socket: {}",
                     infrastructureId, e.getMessage());
             log.error("Stack trace:", e);
         }
-        
+
         managedInstances.put(infrastructureId, tmp);
     }
 
-
     /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * Callback to be invoked when CARMA Platform receives a V2X Message from the
+     * NS-3 simulation
+     * 
      * @param sourceAddr The V2X Message received
-     * @param txMsg The Host ID of the vehicle receiving the data
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     * @param txMsg      The Host ID of the vehicle receiving the data
+     * @throws RuntimeException If the socket used to communicate with the platform
+     *                          experiences failure
      */
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         InfrastructureInstance sender = null;
@@ -135,7 +136,8 @@ public class InfrastructureInstanceManager {
 
         if (sender == null) {
             // Unregistered instance attempting to send messages
-            throw new IllegalStateException("Unregistered CARMA Streets/V2XHub instance attempting to send messages via MOSAIC");
+            throw new IllegalStateException(
+                    "Unregistered CARMA Streets/V2XHub instance attempting to send messages via MOSAIC");
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
@@ -149,13 +151,16 @@ public class InfrastructureInstanceManager {
     }
 
     /**
-     * Callback to be invoked when an RSU receives a V2X Message from the NS-3 simulation
-     * @param rxMsg The V2X Message received
+     * Callback to be invoked when an RSU receives a V2X Message from the NS-3
+     * simulation
+     * 
+     * @param rxMsg   The V2X Message received
      * @param rxRsuId The Host ID of the vehicle receiving the data
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     * @throws RuntimeException If the socket used to communicate with the platform
+     *                          experiences failure
      */
     public void onV2XMessageRx(byte[] rxMsg, String rxRsuId) {
-        if (!managedInstances.containsKey(rxRsuId))  {
+        if (!managedInstances.containsKey(rxRsuId)) {
             return;
         }
 
@@ -168,39 +173,40 @@ public class InfrastructureInstanceManager {
     }
 
     /**
-     * Callback to be invoked when a infrastructure instance receives a simulated object detection from 
+     * Callback to be invoked when a infrastructure instance receives a simulated
+     * object detection from
      * a registered simulated sensors.
+     * 
      * @param detection
      * @param sensorId
      */
     public void onObjectDetectionInteraction(DetectedObject detection) {
         for (InfrastructureInstance instance : managedInstances.values()) {
-            if ( instance.containsSensor(detection.getSensorId()) ) {    
-                try {            
+            if (instance.containsSensor(detection.getSensorId())) {
+                try {
                     instance.sendInteraction(encodeObjectDetection(detection));
-                    // Assuming each sensor would only ever be registered to a single infrastructure instance
-                    // break out of loop.
+                    // Assuming each sensor would only ever be registered to a single infrastructure
+                    // instance
                     break;
-                }
-                catch( IOException e ) {
-                    log.error("Error occured:  {}", e);
+                } catch (IOException e) {
+                    log.error("Error occured:  {}", e.getMessage());
                 }
             }
         }
     }
 
-    private byte[] encodeTimeMessage(InfrastructureTimeMessage message ) {
+    private byte[] encodeTimeMessage(InfrastructureTimeMessage message) {
         return asJson(message).getBytes();
     }
 
-    private String asJson( Object obj) {
+    private String asJson(Object obj) {
         Gson gson = new Gson();
         return gson.toJson(obj);
     }
+
     private byte[] encodeObjectDetection(DetectedObject detection) {
         return asJson(detection).getBytes();
     }
-
 
     /**
      * This function is used to send out encoded timestep update to all registered
@@ -231,6 +237,7 @@ public class InfrastructureInstanceManager {
     public boolean checkIfRegistered(String infrastructureId) {
         return managedInstances.keySet().contains(infrastructureId);
     }
+
     public Map<String, InfrastructureInstance> getManagedInstances() {
         return managedInstances;
     }

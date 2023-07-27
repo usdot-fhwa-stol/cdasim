@@ -16,7 +16,6 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.mosaic.interactions.sensor.Sensor;

@@ -37,7 +37,7 @@ public class SensorTypeAdapter implements JsonSerializer<SensorType>, JsonDeseri
 
     @Override
     public JsonElement serialize(SensorType src, Type typeOfSrc, JsonSerializationContext context) {
-        return context.serialize(src.toString());
+        return context.serialize(src.getLabel());
     }
     
 }

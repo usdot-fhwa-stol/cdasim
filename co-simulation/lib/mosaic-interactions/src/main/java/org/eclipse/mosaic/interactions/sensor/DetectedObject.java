@@ -21,7 +21,7 @@ import java.util.Arrays;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 
-public final class DetectedObject implements Serializable{
+public final class DetectedObject implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -48,8 +48,6 @@ public final class DetectedObject implements Serializable{
     private Double[] angularVelocityCovariance = new Double[9];
 
     private Size size;
-
-    
 
     public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, String objectId,
             CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size) {
@@ -237,6 +235,5 @@ public final class DetectedObject implements Serializable{
             return false;
         return true;
     }
-    
 
 }

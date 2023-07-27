@@ -18,7 +18,7 @@ package org.eclipse.mosaic.interactions.sensor;
 import org.eclipse.mosaic.rti.api.Interaction;
 
 public class SensorRegistration extends Interaction {
-    public final static String TYPE_ID = createTypeIdentifier(SensorRegistration.class);
+    public static final String TYPE_ID = createTypeIdentifier(SensorRegistration.class);
 
     private Sensor sensor;
     public SensorRegistration(long time, Sensor sensor) {

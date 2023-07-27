@@ -15,7 +15,10 @@
  */
 package org.eclipse.mosaic.interactions.sensor;
 
-public class Orientation {
+import java.io.Serializable;
+
+public class Orientation implements Serializable{
+    private static final long serialVersionUID = 1L;
 
     private double yaw;
     

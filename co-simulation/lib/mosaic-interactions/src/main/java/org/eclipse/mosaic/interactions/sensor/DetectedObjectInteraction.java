@@ -18,7 +18,8 @@ package org.eclipse.mosaic.interactions.sensor;
 import org.eclipse.mosaic.rti.api.Interaction;
 
 public class DetectedObjectInteraction extends Interaction {
-    public final static String TYPE_ID = createTypeIdentifier(DetectedObjectInteraction.class);
+
+    public static final String TYPE_ID = createTypeIdentifier(DetectedObjectInteraction.class);
 
     private DetectedObject detectedObject;
 
@@ -35,6 +36,32 @@ public class DetectedObjectInteraction extends Interaction {
         this.detectedObject = detectedObject;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((detectedObject == null) ? 0 : detectedObject.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        DetectedObjectInteraction other = (DetectedObjectInteraction) obj;
+        if (detectedObject == null) {
+            if (other.detectedObject != null)
+                return false;
+        } else if (!detectedObject.equals(other.detectedObject))
+            return false;
+        return true;
+    }
+
+    
     
     
 }

@@ -29,7 +29,7 @@ public enum SensorType {
  
     
     
-    public final String name;
+    public final String label;
     
     /**
      * Default constructor.
@@ -37,7 +37,7 @@ public enum SensorType {
      * @param name String
      */
     SensorType(String name) {
-        this.name = name;
+        this.label = name;
     }
     
     /**
@@ -48,14 +48,14 @@ public enum SensorType {
      */
     public static SensorType fromName(String name) {
         for (SensorType type: SensorType.values()) {
-            if (type.name.equals(name)) {
+            if (type.label.equals(name)) {
                 return type;
             }
         }
         throw new IllegalArgumentException("Unknown SensorType name " + name);
     }
 
-    public String toString(){
-        return name;
+    public String getLabel(){
+        return label;
     }
 }

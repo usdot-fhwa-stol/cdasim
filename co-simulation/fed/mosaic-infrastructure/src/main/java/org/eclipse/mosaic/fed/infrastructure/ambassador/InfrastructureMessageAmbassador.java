@@ -16,8 +16,15 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
-import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.List;
+
+import javax.xml.bind.DatatypeConverter;
+
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
@@ -25,7 +32,6 @@ import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfigura
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
-import org.eclipse.mosaic.interactions.sensor.DetectedObject;
 import org.eclipse.mosaic.interactions.sensor.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.interactions.sensor.SensorRegistration;
@@ -45,15 +51,8 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-import com.google.gson.Gson;
-
-import javax.xml.bind.DatatypeConverter;
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.List;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for Infrastructure
@@ -165,16 +164,14 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
 
     private synchronized void receiveDetectedObjectInteraction( DetectedObjectInteraction interaction) {
-        log.trace("Process Detected Object Interaction {}", interaction.toString());
+        log.trace("Process Detected Object Interaction {}", interaction);
         infrastructureInstanceManager.onObjectDetectionInteraction(interaction.getDetectedObject());
     }
     /**
      * Extract external message from received
      * {@link InfrastructureV2xMessageReception} interaction.
      *
-     * @param interaction Interaction indicates that the
-     *                                          external message is received by a
-     *                                          rsu.
+     * @param interaction Interaction indicates that the external message is received by a rsu.
      */
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
         String rsuId = interaction.getReceiverName();
@@ -300,7 +297,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
                 log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + reg.getLocation().getX() + ", " + reg.getLocation().getY() + ", " + reg.getLocation().getZ() + ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
-                log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors().toString());
+                log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
                 for (Sensor sensor : reg.getSensors()) {
                     // Trigger Sensor registrations for all listed sensors.
                     this.rti.triggerInteraction(new SensorRegistration(time,sensor));

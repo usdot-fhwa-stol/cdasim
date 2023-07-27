@@ -16,15 +16,14 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import org.eclipse.mosaic.interactions.sensor.Sensor;
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.List;
+
+import org.eclipse.mosaic.interactions.sensor.Sensor;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
 /**
  * InfrastructureInstance class represents a physical instance of an

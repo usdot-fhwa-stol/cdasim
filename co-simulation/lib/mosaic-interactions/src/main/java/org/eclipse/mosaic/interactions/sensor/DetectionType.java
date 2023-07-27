@@ -26,7 +26,7 @@ public enum DetectionType {
     PEDESTRIAN("PEDESTRIAN");
     
     
-    public final String name;
+    public final String label;
     
     /**
      * Default constructor.
@@ -34,7 +34,7 @@ public enum DetectionType {
      * @param name String
      */
     DetectionType(String name) {
-        this.name = name;
+        this.label = name;
     }
     
     /**
@@ -45,14 +45,14 @@ public enum DetectionType {
      */
     public static DetectionType fromName(String name) {
         for (DetectionType type: DetectionType.values()) {
-            if (type.name == name) {
+            if (type.label == name) {
                 return type;
             }
         }
         throw new IllegalArgumentException("Unknown DetectionType name " + name);
     }
 
-    public String toString(){
-        return name;
+    public String getLabel(){
+        return label;
     }
 }
