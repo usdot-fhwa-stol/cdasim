@@ -31,7 +31,6 @@ public class SensorTypeAdapter implements JsonSerializer<SensorType>, JsonDeseri
     @Override
     public SensorType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        String value = json.getAsString();
         return SensorType.fromName(json.getAsString());
     }
 

@@ -31,5 +31,29 @@ public class SensorRegistration extends Interaction {
     public void setSensor(Sensor sensor) {
         this.sensor = sensor;
     }
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((sensor == null) ? 0 : sensor.hashCode());
+        return result;
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        SensorRegistration other = (SensorRegistration) obj;
+        if (sensor == null) {
+            if (other.sensor != null)
+                return false;
+        } else if (!sensor.equals(other.sensor))
+            return false;
+        return true;
+    }
+    
     
 }

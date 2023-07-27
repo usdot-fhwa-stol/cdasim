@@ -15,9 +15,13 @@
  */
 package org.eclipse.mosaic.interactions.sensor;
 
+import java.io.Serializable;
+
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
-public class Sensor {
+public class Sensor implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String sensorId;
     private SensorType type;
     private Orientation orientation;
