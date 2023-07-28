@@ -31,25 +31,25 @@ public enum DetectionType {
     /**
      * Default constructor.
      *
-     * @param name String
+     * @param label String
      */
-    DetectionType(String name) {
-        this.label = name;
+    DetectionType(String label) {
+        this.label = label;
     }
     
     /**
-     * Returns the enum mapped from an String name.
+     * Returns the enum mapped from an String label.
      *
-     * @param name string.
-     * @return the enum mapped from String name.
+     * @param label string.
+     * @return the enum mapped from String label.
      */
-    public static DetectionType fromName(String name) {
+    public static DetectionType fromLabel(String label) {
         for (DetectionType type: DetectionType.values()) {
-            if (type.label.equals(name)) {
+            if (type.label.equals(label)) {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Unknown DetectionType name " + name);
+        throw new IllegalArgumentException("Unknown DetectionType name " + label);
     }
 
     public String getLabel(){

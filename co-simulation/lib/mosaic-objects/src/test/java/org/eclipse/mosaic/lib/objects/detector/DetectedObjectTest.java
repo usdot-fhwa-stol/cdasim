@@ -15,13 +15,11 @@
  */
 package org.eclipse.mosaic.lib.objects.detector;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
-import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
-import org.eclipse.mosaic.lib.objects.detector.DetectionType;
-import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -145,6 +143,39 @@ public class DetectedObjectTest {
         predictedDetectedObject.setVelocityCovariance(covarianceMatrix);
         predictedDetectedObject.setAngularVelocityCovariance(covarianceMatrix);
         assertEquals(detectedObject, predictedDetectedObject);
+    }
+
+    @Test
+    public void testGetterSetterConstructor() {
+        //Test constructor
+        DetectedObject detectedObject = new DetectedObject(
+                DetectionType.VAN,
+                0.5,
+                "sensor1",
+                "projection String",
+                "Object1",
+                CartesianPoint.xyz(1.1, 2, 3.2),
+                new Vector3d(2, 3, 4),
+                new Vector3d(-4.4,-5.5,-6.6),
+                new Size(3, 4, 5));
+        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        detectedObject.setPositionCovariance(covarianceMatrix);
+        detectedObject.setVelocityCovariance(covarianceMatrix);
+        detectedObject.setAngularVelocityCovariance(covarianceMatrix);
+        // Test Getters
+        assertEquals(DetectionType.VAN, detectedObject.getType());
+        assertEquals(0.5, detectedObject.getConfidence(), .01);
+        assertEquals("sensor1", detectedObject.getSensorId());
+        assertEquals("projection String", detectedObject.getProjString());
+        assertEquals("Object1", detectedObject.getObjectId());
+        assertEquals(CartesianPoint.xyz(1.1, 2, 3.2), detectedObject.getPosition());
+        assertEquals(new Vector3d(2, 3, 4), detectedObject.getVelocity());
+        assertEquals(new Vector3d(-4.4, -5.5, -6.6), detectedObject.getAngularVelocity());
+        assertEquals( new Size(3,4,5), detectedObject.getSize());
+        assertArrayEquals(covarianceMatrix, detectedObject.getPositionCovariance());
+        assertArrayEquals(covarianceMatrix, detectedObject.getVelocityCovariance());
+        assertArrayEquals(covarianceMatrix, detectedObject.getAngularVelocityCovariance());
+       
     }
 
 }

@@ -70,10 +70,6 @@ public final class DetectedObject implements Serializable {
         return projString;
     }
 
-    public void setProjString(String projString) {
-        this.projString = projString;
-    }
-
     public Double[] getPositionCovariance() {
         return positionCovariance;
     }
@@ -98,85 +94,37 @@ public final class DetectedObject implements Serializable {
         this.angularVelocityCovariance = angularVelocityCovariance;
     }
 
-    public void setType(DetectionType type) {
-        this.type = type;
-    }
 
     public double getConfidence() {
         return confidence;
-    }
-
-    public void setConfidence(double confidence) {
-        this.confidence = confidence;
     }
 
     public String getSensorId() {
         return sensorId;
     }
 
-    public void setSensorId(String sensorId) {
-        this.sensorId = sensorId;
-    }
 
     public String getObjectId() {
         return objectId;
     }
 
-    public void setObjectId(String objectId) {
-        this.objectId = objectId;
-    }
 
     public CartesianPoint getPosition() {
         return position;
     }
 
-    public void setPosition(CartesianPoint location) {
-        this.position = location;
-    }
 
     public Vector3d getVelocity() {
         return velocity;
-    }
-
-    public void setVelocity(Vector3d velocity) {
-        this.velocity = velocity;
     }
 
     public Vector3d getAngularVelocity() {
         return angularVelocity;
     }
 
-    public void setAngularVelocity(Vector3d angularVelocity) {
-        this.angularVelocity = angularVelocity;
-    }
 
     public Size getSize() {
         return size;
-    }
-
-    public void setSize(Size size) {
-        this.size = size;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
-        long temp;
-        temp = Double.doubleToLongBits(confidence);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        result = prime * result + ((sensorId == null) ? 0 : sensorId.hashCode());
-        result = prime * result + ((projString == null) ? 0 : projString.hashCode());
-        result = prime * result + ((objectId == null) ? 0 : objectId.hashCode());
-        result = prime * result + ((position == null) ? 0 : position.hashCode());
-        result = prime * result + Arrays.hashCode(positionCovariance);
-        result = prime * result + ((velocity == null) ? 0 : velocity.hashCode());
-        result = prime * result + Arrays.hashCode(velocityCovariance);
-        result = prime * result + ((angularVelocity == null) ? 0 : angularVelocity.hashCode());
-        result = prime * result + Arrays.hashCode(angularVelocityCovariance);
-        result = prime * result + ((size == null) ? 0 : size.hashCode());
-        return result;
     }
 
     @Override
