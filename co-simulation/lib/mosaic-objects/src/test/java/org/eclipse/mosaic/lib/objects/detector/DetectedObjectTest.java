@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor;
+package org.eclipse.mosaic.lib.objects.detector;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import com.google.gson.Gson;
 
-public class DetectedObjectInteractionTest {
+public class DetectedObjectTest {
     @Before
     public void setUp() throws Exception {
 

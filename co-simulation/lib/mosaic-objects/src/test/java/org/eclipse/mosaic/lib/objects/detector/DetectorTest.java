@@ -13,27 +13,24 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor;
+package org.eclipse.mosaic.lib.objects.detector;
 
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
-import org.eclipse.mosaic.lib.objects.detector.Detector;
-import org.eclipse.mosaic.lib.objects.detector.DetectorType;
-import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.gson.Gson;
 
-public class SensorRegistrationTest {
+public class DetectorTest {
     @Before
     public void setUp() throws Exception {
 
     }
 
     @Test
-    public void testSensorRegistrationJsonSerialization() {
+    public void testDetectorJsonSerialization() {
         Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
                 CartesianPoint.xyz(1, 2, 3));
         Gson gson = new Gson();
@@ -58,7 +55,7 @@ public class SensorRegistrationTest {
     }
 
     @Test
-    public void testSensorRegistrationJsonDeserialization() {
+    public void testDetectorJsonDeserialization() {
         String predictedSensorJson = "{"
         +   "\"sensorId\":\"something\","
         +   "\"type\":\"SemanticLidar\","
