@@ -45,14 +45,15 @@ public class InfrastructureInstance {
     /**
      * Constructor for InfrastructureInstance
      * 
-     * @param infrastructureId the ID of the infrastructure node
-     * @param targetAddress    the target IP address of the infrastructure node
-     * @param rxMessagePort    the receive message port of the infrastructure node
-     * @param timeSyncPort     the tiyhuuuuuuuuuuuuuuuuuuuuuu----------me synchronization port of the infrastructure
-     *                         node
-     * @param simulatedInteractionPort 
-     * @param location         the location of the infrastructure node in the
-     *                         simulated environment
+     * @param infrastructureId          the ID of the infrastructure instance
+     * @param targetAddress             the target IP address of the infrastructure instance
+     * @param rxMessagePort             the receive message port of the infrastructure instance
+     * @param timeSyncPort              the time synchronization port of the infrastructure
+     *                         
+     * @param simulatedInteractionPort  the simulated interaction port of the infrastructure
+     *                                  instance
+     * @param location                  the location of the infrastructure instance in the
+     *                                  simulated environment
      */ 
     public InfrastructureInstance(String infrastructureId, InetAddress targetAddress, int rxMessagePort,
             int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {

@@ -56,7 +56,9 @@ public class DetectedObjectInteractionTest {
         assertEquals(detectedObject, interaction.getDetectedObject());
         
         DetectedObjectInteraction interaction2 = new DetectedObjectInteraction(0, detectedObject);
-
+        DetectedObjectInteraction interaction3 = interaction2;
         assertNotEquals(interaction, interaction2);
+        assertEquals(interaction2, interaction3);
+        assertEquals(interaction2.hashCode(), interaction3.hashCode());
     }
 }
