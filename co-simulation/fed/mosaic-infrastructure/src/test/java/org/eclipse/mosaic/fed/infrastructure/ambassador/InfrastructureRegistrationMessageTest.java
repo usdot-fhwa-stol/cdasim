@@ -28,6 +28,7 @@ import org.junit.Test;
 public class InfrastructureRegistrationMessageTest {
     @Test
     public void testGetterSettersConstructor() {
+        // Test Constructor
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
             new Detector(
@@ -43,20 +44,15 @@ public class InfrastructureRegistrationMessageTest {
                  8642, 
                  CartesianPoint.xy(1, 2), 
                  sensors);
-        assertEquals(message.getInfrastructureId(), "rsu_1");
-        assertEquals(message.getRxMessageIpAddress(), "127.0.0.1" );
-        assertEquals(message.getRxMessagePort(), 4567);
-        assertEquals(message.getTimeSyncPort(), 5678);
-        assertEquals(message.getSimulatedInteractionPort(), 8642);
-        assertEquals(message.getLocation(), CartesianPoint.xy(1,2));
-        assertEquals(message.getSensors(), sensors);
-
-        
-
-    }
-
-    @Test
-    public void testToString() {
+        // Test Getter
+        assertEquals("rsu_1",message.getInfrastructureId());
+        assertEquals("127.0.0.1", message.getInfrastructureId() );
+        assertEquals(4567, message.getRxMessagePort());
+        assertEquals(5678, message.getTimeSyncPort());
+        assertEquals(8642, message.getSimulatedInteractionPort());
+        assertEquals(CartesianPoint.xy(1,2), message.getLocation());
+        assertEquals(sensors, message.getSensors());
 
     }
+
 }

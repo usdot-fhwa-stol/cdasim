@@ -126,6 +126,27 @@ public final class DetectedObject implements Serializable {
     public Size getSize() {
         return size;
     }
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((type == null) ? 0 : type.hashCode());
+        long temp;
+        temp = Double.doubleToLongBits(confidence);
+        result = prime * result + (int) (temp ^ (temp >>> 32));
+        result = prime * result + ((sensorId == null) ? 0 : sensorId.hashCode());
+        result = prime * result + ((projString == null) ? 0 : projString.hashCode());
+        result = prime * result + ((objectId == null) ? 0 : objectId.hashCode());
+        result = prime * result + ((position == null) ? 0 : position.hashCode());
+        result = prime * result + Arrays.hashCode(positionCovariance);
+        result = prime * result + ((velocity == null) ? 0 : velocity.hashCode());
+        result = prime * result + Arrays.hashCode(velocityCovariance);
+        result = prime * result + ((angularVelocity == null) ? 0 : angularVelocity.hashCode());
+        result = prime * result + Arrays.hashCode(angularVelocityCovariance);
+        result = prime * result + ((size == null) ? 0 : size.hashCode());
+        return result;
+    }
 
     @Override
     public boolean equals(Object obj) {
