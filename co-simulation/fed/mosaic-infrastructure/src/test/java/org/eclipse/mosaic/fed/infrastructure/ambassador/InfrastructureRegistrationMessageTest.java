@@ -46,7 +46,7 @@ public class InfrastructureRegistrationMessageTest {
                  sensors);
         // Test Getter
         assertEquals("rsu_1",message.getInfrastructureId());
-        assertEquals("127.0.0.1", message.getInfrastructureId() );
+        assertEquals("127.0.0.1", message.getRxMessageIpAddress() );
         assertEquals(4567, message.getRxMessagePort());
         assertEquals(5678, message.getTimeSyncPort());
         assertEquals(8642, message.getSimulatedInteractionPort());
