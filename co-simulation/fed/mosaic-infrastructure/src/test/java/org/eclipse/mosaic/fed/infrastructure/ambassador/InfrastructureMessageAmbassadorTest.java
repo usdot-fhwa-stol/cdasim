@@ -16,7 +16,6 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
@@ -36,6 +35,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mock;
+import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,12 +63,12 @@ public class InfrastructureMessageAmbassadorTest {
     private InfrastructureInstanceManager instanceManagerMock;
 
     @Before
-    public void setup() throws IOException {
+    public void setup() throws IOException, NoSuchFieldException {
 
         rtiMock = mock(RtiAmbassador.class);
-
-        instanceManagerMock = mock(InfrastructureInstanceManager.class);
         FederateDescriptor handleMock = mock(FederateDescriptor.class);
+        
+        instanceManagerMock = mock(InfrastructureInstanceManager.class);
 
         File workingDir = temporaryFolder.getRoot();
 
@@ -85,6 +86,8 @@ public class InfrastructureMessageAmbassadorTest {
         ambassador.setRtiAmbassador(rtiMock);
 
         ambassador.setFederateDescriptor(handleMock);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("infrastructureInstanceManager"), instanceManagerMock);
+
     }
 
     @After
@@ -120,6 +123,7 @@ public class InfrastructureMessageAmbassadorTest {
         DetectedObjectInteraction interaction = new DetectedObjectInteraction(100,detectedObject);
 
         ambassador.processInteraction(interaction);
+        verify(instanceManagerMock).onObjectDetectionInteraction(detectedObject);
 
     }
 
