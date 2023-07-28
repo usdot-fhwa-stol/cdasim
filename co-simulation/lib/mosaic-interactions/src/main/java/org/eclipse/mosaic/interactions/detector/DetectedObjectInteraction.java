@@ -13,31 +13,38 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor;
+package org.eclipse.mosaic.interactions.detector;
 
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.rti.api.Interaction;
 
-public class SensorRegistration extends Interaction {
-    public static final String TYPE_ID = createTypeIdentifier(SensorRegistration.class);
+public class DetectedObjectInteraction extends Interaction {
 
-    private Sensor sensor;
-    public SensorRegistration(long time, Sensor sensor) {
+    public static final String TYPE_ID = createTypeIdentifier(DetectedObjectInteraction.class);
+
+    private DetectedObject detectedObject;
+
+    public DetectedObjectInteraction(long time, DetectedObject detectedObject) {
         super(time);
-        this.sensor = sensor;
+        this.detectedObject = detectedObject;
     }
-    public Sensor getSensor() {
-        return sensor;
+
+    public DetectedObject getDetectedObject() {
+        return detectedObject;
     }
-    public void setSensor(Sensor sensor) {
-        this.sensor = sensor;
+
+    public void setDetectedObject(DetectedObject detectedObject) {
+        this.detectedObject = detectedObject;
     }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((sensor == null) ? 0 : sensor.hashCode());
+        result = prime * result + ((detectedObject == null) ? 0 : detectedObject.hashCode());
         return result;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -46,14 +53,16 @@ public class SensorRegistration extends Interaction {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        SensorRegistration other = (SensorRegistration) obj;
-        if (sensor == null) {
-            if (other.sensor != null)
+        DetectedObjectInteraction other = (DetectedObjectInteraction) obj;
+        if (detectedObject == null) {
+            if (other.detectedObject != null)
                 return false;
-        } else if (!sensor.equals(other.sensor))
+        } else if (!detectedObject.equals(other.detectedObject))
             return false;
         return true;
     }
+
+    
     
     
 }

@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
-import org.eclipse.mosaic.interactions.sensor.DetectedObject;
-import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
@@ -101,7 +101,7 @@ public class InfrastructureInstanceManager {
      * 
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
-            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Sensor> sensors) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {
         InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
                 timeSyncPort, simulatedInteractionPort, location, sensors);
         try {

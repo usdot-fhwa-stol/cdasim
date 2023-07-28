@@ -13,21 +13,21 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor;
+package org.eclipse.mosaic.lib.objects.detector;
 
 import java.io.Serializable;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 
-public class Sensor implements Serializable {
+public class Detector implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String sensorId;
-    private SensorType type;
+    private DetectorType type;
     private Orientation orientation;
     private CartesianPoint location;
     
-    public Sensor(String sensorId, SensorType type, Orientation orientation, CartesianPoint point) {
+    public Detector(String sensorId, DetectorType type, Orientation orientation, CartesianPoint point) {
         this.sensorId = sensorId;
         this.type = type;
         this.orientation = orientation;
@@ -40,10 +40,10 @@ public class Sensor implements Serializable {
     public void setSensorId(String sensorId) {
         this.sensorId = sensorId;
     }
-    public SensorType getType() {
+    public DetectorType getType() {
         return type;
     }
-    public void setType(SensorType type) {
+    public void setType(DetectorType type) {
         this.type = type;
     }
     public Orientation getOrientation() {
@@ -78,7 +78,7 @@ public class Sensor implements Serializable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Sensor other = (Sensor) obj;
+        Detector other = (Detector) obj;
         if (sensorId == null) {
             if (other.sensorId != null)
                 return false;

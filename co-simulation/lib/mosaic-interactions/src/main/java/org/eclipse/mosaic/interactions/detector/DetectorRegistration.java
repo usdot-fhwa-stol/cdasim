@@ -13,37 +13,32 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor;
+package org.eclipse.mosaic.interactions.detector;
 
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.rti.api.Interaction;
 
-public class DetectedObjectInteraction extends Interaction {
+public class DetectorRegistration extends Interaction {
+    public static final String TYPE_ID = createTypeIdentifier(DetectorRegistration.class);
 
-    public static final String TYPE_ID = createTypeIdentifier(DetectedObjectInteraction.class);
-
-    private DetectedObject detectedObject;
-
-    public DetectedObjectInteraction(long time, DetectedObject detectedObject) {
+    private Detector detector;
+    public DetectorRegistration(long time, Detector sensor) {
         super(time);
-        this.detectedObject = detectedObject;
+        this.detector = sensor;
     }
-
-    public DetectedObject getDetectedObject() {
-        return detectedObject;
+    public Detector getDetector() {
+        return detector;
     }
-
-    public void setDetectedObject(DetectedObject detectedObject) {
-        this.detectedObject = detectedObject;
+    public void setDetector(Detector sensor) {
+        this.detector = sensor;
     }
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((detectedObject == null) ? 0 : detectedObject.hashCode());
+        result = prime * result + ((detector == null) ? 0 : detector.hashCode());
         return result;
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -52,16 +47,14 @@ public class DetectedObjectInteraction extends Interaction {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        DetectedObjectInteraction other = (DetectedObjectInteraction) obj;
-        if (detectedObject == null) {
-            if (other.detectedObject != null)
+        DetectorRegistration other = (DetectorRegistration) obj;
+        if (detector == null) {
+            if (other.detector != null)
                 return false;
-        } else if (!detectedObject.equals(other.detectedObject))
+        } else if (!detector.equals(other.detector))
             return false;
         return true;
     }
-
-    
     
     
 }

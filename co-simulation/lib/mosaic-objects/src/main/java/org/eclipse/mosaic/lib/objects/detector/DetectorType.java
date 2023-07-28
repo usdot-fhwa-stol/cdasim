@@ -13,17 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor;
+package org.eclipse.mosaic.lib.objects.detector;
 
 
-public enum DetectionType {
-    CAR("CAR"),
-    VAN("VAN"),
-    TRUCK("TRUCK"),
-    BUS("BUS"),
-    MOTORCYCLE("MOTORCYCLE"),
-    CYCLIST("CYCLIST"),
-    PEDESTRIAN("PEDESTRIAN");
+
+import org.eclipse.mosaic.lib.objects.detector.gson.DetectorTypeAdapter;
+
+import com.google.gson.annotations.JsonAdapter;
+
+@JsonAdapter(DetectorTypeAdapter.class)
+public enum DetectorType {
+    SEMANTIC_LIDAR("SemanticLidar"),
+    RADAR("Radar"),
+    LIDAR("Lidar"),
+    SEMANTIC_SEGMENTATION_CAMERA("SemanticSegnmentationCamera"),
+    INSTANCE_SEGMENTATION_CAMERA("InstanceSegmentationCamera");
+ 
     
     
     public final String label;
@@ -33,7 +38,7 @@ public enum DetectionType {
      *
      * @param name String
      */
-    DetectionType(String name) {
+    DetectorType(String name) {
         this.label = name;
     }
     
@@ -43,13 +48,13 @@ public enum DetectionType {
      * @param name string.
      * @return the enum mapped from String name.
      */
-    public static DetectionType fromName(String name) {
-        for (DetectionType type: DetectionType.values()) {
+    public static DetectorType fromName(String name) {
+        for (DetectorType type: DetectorType.values()) {
             if (type.label.equals(name)) {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Unknown DetectionType name " + name);
+        throw new IllegalArgumentException("Unknown SensorType name " + name);
     }
 
     public String getLabel(){

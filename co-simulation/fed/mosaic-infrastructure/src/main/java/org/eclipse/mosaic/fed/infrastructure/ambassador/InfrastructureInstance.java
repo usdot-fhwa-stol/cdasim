@@ -22,8 +22,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
 
-import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 
 /**
  * InfrastructureInstance class represents a physical instance of an
@@ -40,7 +40,7 @@ public class InfrastructureInstance {
     private int simulatedInteractionPort;
     private CartesianPoint location = null;
     private DatagramSocket rxMsgsSocket = null;
-    private List<Sensor> sensors;
+    private List<Detector> sensors;
 
     /**
      * Constructor for InfrastructureInstance
@@ -55,7 +55,7 @@ public class InfrastructureInstance {
      *                         simulated environment
      */ 
     public InfrastructureInstance(String infrastructureId, InetAddress targetAddress, int rxMessagePort,
-            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Sensor> sensors) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {
         this.infrastructureId = infrastructureId;
         this.targetAddress = targetAddress;
         this.rxMessagePort = rxMessagePort;
@@ -158,7 +158,7 @@ public class InfrastructureInstance {
     }
 
     public boolean containsSensor(String sensorId) {
-        for (Sensor sensor : sensors) {
+        for (Detector sensor : sensors) {
             if (sensor.getSensorId().equals(sensorId) ) {
                 return true;
             } 

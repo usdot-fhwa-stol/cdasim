@@ -31,16 +31,16 @@ import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageRecep
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
-import org.eclipse.mosaic.interactions.sensor.DetectedObjectInteraction;
-import org.eclipse.mosaic.interactions.sensor.Sensor;
-import org.eclipse.mosaic.interactions.sensor.SensorRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -298,9 +298,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + reg.getLocation().getX() + ", " + reg.getLocation().getY() + ", " + reg.getLocation().getZ() + ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
                 log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
-                for (Sensor sensor : reg.getSensors()) {
+                for (Detector sensor : reg.getSensors()) {
                     // Trigger Sensor registrations for all listed sensors.
-                    this.rti.triggerInteraction(new SensorRegistration(time,sensor));
+                    this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
                 }
             }
 

@@ -13,11 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.interactions.sensor.gson;
+package org.eclipse.mosaic.lib.objects.detector.gson;
 
 import java.lang.reflect.Type;
 
-import org.eclipse.mosaic.interactions.sensor.SensorType;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -26,16 +26,16 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-public class SensorTypeAdapter implements JsonSerializer<SensorType>, JsonDeserializer<SensorType> {
+public class DetectorTypeAdapter implements JsonSerializer<DetectorType>, JsonDeserializer<DetectorType> {
 
     @Override
-    public SensorType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+    public DetectorType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        return SensorType.fromName(json.getAsString());
+        return DetectorType.fromName(json.getAsString());
     }
 
     @Override
-    public JsonElement serialize(SensorType src, Type typeOfSrc, JsonSerializationContext context) {
+    public JsonElement serialize(DetectorType src, Type typeOfSrc, JsonSerializationContext context) {
         return context.serialize(src.getLabel());
     }
     

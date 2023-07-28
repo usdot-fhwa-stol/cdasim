@@ -24,10 +24,10 @@ import static org.mockito.Mockito.mock;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
-import org.eclipse.mosaic.interactions.sensor.Orientation;
-import org.eclipse.mosaic.interactions.sensor.Sensor;
-import org.eclipse.mosaic.interactions.sensor.SensorType;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -55,11 +55,11 @@ public class InfrastructureInstanceManagerTest {
         int simulatedInteractionPort = 2355;
         String ipAddressString = "127.0.0.1";
         CartesianPoint pt = CartesianPoint.xyz(37.3382, -121.8863, 1.0);
-        ArrayList<Sensor> sensors = new ArrayList<>();
+        ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
-            new Sensor(
+            new Detector(
                 "String sensorId", 
-                SensorType.SEMANTIC_LIDAR, 
+                DetectorType.SEMANTIC_LIDAR, 
                 new Orientation( 0.0,0.0,0.0),
                 CartesianPoint.ORIGO));
 

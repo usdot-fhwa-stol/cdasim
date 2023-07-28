@@ -19,6 +19,9 @@ import static org.junit.Assert.assertEquals;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 

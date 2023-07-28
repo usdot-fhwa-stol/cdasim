@@ -18,6 +18,9 @@ package org.eclipse.mosaic.interactions.sensor;
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,7 +34,7 @@ public class SensorRegistrationTest {
 
     @Test
     public void testSensorRegistrationJsonSerialization() {
-        Sensor sensor = new Sensor("something", SensorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
+        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
                 CartesianPoint.xyz(1, 2, 3));
         Gson gson = new Gson();
         String sensorJson = gson.toJson(sensor);
@@ -73,9 +76,9 @@ public class SensorRegistrationTest {
         +   "}"
         +"}";
         Gson gson = new Gson();
-        Sensor predictedSensor = new Sensor("something", SensorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
+        Detector predictedSensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
                 CartesianPoint.xyz(1, 2, 3));
-        Sensor sensor = gson.fromJson(predictedSensorJson, Sensor.class);
+        Detector sensor = gson.fromJson(predictedSensorJson, Detector.class);
         assertEquals(sensor, predictedSensor);
     }
 }

@@ -18,8 +18,8 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import java.util.List;
 
-import org.eclipse.mosaic.interactions.sensor.Sensor;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 
 /**
  * A message to be sent by Infrastructure Device when it registers with the
@@ -46,7 +46,7 @@ public class InfrastructureRegistrationMessage {
     // Geo-coordinate of the Infrastructure Device location
     private CartesianPoint location = null;
 
-    private List<Sensor> sensors;
+    private List<Detector> sensors;
 
 
     /**
@@ -67,7 +67,7 @@ public class InfrastructureRegistrationMessage {
      *                                  Device
      */
     public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId, int rxMessagePort,
-            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Sensor> sensors) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.infrastructureId = infrastructureId;
         this.rxMessagePort = rxMessagePort;
@@ -130,76 +130,13 @@ public class InfrastructureRegistrationMessage {
         return this.location;
     }
 
-    /**
-     * Sets the IP address where the Infrastructure Device will be listening for
-     * inbound messages
-     * 
-     * @param rxMessageIpAddress The IP address where the Infrastructure Device will
-     *                           be listening for inbound messages
-     */
-    public void setRxMessageIpAddress(String rxMessageIpAddress) {
-        this.rxMessageIpAddress = rxMessageIpAddress;
-    }
-
-    /**
-     * Sets the unique identifier for the Infrastructure Device
-     * It currently is the same with RSU ID
-     * 
-     * @param infrastructureId The unique identifier for the Infrastructure Device
-     */
-    public void setInfrastructureId(String infrastructureId) {
-        this.infrastructureId = infrastructureId;
-    }
-
-    /**
-     * Sets the port number where the Infrastructure Device will be listening for
-     * inbound messages
-     * 
-     * @param rxMessagePort The port number where the Infrastructure Device will be
-     *                      listening for inbound messages
-     */
-    public void setRxMessagePort(int rxMessagePort) {
-        this.rxMessagePort = rxMessagePort;
-    }
-
-    /**
-     * Set the time sync port for the InfrastructureRegistrationMessage
-     * 
-     * @param timeSyncPort the new time sync port to be set
-     */
-    public void setTimeSyncPort(int timeSyncPort) {
-        this.timeSyncPort = timeSyncPort;
-    }
-
-    /**
-     * Set the location for the InfrastructureRegistrationMessage
-     * 
-     * @param location the new GeoPoint object representing the location of the
-     *                 Infrastructure Device
-     */
-    public void setLocation(CartesianPoint location) {
-        this.location = location;
-    }
-
-    public List<Sensor> getSensors() {
+    public List<Detector> getSensors() {
         return sensors;
     }
-
-    public void setSensors(List<Sensor> sensors) {
-        this.sensors = sensors;
-    }
-
   
     public int getSimulatedInteractionPort() {
         return simulatedInteractionPort;
     }
-
-
-
-    public void setSimulatedInteractionPort(int simulatedInteractionPort) {
-        this.simulatedInteractionPort = simulatedInteractionPort;
-    }
-
 
 
     @Override
