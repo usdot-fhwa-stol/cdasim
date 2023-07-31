@@ -199,19 +199,15 @@ public class DetectedObjectTest {
         detectedObject.setAngularVelocityCovariance(covarianceMatrix);
 
         DetectedObject detectedObject1 = new DetectedObject(
-                DetectionType.CAR,
+                null,
                 0.6,
-                "sensor3",
-                "otherProj",
-                "object2",
-                CartesianPoint.xyz(2, 2, 3.2),
-                new Vector3d(3, 3, 4),
-                new Vector3d(4,-5.5,-6.6),
-                new Size(5, 4, 5));
-        Double[] covarianceMatrix1 = new Double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
-        detectedObject.setPositionCovariance(covarianceMatrix1);
-        detectedObject.setVelocityCovariance(covarianceMatrix1);
-        detectedObject.setAngularVelocityCovariance(covarianceMatrix1);
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
 
         assertNotEquals(detectedObject, detectedObject1);
 
