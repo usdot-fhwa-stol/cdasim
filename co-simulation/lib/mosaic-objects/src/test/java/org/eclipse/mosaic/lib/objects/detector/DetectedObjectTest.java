@@ -208,8 +208,20 @@ public class DetectedObjectTest {
                 null,
                 null,
                 null);
+        DetectedObject detectedObject2 = new DetectedObject(
+                null,
+                0.6,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
 
-        assertNotEquals(detectedObject, detectedObject1);
+        assertNotEquals(detectedObject1, detectedObject);
+        assertEquals(detectedObject2, detectedObject1);
+
 
         //Correct Type
         detectedObject1.setType(detectedObject.getType());
