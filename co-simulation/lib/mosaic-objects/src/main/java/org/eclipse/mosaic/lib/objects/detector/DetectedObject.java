@@ -127,6 +127,47 @@ public final class DetectedObject implements Serializable {
         return size;
     }
     
+    
+    public static long getSerialversionuid() {
+        return serialVersionUID;
+    }
+
+    public void setType(DetectionType type) {
+        this.type = type;
+    }
+
+    public void setConfidence(double confidence) {
+        this.confidence = confidence;
+    }
+
+    public void setSensorId(String sensorId) {
+        this.sensorId = sensorId;
+    }
+
+    public void setProjString(String projString) {
+        this.projString = projString;
+    }
+
+    public void setObjectId(String objectId) {
+        this.objectId = objectId;
+    }
+
+    public void setPosition(CartesianPoint position) {
+        this.position = position;
+    }
+
+    public void setVelocity(Vector3d velocity) {
+        this.velocity = velocity;
+    }
+
+    public void setAngularVelocity(Vector3d angularVelocity) {
+        this.angularVelocity = angularVelocity;
+    }
+
+    public void setSize(Size size) {
+        this.size = size;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;

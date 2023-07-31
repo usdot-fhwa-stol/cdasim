@@ -17,6 +17,7 @@ package org.eclipse.mosaic.lib.objects.detector;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
@@ -176,7 +177,92 @@ public class DetectedObjectTest {
         assertArrayEquals(covarianceMatrix, detectedObject.getPositionCovariance());
         assertArrayEquals(covarianceMatrix, detectedObject.getVelocityCovariance());
         assertArrayEquals(covarianceMatrix, detectedObject.getAngularVelocityCovariance());
+
        
+    }
+
+    @Test
+    public void testEquals() {
+        DetectedObject detectedObject = new DetectedObject(
+                DetectionType.VAN,
+                0.5,
+                "sensor1",
+                "projection String",
+                "Object1",
+                CartesianPoint.xyz(1.1, 2, 3.2),
+                new Vector3d(2, 3, 4),
+                new Vector3d(-4.4,-5.5,-6.6),
+                new Size(3, 4, 5));
+        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        detectedObject.setPositionCovariance(covarianceMatrix);
+        detectedObject.setVelocityCovariance(covarianceMatrix);
+        detectedObject.setAngularVelocityCovariance(covarianceMatrix);
+
+        DetectedObject detectedObject1 = new DetectedObject(
+                DetectionType.CAR,
+                0.6,
+                "sensor3",
+                "otherProj",
+                "object2",
+                CartesianPoint.xyz(2, 2, 3.2),
+                new Vector3d(3, 3, 4),
+                new Vector3d(4,-5.5,-6.6),
+                new Size(5, 4, 5));
+        Double[] covarianceMatrix1 = new Double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+        detectedObject.setPositionCovariance(covarianceMatrix1);
+        detectedObject.setVelocityCovariance(covarianceMatrix1);
+        detectedObject.setAngularVelocityCovariance(covarianceMatrix1);
+
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Size
+        detectedObject1.setSize(detectedObject.getSize());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Angular Velocity Covariance
+        detectedObject1.setAngularVelocityCovariance(detectedObject.getAngularVelocityCovariance());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Angular Velocity 
+        detectedObject1.setAngularVelocity(detectedObject.getAngularVelocity());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Velocity Covariance
+        detectedObject1.setVelocityCovariance(detectedObject.getVelocityCovariance());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Velocity 
+        detectedObject1.setVelocity(detectedObject.getVelocity());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Position Covariance
+        detectedObject1.setPositionCovariance(detectedObject.getPositionCovariance());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Position 
+        detectedObject1.setPosition(detectedObject.getPosition());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Object ID
+        detectedObject1.setObjectId(detectedObject.getObjectId());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Projection String
+        detectedObject1.setProjString(detectedObject.getProjString());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Sensor ID
+        detectedObject1.setSensorId(detectedObject.getSensorId());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Confidence
+        detectedObject1.setConfidence(detectedObject.getConfidence());
+        assertNotEquals(detectedObject, detectedObject1);
+
+        //Correct Type
+        detectedObject1.setType(detectedObject.getType());
+        assertEquals(detectedObject, detectedObject1);
+
     }
 
 }
