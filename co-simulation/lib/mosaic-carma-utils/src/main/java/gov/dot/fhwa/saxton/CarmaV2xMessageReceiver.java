@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Worker thread Runnable for operating a listen socket to receive outbound V2X Messages from CARMA Platform instances
@@ -41,7 +42,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
     private Queue<Tuple<InetAddress, CarmaV2xMessage>> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private int listenPort;
-    private boolean running = true;
+    private AtomicBoolean running = new AtomicBoolean(false);
     private static final int UDP_MTU = 1536;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -83,14 +84,17 @@ public class CarmaV2xMessageReceiver implements Runnable {
     @Override
     public void run() {
         byte[] buf = new byte[UDP_MTU];
-       while (running) {
+        running.set(true);
+        while (running.get()) {
            DatagramPacket msg = new DatagramPacket(buf, buf.length);
            
            try {
-               listenSocket.receive(msg);
-               log.info("CarmaV2xMessageReceiver received message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
+                log.info("Is running {}", running);
+                listenSocket.receive(msg);
+                log.info("CarmaV2xMessageReceiver received message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
            } catch (IOException e) {
-               throw new RuntimeException(e);
+               log.error("Error occured :", e);
+               continue;
            }
 
            // parse message
@@ -105,18 +109,20 @@ public class CarmaV2xMessageReceiver implements Runnable {
            } catch (IllegalArgumentException parseError) {
                log.warn("CarmaV2xMessageReceiver received malformed message with length: " + msg.getLength() + " from client " + msg.getAddress().toString() + "! Reason: " + parseError.getMessage() +". Discarding...");
            }
-       }
+        }
+        if (listenSocket != null) {
+            listenSocket.close();
+        }
     }
 
     /**
      * Stop the runnable instance
      */
     public void stop() {
+        running.set(false);
         if (listenSocket != null) {
             listenSocket.close();
         }
-
-        running = false;
     }
 
     /**
