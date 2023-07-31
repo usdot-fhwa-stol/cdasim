@@ -123,7 +123,7 @@ public class InfrastructureMessageAmbassadorTest {
         DetectedObjectInteraction interaction = new DetectedObjectInteraction(100,detectedObject);
 
         ambassador.processInteraction(interaction);
-        verify(instanceManagerMock).onObjectDetectionInteraction(detectedObject);
+        verify(instanceManagerMock).onDetectedObject(detectedObject);
 
     }
 

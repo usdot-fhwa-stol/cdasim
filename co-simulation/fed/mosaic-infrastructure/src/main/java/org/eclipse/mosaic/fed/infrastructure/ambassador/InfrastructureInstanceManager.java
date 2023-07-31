@@ -180,7 +180,7 @@ public class InfrastructureInstanceManager {
      * @param detection
      * @param sensorId
      */
-    public void onObjectDetectionInteraction(DetectedObject detection) {
+    public void onDetectedObject(DetectedObject detection) {
         for (InfrastructureInstance instance : managedInstances.values()) {
             if (instance.containsSensor(detection.getSensorId())) {
                 try {

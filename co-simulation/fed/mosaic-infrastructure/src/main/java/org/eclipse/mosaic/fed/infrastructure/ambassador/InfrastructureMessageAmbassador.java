@@ -165,7 +165,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
 
     private synchronized void receiveDetectedObjectInteraction( DetectedObjectInteraction interaction) {
         log.trace("Process Detected Object Interaction {}", interaction);
-        infrastructureInstanceManager.onObjectDetectionInteraction(interaction.getDetectedObject());
+        infrastructureInstanceManager.onDetectedObject(interaction.getDetectedObject());
     }
     /**
      * Extract external message from received

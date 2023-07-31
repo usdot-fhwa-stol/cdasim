@@ -19,7 +19,10 @@ package org.eclipse.mosaic.fed.infrastructure.ambassador;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,6 +65,13 @@ public class InfrastructureInstanceManagerTest {
         manager.getManagedInstances().put("instance1", instance1);
         manager.getManagedInstances().put("instance2", instance2);
         manager.getManagedInstances().put("instance3", instance3);
+        // Mocks will account for detected objects with the given sensor IDs.
+        when(instance1.containsSensor("sensor1")).thenReturn(true);
+        when(instance1.containsSensor("sensor2")).thenReturn(true);
+        when(instance2.containsSensor("sensor3")).thenReturn(true);
+        when(instance2.containsSensor("sensor4")).thenReturn(true);
+        when(instance3.containsSensor("sensor5")).thenReturn(true);
+        when(instance3.containsSensor("sensor6")).thenReturn(true);
         
     }
 
@@ -121,13 +131,8 @@ public class InfrastructureInstanceManagerTest {
 
     @Test
     public void testOnDetectedObject() throws IOException{
-        when(instance1.containsSensor("sensor1")).thenReturn(true);
-        when(instance1.containsSensor("sensor2")).thenReturn(true);
-        when(instance2.containsSensor("sensor3")).thenReturn(true);
-        when(instance2.containsSensor("sensor4")).thenReturn(true);
-        when(instance3.containsSensor("sensor5")).thenReturn(true);
-        when(instance3.containsSensor("sensor6")).thenReturn(true);
-        DetectedObject detectedObject = new DetectedObject(
+        // Create detected object
+        DetectedObject detectedObject1 = new DetectedObject(
                 DetectionType.VAN,
                 0.5,
                 "sensor1",
@@ -138,16 +143,35 @@ public class InfrastructureInstanceManagerTest {
                 new Vector3d(-4.4,-5.5,-6.6),
                 new Size(3, 4, 5));
         Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-        detectedObject.setPositionCovariance(covarianceMatrix);
-        detectedObject.setVelocityCovariance(covarianceMatrix);
-        detectedObject.setAngularVelocityCovariance(covarianceMatrix);
-
-        manager.onObjectDetectionInteraction(detectedObject);
+        detectedObject1.setPositionCovariance(covarianceMatrix);
+        detectedObject1.setVelocityCovariance(covarianceMatrix);
+        detectedObject1.setAngularVelocityCovariance(covarianceMatrix);
+        // Attempt to send detected object to infrastructure instance
+        manager.onDetectedObject(detectedObject1);
         Gson gson = new Gson();
-        byte[] datagram = gson.toJson(detectedObject).getBytes();
-        verify(instance1, times(1)).sendInteraction(datagram);
-
-
+        byte[] datagram1 = gson.toJson(detectedObject1).getBytes();
+        // Verify Infrastructure Manager attempted to sent Detected Object
+        // to instance1
+        verify(instance1, times(1)).sendInteraction(datagram1);
+        // Create second detected object
+        DetectedObject detectedObject2 = new DetectedObject(
+                DetectionType.VAN,
+                0.5,
+                "sensor6",
+                "projection String",
+                "Object1",
+                CartesianPoint.xyz(1.1, 2, 3.2),
+                new Vector3d(2, 3, 4),
+                new Vector3d(-4.4,-5.5,-6.6),
+                new Size(3, 4, 5));
+        detectedObject2.setPositionCovariance(covarianceMatrix);
+        detectedObject2.setVelocityCovariance(covarianceMatrix);
+        detectedObject2.setAngularVelocityCovariance(covarianceMatrix);
+        manager.onDetectedObject(detectedObject2);
+        byte[] datagram2 = gson.toJson(detectedObject2).getBytes();
+        doThrow(new IOException("Something went wrong")).when(instance3).sendInteraction(datagram2);
+        verify(instance3, times(1)).sendInteraction(datagram2);
+        verify(instance2, never()).sendInteraction(any(byte[].class));
     }
 
 }
