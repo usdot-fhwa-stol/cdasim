@@ -77,9 +77,9 @@ public class InfrastructureInstanceTest {
 
     @Test
     public void testGetterSetterConstructor() {
-        assertEquals(instance.getInfrastructureId(), "SomeID");
-        assertEquals(instance.getLocation(), CartesianPoint.ORIGO);
-        assertEquals(instance.getRxMessagePort(), 3456);
-        assertEquals(instance.getTimeSyncPort(), 5667);
+        assertEquals("SomeID", instance.getInfrastructureId());
+        assertEquals(CartesianPoint.ORIGO, instance.getLocation());
+        assertEquals(3456, instance.getRxMessagePort());
+        assertEquals(5667, instance.getTimeSyncPort());
     }
 }
