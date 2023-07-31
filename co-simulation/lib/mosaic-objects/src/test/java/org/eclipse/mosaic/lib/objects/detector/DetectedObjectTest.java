@@ -143,6 +143,7 @@ public class DetectedObjectTest {
         predictedDetectedObject.setVelocityCovariance(covarianceMatrix);
         predictedDetectedObject.setAngularVelocityCovariance(covarianceMatrix);
         assertEquals(detectedObject, predictedDetectedObject);
+        assertEquals(detectedObject.hashCode(), predictedDetectedObject.hashCode());
     }
 
     @Test

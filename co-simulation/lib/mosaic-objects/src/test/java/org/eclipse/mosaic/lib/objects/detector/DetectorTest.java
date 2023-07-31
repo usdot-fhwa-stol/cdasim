@@ -77,5 +77,16 @@ public class DetectorTest {
                 CartesianPoint.xyz(1, 2, 3));
         Detector sensor = gson.fromJson(predictedSensorJson, Detector.class);
         assertEquals(sensor, predictedSensor);
+        assertEquals(sensor.hashCode(), predictedSensor.hashCode());
+    }
+
+    @Test
+    public void testGetterSetterConstructor() {
+        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
+                CartesianPoint.xyz(1, 2, 3));
+        assertEquals("something", sensor.getSensorId());
+        assertEquals(DetectorType.SEMANTIC_LIDAR, sensor.getType());
+        assertEquals(new Orientation(23.0, 0, 0), sensor.getOrientation());
+        assertEquals(CartesianPoint.xyz(1,2,3), sensor.getLocation());
     }
 }

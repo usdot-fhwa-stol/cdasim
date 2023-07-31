@@ -42,6 +42,9 @@ public class DetectorRegistrationTest {
         DetectorRegistration detectorRegistration1 = new DetectorRegistration(0, detector);
 
         assertNotEquals(detectorRegistration, detectorRegistration1);
-        
+        DetectorRegistration detectorRegistration2 = detectorRegistration1;
+        assertEquals(detectorRegistration1, detectorRegistration2);
+        assertEquals(detectorRegistration1.hashCode(), detectorRegistration2.hashCode());
+
     }
 }
