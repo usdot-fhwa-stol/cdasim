@@ -211,53 +211,61 @@ public class DetectedObjectTest {
 
         assertNotEquals(detectedObject, detectedObject1);
 
-        //Correct Size
-        detectedObject1.setSize(detectedObject.getSize());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Angular Velocity Covariance
-        detectedObject1.setAngularVelocityCovariance(detectedObject.getAngularVelocityCovariance());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Angular Velocity 
-        detectedObject1.setAngularVelocity(detectedObject.getAngularVelocity());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Velocity Covariance
-        detectedObject1.setVelocityCovariance(detectedObject.getVelocityCovariance());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Velocity 
-        detectedObject1.setVelocity(detectedObject.getVelocity());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Position Covariance
-        detectedObject1.setPositionCovariance(detectedObject.getPositionCovariance());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Position 
-        detectedObject1.setPosition(detectedObject.getPosition());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Object ID
-        detectedObject1.setObjectId(detectedObject.getObjectId());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Projection String
-        detectedObject1.setProjString(detectedObject.getProjString());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Sensor ID
-        detectedObject1.setSensorId(detectedObject.getSensorId());
-        assertNotEquals(detectedObject, detectedObject1);
-
-        //Correct Confidence
-        detectedObject1.setConfidence(detectedObject.getConfidence());
-        assertNotEquals(detectedObject, detectedObject1);
-
         //Correct Type
         detectedObject1.setType(detectedObject.getType());
-        assertEquals(detectedObject, detectedObject1);
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Confidence
+        detectedObject1.setConfidence(detectedObject.getConfidence());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Sensor ID
+        detectedObject1.setSensorId(detectedObject.getSensorId());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Projection String
+        detectedObject1.setProjString(detectedObject.getProjString());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Object ID
+        detectedObject1.setObjectId(detectedObject.getObjectId());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Size
+        detectedObject1.setSize(detectedObject.getSize());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Position 
+        detectedObject1.setPosition(detectedObject.getPosition());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Position Covariance
+        detectedObject1.setPositionCovariance(detectedObject.getPositionCovariance());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Velocity 
+        detectedObject1.setVelocity(detectedObject.getVelocity());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Velocity Covariance
+        detectedObject1.setVelocityCovariance(detectedObject.getVelocityCovariance());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Angular Velocity 
+        detectedObject1.setAngularVelocity(detectedObject.getAngularVelocity());
+        assertNotEquals(detectedObject1, detectedObject);
+        //Correct Angular Velocity Covariance
+        detectedObject1.setAngularVelocityCovariance(detectedObject.getAngularVelocityCovariance());
+        assertEquals(detectedObject1, detectedObject);
+
+        
+
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+       
+
+        
 
     }
 
