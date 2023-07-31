@@ -157,6 +157,31 @@ public class InfrastructureInstance {
     public void setTimeSyncPort(int timeSyncPort) {
         this.timeSyncPort = timeSyncPort;
     }
+    
+
+    public int getSimulatedInteractionPort() {
+        return simulatedInteractionPort;
+    }
+
+
+
+    public void setSimulatedInteractionPort(int simulatedInteractionPort) {
+        this.simulatedInteractionPort = simulatedInteractionPort;
+    }
+
+
+
+    public List<Detector> getSensors() {
+        return sensors;
+    }
+
+
+
+    public void setSensors(List<Detector> sensors) {
+        this.sensors = sensors;
+    }
+
+
 
     public boolean containsSensor(String sensorId) {
         for (Detector sensor : sensors) {

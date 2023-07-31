@@ -81,5 +81,35 @@ public class InfrastructureInstanceTest {
         assertEquals(CartesianPoint.ORIGO, instance.getLocation());
         assertEquals(3456, instance.getRxMessagePort());
         assertEquals(5667, instance.getTimeSyncPort());
+        // Test Setter
+        instance.setInfrastructureId("DifferentID");
+        assertEquals("DifferentID", instance.getInfrastructureId());
+        instance.setLocation(CartesianPoint.xy(40, 50));
+        assertEquals(CartesianPoint.xy(40, 50), instance.getLocation());
+        instance.setTimeSyncPort(4321);
+        assertEquals(4321, instance.getTimeSyncPort());
+        instance.setRxMessagePort(5678);
+        assertEquals(5678, instance.getRxMessagePort());
+        instance.setSimulatedInteractionPort(9999);
+        assertEquals(9999, instance.getSimulatedInteractionPort());
+        ArrayList<Detector> sensors = new ArrayList<>();
+        sensors.add(
+            new Detector(
+                "sensor1", 
+                DetectorType.SEMANTIC_LIDAR, 
+                new Orientation( 1.0,2.0,3.0),
+                CartesianPoint.ORIGO));
+        sensors.add(
+            new Detector(
+                "NewSensor", 
+                DetectorType.SEMANTIC_LIDAR, 
+                new Orientation( 24.0,25.0,6.0),
+                CartesianPoint.ORIGO));
+        instance.setSensors(sensors);
+        assertEquals(sensors, instance.getSensors());
+        instance.setTargetAddress(address);
+        assertEquals(address, instance.getTargetAddress());
+
+
     }
 }
