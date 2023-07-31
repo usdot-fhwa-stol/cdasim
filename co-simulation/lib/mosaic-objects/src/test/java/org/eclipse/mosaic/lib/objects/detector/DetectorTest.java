@@ -88,5 +88,14 @@ public class DetectorTest {
         assertEquals(DetectorType.SEMANTIC_LIDAR, sensor.getType());
         assertEquals(new Orientation(23.0, 0, 0), sensor.getOrientation());
         assertEquals(CartesianPoint.xyz(1,2,3), sensor.getLocation());
+        // Test Setters
+        sensor.setSensorId("NewSensor");
+        sensor.setLocation(CartesianPoint.xy(45,67));
+        sensor.setOrientation(new Orientation(22, 33, 44));
+        sensor.setType(DetectorType.INSTANCE_SEGMENTATION_CAMERA);
+        assertEquals("NewSensor", sensor.getSensorId());
+        assertEquals(DetectorType.INSTANCE_SEGMENTATION_CAMERA, sensor.getType());
+        assertEquals(new Orientation(22, 33, 44), sensor.getOrientation());
+        assertEquals(CartesianPoint.xy(45,67), sensor.getLocation());
     }
 }
