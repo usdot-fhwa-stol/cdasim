@@ -36,25 +36,25 @@ public enum DetectorType {
     /**
      * Default constructor.
      *
-     * @param name String
+     * @param label String
      */
-    DetectorType(String name) {
-        this.label = name;
+    DetectorType(String label) {
+        this.label = label;
     }
     
     /**
      * Returns the enum mapped from an String name.
      *
-     * @param name string.
+     * @param label string.
      * @return the enum mapped from String name.
      */
-    public static DetectorType fromName(String name) {
+    public static DetectorType fromLabel(String label) {
         for (DetectorType type: DetectorType.values()) {
-            if (type.label.equals(name)) {
+            if (type.label.equals(label)) {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Unknown SensorType name " + name);
+        throw new IllegalArgumentException("Unknown DetectorType label " + label);
     }
 
     public String getLabel(){

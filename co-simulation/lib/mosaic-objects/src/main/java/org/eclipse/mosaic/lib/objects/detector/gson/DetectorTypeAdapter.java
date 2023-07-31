@@ -31,7 +31,7 @@ public class DetectorTypeAdapter implements JsonSerializer<DetectorType>, JsonDe
     @Override
     public DetectorType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        return DetectorType.fromName(json.getAsString());
+        return DetectorType.fromLabel(json.getAsString());
     }
 
     @Override
