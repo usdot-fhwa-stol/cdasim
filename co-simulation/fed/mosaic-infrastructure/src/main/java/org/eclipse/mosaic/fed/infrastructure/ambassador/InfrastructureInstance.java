@@ -211,7 +211,7 @@ public class InfrastructureInstance {
      * @throws IOException If there is an issue with the underlying socket object or
      *                     methods
      */
-    public void sendMsgs(byte[] data) throws IOException {
+    public void sendV2xMsg(byte[] data) throws IOException {
         sendPacket(data, rxMessagePort);
     }
 
@@ -220,7 +220,7 @@ public class InfrastructureInstance {
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
-    public void sendTimeSyncMsgs(byte[] data) throws IOException {
+    public void sendTimeSyncMsg(byte[] data) throws IOException {
         sendPacket(data, timeSyncPort);
     }
 

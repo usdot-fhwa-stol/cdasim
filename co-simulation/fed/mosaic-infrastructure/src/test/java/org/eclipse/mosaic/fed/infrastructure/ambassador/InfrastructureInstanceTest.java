@@ -15,11 +15,17 @@
  */
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -30,6 +36,7 @@ import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 public class InfrastructureInstanceTest {
@@ -112,4 +119,45 @@ public class InfrastructureInstanceTest {
 
 
     }
+
+    @Test
+    public void testSendV2xMsg() throws IOException {
+        String test_msg = "test message";
+        instance.sendV2xMsg(test_msg.getBytes());
+        ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
+
+        verify(socket, times(1)).send(packet.capture());
+
+        assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
+        assertEquals(instance.getRxMessagePort(), packet.getValue().getPort());
+        assertEquals(address, packet.getValue().getAddress());
+    }
+
+    @Test
+    public void testSendTimeSyncMsg() throws IOException {
+        String test_msg = "test message";
+        instance.sendTimeSyncMsg(test_msg.getBytes());
+        ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
+
+        verify(socket, times(1)).send(packet.capture());
+
+        assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
+        assertEquals(instance.getTimeSyncPort(), packet.getValue().getPort());
+        assertEquals(address, packet.getValue().getAddress());
+    }
+
+    @Test
+    public void testSendInteraction() throws IOException {
+        String test_msg = "test message";
+        instance.sendInteraction(test_msg.getBytes());
+        ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
+
+        verify(socket, times(1)).send(packet.capture());
+
+        assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
+        assertEquals(instance.getSimulatedInteractionPort(), packet.getValue().getPort());
+        assertEquals(address, packet.getValue().getAddress());
+    }
+
+
 }

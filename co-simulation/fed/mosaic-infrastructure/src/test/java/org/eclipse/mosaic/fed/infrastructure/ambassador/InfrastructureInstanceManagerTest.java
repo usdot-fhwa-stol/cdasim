@@ -16,7 +16,6 @@
  
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,10 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 
-import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -42,9 +39,6 @@ import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.internal.matchers.Any;
-import org.mockito.internal.verification.Times;
 
 import com.google.gson.Gson;
 
@@ -123,9 +117,9 @@ public class InfrastructureInstanceManagerTest {
         Gson gson = new Gson();
         byte[] datagram = gson.toJson(message).getBytes();
         // Verify that all instances sendTimeSyncMsgs was called.
-        verify(instance1).sendTimeSyncMsgs(datagram);
-        verify(instance2).sendTimeSyncMsgs(datagram);
-        verify(instance2).sendTimeSyncMsgs(datagram);
+        verify(instance1).sendTimeSyncMsg(datagram);
+        verify(instance2).sendTimeSyncMsg(datagram);
+        verify(instance2).sendTimeSyncMsg(datagram);
 
     }
 

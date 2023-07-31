@@ -166,7 +166,7 @@ public class InfrastructureInstanceManager {
 
         InfrastructureInstance rsu = managedInstances.get(rxRsuId);
         try {
-            rsu.sendMsgs(rxMsg);
+            rsu.sendV2xMsg(rxMsg);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -222,7 +222,7 @@ public class InfrastructureInstanceManager {
         }
 
         for (InfrastructureInstance currentInstance : managedInstances.values()) {
-            currentInstance.sendTimeSyncMsgs(encodeTimeMessage(message));
+            currentInstance.sendTimeSyncMsg(encodeTimeMessage(message));
         }
     }
 
