@@ -103,14 +103,11 @@ public class CarmaV2xMessageReceiver implements Runnable {
                // Enqueue message for processing on main thread
                synchronized (rxQueue) {
                    rxQueue.add(new Tuple<>(msg.getAddress(), parsedMessage));
-                   log.info("CarmaV2xMessageReceiver enqueued message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
+                   log.debug("CarmaV2xMessageReceiver enqueued message of size {} from client {}." , msg.getLength(), msg.getAddress());
                }
            } catch (IllegalArgumentException parseError) {
-               log.warn("CarmaV2xMessageReceiver received malformed message with length: " + msg.getLength() + " from client " + msg.getAddress().toString() + "! Reason: " + parseError.getMessage() +". Discarding...");
+               log.warn("CarmaV2xMessageReceiver received malformed message with size {} from client {} !\nReason: {} .\nDiscarding ...",msg.getLength(), msg.getAddress(), parseError.getMessage());
            }
-        }
-        if (listenSocket != null) {
-            listenSocket.close();
         }
     }
 

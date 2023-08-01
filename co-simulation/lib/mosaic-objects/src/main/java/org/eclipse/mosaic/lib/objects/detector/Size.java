@@ -25,21 +25,38 @@ public class Size implements Serializable {
     private double height;
 
     private double width;
-
+    /**
+     * Constructor for size
+     * @param length in meters
+     * @param height in meters
+     * @param width in meters
+     */
     public Size(double length, double height, double width) {
         this.length = length;
         this.height = height;
         this.width = width;
     }
 
+    /**
+     * Get length in meters.
+     * @return
+     */
     public double getLength() {
         return length;
     }
 
+    /**
+     * Get height in meters.
+     * @return
+     */
     public double getHeight() {
         return height;
     }
 
+    /**
+     * Get width in meters.
+     * @return
+     */
     public double getWidth() {
         return width;
     }

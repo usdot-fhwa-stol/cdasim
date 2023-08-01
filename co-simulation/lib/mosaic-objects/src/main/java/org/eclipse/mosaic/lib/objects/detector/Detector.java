@@ -26,35 +26,81 @@ public class Detector implements Serializable {
     private DetectorType type;
     private Orientation orientation;
     private CartesianPoint location;
-    
-    public Detector(String sensorId, DetectorType type, Orientation orientation, CartesianPoint point) {
+
+    /**
+     * Sensor/Detector constructor
+     * 
+     * @param sensorId unique string ID of sensor/detector.
+     * @param type of the sensor/detector.
+     * @param orientation of the sensor/detector. 
+     * @param location of the sensor/detector.
+     */
+    public Detector(String sensorId, DetectorType type, Orientation orientation, CartesianPoint location) {
         this.sensorId = sensorId;
         this.type = type;
         this.orientation = orientation;
-        this.location = point;
+        this.location = location;
     }
 
+    /**
+     * Get unique String sensor ID.
+     * @return
+     */
     public String getSensorId() {
         return sensorId;
     }
+
+    /**
+     * Set unique String sensor ID.
+     * @param sensorId
+     */
     public void setSensorId(String sensorId) {
         this.sensorId = sensorId;
     }
+
+    /**
+     * Get sensor/detector {@link DetectorType}.
+     * @return
+     */
     public DetectorType getType() {
         return type;
     }
+
+    /**
+     * Set the sensor/detector {@link DetectorType}.
+     * @param type
+     */
     public void setType(DetectorType type) {
         this.type = type;
     }
+
+    /**
+     * Get sensor/detector {@link Orientation}.
+     * @return
+     */
     public Orientation getOrientation() {
         return orientation;
     }
+
+    /**
+     * Set sensor/detector {@link Orientation}.
+     * @param orientation
+     */
     public void setOrientation(Orientation orientation) {
         this.orientation = orientation;
     }
+
+    /**
+     * Get sensor/detector location.
+     * @return {@link CartesianPoint}.
+     */
     public CartesianPoint getLocation() {
         return location;
     }
+    /**
+     * Set sensor/detector location
+     * @param point {@link CartesianPoint}.
+     */
     public void setLocation(CartesianPoint point) {
         this.location = point;
     }

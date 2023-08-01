@@ -25,22 +25,38 @@ public class Orientation implements Serializable{
     private double pitch;
 
     private double roll;
-
+    /**
+     * Constructor for orientation 
+     * @param yaw in degrees
+     * @param pitch in degrees
+     * @param roll in degrees 
+     */
     public Orientation( double yaw, double pitch, double roll) {
         this.yaw = yaw;
         this.pitch = pitch;
         this.roll = roll;
     }
 
+    /**
+     * Get yaw in degrees.
+     * @return
+     */
     public double getYaw() {
         return yaw;
     }
 
-
+    /**
+     * Get pitch in degrees.
+     * @return
+     */
     public double getPitch() {
         return pitch;
     }
 
+    /**
+     * Get roll in degrees.
+     * @return
+     */
     public double getRoll() {
         return roll;
     }
