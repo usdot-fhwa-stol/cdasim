@@ -183,7 +183,7 @@ public class InfrastructureInstanceManager {
         for (InfrastructureInstance instance : managedInstances.values()) {
             if (instance.containsSensor(detection.getSensorId())) {
                 try {
-                    instance.sendInteraction(encodeObjectDetection(detection));
+                    instance.sendInteraction(encodeMsg(detection));
                     // Assuming each sensor would only ever be registered to a single infrastructure
                     // instance
                     break;
@@ -195,37 +195,17 @@ public class InfrastructureInstanceManager {
     }
 
     /**
-     * Helper method to serialize time sychronization message to JSON and encode into bytes 
-     * for eventual transmission via a Datagramsocket.
+     * Helper method to serialize message into JSON and encode as bytes.
      * 
-     * @param message time synchronization message to encode
-     * @return resulting bytes encoded from JSON string.
+     * @param message java object containing message information
+     * @return bytes encoded from JSON string representation of object.
      */
-    private byte[] encodeTimeMessage(InfrastructureTimeMessage message) {
-        return asJson(message).getBytes();
-    }
-
-    /**
-     * Helper method to serialize java Object into JSON via the {@link com.google.gson.Gson} object.
-     * 
-     * @param obj to serialze into JSON string.
-     * @return resulting JSON string.
-     */
-    private String asJson(Object obj) {
+    private byte[] encodeMsg(Object message) {
         Gson gson = new Gson();
-        return gson.toJson(obj);
-    }
-    /**
-     * Helper method to serialize object detection message to JSON and encode into bytes 
-     * for eventual transmission via a Datagramsocket.
-     * 
-     * @param message object detection message to encode
-     * @return resulting bytes encoded from JSON string.
-     */
-    private byte[] encodeObjectDetection(DetectedObject detection) {
-        return asJson(detection).getBytes();
+        return gson.toJson(message).getBytes();
     }
 
+    
     /**
      * This function is used to send out encoded timestep update to all registered
      * instances the manager has on the managed instances map
@@ -240,7 +220,7 @@ public class InfrastructureInstanceManager {
         }
 
         for (InfrastructureInstance currentInstance : managedInstances.values()) {
-            currentInstance.sendTimeSyncMsg(encodeTimeMessage(message));
+            currentInstance.sendTimeSyncMsg(encodeMsg(message));
         }
     }
 

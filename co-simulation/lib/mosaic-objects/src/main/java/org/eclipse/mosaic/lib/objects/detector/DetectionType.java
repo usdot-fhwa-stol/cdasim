@@ -52,6 +52,10 @@ public enum DetectionType {
         throw new IllegalArgumentException("Unknown DetectionType name " + label);
     }
 
+    /**
+     * Returns string label associated with enum.
+     * @return
+     */
     public String getLabel(){
         return label;
     }
