@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import java.util.List;
@@ -22,49 +21,52 @@ import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 
 /**
- * A message to be sent by Infrastructure Device when it registers with the
+ * A message to be sent by Infrastructure instance when it registers with the
  * carma-mosaic ambassador
  */
 public class InfrastructureRegistrationMessage {
 
-    // IP address where the Infrastructure Device will be listening for inbound
+    // IP address where the Infrastructure instance will be listening for inbound
     // messages
     private String rxMessageIpAddress;
-    // Unique identifier for the Infrastructure Device
+    // Unique identifier for the Infrastructure instance
     private String infrastructureId;
 
-    // Port number where the Infrastructure Device will be listening for inbound
+    // Port number where the Infrastructure instance will be listening for inbound
     // messages
     private int rxMessagePort;
 
-    // Port number where the Infrastructure Device will be listening for time
+    // Port number where the Infrastructure instance will be listening for time
     // synchronization messages
     private int timeSyncPort;
-
+    
+    // Port number where infrastructure instance will be listening for interaction 
+    // messages
     private int simulatedInteractionPort;
 
-    // Geo-coordinate of the Infrastructure Device location
+    // Geo-coordinate of the Infrastructure instance location
     private CartesianPoint location = null;
 
+    // List of Sensor/Detectors associated with infrastructure instance.
     private List<Detector> sensors;
 
 
     /**
      * Constructor for an `InfrastructureRegistrationMessage` instance
      * 
-     * @param rxMessageIpAddress        IP address where the Infrastructure Device will be
+     * @param rxMessageIpAddress        IP address where the Infrastructure instance will be
      *                                  listening for inbound messages
-     * @param infrastructureId          Unique identifier for the Infrastructure Device
-     * @param rxMessagePort             Port number where the Infrastructure Device will be
+     * @param infrastructureId          Unique identifier for the Infrastructure instance
+     * @param rxMessagePort             Port number where the Infrastructure instance will be
      *                                  listening for inbound messages
-     * @param simulatedInteractionPort  Port number where Infrastructure Device will be listening
+     * @param simulatedInteractionPort  Port number where Infrastructure instance will be listening
      *                                  for simulated interactions.
-     * @param timeSyncPort              Port number where the Infrastructure Device will be
+     * @param timeSyncPort              Port number where the Infrastructure instance will be
      *                                  listening for time synchronization messages
-     * @param location                  Geo-coordinate of the Infrastructure Device
+     * @param location                  Geo-coordinate of the Infrastructure instance
      *                                  location
      * @param sensors                   ArrayList of sensors to register for a given infrastructure
-     *                                  Device
+     *                                  instance
      */
     public InfrastructureRegistrationMessage(String rxMessageIpAddress, String infrastructureId, int rxMessagePort,
             int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {
@@ -80,10 +82,10 @@ public class InfrastructureRegistrationMessage {
 
 
     /**
-     * Returns the IP address where the Infrastructure Device will be listening for
+     * Returns the IP address where the Infrastructure instance will be listening for
      * inbound messages
      * 
-     * @return The IP address where the Infrastructure Device will be listening for
+     * @return The IP address where the Infrastructure instance will be listening for
      *         inbound messages
      */
     public String getRxMessageIpAddress() {
@@ -91,19 +93,19 @@ public class InfrastructureRegistrationMessage {
     }
 
     /**
-     * Returns the unique identifier for the Infrastructure Device
+     * Returns the unique identifier for the Infrastructure instance
      * 
-     * @return The unique identifier for the Infrastructure Device
+     * @return The unique identifier for the Infrastructure instance
      */
     public String getInfrastructureId() {
         return this.infrastructureId;
     }
 
     /**
-     * Returns the port number where the Infrastructure Device will be listening for
+     * Returns the port number where the Infrastructure instance will be listening for
      * inbound messages
      * 
-     * @return The port number where the Infrastructure Device will be listening for
+     * @return The port number where the Infrastructure instance will be listening for
      *         inbound messages
      */
     public int getRxMessagePort() {
@@ -111,10 +113,10 @@ public class InfrastructureRegistrationMessage {
     }
 
     /**
-     * Returns the port number where the Infrastructure Device will be listening for
+     * Returns the port number where the Infrastructure instance will be listening for
      * time synchronization messages
      * 
-     * @return The port number where the Infrastructure Device will be listening for
+     * @return The port number where the Infrastructure instance will be listening for
      *         time synchronization messages
      */
     public int getTimeSyncPort() {
@@ -122,22 +124,32 @@ public class InfrastructureRegistrationMessage {
     }
 
     /**
-     * Returns the Geo-coordinate of the Infrastructure Device location
+     * Returns the Geo-coordinate of the Infrastructure instance location
      * 
-     * @return The Geo-coordinate of the Infrastructure Device location
+     * @return The Geo-coordinate of the Infrastructure instance location
      */
     public CartesianPoint getLocation() {
         return this.location;
     }
 
+    /**
+     * Returns list of associated sensors/detectors.
+     * 
+     * @return list of sensors/detectors registered to infrastructure instances.
+     */
     public List<Detector> getSensors() {
         return sensors;
     }
-  
+    
+    /**
+     * Returns port where infrastructure instance will be listening for interaction messages
+     * from CDASim.
+     * 
+     * @return int simulated interaction port
+     */
     public int getSimulatedInteractionPort() {
         return simulatedInteractionPort;
     }
-
 
     @Override
     public String toString() {
