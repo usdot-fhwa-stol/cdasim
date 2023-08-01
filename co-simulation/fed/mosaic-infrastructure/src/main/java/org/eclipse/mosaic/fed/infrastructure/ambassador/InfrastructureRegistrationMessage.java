@@ -159,15 +159,4 @@ public class InfrastructureRegistrationMessage {
                 + sensors + "]";
     }
 
-
-
-
-
-
-    
-
-    
-
-
-
 }

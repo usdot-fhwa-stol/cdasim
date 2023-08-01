@@ -75,7 +75,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
-            log.info("CarmaV2xMessageReceiver started listening on UDP port: " + listenPort);
+            log.info("CarmaV2xMessageReceiver started listening on UDP port: {}.", listenPort);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -89,9 +89,8 @@ public class CarmaV2xMessageReceiver implements Runnable {
            DatagramPacket msg = new DatagramPacket(buf, buf.length);
            
            try {
-                log.info("Is running {}", running);
                 listenSocket.receive(msg);
-                log.info("CarmaV2xMessageReceiver received message of size: " + msg.getLength() + " from client " + msg.getAddress().toString() + ".");
+                log.debug("CarmaV2xMessageReceiver received message of size {} from client {}.",msg.getLength(), msg.getAddress());
            } catch (IOException e) {
                log.error("Error occured :", e);
                continue;
