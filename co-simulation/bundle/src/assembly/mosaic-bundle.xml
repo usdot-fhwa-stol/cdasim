@@ -165,6 +165,7 @@
                 <include>com.google.protobuf:protobuf-java</include>
                 <include>org.xerial:sqlite-jdbc</include>
                 <include>org.java-websocket:Java-WebSocket</include>
+                <include>clj-python:libpython-clj:2.024</include>
             </includes>
         </dependencySet>
     </dependencySets>

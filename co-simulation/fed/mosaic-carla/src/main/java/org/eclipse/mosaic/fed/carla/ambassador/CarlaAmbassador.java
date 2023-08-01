@@ -17,6 +17,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMessageReceiver;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
@@ -232,6 +233,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaConnection = new CarlaConnection("localhost", carlaConnectionPort, this);
             Thread carlaThread = new Thread(carlaConnection);
             carlaThread.start();
+
+            //test connection for new script and dummy
+            CarlaMessageReceiver CarlaMessageReceiver_test = new CarlaMessageReceiver();
+            Thread CarlaTestThread = new Thread(CarlaMessageReceiver_test);
+            CarlaTestThread.start();
         }
 
         String[] bridgePathArray = bridgePath.split(";");
