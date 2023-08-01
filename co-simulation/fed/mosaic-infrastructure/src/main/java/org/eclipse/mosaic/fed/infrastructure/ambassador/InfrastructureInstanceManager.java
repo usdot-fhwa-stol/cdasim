@@ -174,11 +174,10 @@ public class InfrastructureInstanceManager {
 
     /**
      * Callback to be invoked when a infrastructure instance receives a simulated
-     * object detection from
-     * a registered simulated sensors.
+     * object detection from a registered simulated sensors. Only send object detection
+     * to the infrastructure instance that contains the sensor that reported it.
      * 
-     * @param detection
-     * @param sensorId
+     * @param detection Detected Object.
      */
     public void onDetectedObject(DetectedObject detection) {
         for (InfrastructureInstance instance : managedInstances.values()) {
@@ -195,15 +194,34 @@ public class InfrastructureInstanceManager {
         }
     }
 
+    /**
+     * Helper method to serialize time sychronization message to JSON and encode into bytes 
+     * for eventual transmission via a Datagramsocket.
+     * 
+     * @param message time synchronization message to encode
+     * @return resulting bytes encoded from JSON string.
+     */
     private byte[] encodeTimeMessage(InfrastructureTimeMessage message) {
         return asJson(message).getBytes();
     }
 
+    /**
+     * Helper method to serialize java Object into JSON via the {@link com.google.gson.Gson} object.
+     * 
+     * @param obj to serialze into JSON string.
+     * @return resulting JSON string.
+     */
     private String asJson(Object obj) {
         Gson gson = new Gson();
         return gson.toJson(obj);
     }
-
+    /**
+     * Helper method to serialize object detection message to JSON and encode into bytes 
+     * for eventual transmission via a Datagramsocket.
+     * 
+     * @param message object detection message to encode
+     * @return resulting bytes encoded from JSON string.
+     */
     private byte[] encodeObjectDetection(DetectedObject detection) {
         return asJson(detection).getBytes();
     }
