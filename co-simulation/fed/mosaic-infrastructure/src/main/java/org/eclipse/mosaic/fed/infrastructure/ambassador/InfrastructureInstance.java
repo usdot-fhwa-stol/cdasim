@@ -27,8 +27,8 @@ import org.eclipse.mosaic.lib.objects.detector.Detector;
 
 /**
  * InfrastructureInstance class represents a physical instance of an
- * infrastructure node in the simulated environment.
- * It contains information about the infrastructure node such as its ID,
+ * infrastructure instance in the simulated environment.
+ * It contains information about the infrastructure instance such as its ID,
  * location, target address, and ports.
  */
 public class InfrastructureInstance {
@@ -39,7 +39,7 @@ public class InfrastructureInstance {
     private int timeSyncPort;
     private int simulatedInteractionPort;
     private CartesianPoint location = null;
-    private DatagramSocket rxMsgsSocket = null;
+    private DatagramSocket socket = null;
     private List<Detector> sensors;
 
     /**
@@ -69,16 +69,16 @@ public class InfrastructureInstance {
 
 
     /**
-     * Returns the target IP address of the infrastructure node
+     * Returns the target IP address of the infrastructure instance
      * 
-     * @return InetAddress the target IP address of the infrastructure node
+     * @return InetAddress the target IP address of the infrastructure instance
      */
     public InetAddress getTargetAddress() {
         return targetAddress;
     }
 
     /**
-     * Sets the target IP address of the infrastructure node
+     * Sets the target IP address of the infrastructure instance
      * 
      * @param targetAddress the target IP address to set
      */
@@ -87,16 +87,16 @@ public class InfrastructureInstance {
     }
 
     /**
-     * Returns the location of the infrastructure node in the simulated environment
+     * Returns the location of the infrastructure instance in the simulated environment
      * 
-     * @return CartesianPoint the location of the infrastructure node
+     * @return CartesianPoint the location of the infrastructure instance
      */
     public CartesianPoint getLocation() {
         return this.location;
     }
 
     /**
-     * Sets the location of the infrastructure node in the simulated environment
+     * Sets the location of the infrastructure instance in the simulated environment
      * 
      * @param location the location to set
      */
@@ -105,16 +105,16 @@ public class InfrastructureInstance {
     }
 
     /**
-     * Returns the ID of the infrastructure node
+     * Returns the ID of the infrastructure instance
      * 
-     * @return String the ID of the infrastructure node
+     * @return String the ID of the infrastructure instance
      */
     public String getInfrastructureId() {
         return infrastructureId;
     }
 
     /**
-     * Sets the ID of the infrastructure node
+     * Sets the ID of the infrastructure instance
      * 
      * @param infrastructureId the ID to set
      */
@@ -123,16 +123,16 @@ public class InfrastructureInstance {
     }
 
     /**
-     * Returns the receive message port of the infrastructure node
+     * Returns the receive message port of the infrastructure instance
      * 
-     * @return int the receive message port of the infrastructure node
+     * @return int the receive message port of the infrastructure instance
      */
     public int getRxMessagePort() {
         return rxMessagePort;
     }
 
     /**
-     * Sets the receive message port of the infrastructure node
+     * Sets the receive message port of the infrastructure instance
      * 
      * @param rxMessagePort the port to set
      */
@@ -141,16 +141,16 @@ public class InfrastructureInstance {
     }
 
     /**
-     * Returns the time synchronization port of the infrastructure node
+     * Returns the time synchronization port of the infrastructure instance
      * 
-     * @return int the time synchronization port of the infrastructure node
+     * @return int the time synchronization port of the infrastructure instance
      */
     public int getTimeSyncPort() {
         return timeSyncPort;
     }
 
     /**
-     * Sets the time synchronization port of the infrastructure node
+     * Sets the time synchronization port of the infrastructure instance
      * 
      * @param timeSyncPort the port to set
      */
@@ -158,31 +158,54 @@ public class InfrastructureInstance {
         this.timeSyncPort = timeSyncPort;
     }
     
-
+    /**
+     * Returns the simulated interaction port of the infrastructure instance.
+     * 
+     * @return int simulated interaction port of the infrastructure instance.
+     */
     public int getSimulatedInteractionPort() {
         return simulatedInteractionPort;
     }
 
 
-
+    /**
+     * Sets the simulated interaction port of the infrastructure instance.
+     * 
+     * @param simulatedInteractionPort int simulated interaction port of the infrastructure
+     * instance.
+     */
     public void setSimulatedInteractionPort(int simulatedInteractionPort) {
         this.simulatedInteractionPort = simulatedInteractionPort;
     }
 
 
-
+    /**
+     * Returns list of Sensor/Detectors registered to this infrastructure instance.
+     * 
+     * @return list of detectors registered to infrastructure instance.
+     */
     public List<Detector> getSensors() {
         return sensors;
     }
 
 
-
+    /**
+     * Sets list of Sensors/Detectors registered to infrastructure instance.
+     * 
+     * @param sensors list of detectors registered to infrastructure instance.
+     */
     public void setSensors(List<Detector> sensors) {
         this.sensors = sensors;
     }
 
 
-
+    /**
+     * Method that returns boolean value based on whether any registered Sensor/Detector
+     * in the sensor list has a sensorId equivalent to the passed parameter.
+     * 
+     * @param sensorId sensor ID to search for 
+     * @return true if sensor with sensor ID exists in sensor list. False otherwise.
+     */
     public boolean containsSensor(String sensorId) {
         for (Detector sensor : sensors) {
             if (sensor.getSensorId().equals(sensorId) ) {
@@ -200,7 +223,7 @@ public class InfrastructureInstance {
      *                     methods
      */
     public void bind() throws IOException {
-        rxMsgsSocket = new DatagramSocket();
+        socket = new DatagramSocket();
     }
 
     /**
@@ -216,23 +239,35 @@ public class InfrastructureInstance {
     }
 
     /**
-     * Sends time sync data to the Infrastructure Device communications interface configured at construction time.
+     * Sends time sync data to the Infrastrucutre Instance Time Sync port.
+     * 
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
     public void sendTimeSyncMsg(byte[] data) throws IOException {
         sendPacket(data, timeSyncPort);
     }
-
+    /**
+     * Sends time sync data to the Infrastrucutre Instance Simulated Interaction port.
+     * 
+     * @param data The binary data to transmit
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
     public void sendInteraction(byte[] data) throws IOException {
         sendPacket(data, simulatedInteractionPort);
     }
-
+    /**
+     * Method to send byte data to specified port using the infrastructure instance Datagramsocket.
+     * 
+     * @param data byte data to send using Datagramsocket.
+     * @param port in integer format to send Datagram to.
+     * @throws IOException
+     */
     public void sendPacket(byte[] data, int port) throws IOException {
-         if (rxMsgsSocket == null) {
+         if (socket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
         DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, port);
-        rxMsgsSocket.send(packet);
+        socket.send(packet);
     }
 }

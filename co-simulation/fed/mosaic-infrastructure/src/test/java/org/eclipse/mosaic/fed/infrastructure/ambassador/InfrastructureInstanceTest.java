@@ -72,7 +72,7 @@ public class InfrastructureInstanceTest {
                 8888, 
                 CartesianPoint.ORIGO, 
                 sensors);
-        FieldSetter.setField(instance, instance.getClass().getDeclaredField("rxMsgsSocket"), socket);
+        FieldSetter.setField(instance, instance.getClass().getDeclaredField("socket"), socket);
 
     }
     @Test
