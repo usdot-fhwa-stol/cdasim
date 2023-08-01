@@ -22,16 +22,30 @@ public class DetectorRegistration extends Interaction {
     public static final String TYPE_ID = createTypeIdentifier(DetectorRegistration.class);
 
     private Detector detector;
+    /**
+     * Constructor
+     * @param time for interaction.
+     * @param sensor to register.
+     */
     public DetectorRegistration(long time, Detector sensor) {
         super(time);
         this.detector = sensor;
     }
+    /**
+     * Getter for sensor/detector information.
+     * @return 
+     */
     public Detector getDetector() {
         return detector;
     }
+    /**
+     * Setter for sensor/detection information.
+     * @param sensor
+     */
     public void setDetector(Detector sensor) {
         this.detector = sensor;
     }
+    
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -39,6 +53,7 @@ public class DetectorRegistration extends Interaction {
         result = prime * result + ((detector == null) ? 0 : detector.hashCode());
         return result;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)

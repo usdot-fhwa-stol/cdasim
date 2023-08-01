@@ -24,15 +24,28 @@ public class DetectedObjectInteraction extends Interaction {
 
     private DetectedObject detectedObject;
 
+    /**
+     * Constructor for DetectedObjectInteraction.
+     * @param time time for interaction.
+     * @param detectedObject detected object data for interaction.
+     */
     public DetectedObjectInteraction(long time, DetectedObject detectedObject) {
         super(time);
         this.detectedObject = detectedObject;
     }
 
+    /**
+     * Getter returns detected object.
+     * @return Detected Object
+     */
     public DetectedObject getDetectedObject() {
         return detectedObject;
     }
 
+    /**
+     * Set detected object.
+     * @param detectedObject 
+     */
     public void setDetectedObject(DetectedObject detectedObject) {
         this.detectedObject = detectedObject;
     }
