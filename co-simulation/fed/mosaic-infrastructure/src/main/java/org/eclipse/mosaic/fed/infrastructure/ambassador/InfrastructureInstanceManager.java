@@ -255,7 +255,12 @@ public class InfrastructureInstanceManager {
     public boolean checkIfRegistered(String infrastructureId) {
         return managedInstances.keySet().contains(infrastructureId);
     }
-
+    /**
+     * Returns Map of managed infrastructure instances with infrastructure ID as the 
+     * String Key.
+     * 
+     * @return map of managed infrastructure instances.
+     */
     public Map<String, InfrastructureInstance> getManagedInstances() {
         return managedInstances;
     }

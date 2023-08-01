@@ -162,7 +162,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
     }
 
-
+    /**
+     * Provide infrastructure instance manager with detected objects from processed detected 
+     * object interactions.
+     * 
+     * @param interaction processed detected objected interaction.
+     */
     private synchronized void receiveDetectedObjectInteraction( DetectedObjectInteraction interaction) {
         log.trace("Process Detected Object Interaction {}", interaction);
         infrastructureInstanceManager.onDetectedObject(interaction.getDetectedObject());
@@ -283,7 +288,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (time < currentSimulationTime) {
             return;
         }
-        log.info("Infrastructure message ambassador processing timestep to " + time);
+        log.info("Infrastructure message ambassador processing timestep to {}.", time);
         try {
 
             // Handle any new infrastructure registration requests
@@ -310,7 +315,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             } else {
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                    log.info("Processing new V2X transmit event of type " + msg.getB().getType());
+                    log.info("Processing new V2X transmit event of type {}.", msg.getB().getType());
                     V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     log.info("Inserted message ID {} into v2xmessage cache.", msgInt.getMessageId());
@@ -331,13 +336,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
 
             // Request the next time advance from the RTI
-            log.info("Requesting timestep updated to " + currentSimulationTime);
+            log.info("Requesting timestep updated to  {}.", currentSimulationTime);
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {
-            log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
         } catch (IOException e1) {
-            log.error("Error during updating timestep :" + e1.getMessage());
+            log.error("Error during updating timestep :", e1);
         }
     }
 
