@@ -45,13 +45,13 @@ public class InfrastructureInstance {
     /**
      * Constructor for InfrastructureInstance
      * 
-     * @param infrastructureId          the ID of the infrastructure instance
-     * @param targetAddress             the target IP address of the infrastructure instance
-     * @param rxMessagePort             the receive message port of the infrastructure instance
-     * @param timeSyncPort              the time synchronization port of the infrastructure
+     * @param infrastructureId          the ID of the infrastructure instance.
+     * @param targetAddress             the target IP address of the infrastructure instance.
+     * @param rxMessagePort             the receive V2X message port of the infrastructure instance.
+     * @param timeSyncPort              the receive time synchronization message port of the infrastructure.
      *                         
-     * @param simulatedInteractionPort  the simulated interaction port of the infrastructure
-     *                                  instance
+     * @param simulatedInteractionPort  the receive simulated interaction message port of the infrastructure
+     *                                  instance.
      * @param location                  the location of the infrastructure instance in the
      *                                  simulated environment
      */ 
