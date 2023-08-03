@@ -45,7 +45,7 @@ public enum DetectionType {
      */
     public static DetectionType fromLabel(String label) {
         for (DetectionType type: DetectionType.values()) {
-            if (type.label.equals(label)) {
+            if (type.label.equalsIgnoreCase(label)) {
                 return type;
             }
         }
