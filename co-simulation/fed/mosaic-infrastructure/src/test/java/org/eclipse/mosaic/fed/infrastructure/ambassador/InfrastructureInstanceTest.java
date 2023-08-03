@@ -19,7 +19,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,43 +39,52 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 public class InfrastructureInstanceTest {
-
+    /**
+     * Mock Datagram socket
+     */
     private DatagramSocket socket;
 
     private InfrastructureInstance instance;
-
+    /**
+     * Mock InetAddress
+     */
     private InetAddress address;
 
     @Before
-    public void setup()  throws NoSuchFieldException{
+    public void setup() throws NoSuchFieldException {
+        // Initialize Mocks
         address = mock(InetAddress.class);
         socket = mock(DatagramSocket.class);
+        // Initialize Infrastructure Instance
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
-            new Detector(
-                "sensor1", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 0.0,0.0,0.0),
-                CartesianPoint.ORIGO));
+                new Detector(
+                        "sensor1",
+                        DetectorType.SEMANTIC_LIDAR,
+                        new Orientation(0.0, 0.0, 0.0),
+                        CartesianPoint.ORIGO));
         sensors.add(
-            new Detector(
-                "NewSensor", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 20.0,20.0,0.0),
-                CartesianPoint.ORIGO));
+                new Detector(
+                        "NewSensor",
+                        DetectorType.SEMANTIC_LIDAR,
+                        new Orientation(20.0, 20.0, 0.0),
+                        CartesianPoint.ORIGO));
         instance = new InfrastructureInstance(
-                "SomeID", 
-                address, 
-                3456, 
-                5667, 
-                8888, 
-                CartesianPoint.ORIGO, 
+                "SomeID",
+                address,
+                3456,
+                5667,
+                8888,
+                CartesianPoint.ORIGO,
                 sensors);
+        // Set private instance field to mock using reflection
         FieldSetter.setField(instance, instance.getClass().getDeclaredField("socket"), socket);
 
     }
+
     @Test
     public void testContainsSensor() {
+        // Test contains sensor method
         assertTrue(instance.containsSensor("NewSensor"));
         assertTrue(instance.containsSensor("sensor1"));
         assertFalse(instance.containsSensor("otherSensor"));
@@ -84,6 +92,7 @@ public class InfrastructureInstanceTest {
 
     @Test
     public void testGetterSetterConstructor() {
+        // Test getters and constructor for setting and retrieving class members
         assertEquals("SomeID", instance.getInfrastructureId());
         assertEquals(CartesianPoint.ORIGO, instance.getLocation());
         assertEquals(3456, instance.getRxMessagePort());
@@ -101,33 +110,36 @@ public class InfrastructureInstanceTest {
         assertEquals(9999, instance.getSimulatedInteractionPort());
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
-            new Detector(
-                "sensor1", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 1.0,2.0,3.0),
-                CartesianPoint.ORIGO));
+                new Detector(
+                        "sensor1",
+                        DetectorType.SEMANTIC_LIDAR,
+                        new Orientation(1.0, 2.0, 3.0),
+                        CartesianPoint.ORIGO));
         sensors.add(
-            new Detector(
-                "NewSensor", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 24.0,25.0,6.0),
-                CartesianPoint.ORIGO));
+                new Detector(
+                        "NewSensor",
+                        DetectorType.SEMANTIC_LIDAR,
+                        new Orientation(24.0, 25.0, 6.0),
+                        CartesianPoint.ORIGO));
         instance.setSensors(sensors);
         assertEquals(sensors, instance.getSensors());
         instance.setTargetAddress(address);
         assertEquals(address, instance.getTargetAddress());
 
-
     }
 
     @Test
     public void testSendV2xMsg() throws IOException {
+        // Test SendV2xMsg method
         String test_msg = "test message";
         instance.sendV2xMsg(test_msg.getBytes());
+        // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
-
+        // Verify socket.send(DatagramPacket packet) is called and capture packet
+        // parameter
         verify(socket, times(1)).send(packet.capture());
 
+        // Verify parameter members
         assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
         assertEquals(instance.getRxMessagePort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
@@ -135,12 +147,15 @@ public class InfrastructureInstanceTest {
 
     @Test
     public void testSendTimeSyncMsg() throws IOException {
+        // Test SendTimeSyncMsg method
         String test_msg = "test message";
         instance.sendTimeSyncMsg(test_msg.getBytes());
+        // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
-
+        // Verify socket.send(DatagramPacket packet) is called and capture packet
+        // parameter
         verify(socket, times(1)).send(packet.capture());
-
+        // Verify parameter members
         assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
         assertEquals(instance.getTimeSyncPort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
@@ -148,16 +163,18 @@ public class InfrastructureInstanceTest {
 
     @Test
     public void testSendInteraction() throws IOException {
+        // Test SendInteraction method
         String test_msg = "test message";
         instance.sendInteraction(test_msg.getBytes());
+        // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
-
+        // Verify socket.send(DatagramPacket packet) is called and capture packet
+        // parameter
         verify(socket, times(1)).send(packet.capture());
-
+        // Verify parameter members
         assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
         assertEquals(instance.getSimulatedInteractionPort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
     }
-
 
 }
