@@ -50,7 +50,7 @@ public enum DetectorType {
      */
     public static DetectorType fromLabel(String label) {
         for (DetectorType type: DetectorType.values()) {
-            if (type.label.equals(label)) {
+            if (type.label.equalsIgnoreCase(label)) {
                 return type;
             }
         }
