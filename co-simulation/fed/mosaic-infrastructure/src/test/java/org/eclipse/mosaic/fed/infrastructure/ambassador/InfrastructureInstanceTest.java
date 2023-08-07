@@ -30,13 +30,19 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.math.Vector3d;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
+import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.reflection.FieldSetter;
+
+import com.google.gson.Gson;
 
 public class InfrastructureInstanceTest {
     /**
@@ -148,15 +154,22 @@ public class InfrastructureInstanceTest {
     @Test
     public void testSendTimeSyncMsg() throws IOException {
         // Test SendTimeSyncMsg method
-        String test_msg = "test message";
-        instance.sendTimeSyncMsg(test_msg.getBytes());
+        InfrastructureTimeMessage test_msg = new InfrastructureTimeMessage();
+        test_msg.setSeq(1);
+        test_msg.setTimestep(100);
+        instance.sendTimeSyncMsg(test_msg);
+
+
         // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
         // Verify socket.send(DatagramPacket packet) is called and capture packet
         // parameter
         verify(socket, times(1)).send(packet.capture());
+        // Convert message to bytes
+        Gson gson = new Gson();
+        byte[] message_bytes = gson.toJson(test_msg).getBytes();
         // Verify parameter members
-        assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
+        assertArrayEquals(message_bytes, packet.getValue().getData());
         assertEquals(instance.getTimeSyncPort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
     }
@@ -164,15 +177,31 @@ public class InfrastructureInstanceTest {
     @Test
     public void testSendInteraction() throws IOException {
         // Test SendInteraction method
-        String test_msg = "test message";
-        instance.sendInteraction(test_msg.getBytes());
+        DetectedObject test_msg = new DetectedObject(
+                DetectionType.BUS,
+                0.5,
+                "sensor1",
+                "projection String",
+                "Object1",
+                CartesianPoint.xyz(1.1, 2, 3.2),
+                new Vector3d(0, 0, 0),
+                new Vector3d(),
+                new Size(0, 0, 0));
+        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        test_msg.setPositionCovariance(covarianceMatrix);
+        test_msg.setVelocityCovariance(covarianceMatrix);
+        test_msg.setAngularVelocityCovariance(covarianceMatrix);
+        instance.sendDetection(test_msg);
         // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
         // Verify socket.send(DatagramPacket packet) is called and capture packet
         // parameter
         verify(socket, times(1)).send(packet.capture());
+        // Convert message to bytes
+        Gson gson = new Gson();
+        byte[] message_bytes = gson.toJson(test_msg).getBytes();
         // Verify parameter members
-        assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
+        assertArrayEquals(message_bytes, packet.getValue().getData());
         assertEquals(instance.getSimulatedInteractionPort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
     }

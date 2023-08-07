@@ -23,7 +23,11 @@ import java.net.InetAddress;
 import java.util.List;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.rti.api.Interaction;
+
+import com.google.gson.Gson;
 
 /**
  * InfrastructureInstance class represents a physical instance of an
@@ -216,13 +220,11 @@ public class InfrastructureInstance {
     }
 
     /**
-     * Creates a DatagramSocket object and binds it to this infrastructure
-     * instance's receive message port
+     * Creates a DatagramSocket object
      * 
-     * @throws IOException if there is an issue with the underlying socket object or
-     *                     methods
+     * @throws IOException if there is an issue with the underlying socket object
      */
-    public void bind() throws IOException {
+    public void connect() throws IOException {
         socket = new DatagramSocket();
     }
 
@@ -244,17 +246,29 @@ public class InfrastructureInstance {
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
-    public void sendTimeSyncMsg(byte[] data) throws IOException {
-        sendPacket(data, timeSyncPort);
+    public void sendTimeSyncMsg(InfrastructureTimeMessage message) throws IOException {
+        sendPacket(toJsonBytes(message), timeSyncPort);
     }
+
+    /**
+     * Helper method to serialize message into JSON and encode as bytes.
+     * 
+     * @param message java object containing message information
+     * @return bytes encoded from JSON string representation of object.
+     */
+    private byte[] toJsonBytes(Object message) {
+        Gson gson = new Gson();
+        return gson.toJson(message).getBytes();
+    }
+
     /**
      * Sends time sync data to the Infrastrucutre Instance Simulated Interaction port.
      * 
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
-    public void sendInteraction(byte[] data) throws IOException {
-        sendPacket(data, simulatedInteractionPort);
+    public void sendDetection(DetectedObject detectedObject) throws IOException {
+        sendPacket(toJsonBytes(detectedObject), simulatedInteractionPort);
     }
     /**
      * Method to send byte data to specified port using the infrastructure instance Datagramsocket.
@@ -263,7 +277,7 @@ public class InfrastructureInstance {
      * @param port in integer format to send Datagram to.
      * @throws IOException
      */
-    public void sendPacket(byte[] data, int port) throws IOException {
+    private void sendPacket(byte[] data, int port) throws IOException {
          if (socket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }

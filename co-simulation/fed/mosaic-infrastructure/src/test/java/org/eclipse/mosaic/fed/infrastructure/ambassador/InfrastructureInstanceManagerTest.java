@@ -40,7 +40,6 @@ import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.Gson;
 
 public class InfrastructureInstanceManagerTest {
 
@@ -114,12 +113,10 @@ public class InfrastructureInstanceManagerTest {
         message.setSeq(3);
         message.setTimestep(300);
         manager.onTimeStepUpdate(message);
-        Gson gson = new Gson();
-        byte[] datagram = gson.toJson(message).getBytes();
         // Verify that all instances sendTimeSyncMsgs was called.
-        verify(instance1).sendTimeSyncMsg(datagram);
-        verify(instance2).sendTimeSyncMsg(datagram);
-        verify(instance2).sendTimeSyncMsg(datagram);
+        verify(instance1).sendTimeSyncMsg(message);
+        verify(instance2).sendTimeSyncMsg(message);
+        verify(instance2).sendTimeSyncMsg(message);
 
     }
 
@@ -142,11 +139,9 @@ public class InfrastructureInstanceManagerTest {
         detectedObject1.setAngularVelocityCovariance(covarianceMatrix);
         // Attempt to send detected object to infrastructure instance
         manager.onDetectedObject(detectedObject1);
-        Gson gson = new Gson();
-        byte[] datagram1 = gson.toJson(detectedObject1).getBytes();
         // Verify Infrastructure Manager attempted to sent Detected Object
         // to instance1
-        verify(instance1, times(1)).sendInteraction(datagram1);
+        verify(instance1, times(1)).sendDetection(detectedObject1);
         // Create second detected object
         DetectedObject detectedObject2 = new DetectedObject(
                 DetectionType.VAN,
@@ -162,10 +157,9 @@ public class InfrastructureInstanceManagerTest {
         detectedObject2.setVelocityCovariance(covarianceMatrix);
         detectedObject2.setAngularVelocityCovariance(covarianceMatrix);
         manager.onDetectedObject(detectedObject2);
-        byte[] datagram2 = gson.toJson(detectedObject2).getBytes();
-        doThrow(new IOException("Something went wrong")).when(instance3).sendInteraction(datagram2);
-        verify(instance3, times(1)).sendInteraction(datagram2);
-        verify(instance2, never()).sendInteraction(any(byte[].class));
+        doThrow(new IOException("Something went wrong")).when(instance3).sendDetection(detectedObject2);
+        verify(instance3, times(1)).sendDetection(detectedObject2);
+        verify(instance2, never()).sendDetection(any(DetectedObject.class));
     }
 
 }

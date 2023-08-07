@@ -105,7 +105,7 @@ public class InfrastructureInstanceManager {
         InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
                 timeSyncPort, simulatedInteractionPort, location, sensors);
         try {
-            tmp.bind();
+            tmp.connect();
             log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.",
                     infrastructureId);
         } catch (IOException e) {
@@ -183,7 +183,7 @@ public class InfrastructureInstanceManager {
         for (InfrastructureInstance instance : managedInstances.values()) {
             if (instance.containsSensor(detection.getSensorId())) {
                 try {
-                    instance.sendInteraction(encodeMsg(detection));
+                    instance.sendDetection(detection);
                     // Assuming each sensor would only ever be registered to a single infrastructure
                     // instance
                     break;
@@ -194,17 +194,7 @@ public class InfrastructureInstanceManager {
         }
     }
 
-    /**
-     * Helper method to serialize message into JSON and encode as bytes.
-     * 
-     * @param message java object containing message information
-     * @return bytes encoded from JSON string representation of object.
-     */
-    private byte[] encodeMsg(Object message) {
-        Gson gson = new Gson();
-        return gson.toJson(message).getBytes();
-    }
-
+    
     
     /**
      * This function is used to send out encoded timestep update to all registered
@@ -220,7 +210,7 @@ public class InfrastructureInstanceManager {
         }
 
         for (InfrastructureInstance currentInstance : managedInstances.values()) {
-            currentInstance.sendTimeSyncMsg(encodeMsg(message));
+            currentInstance.sendTimeSyncMsg(message);
         }
     }
 

@@ -267,7 +267,6 @@ public class InfrastructureMessageAmbassadorTest {
         // Assert that no other interactions were triggered
         assertEquals(0, otherInteractions.size());
 
-
     }
 
 }
