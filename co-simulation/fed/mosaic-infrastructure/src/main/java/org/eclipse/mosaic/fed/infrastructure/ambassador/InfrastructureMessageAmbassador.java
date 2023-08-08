@@ -302,7 +302,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
                 log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + reg.getLocation().getX() + ", " + reg.getLocation().getY() + ", " + reg.getLocation().getZ() + ")");
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
-                log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
+                // Check for empty list of sensors which is valid
+                if (reg.getSensors() != null ) {
+                    log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
+                }
                 for (Detector sensor : reg.getSensors()) {
                     // Trigger Sensor registrations for all listed sensors.
                     this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
