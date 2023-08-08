@@ -16,9 +16,6 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-
 /**
  * Message to be sent or received by the Infrastructure Device Adapter interface
  * NOTE: TODO See .ambassador for reference
