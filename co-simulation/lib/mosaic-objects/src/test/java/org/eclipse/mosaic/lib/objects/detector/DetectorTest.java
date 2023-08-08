@@ -98,4 +98,15 @@ public class DetectorTest {
         assertEquals(new Orientation(22, 33, 44), sensor.getOrientation());
         assertEquals(CartesianPoint.xy(45,67), sensor.getLocation());
     }
+    @Test
+    public void testToString() {
+        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
+                CartesianPoint.xyz(1, 2, 3));
+        String sensoString = "Detector [sensorId=something, type=SEMANTIC_LIDAR, "
+                            + "orientation=Orientation [yaw=23.0, pitch=0.0, roll=0.0], "
+                            + "location=CartesianPoint{x=1.00,y=2.00,z=3.00}]";      
+        assertEquals(sensoString, sensor.toString());
+    }
 }
+
+

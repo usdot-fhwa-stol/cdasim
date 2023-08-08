@@ -94,6 +94,13 @@ public class Orientation implements Serializable{
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "Orientation [yaw=" + yaw + ", pitch=" + pitch + ", roll=" + roll + "]";
+    }
+
+    
+
     
     
 }

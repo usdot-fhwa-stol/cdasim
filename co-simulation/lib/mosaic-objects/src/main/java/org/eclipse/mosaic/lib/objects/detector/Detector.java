@@ -145,6 +145,13 @@ public class Detector implements Serializable {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "Detector [sensorId=" + sensorId + ", type=" + type + ", orientation=" + orientation + ", location="
+                + location + "]";
+    }
+    
+
     
    
 }
