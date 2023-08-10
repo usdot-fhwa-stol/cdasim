@@ -45,7 +45,7 @@ arg_federate_file=""
 arg_integration_testing=false
 arg_make_parallel=""
 
-required_programs=( python3.6 gcc unzip tar )
+required_programs=( python2.7 gcc unzip tar )
 required_libraries=( "libprotobuf-dev (or equal) 3.3.0" "libxml2-dev (or equal)" "libsqlite3-dev (or equal)" )
 
 ####### configurable parameters ##########
@@ -64,13 +64,14 @@ ns3_deploy_folder="ns3-deployed"  #name to be used when ns3 is deployed (i.e. ke
 working_directory="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 federate_path="bin/fed/ns3"
 ns3_installation_path=${working_directory}
-ns3_simulator_folder="${ns3_installation_path}/$ns3_version_affix/$ns3_short_affix" #due to the ns3 tarball structure
+ns3_allinone_folder="${ns3_installation_path}/$ns3_version_affix"
+ns3_simulator_folder="${ns3_allinone_folder}/$ns3_short_affix" #due to the ns3 tarball structure
 ns3_scratch="${ns3_simulator_folder}/scratch"
-ns3_source="${ns3_simulator_folder}/src"
 
 ####### semi automatic parameters ########
 ns3_federate_url="https://github.com/mosaic-addons/ns3-federate/archive/21.0.zip"
 ns3_url="http://www.nsnam.org/release/$ns3_version_affix.tar.bz2"
+ns3_cv2x="https://github.com/FabianEckermann/ns-3_c-v2x.git"
 
 ###### more automatic parameters #########
 ns3_federate_filename="$(basename "$ns3_federate_url")"
@@ -284,7 +285,6 @@ download_premake5() {
    download "$premake5_autoconf_url"
 }
 
-
 download_ns3() {
    if [ ! -z "$arg_ns3_file" ]; then
       log "NS3 given as argument"
@@ -301,6 +301,18 @@ download_federate() {
    fi
    log "Downloading federate from "$ns3_federate_url"..."
    download "$ns3_federate_url"
+}
+
+clone_ns3_cv2x(){
+    
+   if [ ! -d "$ns3_allinone_folder" ]; then
+      log "Folder $ns3_allinone_folder is not existing"
+      return
+   fi
+   log "Cloning NS3 from $ns3_cv2x..."
+   git clone $ns3_cv2x
+   rm -r $ns3_version_affix/$ns3_short_affix
+   mv ns-3_c-v2x $ns3_version_affix/$ns3_short_affix
 }
 
 extract_ns3()
@@ -361,7 +373,7 @@ build_ns3()
   cd "${ns3_installation_path}/ns-allinone-${ns3_version}"
 
   # ns-3 prior to 3.28.1 does not compile without warnings using g++ 10.2.0
-  CXXFLAGS="-Wno-error" python3.6 ./build.py --disable-netanim
+  CXXFLAGS="-Wno-error" python2.7 ./build.py --disable-netanim
   sudo cp -ar ns-3.28/build/ns3 /usr/include/
   
   log "Build ns3-federate"
@@ -485,6 +497,8 @@ download_premake5
 
 log "Extracting "$ns3_filename"..."
 extract_ns3 "$ns3_filename" .
+
+clone_ns3_cv2x
 
 log "Extracting "$ns3_federate_filename"..."
 extract_ns3_federate "$ns3_federate_filename"
