@@ -75,6 +75,21 @@
         <artifactId>libpython-clj</artifactId>
         <version>2.024</version>
       </dependency>
+      <dependency>
+        <groupId>cnuernber</groupId>
+        <artifactId>dtype-next</artifactId>
+        <version>10.000-beta-32</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>5.12.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.clojure</groupId>
+        <artifactId>data.json</artifactId>
+        <version>1.0.0</version>
+      </dependency>
   </dependencies>
 
   <profiles>

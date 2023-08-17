@@ -165,7 +165,11 @@
                 <include>com.google.protobuf:protobuf-java</include>
                 <include>org.xerial:sqlite-jdbc</include>
                 <include>org.java-websocket:Java-WebSocket</include>
-                <include>clj-python:libpython-clj:2.024</include>
+                <include>clj-python:libpython-clj</include>
+                <include>org.clojure:clojure</include>
+                <include>org.clojure:data.json</include>
+                <include>net.java.dev.jna:jna</include>
+                <include>cnuernber:dtype-next</include>
             </includes>
         </dependencySet>
     </dependencySets>
