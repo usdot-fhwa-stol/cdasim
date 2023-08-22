@@ -45,7 +45,7 @@ arg_federate_file=""
 arg_integration_testing=false
 arg_make_parallel=""
 
-required_programs=( python2.7 gcc unzip tar )
+required_programs=( python3.6 gcc unzip tar )
 required_libraries=( "libprotobuf-dev (or equal) 3.3.0" "libxml2-dev (or equal)" "libsqlite3-dev (or equal)" )
 
 ####### configurable parameters ##########
@@ -312,7 +312,7 @@ clone_ns3_cv2x(){
    log "Cloning NS3 from $ns3_cv2x..."
    git clone $ns3_cv2x
    rm -r $ns3_version_affix/$ns3_short_affix
-   mv ns-3_c-v2x $ns3_version_affix/$ns3_short_affix
+   mv ns-3.28 $ns3_version_affix/$ns3_short_affix
 }
 
 extract_ns3()
@@ -370,11 +370,12 @@ build_ns3()
 {
   current_dir=`pwd`
   log "BUILD ns3 version ${ns3_version}"
-  cd "${ns3_installation_path}/ns-allinone-${ns3_version}"
-
+  cd "${ns3_installation_path}/ns-allinone-${ns3_version}/ns-${ns3_version}"
+  ./waf configure
+  ./waf build
   # ns-3 prior to 3.28.1 does not compile without warnings using g++ 10.2.0
-  CXXFLAGS="-Wno-error" python2.7 ./build.py --disable-netanim
-  sudo cp -ar ns-3.28/build/ns3 /usr/include/
+#   CXXFLAGS="-Wno-error" python3.6 ./build.py --disable-netanim
+  sudo cp -ar build/ns3 /usr/include/
   
   log "Build ns3-federate"
   cd ${current_dir}/federate
@@ -386,6 +387,8 @@ build_ns3()
   if [ -f src/ClientServerChannelMessages.pb.cc ]; then
     rm src/ClientServerChannelMessages.pb.cc
   fi
+  sudo rm /opt/carma-simulation/bin/fed/ns3/federate/src/mosaic-node-manager.cc
+  sudo cp -a /opt/carma-simulation/bin/fed/ns3/mosaic-node-manager.cc /opt/carma-simulation/bin/fed/ns3/federate/src
 
   # adjust build instruction to cover scrambled files
   sed -i -e "s|/usr/local|.|" premake5.lua
@@ -396,6 +399,10 @@ build_ns3()
   else
     ./premake5 gmake --install
   fi
+
+  sudo rm /opt/carma-simulation/bin/fed/ns3/federate/ns3-federate.make
+  sudo cp -a /opt/carma-simulation/bin/fed/ns3/ns3-federate.make /opt/carma-simulation/bin/fed/ns3/federate/
+
   make config=debug clean
   make -j1 config=debug # make is running targets in parallel, but we have to build 'prebuild'-target, target,
                         # and 'postbuild'-target sequentially
@@ -489,16 +496,16 @@ log "Preparing installation..."
 check_required_programs "${required_programs[*]}"
 check_directory
 
-download_ns3
+# download_ns3
 
 download_federate
 
 download_premake5
 
 log "Extracting "$ns3_filename"..."
-extract_ns3 "$ns3_filename" .
+# extract_ns3 "$ns3_filename" .
 
-clone_ns3_cv2x
+# clone_ns3_cv2x
 
 log "Extracting "$ns3_federate_filename"..."
 extract_ns3_federate "$ns3_federate_filename"
