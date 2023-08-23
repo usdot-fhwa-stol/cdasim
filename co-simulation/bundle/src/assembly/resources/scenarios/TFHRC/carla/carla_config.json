@@ -1,0 +1,6 @@
+{
+    "updateInterval": 100,
+    "carlaUE4Path": "/opt/carla/",
+    "bridgePath": "/opt/carma-simulation/scenarios/TFHRC/carla; bridge.sh",
+    "carlaConnectionPort": 8913
+}

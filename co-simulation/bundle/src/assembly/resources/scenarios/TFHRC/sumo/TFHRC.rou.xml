@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <route edges="-73.0.00 -7.0.00 -76.0.00 -35.0.00 -58.0.00 -15.0.00 -49.0.00 -108.0.00 -27.0.00 -111.0.00 -51.0.00 -115.0.00 -32.0.00 -24.0.00 -82.0.00 -91.0.00 -69.0.00 -70.0.00 -81.0.00 -79.0.00 -106.0.00 -41.0.00" color="yellow" id="route_0"/>
+    <vehicle id="vehicle_0" depart="999.00" route="route_0"/>
+</routes>

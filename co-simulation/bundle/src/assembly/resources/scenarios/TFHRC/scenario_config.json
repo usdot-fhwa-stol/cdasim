@@ -1,0 +1,39 @@
+{
+    "simulation": {
+        "id": "TFHRC",
+        "duration": "999s",
+        "randomSeed": 212323853,
+        "projection": {
+            "centerCoordinates": {
+                "latitude": 38.9511644,
+                "longitude": -77.1490538
+            },
+            "cartesianOffset": {
+                "x": 271.72,
+                "y": 665.20
+            }
+        },
+        "network": {
+            "netMask": "255.255.0.0",
+            "vehicleNet": "10.1.0.0",
+            "rsuNet": "10.2.0.0",
+            "tlNet": "10.3.0.0",
+            "csNet": "10.4.0.0",
+            "serverNet": "10.5.0.0",
+            "tmcNet": "10.6.0.0"
+        }
+    },
+    "federates": {
+        "application": true,
+        "cell": false,
+        "environment": false,
+        "sns": false,
+        "ns3": true,
+        "omnetpp": false,
+        "output": false,
+        "sumo": true,
+        "carla": true,
+        "carma": true,
+        "infrastructure": true
+    }
+}
