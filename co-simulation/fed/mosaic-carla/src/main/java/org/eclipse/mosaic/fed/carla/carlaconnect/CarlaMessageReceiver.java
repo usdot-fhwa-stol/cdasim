@@ -13,14 +13,11 @@ License for the specific language governing permissions and limitations under
 the License.*/
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
-import libpython_clj2.java_api;
-
-import java.net.*;
-import java.io.*;
-import java.util.Arrays;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador;
+import java.net.URL;
+import java.net.MalformedURLException;
+import org.apache.xmlrpc.XmlRpcException;
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 
 public class CarlaMessageReceiver implements Runnable {
 
@@ -29,20 +26,23 @@ public class CarlaMessageReceiver implements Runnable {
     }
 
     @Override
-    public void run() {
-       
-        java_api.initialize(null);
-
-        try(AutoCloseable locker = java_api.GILLocker()){
-
-            Object dummy = java_api.importModule("DummySender");
-            Object test = java_api.getAttr(dummy, "get_objects_in_frame");
-            Object testprint = java_api.call(test);
-            System.out.println(testprint);
-
+    public void run(){
+        XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+        
+        try{
+            config.setServerURL(new URL("http://127.0.0.1:8090/RPC2"));
+            XmlRpcClient client = new XmlRpcClient();
+            client.setConfig(config);
+            Object[] params = new Object[]{new String("Hello world!")};
+            String result = (String) client.execute("test.echo", params);
+            System.out.println(result);
         }
-        catch (Exception e) {
-            // TODO: handle exception       
+        catch (XmlRpcException XmlException) {
+            System.out.println(XmlException);     
+        }
+        catch(MalformedURLException URLException)
+        {
+            System.out.println(URLException);
         }
 
     }
