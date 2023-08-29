@@ -33,17 +33,26 @@ public class CarlaMessageReceiver implements Runnable {
             config.setServerURL(new URL("http://127.0.0.1:8090/RPC2"));
             XmlRpcClient client = new XmlRpcClient();
             client.setConfig(config);
-            Object[] params = new Object[]{new String("Hello world!")};
-            String result = (String) client.execute("test.echo", params);
-            System.out.println(result);
+            while(true)
+            {
+                Object[] params = new Object[]{new String("Test " + java.time.LocalDateTime.now())};
+                String result = (String) client.execute("test.echo", params);
+                System.out.println(result);
+                Thread.sleep(10000);
+            }
         }
-        catch (XmlRpcException XmlException) {
-            System.out.println(XmlException);     
+        catch (XmlRpcException XmlException) 
+        {
+            XmlException.printStackTrace();     
         }
         catch(MalformedURLException URLException)
         {
-            System.out.println(URLException);
-        }
+            URLException.printStackTrace();
+        } 
+        catch (InterruptedException InterruptedException) 
+        {
+			InterruptedException.printStackTrace();
+		}
 
     }
 }
