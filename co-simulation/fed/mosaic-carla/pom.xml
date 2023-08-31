@@ -14,12 +14,7 @@
   <artifactId>mosaic-carla</artifactId>
   <name>Eclipse MOSAIC CARLA Ambassador</name>
 
-    <repositories>
-      <repository>
-        <id>clojars.org</id>
-        <url>https://repo.clojars.org</url>
-      </repository>
-    </repositories>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.mosaic</groupId>

@@ -17,12 +17,6 @@
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
-     <repositories>
-      <repository>
-        <id>clojars.org</id>
-        <url>https://repo.clojars.org</url>
-      </repository>
-    </repositories>
     <dependencies>
         <!-- Core -->
         <dependency>
@@ -86,11 +80,6 @@
             <groupId>org.eclipse.mosaic</groupId>
             <artifactId>mosaic-utils</artifactId>
             <version>${mosaic.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>clj-python</groupId>
-            <artifactId>libpython-clj</artifactId>
-            <version>2.024</version>
         </dependency>
 
         <!-- Federates -->
