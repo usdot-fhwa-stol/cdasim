@@ -54,6 +54,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private CarlaConnection carlaConnection = null;
 
     /**
+     * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
+     */
+    private CarlaMessageReceiver carlaMessageReceiver = null;
+
+    /**
      * Command used to start CARLA simulator.
      */
     FederateExecutor federateExecutor = null;
@@ -216,6 +221,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Start the Carla connection server
         String bridgePath = null;
         int carlaConnectionPort = 8913;
+        
         if (carlaConfig.carlaConnectionPort != 0)
             carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
 
@@ -235,9 +241,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaThread.start();
 
             //test connection for new script and dummy
-            CarlaMessageReceiver CarlaMessageReceiver_test = new CarlaMessageReceiver();
-            Thread CarlaTestThread = new Thread(CarlaMessageReceiver_test);
+                       
+            carlaMessageReceiver = new CarlaMessageReceiver(this);
+            Thread CarlaTestThread = new Thread(carlaMessageReceiver);
             CarlaTestThread.start();
+     
         }
 
         String[] bridgePathArray = bridgePath.split(";");
@@ -355,6 +363,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         if (carlaConnection != null) {
             carlaConnection.closeSocket();
+        }
+
+        if(carlaMessageReceiver != null){
+            carlaMessageReceiver.closeConnection();
         }
 
         if (federateExecutor != null) {
