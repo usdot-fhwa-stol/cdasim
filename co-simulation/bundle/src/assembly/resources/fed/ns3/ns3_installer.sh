@@ -303,7 +303,7 @@ download_federate() {
 
 clone_ns3_federate(){
    log "Cloning NS3 federate from $ns3_federate_url..."
-   git clone -b Fix/cdasim_ns3_build_issue $ns3_federate_url
+   git clone $ns3_federate_url
 
    mv ns3-federate federate
 }
