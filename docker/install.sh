@@ -32,8 +32,7 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   python3.7-distutils x11-xserver-utils dconf-editor dbus-x11 libglvnd0 libgl1 \
   libglx0 libegl1 libxext6 libx11-6 python3-dev \
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
-  wget vim nano xterm libprotobuf-dev \
-  apt install git
+  wget vim nano xterm libprotobuf-dev git
 sudo rm -rf /var/lib/apt/lists/*
 export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
