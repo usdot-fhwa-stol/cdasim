@@ -108,17 +108,13 @@ cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 cd /home/carma/src/co-simulation
 unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
 
-
-# Copy patch to ns-3 folder
-cp /home/carma/src/co-simulation/patch/ns-3_c-v2x_prebuild.zip /opt/carma-simulation/bin/fed/ns3/
-cp /home/carma/src/co-simulation/patch/ns3-federate.make /opt/carma-simulation/bin/fed/ns3/
-cp /home/carma/src/co-simulation/patch/mosaic-node-manager.cc /opt/carma-simulation/bin/fed/ns3/
-
 # Install NS-3
 cd "/opt/carma-simulation/bin/fed/ns3/"
 chmod +x ns3_installer.sh
 set -x
 ./ns3_installer.sh -q
+
+# 
 sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
 
 echo "Build complete!!!"
