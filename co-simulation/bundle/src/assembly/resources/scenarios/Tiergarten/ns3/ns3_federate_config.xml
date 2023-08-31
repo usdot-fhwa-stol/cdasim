@@ -74,7 +74,7 @@
  <default name="ns3::ConstantRateWifiManager::DataMode" value="OfdmRate6Mbps"/>
  <default name="ns3::ConstantRateWifiManager::ControlMode" value="OfdmRate6Mbps"/>
 
- <default name="ns3::QueueBase::MaxPackets" value="400"/>
+ <!-- <default name="ns3::QueueBase::MaxPackets" value="400"/> -->
  <default name="ns3::WifiMacQueue::MaxDelay" value="+500000000.0ns"/>
  <default name="ns3::WifiNetDevice::Mtu" value="2296"/>
  
