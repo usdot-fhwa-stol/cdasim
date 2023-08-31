@@ -69,70 +69,6 @@ Apache Commons Text (1.6)
  * Source: https://git-wip-us.apache.org/repos/asf?p=commons-text
 
 
-Apache WebServices Common Utilities (1.0.2)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `org.apache.ws.commons.util:ws-commons-util:1.0.2`
- * Project: http://ws.apache.org/commons/util
- * Source: https://svn.apache.org/viewcvs.cgi/webservices/commons/trunk/util
-
-
-Apache XML-RPC Client Library (3.1.3)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `org.apache.xmlrpc:xmlrpc-client:3.1.3`
- * Project: http://ws.apache.org/xmlrpc/xmlrpc-client/
- * Source: https://svn.apache.org/viewvc/webservices/xmlrpc/tags/xmlrpc-3.1.3/xmlrpc-client
-
-
-Apache XML-RPC Common Library (3.1.3)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `org.apache.xmlrpc:xmlrpc-common:3.1.3`
- * Project: http://ws.apache.org/xmlrpc/xmlrpc-common/
- * Source: https://svn.apache.org/viewvc/webservices/xmlrpc/tags/xmlrpc-3.1.3/xmlrpc-common
-
-
-asm (9.0)
-
- * License: BSD-3-Clause
- * Maven artifact: `org.ow2.asm:asm:9.0`
- * Project: http://asm.ow2.io/
- * Source: https://gitlab.ow2.org/asm/asm/
-
-
-Caffeine cache (2.9.3)
-
- * License: Apache License, Version 2.0
- * Maven artifact: `com.github.ben-manes.caffeine:caffeine:2.9.3`
- * Project: https://github.com/ben-manes/caffeine
- * Source: https://github.com/ben-manes/caffeine
-
-
-camel-snake-kebab (0.4.2)
-
- * License: Eclipse Public License
- * Maven artifact: `camel-snake-kebab:camel-snake-kebab:0.4.2`
- * Project: https://clj-commons.org/camel-snake-kebab/
- * Source: https://github.com/clj-commons/camel-snake-kebab
-
-
-Checker Qual (3.12.0)
-
- * License: The MIT License
- * Maven artifact: `org.checkerframework:checker-qual:3.12.0`
- * Project: https://checkerframework.org
- * Source: https://github.com/typetools/checker-framework
-
-
-clojure (1.11.1)
-
- * License: Eclipse Public License 1.0
- * Maven artifact: `org.clojure:clojure:1.11.1`
- * Project: http://clojure.org/
- * Source: https://github.com/clojure/clojure
-
-
 Commons Compiler (2.7.5)
 
  * License: New BSD License
@@ -149,38 +85,6 @@ Commons JXPath (1.3)
  * Source: https://svn.apache.org/repos/asf/commons/proper/jxpath/trunk
 
 
-core.specs.alpha (0.2.62)
-
- * License: Eclipse Public License 1.0
- * Maven artifact: `org.clojure:core.specs.alpha:0.2.62`
- * Project: https://github.com/clojure/build.poms/core.specs.alpha
- * Source: https://github.com/clojure/core.specs.alpha
-
-
-data.json (1.0.0)
-
- * License: Eclipse Public License 1.0
- * Maven artifact: `org.clojure:data.json:1.0.0`
- * Project: https://github.com/clojure/data.json
- * Source: https://github.com/clojure/data.json
-
-
-dtype-next (10.000-beta-32)
-
- * License: EPL-2.0
- * Maven artifact: `cnuernber:dtype-next:10.000-beta-32`
- * Project: http://github.com/cnuernber/dtype-next
- * Source: not declared
-
-
-error-prone annotations (2.11.0)
-
- * License: Apache 2.0
- * Maven artifact: `com.google.errorprone:error_prone_annotations:2.11.0`
- * Project: https://errorprone.info/error_prone_annotations
- * Source: https://github.com/google/error-prone/error_prone_annotations
-
-
 Extended StAX API (1.8.1)
 
  * License: Eclipse Distribution License - v 1.0
@@ -195,14 +99,6 @@ fastinfoset (1.2.16)
  * Maven artifact: `com.sun.xml.fastinfoset:FastInfoset:1.2.16`
  * Project: https://projects.eclipse.org/projects/ee4j.jaxb-impl/FastInfoset
  * Source: https://github.com/eclipse-ee4j/jaxb-fi/FastInfoset
-
-
-fastutil (8.5.8)
-
- * License: Apache License, Version 2.0
- * Maven artifact: `it.unimi.dsi:fastutil-core:8.5.8`
- * Project: http://fastutil.di.unimi.it/
- * Source: https://github.com/vigna/fastutil
 
 
 Findbugs Annotations under Apache License (1.3.9-1)
@@ -245,36 +141,12 @@ Gson (2.8.6)
  * Source: https://github.com/google/gson/gson/
 
 
-Guava InternalFutureFailureAccess and InternalFutures (1.0.1)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `com.google.guava:failureaccess:1.0.1`
- * Project: https://github.com/google/guava/failureaccess
- * Source: https://github.com/google/guava/failureaccess
-
-
-Guava ListenableFuture only (9999.0-empty-to-avoid-conflict-with-guava)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava`
- * Project: https://github.com/google/guava/listenablefuture
- * Source: https://github.com/google/guava/listenablefuture
-
-
 Guava: Google Core Libraries for Java (28.2-jre)
 
  * License: Apache License, Version 2.0
  * Maven artifact: `com.google.guava:guava:28.2-jre`
  * Project: https://github.com/google/guava/guava
  * Source: https://github.com/google/guava/guava
-
-
-ham-fisted (1.000-beta-85)
-
- * License: MIT License
- * Maven artifact: `com.cnuernber:ham-fisted:1.000-beta-85`
- * Project: not available
- * Source: not declared
 
 
 HPPC Collections (0.8.1)
@@ -285,28 +157,12 @@ HPPC Collections (0.8.1)
  * Source: https://github.com/carrotsearch/hppc/hppc
 
 
-insn (0.5.2)
-
- * License: Eclipse Public License
- * Maven artifact: `insn:insn:0.5.2`
- * Project: https://github.com/jgpc42/insn
- * Source: https://github.com/jgpc42/insn
-
-
 istack common utility code runtime (3.0.8)
 
  * License: Eclipse Distribution License - v 1.0
  * Maven artifact: `com.sun.istack:istack-commons-runtime:3.0.8`
  * Project: https://projects.eclipse.org/projects/ee4j/istack-commons/istack-commons-runtime
  * Source: https://github.com/eclipse-ee4j/jaxb-istack-commons/istack-commons-runtime
-
-
-J2ObjC Annotations (1.3)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `com.google.j2objc:j2objc-annotations:1.3`
- * Project: https://github.com/google/j2objc/
- * Source: https://svn.sonatype.org/spice/tags/oss-parent-7/j2objc-annotations
 
 
 Jackson module: JAXB Annotations (2.9.9)
@@ -365,14 +221,6 @@ Janino (2.7.5)
  * Source: https://fisheye.codehaus.org/browse/janino/tags/janino_2.7.5/janino/
 
 
-Java Native Access (5.12.1)
-
- * License: Apache-2.0, LGPL-2.1-or-later
- * Maven artifact: `net.java.dev.jna:jna:5.12.1`
- * Project: https://github.com/java-native-access/jna
- * Source: https://github.com/java-native-access/jna
-
-
 Java-WebSocket (1.3.9)
 
  * License: MIT License
@@ -405,14 +253,6 @@ jaxb-api (2.3.1)
  * Source: https://github.com/javaee/jaxb-spec/jaxb-api
 
 
-JLargeArrays (1.5)
-
- * License: BSD 2-Clause
- * Maven artifact: `pl.edu.icm:JLargeArrays:1.5`
- * Project: https://gitlab.com/ICM-VisLab/JLargeArrays
- * Source: https://gitlab.com:ICM-VisLab/JLargeArrays
-
-
 Johnzon :: Core (1.1.13)
 
  * License: The Apache Software License, Version 2.0
@@ -435,38 +275,6 @@ JSR 374 (JSON Processing) API (1.1.5)
  * Maven artifact: `jakarta.json:jakarta.json-api:1.1.5`
  * Project: https://javaee.github.io/jsonp
  * Source: https://github.com/eclipse-ee4j/jsonp/jakarta.json-api
-
-
-JTransforms (3.1)
-
- * License: BSD 2-Clause
- * Maven artifact: `com.github.wendykierp:JTransforms:3.1`
- * Project: https://github.com/wendykierp/JTransforms
- * Source: https://github.com/wendykierp/JTransforms
-
-
-larray-buffer (0.4.1)
-
- * License: Apache-2.0
- * Maven artifact: `org.xerial.larray:larray-buffer:0.4.1`
- * Project: https://github.com/xerial/larray
- * Source: github.com/xerial/larray
-
-
-larray-mmap (0.4.1)
-
- * License: Apache-2.0
- * Maven artifact: `org.xerial.larray:larray-mmap:0.4.1`
- * Project: https://github.com/xerial/larray
- * Source: github.com/xerial/larray
-
-
-libpython-clj (2.024)
-
- * License: Eclipse Public License, Version 2.0
- * Maven artifact: `clj-python:libpython-clj:2.024`
- * Project: not available
- * Source: not declared
 
 
 Logback Classic Module (1.2.3)
@@ -501,30 +309,6 @@ org.leadpony.justify (1.1.0)
  * Source: https://github.com/leadpony/justify
 
 
-org.roaringbitmap:RoaringBitmap (0.9.0)
-
- * License: Apache 2
- * Maven artifact: `org.roaringbitmap:RoaringBitmap:0.9.0`
- * Project: https://github.com/RoaringBitmap/RoaringBitmap
- * Source: https://github.com/RoaringBitmap/RoaringBitmap
-
-
-org.roaringbitmap:shims (0.9.0)
-
- * License: Apache 2
- * Maven artifact: `org.roaringbitmap:shims:0.9.0`
- * Project: https://github.com/RoaringBitmap/RoaringBitmap
- * Source: https://github.com/RoaringBitmap/RoaringBitmap
-
-
-primitive-math (1.0.0)
-
- * License: MIT License
- * Maven artifact: `org.clj-commons:primitive-math:1.0.0`
- * Project: https://github.com/clj-commons/primitive-math
- * Source: https://github.com/clj-commons/primitive-math
-
-
 Protocol Buffers [Core] (3.8.0)
 
  * License: 3-Clause BSD License
@@ -539,14 +323,6 @@ SLF4J API Module (1.7.25)
  * Maven artifact: `org.slf4j:slf4j-api:1.7.25`
  * Project: http://www.slf4j.org
  * Source: https://github.com/qos-ch/slf4j/slf4j-api
-
-
-spec.alpha (0.3.218)
-
- * License: Eclipse Public License 1.0
- * Maven artifact: `org.clojure:spec.alpha:0.3.218`
- * Project: https://github.com/clojure/build.poms/spec.alpha
- * Source: https://github.com/clojure/spec.alpha
 
 
 SQLite JDBC (3.20.0)
@@ -565,22 +341,6 @@ Stax2 API (3.1.4)
  * Source: https://github.com/FasterXML/stax2-api
 
 
-tech.resource (5.07)
-
- * License: Eclipse Public License
- * Maven artifact: `techascent:tech.resource:5.07`
- * Project: http://github.com/tech-ascent/tech.resource
- * Source: not declared
-
-
-tools.logging (1.1.0)
-
- * License: Eclipse Public License 1.0
- * Maven artifact: `org.clojure:tools.logging:1.1.0`
- * Project: https://github.com/clojure/build.poms/tools.logging
- * Source: https://github.com/clojure/tools.logging
-
-
 TXW2 Runtime (2.3.2)
 
  * License: Eclipse Distribution License - v 1.0
@@ -595,13 +355,4 @@ Woodstox (5.1.0)
  * Maven artifact: `com.fasterxml.woodstox:woodstox-core:5.1.0`
  * Project: https://github.com/FasterXML/woodstox
  * Source: https://github.com/FasterXML/woodstox
-
-
-XML Commons External Components XML APIs (1.0.b2)
-
- * License: The Apache Software License, Version 2.0
- * Maven artifact: `xml-apis:xml-apis:1.0.b2`
- * Project: http://xml.apache.org/commons/#external
- * Source: https://svn.apache.org/viewvc/xml/commons/tags/xml-commons-1_0_b2
-
 
