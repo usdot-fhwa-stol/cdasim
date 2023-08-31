@@ -18,6 +18,7 @@ import java.net.MalformedURLException;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import java.util.*;
 
 public class CarlaMessageReceiver implements Runnable {
 
@@ -30,14 +31,20 @@ public class CarlaMessageReceiver implements Runnable {
         XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
         
         try{
+            //set up address for server
             config.setServerURL(new URL("http://127.0.0.1:8090/RPC2"));
             XmlRpcClient client = new XmlRpcClient();
             client.setConfig(config);
+            
             while(true)
             {
+                //used to pass arguments to python side, can be in any format
                 Object[] params = new Object[]{new String("Test " + java.time.LocalDateTime.now())};
-                String result = (String) client.execute("test.echo", params);
-                System.out.println(result);
+
+                //result is the return object from python side
+                Object result = (Object) client.execute("test.echo", params);
+
+                //pause the loop for 10 sec, change as needed
                 Thread.sleep(10000);
             }
         }
