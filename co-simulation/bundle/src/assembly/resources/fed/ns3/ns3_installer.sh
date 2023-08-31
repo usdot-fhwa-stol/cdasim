@@ -388,10 +388,6 @@ build_ns3() {
       rm src/ClientServerChannelMessages.pb.cc
    fi
 
-   # put updated mosaic-node-manager.cc from patch to federate
-   # sudo rm /opt/carma-simulation/bin/fed/ns3/federate/src/mosaic-node-manager.cc
-   # sudo cp -a /opt/carma-simulation/bin/fed/ns3/mosaic-node-manager.cc /opt/carma-simulation/bin/fed/ns3/federate/src
-
    # adjust build instruction to cover scrambled files
    sed -i -e "s|/usr/local|.|" premake5.lua
    sed -i -e "s|\"/usr/include\"|\"../ns-allinone-${ns3_version}/ns-${ns3_version}/build\"|" premake5.lua
@@ -401,10 +397,6 @@ build_ns3() {
    else
       ./premake5 gmake --install
    fi
-
-   # put updated ns3-federate.make from patch to federate
-   # sudo rm /opt/carma-simulation/bin/fed/ns3/federate/ns3-federate.make
-   # sudo cp -a /opt/carma-simulation/bin/fed/ns3/ns3-federate.make /opt/carma-simulation/bin/fed/ns3/federate/
 
    make config=debug clean
    make -j1 config=debug # make is running targets in parallel, but we have to build 'prebuild'-target, target,
