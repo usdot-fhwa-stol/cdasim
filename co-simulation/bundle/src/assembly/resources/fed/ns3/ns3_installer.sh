@@ -69,9 +69,9 @@ ns3_simulator_folder="${ns3_allinone_folder}/$ns3_short_affix" #due to the ns3 t
 ns3_scratch="${ns3_simulator_folder}/scratch"
 
 ####### semi automatic parameters ########
-ns3_federate_url="https://github.com/mosaic-addons/ns3-federate/archive/21.0.zip"
+ns3_federate_url="https://github.com/usdot-fhwa-stol/ns3-federate.git"
 ns3_url="http://www.nsnam.org/release/$ns3_version_affix.tar.bz2"
-ns3_cv2x="https://github.com/FabianEckermann/ns-3_c-v2x.git"
+ns3_cv2x="https://github.com/usdot-fhwa-stol/ns-3_c-v2x"
 
 ###### more automatic parameters #########
 ns3_federate_filename="$(basename "$ns3_federate_url")"
@@ -301,6 +301,13 @@ download_federate() {
    download "$ns3_federate_url"
 }
 
+clone_ns3_federate(){
+   log "Cloning NS3 federate from $ns3_federate_url..."
+   git clone -b Fix/cdasim_ns3_build_issue $ns3_federate_url
+
+   mv ns3-federate federate
+}
+
 clone_ns3_cv2x() {
 
    if [ ! -d "$ns3_allinone_folder" ]; then
@@ -309,8 +316,7 @@ clone_ns3_cv2x() {
    fi
    log "Cloning NS3 from $ns3_cv2x..."
    git clone $ns3_cv2x
-   rm -r $ns3_version_affix/$ns3_short_affix
-   mv ns-3.28 $ns3_version_affix/$ns3_short_affix
+   mv ns-3_c-v2x $ns3_version_affix/$ns3_short_affix
 }
 
 extract_ns3() {
@@ -364,11 +370,10 @@ patch_ns3() {
 build_ns3() {
    current_dir=$(pwd)
    log "BUILD ns3 version ${ns3_version}"
-   cd "${ns3_installation_path}/ns-allinone-${ns3_version}/ns-${ns3_version}"
-
+   cd "${ns3_installation_path}/ns-allinone-${ns3_version}/${ns3_short_affix}"
    # use waf to configure/build Fabian Eckermann NS-3 C-V2X
-   ./waf configure
-   ./waf build
+   python3.6 -x waf configure
+   python3.6 -x waf build
 
    sudo cp -ar build/ns3 /usr/include/
 
@@ -384,13 +389,13 @@ build_ns3() {
    fi
 
    # put updated mosaic-node-manager.cc from patch to federate
-   sudo rm /opt/carma-simulation/bin/fed/ns3/federate/src/mosaic-node-manager.cc
-   sudo cp -a /opt/carma-simulation/bin/fed/ns3/mosaic-node-manager.cc /opt/carma-simulation/bin/fed/ns3/federate/src
+   # sudo rm /opt/carma-simulation/bin/fed/ns3/federate/src/mosaic-node-manager.cc
+   # sudo cp -a /opt/carma-simulation/bin/fed/ns3/mosaic-node-manager.cc /opt/carma-simulation/bin/fed/ns3/federate/src
 
    # adjust build instruction to cover scrambled files
    sed -i -e "s|/usr/local|.|" premake5.lua
    sed -i -e "s|\"/usr/include\"|\"../ns-allinone-${ns3_version}/ns-${ns3_version}/build\"|" premake5.lua
-   sed -i -e "s|\"/usr/lib\"|\"../ns-allinone-${ns3_version}/ns-${ns3_version}/build\"|" premake5.lua
+   sed -i -e "s|\"/usr/lib\"|\"../ns-allinone-${ns3_version}/ns-${ns3_version}/build/lib\"|" premake5.lua
    if [ "${arg_regen_protobuf}" == "true" ]; then
       ./premake5 gmake --generate-protobuf --install
    else
@@ -398,12 +403,12 @@ build_ns3() {
    fi
 
    # put updated ns3-federate.make from patch to federate
-   sudo rm /opt/carma-simulation/bin/fed/ns3/federate/ns3-federate.make
-   sudo cp -a /opt/carma-simulation/bin/fed/ns3/ns3-federate.make /opt/carma-simulation/bin/fed/ns3/federate/
+   # sudo rm /opt/carma-simulation/bin/fed/ns3/federate/ns3-federate.make
+   # sudo cp -a /opt/carma-simulation/bin/fed/ns3/ns3-federate.make /opt/carma-simulation/bin/fed/ns3/federate/
 
    make config=debug clean
-   make -j1 config=debug   # make is running targets in parallel, but we have to build 'prebuild'-target, target,
-                           # and 'postbuild'-target sequentially
+   make -j1 config=debug # make is running targets in parallel, but we have to build 'prebuild'-target, target,
+   # and 'postbuild'-target sequentially
 }
 
 deploy_ns3() {
@@ -490,19 +495,18 @@ log "Preparing installation..."
 check_required_programs "${required_programs[*]}"
 check_directory
 
-# download_ns3
-
-download_federate
+# download_federate
 
 download_premake5
 
-# log "Extracting "$ns3_filename"..."
-# extract_ns3 "$ns3_filename" .
+clone_ns3_federate
 
-# clone_ns3_cv2x
+mkdir "${ns3_installation_path}/ns-allinone-${ns3_version}"
 
-log "Extracting "$ns3_federate_filename"..."
-extract_ns3_federate "$ns3_federate_filename"
+clone_ns3_cv2x
+
+# log "Extracting "$ns3_federate_filename"..."
+# extract_ns3_federate "$ns3_federate_filename"
 
 extract_premake
 
