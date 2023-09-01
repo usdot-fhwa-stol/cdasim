@@ -57,27 +57,29 @@ public class CarlaMessageReceiver implements Runnable {
             while(isRunning)
             {
                 //used to pass arguments to python side, can be in any format
-                Object[] params = new Object[]{new String("Test " + java.time.LocalDateTime.now())};
+                Object[] params = new Object[]{"Test " + java.time.LocalDateTime.now()};
 
                 //result is the return object from python side
-                Object result = (Object) client.execute("test.echo", params);
+                Object result = client.execute("test.echo", params);
+
+                log.info((String)result);
 
                 //pause the loop for 10 hz, change as needed
                 Thread.sleep(100);
             }
         }
-        catch (XmlRpcException XmlException) 
+        catch (XmlRpcException x) 
         {
-            log.error("Errors occurred with xmlrpc connection ", XmlException.getMessage());
+            log.error("Errors occurred with xmlrpc connection {0}", x.getMessage());
         }
         catch (InterruptedException e) 
         {
-			log.error("Errors occurred with ", e.getMessage());
+			log.error("Errors occurred with {0}", e.getMessage());
             Thread.currentThread().interrupt();   
 		} 
         catch (MalformedURLException m) 
         {
-            log.error("Errors occurred with ", m.getMessage());
+            log.error("Errors occurred with {0}", m.getMessage());
         }
 
     }
@@ -90,13 +92,13 @@ public class CarlaMessageReceiver implements Runnable {
         log.info("carla connection server closing");
         isRunning = false;
         try {
-            Object[] params = new Object[]{new String("Stop Server")};
+            Object[] params = new Object[]{"Stop Server"};
             String result =  (String)client.execute("test.echo", params);
             log.info(result);
         } 
         catch (XmlRpcException e) 
         {
-            log.error("Errors occurred with ", e.getMessage());
+            log.error("Errors occurred with {0}", e.getMessage());
         }
     }
 }

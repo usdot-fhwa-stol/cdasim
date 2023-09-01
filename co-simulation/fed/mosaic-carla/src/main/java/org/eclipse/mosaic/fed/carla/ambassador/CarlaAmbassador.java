@@ -243,8 +243,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             //test connection for new script and dummy
                        
             carlaMessageReceiver = new CarlaMessageReceiver(this);
-            Thread CarlaTestThread = new Thread(carlaMessageReceiver);
-            CarlaTestThread.start();
+            Thread carlaTestThread = new Thread(carlaMessageReceiver);
+            carlaTestThread.start();
      
         }
 
