@@ -74,7 +74,14 @@
  <default name="ns3::ConstantRateWifiManager::DataMode" value="OfdmRate6Mbps"/>
  <default name="ns3::ConstantRateWifiManager::ControlMode" value="OfdmRate6Mbps"/>
 
- <default name="ns3::QueueBase::MaxPackets" value="400"/>
+ <!-- 
+    Fabian Eckermann NS-3 C-V2X cannot take ns3::QueueBase::MaxPackets 
+    configuration. By removing this config, the default setting will be 
+    unbounded. Without a set limit on MaxPackets, the queue would not drop 
+    packets solely because it has exceeded a specified packet count. 
+ -->
+ <!-- <default name="ns3::QueueBase::MaxPackets" value="400"/> -->
+ 
  <default name="ns3::WifiMacQueue::MaxDelay" value="+500000000.0ns"/>
  <default name="ns3::WifiNetDevice::Mtu" value="2296"/>
 
