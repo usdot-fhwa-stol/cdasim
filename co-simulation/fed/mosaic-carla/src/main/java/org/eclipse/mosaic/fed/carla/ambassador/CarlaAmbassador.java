@@ -17,7 +17,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
-import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMessageReceiver;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
@@ -56,7 +56,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     /**
      * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
      */
-    private CarlaMessageReceiver carlaMessageReceiver = null;
+    private CarlaXmlRpcClient carlaXmlRpcClient = null;
 
     /**
      * Command used to start CARLA simulator.
@@ -205,6 +205,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.error("Error during advanceTime request", e);
             throw new InternalFederateException(e);
         }
+        //initialize CarlaXmlRpcClient
+        carlaXmlRpcClient = new CarlaXmlRpcClient();
+        carlaXmlRpcClient.initialize();
         // Start the CARLA simulator
         startCarlaLocal();
 
@@ -239,13 +242,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaConnection = new CarlaConnection("localhost", carlaConnectionPort, this);
             Thread carlaThread = new Thread(carlaConnection);
             carlaThread.start();
-
-            //test connection for new script and dummy
-                       
-            carlaMessageReceiver = new CarlaMessageReceiver(this);
-            Thread carlaTestThread = new Thread(carlaMessageReceiver);
-            carlaTestThread.start();
-     
         }
 
         String[] bridgePathArray = bridgePath.split(";");
@@ -347,6 +343,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
             rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
             this.executedTimes++;
+
+            //call CarlaXmlRpcClient to ask for data whenever time advances
+            carlaXmlRpcClient.requestCarlaList();
+
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
@@ -365,8 +365,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaConnection.closeSocket();
         }
 
-        if(carlaMessageReceiver != null){
-            carlaMessageReceiver.closeConnection();
+        if(carlaXmlRpcClient != null){
+        	carlaXmlRpcClient.closeConnection();
         }
 
         if (federateExecutor != null) {
