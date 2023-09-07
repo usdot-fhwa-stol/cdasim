@@ -40,6 +40,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -206,8 +208,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             throw new InternalFederateException(e);
         }
         //initialize CarlaXmlRpcClient
-        carlaXmlRpcClient = new CarlaXmlRpcClient();
-        carlaXmlRpcClient.initialize();
+        //set the connected server URL
+        try{
+            URL xmlRpcServerUrl = new URL("http://127.0.0.1:8090/RPC2");
+            carlaXmlRpcClient = new CarlaXmlRpcClient();
+            carlaXmlRpcClient.initialize(xmlRpcServerUrl);
+        }
+        catch (MalformedURLException m) 
+        {
+            log.error("Errors occurred with {0}", m.getMessage());
+            carlaXmlRpcClient.closeConnection();
+        }
         // Start the CARLA simulator
         startCarlaLocal();
 

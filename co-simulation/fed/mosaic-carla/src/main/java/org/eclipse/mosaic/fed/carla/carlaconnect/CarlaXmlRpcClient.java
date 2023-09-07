@@ -15,8 +15,9 @@
 */
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
-import java.net.URL;
 import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
@@ -44,23 +45,20 @@ public class CarlaXmlRpcClient{
     public void closeConnection()
     {
         log.info("carla connection server closing");
-        isConnected = false;
-        try {
-            Object[] params = new Object[]{"Stop Server"};
-            String result =  (String)client.execute(registeredFunction, params);
-            log.info(result);
-        } 
-        catch (XmlRpcException e) 
-        {
-            log.error("Errors occurred with {0}", e.getMessage());
-        }
+        isConnected = false;      
     }
 
-    public void initialize()
+
+
+    /**
+     * need to getting a URL to connect to from ambassador
+     * @param xmlRpcServerUrl
+     */
+    public void initialize(URL xmlRpcServerUrl)
     {
         try{           
             config = new XmlRpcClientConfigImpl();
-            config.setServerURL(new URL("http://127.0.0.1:8090/RPC2"));
+            config.setServerURL(xmlRpcServerUrl);
             client = new XmlRpcClient();
             client.setConfig(config);
             Object[] connectionTest = new Object[]{"Connection test"};
@@ -73,11 +71,6 @@ public class CarlaXmlRpcClient{
                log.error("Server is not connected!");
             }
         }
-        catch (MalformedURLException m) 
-        {
-            log.error("Errors occurred with {0}", m.getMessage());
-            isConnected = false;
-        }
         catch (XmlRpcException x) 
         {
             log.error("Errors occurred with xmlrpc connection {0}", x.getMessage());
@@ -89,13 +82,20 @@ public class CarlaXmlRpcClient{
 
     /**
     * This method uses xmlrpc to connect with CARLA CDASim adapter service
+     * @throws XmlRpcException
     */
     public void requestCarlaList()
     {
         if(!isConnected)
         {
-            log.error("Server is not connected!");
-            return;
+            
+            try {
+                throw new XmlRpcException("Server is not connected!");
+            } 
+            catch (XmlRpcException e) 
+            {
+                log.error("Server is not connected! {0}", e.getMessage());
+            }
         }
         try{          
             Object[] params = new Object[]{"Test " + java.time.LocalDateTime.now()};
