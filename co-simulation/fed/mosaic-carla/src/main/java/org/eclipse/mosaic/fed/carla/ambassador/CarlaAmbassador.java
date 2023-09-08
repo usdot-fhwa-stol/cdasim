@@ -376,10 +376,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaConnection.closeSocket();
         }
 
-        if(carlaXmlRpcClient != null){
-        	carlaXmlRpcClient.closeConnection();
-        }
-
         if (federateExecutor != null) {
             try {
                 federateExecutor.stopLocalFederate();

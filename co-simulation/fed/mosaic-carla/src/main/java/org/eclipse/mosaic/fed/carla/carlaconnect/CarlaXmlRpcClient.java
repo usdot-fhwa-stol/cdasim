@@ -64,12 +64,6 @@ public class CarlaXmlRpcClient{
             Object[] connectionTest = new Object[]{"Connection test"};
             Object result = (String)client.execute(registeredFunction, connectionTest);
             isConnected = true;
-
-            if(!result.equals("Connected!"))
-            {
-               isConnected = false;
-               log.error("Server is not connected!");
-            }
         }
         catch (XmlRpcException x) 
         {
