@@ -309,12 +309,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 // Check for empty list of sensors which is valid
                 if (reg.getSensors() != null ) {
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
-                } 
-                else {
                     for (Detector sensor : reg.getSensors()) {
                         // Trigger Sensor registrations for all listed sensors.
                         this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
                     }
+                } 
+                else {
+                   log.warn("No sensors registered for infrastructure instance {}.", reg.getInfrastructureId());
                 }
             }
 
