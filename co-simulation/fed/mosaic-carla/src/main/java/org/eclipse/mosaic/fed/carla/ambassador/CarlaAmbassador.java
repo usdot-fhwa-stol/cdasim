@@ -211,12 +211,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         //set the connected server URL
         try{
             URL xmlRpcServerUrl = new URL("http://127.0.0.1:8090/RPC2");
-            carlaXmlRpcClient = new CarlaXmlRpcClient();
-            carlaXmlRpcClient.initialize(xmlRpcServerUrl);
+            carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
         }
         catch (MalformedURLException m) 
         {
-            log.error("Errors occurred with {0}", m.getMessage());
+            log.error("Errors occurred with {}", m.getMessage());
             carlaXmlRpcClient.closeConnection();
         }
         // Start the CARLA simulator

@@ -15,7 +15,6 @@
 */
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.xmlrpc.XmlRpcException;
@@ -32,11 +31,11 @@ public class CarlaXmlRpcClient{
     boolean isConnected;
     private String registeredFunction = "test.echo";
     private XmlRpcClient client;
-    private XmlRpcClientConfigImpl config;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public CarlaXmlRpcClient() {
-        
+
+    public CarlaXmlRpcClient(URL xmlRpcServerUrl) {
+        initialize(xmlRpcServerUrl);
     }
 
     /**
@@ -56,21 +55,11 @@ public class CarlaXmlRpcClient{
      */
     public void initialize(URL xmlRpcServerUrl)
     {
-        try{           
-            config = new XmlRpcClientConfigImpl();
-            config.setServerURL(xmlRpcServerUrl);
-            client = new XmlRpcClient();
-            client.setConfig(config);
-            Object[] connectionTest = new Object[]{"Connection test"};
-            Object result = (String)client.execute(registeredFunction, connectionTest);
-            isConnected = true;
-        }
-        catch (XmlRpcException x) 
-        {
-            log.error("Errors occurred with xmlrpc connection {0}", x.getMessage());
-            isConnected = false;
-        } 
-
+        XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();   
+        config.setServerURL(xmlRpcServerUrl);
+        client = new XmlRpcClient();
+        client.setConfig(config);
+        isConnected = true;
     }
 
 
@@ -88,7 +77,7 @@ public class CarlaXmlRpcClient{
             } 
             catch (XmlRpcException e) 
             {
-                log.error("Server is not connected! {0}", e.getMessage());
+                log.error("Server is not connected! {}", e.getMessage());
             }
         }
         try{          
@@ -98,7 +87,7 @@ public class CarlaXmlRpcClient{
         }
         catch (XmlRpcException x) 
         {
-            log.error("Errors occurred with xmlrpc connection {0}", x.getMessage());
+            log.error("Errors occurred with xmlrpc connection {}", x.getMessage());
             closeConnection();
         } 
         
