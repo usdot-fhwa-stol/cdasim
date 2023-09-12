@@ -486,6 +486,7 @@
                             <exclude>target/**</exclude>
                             <exclude>**/ClientServerChannelProtos.java</exclude>
                             <exclude>fed/mosaic-carma/**</exclude>
+                            <exclude>fed/mosaic-carla/**</exclude>
                         </excludes>
                         <useDefaultExcludes>true</useDefaultExcludes>
                         <encoding>${project.build.sourceEncoding}</encoding>

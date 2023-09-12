@@ -17,6 +17,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
@@ -39,6 +40,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -51,6 +54,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Connection between CARLA federate and CARLA simulator.
      */
     private CarlaConnection carlaConnection = null;
+
+    /**
+     * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
+     */
+    private CarlaXmlRpcClient carlaXmlRpcClient = null;
 
     /**
      * Command used to start CARLA simulator.
@@ -199,6 +207,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.error("Error during advanceTime request", e);
             throw new InternalFederateException(e);
         }
+        //initialize CarlaXmlRpcClient
+        //set the connected server URL
+        try{
+            URL xmlRpcServerUrl = new URL("http://127.0.0.1:8090/RPC2");
+            carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+        }
+        catch (MalformedURLException m) 
+        {
+            log.error("Errors occurred with {}", m.getMessage());
+            carlaXmlRpcClient.closeConnection();
+        }
         // Start the CARLA simulator
         startCarlaLocal();
 
@@ -215,6 +234,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Start the Carla connection server
         String bridgePath = null;
         int carlaConnectionPort = 8913;
+        
         if (carlaConfig.carlaConnectionPort != 0)
             carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
 
@@ -333,6 +353,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
             rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
             this.executedTimes++;
+
+            //call CarlaXmlRpcClient to ask for data whenever time advances
+            carlaXmlRpcClient.requestCarlaList();
+
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);

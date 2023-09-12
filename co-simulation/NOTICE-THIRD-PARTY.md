@@ -355,5 +355,3 @@ Woodstox (5.1.0)
  * Maven artifact: `com.fasterxml.woodstox:woodstox-core:5.1.0`
  * Project: https://github.com/FasterXML/woodstox
  * Source: https://github.com/FasterXML/woodstox
-
-
