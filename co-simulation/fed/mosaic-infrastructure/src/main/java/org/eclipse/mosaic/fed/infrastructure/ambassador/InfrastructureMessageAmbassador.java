@@ -295,20 +295,27 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
-                log.info("Processing new registration request for " + reg.getInfrastructureId());
+                log.info("Processing new registration request for  {}.", reg.getInfrastructureId());
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
-                log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + reg.getLocation().getX() + ", " + reg.getLocation().getY() + ", " + reg.getLocation().getZ() + ")");
+                log.info("RSU Registration for {} @ x, y, z: ( {}, {}, {}) .", 
+                                            reg.getInfrastructureId(),
+                                            reg.getLocation().getX(),
+                                            reg.getLocation().getY(), 
+                                            reg.getLocation().getZ());
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
                 // Check for empty list of sensors which is valid
                 if (reg.getSensors() != null ) {
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
-                }
-                for (Detector sensor : reg.getSensors()) {
-                    // Trigger Sensor registrations for all listed sensors.
-                    this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
+                    for (Detector sensor : reg.getSensors()) {
+                        // Trigger Sensor registrations for all listed sensors.
+                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
+                    }
+                } 
+                else {
+                   log.warn("No sensors registered for infrastructure instance {}.", reg.getInfrastructureId());
                 }
             }
 
