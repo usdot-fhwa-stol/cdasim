@@ -90,7 +90,10 @@ class MyScenario(BasicScenario):
         BasicScenario parent class. The base class's implementation adds
         a trigger that prevents the scenario from starting until the
         ego vehicle drives some distance. We don't want that trigger
-        for this scenario.
+        for this scenario because the ego vehicle will not move. Override this
+        function to create custom scenario start triggers. Follow this link
+        for more information:
+        https://carla-scenariorunner.readthedocs.io/en/latest/creating_new_scenario/
 
         :return: None
         """
@@ -112,6 +115,9 @@ class MyScenario(BasicScenario):
             crossing_person, 2.0, 8.0, name="walk_across_street"
         )
 
+        # This end condition is commented out because it is not currently being
+        # used in the scenario. It remains here as an example/reference for
+        # how to gracefully end a ScenarioRunner scenario.
         # end_condition = DriveDistance(carma_vehicle, 10)
 
         root = py_trees.composites.Sequence(name="root_sequence")
@@ -130,6 +136,8 @@ class MyScenario(BasicScenario):
         :return: List of test criteria
         """
         return [
+            # This is an example usage for including test criteria in
+            # ScnearioRunner.
             # CollisionTest(self.carma_vehicle)
         ]
 
