@@ -51,6 +51,12 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Size;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.math.Vector3d;
+
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 
@@ -290,6 +296,24 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
         log.info("Infrastructure message ambassador processing timestep to {}.", time);
         try {
+            
+            DetectedObject mockObject = new DetectedObject(
+                DetectionType.CAR,
+                0.7,
+                "SomeID2",
+                "projection String2",
+                "Object7",
+                CartesianPoint.xyz(-1.1, -2, -3.2),
+                new Vector3d(1, 1, 1),
+                new Vector3d(.1, .2, .3),
+                new Size(2, 1, .5));
+                Double[] covarianceMatrix = new Double[] { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+                mockObject.setPositionCovariance(covarianceMatrix);
+                mockObject.setVelocityCovariance(covarianceMatrix);
+                mockObject.setAngularVelocityCovariance(covarianceMatrix);
+                
+            DetectedObjectInteraction mockObjectInteraction = new DetectedObjectInteraction(0, mockObject);
+            this.rti.triggerInteraction(mockObjectInteraction);
 
             // Handle any new infrastructure registration requests
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
