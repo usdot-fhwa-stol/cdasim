@@ -21,6 +21,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.ArrayList;
+
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -44,7 +46,7 @@ public class InfrastructureInstance {
     private int simulatedInteractionPort;
     private CartesianPoint location = null;
     private DatagramSocket socket = null;
-    private List<Detector> sensors;
+    private List<Detector> sensors = new ArrayList<>();
 
     /**
      * Constructor for InfrastructureInstance
