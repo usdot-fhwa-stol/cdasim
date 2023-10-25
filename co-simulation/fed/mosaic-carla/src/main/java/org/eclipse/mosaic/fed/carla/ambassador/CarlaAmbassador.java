@@ -17,7 +17,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.xmlrpc.XmlRpcException;
-import org.apache.xmlrpc.client.XmlRpcClientException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
@@ -28,7 +27,6 @@ import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
-import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
@@ -43,7 +41,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -219,7 +216,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         //initialize CarlaXmlRpcClient
         //set the connected server URL
         try{
-            URL xmlRpcServerUrl = new URL("http://127.0.0.1:8090/RPC2");
+            URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
             carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
         }
         catch (MalformedURLException m) 

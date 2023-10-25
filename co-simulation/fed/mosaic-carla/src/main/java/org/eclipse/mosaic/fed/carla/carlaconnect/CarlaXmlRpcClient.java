@@ -16,15 +16,12 @@
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-import org.apache.xmlrpc.client.XmlRpcClientException;
-import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
@@ -39,7 +36,6 @@ public class CarlaXmlRpcClient{
 
     boolean isConnected;
     private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
-    private static final String GET_SENSOR = "get_simulated_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
 
     private XmlRpcClient client;
