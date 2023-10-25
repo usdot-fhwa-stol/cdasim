@@ -19,6 +19,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.RtiAmbassador;
@@ -54,6 +55,8 @@ public class CarlaAmbassadorTest {
     public void setup() throws IOException {
 
         rtiMock = mock(RtiAmbassador.class);
+
+
 
         FederateDescriptor handleMock = mock(FederateDescriptor.class);
 

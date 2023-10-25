@@ -222,7 +222,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         catch (MalformedURLException m) 
         {
             log.error("Errors occurred with {}", m.getMessage());
-            carlaXmlRpcClient.closeConnection();
         }
         // Start the CARLA simulator
         startCarlaLocal();
@@ -379,6 +378,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         catch (XmlRpcException e) {
             log.error("Failed to connect to CARLA Adapter : ", e);
+            carlaXmlRpcClient.closeConnection();
         }
     }
 
