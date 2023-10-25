@@ -29,7 +29,7 @@ public class DetectorRegistrationTest {
     DetectorRegistration detectorRegistration;
     @Before
     public void setUp() throws Exception {
-        detectorRegistration = new DetectorRegistration(0, null);
+        detectorRegistration = new DetectorRegistration(0, null, "");
     }
 
     @Test
@@ -39,7 +39,7 @@ public class DetectorRegistrationTest {
         detectorRegistration.setDetector(detector);
         assertEquals(detector, detectorRegistration.getDetector());
 
-        DetectorRegistration detectorRegistration1 = new DetectorRegistration(0, detector);
+        DetectorRegistration detectorRegistration1 = new DetectorRegistration(0, detector, "rsu_1");
 
         assertNotEquals(detectorRegistration, detectorRegistration1);
         DetectorRegistration detectorRegistration2 = detectorRegistration1;

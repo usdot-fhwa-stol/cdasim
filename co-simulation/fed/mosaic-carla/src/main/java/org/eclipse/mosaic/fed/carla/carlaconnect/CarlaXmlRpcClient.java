@@ -16,6 +16,7 @@
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,10 +24,13 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.apache.xmlrpc.client.XmlRpcClientException;
+import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
 
 /**
  * This is a class uses xmlrpc to connect with CARLA CDASim adapter service
@@ -71,12 +75,12 @@ public class CarlaXmlRpcClient{
     }
 
 
-    public void create_sensor(DetectorRegistration registration) throws XmlRpcException{
+    public void createSensor(DetectorRegistration registration) throws XmlRpcException{
         List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
         List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
 
         if (isConnected) {
-            Object[] params = new Object[]{1/** TODO Infrastructure ID */, registration.getDetector().getSensorId(), location, orientation};
+            Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
             Object result = client.execute(CREATE_SENSOR, params);
             log.info((String)result);
         }
@@ -85,14 +89,20 @@ public class CarlaXmlRpcClient{
         }
     }
 
-    public void get_detected_objects(String sensorId) throws XmlRpcException{
+    public DetectedObject[] getDetectedObjects(String infrastructureId ,String sensorId) throws XmlRpcException{
         if (isConnected) {
-            Object[] params = new Object[]{1/** TODO Infrastructure ID */, sensorId};
+            Object[] params = new Object[]{infrastructureId, sensorId};
             Object result = client.execute(GET_DETECTED_OBJECTS, params);
-            log.info((String)result);
+            log.info("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
+            String jsonResult = (String)result;
+            Gson gson = new Gson();
+            DetectedObject[] parsedMessage = gson.fromJson(jsonResult,
+                    DetectedObject[].class);
+            return parsedMessage;
         }
         else {
-            log.warn("XMLRpcClient is not connected to CARLA Adapter!");
+            throw new XmlRpcException("XMLRpcClient is not connected to CARLA Adapter!");
+            
         }
     }
 

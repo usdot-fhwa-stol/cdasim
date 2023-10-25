@@ -25,7 +25,9 @@ import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
 import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.interactions.application.*;
+import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -115,7 +117,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private final PriorityBlockingQueue<CarlaV2xMessageReception> carlaV2xInteractionQueue = new PriorityBlockingQueue<>();
 
-    private List<Detector> registeredDetectors = new ArrayList<>();
+    private List<DetectorRegistration> registeredDetectors = new ArrayList<>();
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -358,16 +360,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
             }
+            // TODO: What is this. Why are we request a time advance based on this counter and 
+            // what is it counting. It is labeled as counting the times we attempt to connect to 
+            // CARLA but it seems to increment every time processTimeAdvanceGrant is called
             rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
             this.executedTimes++;
-
-            //call CarlaXmlRpcClient to ask for data whenever time advances
-            for (Detector detector: registeredDetectors ) {
-                carlaXmlRpcClient.get_detected_objects(detector.getSensorId());
+            List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList();
+            // Get all detections from all currently registered detectors.
+            for (DetectorRegistration registration: registeredDetectors ) {
+                DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                for (DetectedObject detected: detections) {
+                    detectedObjectInteractions.add(new DetectedObjectInteraction(time, detected));
+                }
+            }
+            // trigger all detection interactions
+            for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                this.rti.triggerInteraction(detectionInteraction);
             }
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
-            throw new InternalFederateException(e);
         }
         catch (XmlRpcException e) {
             log.error("Failed to connect to CARLA Adapter : ", e);
@@ -513,8 +524,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     private void receiveInteraction(DetectorRegistration interaction) {
         try {
-            carlaXmlRpcClient.create_sensor(interaction);
-            registeredDetectors.add(interaction.getDetector());
+            carlaXmlRpcClient.createSensor(interaction);
+            registeredDetectors.add(interaction);
         }
         catch(XmlRpcException e) {
             log.error("Error occurred attempting to create sensor : {}", interaction.getDetector(), e);

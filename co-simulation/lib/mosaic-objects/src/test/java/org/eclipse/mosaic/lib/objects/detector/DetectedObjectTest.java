@@ -45,7 +45,7 @@ public class DetectedObjectTest {
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
                 new Size(0, 0, 0));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
         detectedObject.setAngularVelocityCovariance(covarianceMatrix);
@@ -63,21 +63,21 @@ public class DetectedObjectTest {
                 + "\"y\":2.0,"
                 + "\"z\":3.2"
                 + "},"
-                + "\"positionCovariance\":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"
+                + "\"positionCovariance\":[[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]],"
                 + "\"velocity\":"
                 + "{"
                 + "\"x\":0.0,"
                 + "\"y\":0.0,"
                 + "\"z\":0.0"
                 + "},"
-                + "\"velocityCovariance\":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"
+                + "\"velocityCovariance\":[[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]],"
                 + "\"angularVelocity\":"
                 + "{"
                 + "\"x\":0.0,"
                 + "\"y\":0.0,"
                 + "\"z\":0.0"
                 + "},"
-                + "\"angularVelocityCovariance\":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"
+                + "\"angularVelocityCovariance\":[[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]],"
                 + "\"size\":"
                 + "{"
                 + "\"length\":0.0,"
@@ -105,21 +105,21 @@ public class DetectedObjectTest {
                 + "\"y\":-2.0,"
                 + "\"z\":-3.2"
                 + "},"
-                + "\"positionCovariance\":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0],"
+                + "\"positionCovariance\":[[1.0,0.0,0.0],[1.0,0.0,0.0],[1.0,0.0,0.0]],"
                 + "\"velocity\":"
                 + "{"
                 + "\"x\":1,"
                 + "\"y\":1,"
                 + "\"z\":1"
                 + "},"
-                + "\"velocityCovariance\":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0],"
+                + "\"velocityCovariance\":[[1.0,0.0,0.0],[1.0,0.0,0.0],[1.0,0.0,0.0]],"
                 + "\"angularVelocity\":"
                 + "{"
                 + "\"x\":0.1,"
                 + "\"y\":0.2,"
                 + "\"z\":0.3"
                 + "},"
-                + "\"angularVelocityCovariance\":[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0],"
+                + "\"angularVelocityCovariance\":[[1.0,0.0,0.0],[1.0,0.0,0.0],[1.0,0.0,0.0]],"
                 + "\"size\":"
                 + "{"
                 + "\"length\":2.0,"
@@ -139,7 +139,7 @@ public class DetectedObjectTest {
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
                 new Size(2, 1, .5));
-        Double[] covarianceMatrix = new Double[] { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+        Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
         predictedDetectedObject.setPositionCovariance(covarianceMatrix);
         predictedDetectedObject.setVelocityCovariance(covarianceMatrix);
         predictedDetectedObject.setAngularVelocityCovariance(covarianceMatrix);
@@ -160,7 +160,7 @@ public class DetectedObjectTest {
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
                 new Size(3, 4, 5));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
         detectedObject.setAngularVelocityCovariance(covarianceMatrix);
@@ -193,7 +193,7 @@ public class DetectedObjectTest {
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
                 new Size(3, 4, 5));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
         detectedObject.setAngularVelocityCovariance(covarianceMatrix);
