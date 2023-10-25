@@ -46,7 +46,7 @@ public class DetectedObjectInteractionTest {
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
                 new Size(2, 1, .5));
-        Double[] covarianceMatrix = new Double[] { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
         detectedObject.setAngularVelocityCovariance(covarianceMatrix);

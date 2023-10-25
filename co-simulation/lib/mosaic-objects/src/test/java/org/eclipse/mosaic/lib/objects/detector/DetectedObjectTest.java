@@ -87,7 +87,7 @@ public class DetectedObjectTest {
                 + "}";
         assertEquals(json,
                 json_prediction);
-
+        System.out.println(json);
     }
 
     @Test
