@@ -7,7 +7,7 @@
             <property name="logDirectory" value="${logDirectory}"/>
             <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="STDOUT-Progress" class="ch.qos.logback.core.ConsoleAppender">
@@ -26,7 +26,7 @@
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/MOSAIC.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
 
@@ -35,7 +35,7 @@
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Mapping.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
 
@@ -43,7 +43,7 @@
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Application.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="ApplicationLogDelegation" class="ch.qos.logback.classic.sift.SiftingAppender">
@@ -67,55 +67,55 @@
                 <immediateFlush>true</immediateFlush>
                 <file>${logDirectory}/Navigation.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="TrafficLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Traffic.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="CarlaLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Carla.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="CarmaLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Carma.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="InfrastructureLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Infrastructure.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="EnvironmentLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Environment.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="CommunicationLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Communication.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
             <appender name="CommunicationDetailsLog" class="ch.qos.logback.core.FileAppender">
                 <file>${logDirectory}/CommunicationDetails.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
                 <append>false</append>
             </appender>
@@ -123,7 +123,7 @@
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Cell.log</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
 
@@ -131,7 +131,7 @@
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/RuntimeEvents.csv</file>
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                    <pattern>%date %-5level %logger{0} [%thread] - %msg%n</pattern>
+                    <pattern>%date %-5level %C{0}:%line [%thread] - %msg%n</pattern>
                 </encoder>
             </appender>
 
