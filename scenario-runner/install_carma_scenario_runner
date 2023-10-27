@@ -1,0 +1,217 @@
+#!/bin/bash
+
+# Copyright 2023 Leidos
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#######################################
+# Prints a string to standard error
+# Globals:
+#   None
+# Arguments:
+#   String to print
+# Returns:
+#   0
+#######################################
+function err() {
+  echo "$*" >&2
+}
+
+#######################################
+# Prints error and exits script if argument count is unexpected
+# Globals:
+#   None
+# Arguments:
+#   Actual argument count
+#   Expected argument count
+#   Error message to print before exiting (if unexpected count)
+# Returns:
+#   0
+#######################################
+function assert_argument_count_eq() {
+  if [ "$1" -ne "$2" ]; then
+    if [ "$#" -eq 3 ]; then
+      echo "$3"
+    fi
+    print_usage
+    exit 1
+  fi
+}
+
+#######################################
+# Prints the script's argument descriptions
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   0
+#######################################
+function print_help() {
+  command cat <<-HELP
+options:
+  -h, --help                Show usage
+  --prefix                  The path prefix for the installation. Installation
+                            will be located at <install_prefix>/scenario_runner
+
+positional arguments:
+  scenario_runner_version   The scenario_runner version to install (should be
+                            identical to the CARLA version being used)
+HELP
+}
+
+#######################################
+# Prints the script's usage
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   0
+#######################################
+function print_usage() {
+  command cat <<-USAGE
+usage: install_carma_scenario_runner [-h | --help] [--prefix <install_prefix>]
+                                     <scenario_runner_version>
+USAGE
+}
+
+#######################################
+# Downlaods a minimized scenario_runner
+# Globals:
+#   SCENARIO_RUNNER_HOME (read)
+#   SCENARIO_RUNNER_VERSION (read)
+# Arguments:
+#   None
+# Returns:
+#   0 if the download succeeded
+#######################################
+function install_minimal_scenario_runner() {
+  git clone \
+    -c advice.detachedHead=false \
+    --depth 1 \
+    --branch "${SCENARIO_RUNNER_VERSION}" \
+    https://github.com/carla-simulator/scenario_runner.git \
+    "${SCENARIO_RUNNER_HOME}"
+
+  if [[ "$?" -ne 0 ]]; then
+    err "error: could not clone scenario_runner repository"
+    return "$?"
+  fi
+
+  cd "${SCENARIO_RUNNER_HOME}"
+
+  python3 -m pip install --upgrade --no-cache-dir -r requirements.txt
+
+  rm -rf \
+    CARLA_VER \
+    Dockerfile \
+    Docs \
+    .git \
+    .github \
+    .gitignore \
+    Jenkinsfile \
+    LICENSE \
+    manual_control.py \
+    metrics_manager.py \
+    mkdocs.yml \
+    no_rendering_mode.py \
+    .pylintrc \
+    README.md \
+    .readthedocs.yml \
+    requirements.txt \
+    tests
+
+  # We will replace the provided scenarios with our own
+  rm -rf \
+    srunner/examples \
+    srunner/scenarios
+
+  cd - > /dev/null
+}
+
+#######################################
+# Installs CARMA-specific scenario_runner scenarios from current directory
+# Globals:
+#   SCENARIO_RUNNER_HOME (read)
+# Arguments:
+#   None
+# Returns:
+#   0
+#######################################
+function install_carma_scenarios() {
+  cp -r scenarios examples "${SCENARIO_RUNNER_HOME}/srunner"
+}
+
+#######################################
+# Main script entrypoint
+# Globals:
+#   SCENARIO_RUNNER_HOME (write)
+#   SCENARIO_RUNNER_VERSION (write)
+# Arguments:
+#   commandline arguments
+# Returns:
+#   0
+#######################################
+function main() {
+  local install_prefix=""
+
+  while :; do
+    case "$1" in
+      -h|--help)
+        print_usage
+        echo ""
+        print_help
+        exit 0
+        ;;
+      --prefix)
+        shift
+        if [ "$#" -eq 0 ]; then
+          err "error: option 'prefix' requires a value"
+          print_usage
+          exit 129
+        fi
+        install_prefix="$1"
+        ;;
+      *)
+        if [[ "$1" == -* ]]; then
+          err "unknown option '$1'"
+          print_usage
+          exit 129
+        fi
+        break
+    esac
+    shift
+  done
+
+  assert_argument_count_eq "$#" 1 "error: missing scneario_runner branch"
+
+  mkdir -p "${install_prefix}"
+
+  declare -rg SCENARIO_RUNNER_HOME="${install_prefix:+${install_prefix}/}scenario_runner"
+  declare -rg SCENARIO_RUNNER_VERSION="$1"
+
+  python3 -m pip install --upgrade --no-cache-dir pip setuptools wheel
+
+  if ! install_minimal_scenario_runner; then
+    err "error: could not install scenario_runner"
+    exit 1
+  fi
+
+  if ! install_carma_scenarios; then
+    err "error: could not install CARMA scenarios"
+    exit 1
+  fi
+}
+
+main "$@"

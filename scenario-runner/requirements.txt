@@ -1,6 +1,0 @@
-py_trees
-
-# Note: The `srunner` package in PyPi is outdated, and the ScenarioRunner
-# documentation uses the source-installed `srunner` package in all of its
-# examples.
-# srunner
