@@ -38,12 +38,7 @@ RUN ./install_carma_scenario_runner --prefix /app $CARLA_VERSION \
     && mv PythonAPI/carla /app \
     && rm -rf *
 
-# RUN
-
-#     && rm -rf PythonAPI
-
 WORKDIR /app/scenario_runner
-
 ENV PYTHONPATH "/app/carla/agents:/app/carla:/app/carla/dist/carla-$CARLA_VERSION-py3.7-linux-x86_64.egg"
 
-# ENTRYPOINT ["python3", "scenario_runner.py"]
+ENTRYPOINT ["python3", "scenario_runner.py"]
