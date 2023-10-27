@@ -97,45 +97,44 @@ USAGE
 #   0 if the download succeeded
 #######################################
 function install_minimal_scenario_runner() {
-  git clone \
+  if ! git clone \
     -c advice.detachedHead=false \
     --depth 1 \
     --branch "${SCENARIO_RUNNER_VERSION}" \
     https://github.com/carla-simulator/scenario_runner.git \
     "${SCENARIO_RUNNER_HOME}"
-
-  if [[ "$?" -ne 0 ]]; then
+  then
     err "error: could not clone scenario_runner repository"
     return "$?"
   fi
 
-  cd "${SCENARIO_RUNNER_HOME}"
+  (
+    cd "${SCENARIO_RUNNER_HOME}" || exit
 
-  python3 -m pip install --upgrade --no-cache-dir -r requirements.txt
+    python3 -m pip install --upgrade --no-cache-dir -r requirements.txt
 
-  rm -rf \
-    CARLA_VER \
-    Dockerfile \
-    Docs \
-    .git \
-    .github \
-    .gitignore \
-    Jenkinsfile \
-    LICENSE \
-    manual_control.py \
-    metrics_manager.py \
-    mkdocs.yml \
-    no_rendering_mode.py \
-    .pylintrc \
-    README.md \
-    .readthedocs.yml \
-    requirements.txt \
-    tests
+    rm -rf \
+      CARLA_VER \
+      Dockerfile \
+      Docs \
+      .git \
+      .github \
+      .gitignore \
+      Jenkinsfile \
+      LICENSE \
+      manual_control.py \
+      metrics_manager.py \
+      mkdocs.yml \
+      no_rendering_mode.py \
+      .pylintrc \
+      README.md \
+      .readthedocs.yml \
+      requirements.txt \
+      tests
 
-  # We will replace the provided scenarios with our own
-  rm -rf srunner/examples
-
-  cd - > /dev/null
+    # We will replace the provided scenarios with our own
+    rm -rf srunner/examples
+  )
 }
 
 #######################################
