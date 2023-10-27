@@ -133,9 +133,7 @@ function install_minimal_scenario_runner() {
     tests
 
   # We will replace the provided scenarios with our own
-  rm -rf \
-    srunner/examples \
-    srunner/scenarios
+  rm -rf srunner/examples
 
   cd - > /dev/null
 }
