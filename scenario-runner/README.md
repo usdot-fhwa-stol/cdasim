@@ -10,7 +10,7 @@ progress, so the scenarios serve more as example references.
 
 ScenarioRunner's code resides in the `srunner` Python package, and the
 `scenario_runner.py` script is responsible for launching scenarios. If we want
-to use ScenarioRunner for custom CARMA scenarios, we have to overcome two
+to use ScenarioRunner for custom CARMA scenarios, we have to overcome three
 technical hurdles:
 
 1. the `srunner` package is unavailable in [PyPi][pypi_link];
