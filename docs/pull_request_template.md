@@ -5,12 +5,17 @@
 
 <!--- Describe your changes in detail -->
 
-## Related Issue
+## Related GitHub Issue
 
-<!--- This project only accepts pull requests related to open issues -->
+<!--- This project only accepts pull requests related to open GitHub issues or Jira Keys -->
 <!--- If suggesting a new feature or change, please discuss it in an issue first -->
 <!--- If fixing a bug, there should be an issue describing it with steps to reproduce -->
+<!--- Please DO NOT name partially fixed issues, instead open an issue specific to this fix -->
 <!--- Please link to the issue here: -->
+
+## Related Jira Key
+
+<!-- e.g. CAR-123 -->
 
 ## Motivation and Context
 
@@ -38,7 +43,6 @@
 - [ ] I have added any new packages to the sonar-scanner.properties file
 - [ ] My change requires a change to the documentation.
 - [ ] I have updated the documentation accordingly.
-- [ ] I have read the **CONTRIBUTING** document.
-[CARMA Contributing Guide](Contributing.md) 
+- [ ] I have read the [**CONTRIBUTING**](https://github.com/usdot-fhwa-stol/carma-platform/blob/develop/Contributing.md) document.
 - [ ] I have added tests to cover my changes.
 - [ ] All new and existing tests passed.
