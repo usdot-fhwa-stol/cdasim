@@ -362,7 +362,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // CARLA but it seems to increment every time processTimeAdvanceGrant is called
             rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
             this.executedTimes++;
-            List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList();
+            List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<DetectedObjectInteraction>();
             // Get all detections from all currently registered detectors.
             for (DetectorRegistration registration: registeredDetectors ) {
                 DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());

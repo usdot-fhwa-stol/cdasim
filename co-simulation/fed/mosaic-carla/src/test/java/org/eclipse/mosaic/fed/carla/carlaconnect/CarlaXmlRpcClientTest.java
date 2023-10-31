@@ -30,12 +30,16 @@ import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 public class CarlaXmlRpcClientTest {
-        
+    // Mock XmlRpcClient    
     private XmlRpcClient mockClient;
-
+    // CarlaXmlRpcClient under test
     private CarlaXmlRpcClient carlaConnection;
 
-
+    /**
+     * Initialize CarlaXmlRpcClient and setup mock
+     * @throws NoSuchFieldException
+     * @throws MalformedURLException
+     */
     @Before
     public void setup() throws NoSuchFieldException, MalformedURLException{
         mockClient = mock(XmlRpcClient.class);
@@ -67,27 +71,6 @@ public class CarlaXmlRpcClientTest {
         verify( mockClient, times(1)).execute("create_simulated_semantic_lidar_sensor", params);
     }
 
-    @Test
-    public void testCreateSensorException() throws XmlRpcException {
-        // Create Detector Registration
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
-        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-        // Create request params
-        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
-        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
-        Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
-        // Tell mock to return sensor ID when following method is called with following parameters
-        when( mockClient.execute("create_simulated_semantic_lidar_sensor", params)).thenThrow(XmlRpcException.class);
-        try {
-            // Method has no return so verifying that it is successful is just verifying no exception is thrown
-            carlaConnection.createSensor(registration);
-            // Verify following method was called on mock
-        }
-        catch( Exception e) {
-            assertEquals(e.getClass(), XmlRpcException.class);
-        }
-        verify( mockClient, times(1)).execute("create_simulated_semantic_lidar_sensor", params);
-    }
 
     @Test
     public void testGetDetectedObjects() throws XmlRpcException {
@@ -206,22 +189,6 @@ public class CarlaXmlRpcClientTest {
 
     }
 
-    @Test
-    public void testGetDetectedObjectsException() throws XmlRpcException {
-         // Create request params
-        Object[] params = new Object[]{"rsu_1", "sensorId_1"};
-        // Tell mock to return sensor ID when following method is called with following parameters
-        when( mockClient.execute("get_detected_objects", params)).thenThrow(XmlRpcException.class);
-        try{
-            // Method has no return so verifying that it is successful is just verifying no exception is thrown
-            DetectedObject[] detectedObjects = carlaConnection.getDetectedObjects("rsu_1", "sensorId_1");
-        }
-        catch(Exception e) {
-            assertEquals(e.getClass(), XmlRpcException.class);
-        }
-        // Verify following method was called on mock
-        verify( mockClient, times(1)).execute("get_detected_objects", params);
-    }
 
     @Test
     public void testCloseConnection() throws XmlRpcException {

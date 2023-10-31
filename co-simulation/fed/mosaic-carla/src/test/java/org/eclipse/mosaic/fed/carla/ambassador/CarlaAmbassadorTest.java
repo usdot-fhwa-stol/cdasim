@@ -19,8 +19,20 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.apache.xmlrpc.XmlRpcException;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.math.Vector3d;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
+import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
+import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
@@ -30,9 +42,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tests for {@link CarlaAmbassador}.
@@ -50,12 +65,14 @@ public class CarlaAmbassadorTest {
 
     private CarlaAmbassador ambassador;
 
+    private CarlaXmlRpcClient carlaXmlRpcClientMock;
+
     @Before
-    public void setup() throws IOException {
+    public void setup() throws IOException, NoSuchFieldException {
 
         rtiMock = mock(RtiAmbassador.class);
 
-
+        carlaXmlRpcClientMock = mock(CarlaXmlRpcClient.class); 
 
         FederateDescriptor handleMock = mock(FederateDescriptor.class);
 
@@ -75,6 +92,11 @@ public class CarlaAmbassadorTest {
         ambassador.setRtiAmbassador(rtiMock);
 
         ambassador.setFederateDescriptor(handleMock);
+
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaXmlRpcClient"), carlaXmlRpcClientMock);
+
+       
+
     }
 
     @Test
@@ -84,6 +106,51 @@ public class CarlaAmbassadorTest {
         ambassador.initialize(0, 100 * TIME.SECOND);
         // ASSERT
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
+    }
+
+    @Test
+    public void processTimeAdvanceGrant() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException {
+        List<DetectorRegistration> registeredDetectors = new ArrayList<>();
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+        registeredDetectors.add( registration);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"), registeredDetectors);
+
+        // Setup Get detected objects return
+        // Object 1 is CAR
+        DetectedObject predictedCar = new DetectedObject(
+                DetectionType.CAR,
+                0.7,
+                "sensorID1",
+                "projection String2",
+                "Object7",
+                CartesianPoint.xyz(-1.1, -2, -3.2),
+                new Vector3d(1, 1, 1),
+                new Vector3d(.1, .2, .3),
+                new Size(2, 1, .5));
+        Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
+        predictedCar.setPositionCovariance(covarianceMatrix);
+        predictedCar.setVelocityCovariance(covarianceMatrix);
+        predictedCar.setAngularVelocityCovariance(covarianceMatrix);
+        DetectedObject predictedBus = new DetectedObject(
+            DetectionType.BUS,
+            0.5,
+            "sensorID1",
+            "projection String",
+            "Object1",
+            CartesianPoint.xyz(1.1, 2, 3.2),
+            new Vector3d(0, 0, 0),
+            new Vector3d(),
+            new Size(0, 0, 0));
+        Double[][] bus_covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
+        predictedBus.setPositionCovariance(bus_covarianceMatrix);
+        predictedBus.setVelocityCovariance(bus_covarianceMatrix);
+        predictedBus.setAngularVelocityCovariance(bus_covarianceMatrix);
+
+        DetectedObject[] detectedObjects = {predictedBus, predictedCar};
+        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenReturn(detectedObjects);
+
+        ambassador.processTimeAdvanceGrant(100);
     }
 
 }
