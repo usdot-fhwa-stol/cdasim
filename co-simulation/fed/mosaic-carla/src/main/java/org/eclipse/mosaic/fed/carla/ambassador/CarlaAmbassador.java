@@ -218,6 +218,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         try{
             URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
             carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+            carlaXmlRpcClient.initialize();
         }
         catch (MalformedURLException m) 
         {

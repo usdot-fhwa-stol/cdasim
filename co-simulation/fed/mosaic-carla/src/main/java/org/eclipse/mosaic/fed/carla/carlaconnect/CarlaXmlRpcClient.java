@@ -34,34 +34,25 @@ import com.google.gson.Gson;
  */
 public class CarlaXmlRpcClient{
 
-    boolean isConnected;
+    private boolean isConnected;
     private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
 
     private XmlRpcClient client;
+    private URL xmlRpcServerUrl;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
 
     public CarlaXmlRpcClient(URL xmlRpcServerUrl) {
-        initialize(xmlRpcServerUrl);
+        this.xmlRpcServerUrl = xmlRpcServerUrl;
     }
-
-    /**
-     * This method is used to send a stop message to the python server side to shut down server from there
-     */
-    public void closeConnection()
-    {
-        log.info("carla connection server closing");
-        isConnected = false;      
-    }
-
 
 
     /**
      * need to getting a URL to connect to from ambassador
      * @param xmlRpcServerUrl
      */
-    public void initialize(URL xmlRpcServerUrl)
+    public void initialize()
     {
         XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();   
         config.setServerURL(xmlRpcServerUrl);
@@ -89,7 +80,7 @@ public class CarlaXmlRpcClient{
         if (isConnected) {
             Object[] params = new Object[]{infrastructureId, sensorId};
             Object result = client.execute(GET_DETECTED_OBJECTS, params);
-            log.info("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
+            log.debug("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
             String jsonResult = (String)result;
             Gson gson = new Gson();
             DetectedObject[] parsedMessage = gson.fromJson(jsonResult,
@@ -102,4 +93,8 @@ public class CarlaXmlRpcClient{
         }
     }
 
+    public void closeConnection() {
+        log.warn("Closing XML RPC Client connection in CARLA Ambassador!");
+        isConnected = false;
+    }
 }
