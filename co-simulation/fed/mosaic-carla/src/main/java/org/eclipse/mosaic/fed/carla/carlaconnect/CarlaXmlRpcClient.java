@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 /**
- * This is a class uses xmlrpc to connect with CARLA CDASim Adapter. It includes calls 
- * to dynamically create senors and get detected objects from created sensors.
+ * This is a class that uses xmlrpc to connect with CARLA CDASim Adapter. It includes calls 
+ * to dynamically create sensors and get detected objects from created sensors.
  */
 public class CarlaXmlRpcClient{
 
@@ -50,7 +50,7 @@ public class CarlaXmlRpcClient{
 
 
     /**
-     * need to getting a URL to connect to from ambassador
+     * Initialize XmlRpcClient.
      * @param xmlRpcServerUrl
      */
     public void initialize()
