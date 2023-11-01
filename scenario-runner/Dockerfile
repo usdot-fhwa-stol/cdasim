@@ -31,12 +31,14 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp
-COPY . .
-RUN ./install_carma_scenario_runner --prefix /app $CARLA_VERSION \
-    && wget -qO- "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_$CARLA_VERSION.tar.gz" \
+RUN wget -qO- "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_$CARLA_VERSION.tar.gz" \
         | tar -xz PythonAPI/carla \
+    && mkdir -p /app \
     && mv PythonAPI/carla /app \
     && rm -rf *
+
+COPY . .
+RUN ./install_carma_scenario_runner --prefix /app $CARLA_VERSION
 
 WORKDIR /app/scenario_runner
 ENV PYTHONPATH "/app/carla/agents:/app/carla:/app/carla/dist/carla-$CARLA_VERSION-py3.7-linux-x86_64.egg"
