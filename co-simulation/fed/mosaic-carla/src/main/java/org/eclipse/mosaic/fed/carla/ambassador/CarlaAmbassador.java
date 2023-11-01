@@ -526,7 +526,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             registeredDetectors.add(interaction);
         }
         catch(XmlRpcException e) {
-            log.error("Error occurred attempting to create sensor : {}", interaction.getDetector(), e);
+            log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
+            carlaXmlRpcClient.closeConnection();
         }
 
     }

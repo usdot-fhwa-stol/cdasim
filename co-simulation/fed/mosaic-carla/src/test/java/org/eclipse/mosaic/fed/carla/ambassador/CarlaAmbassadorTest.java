@@ -13,7 +13,10 @@
 package org.eclipse.mosaic.fed.carla.ambassador;
 
 import org.junit.Test;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -21,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
+import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
@@ -32,6 +36,7 @@ import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
+import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
@@ -109,7 +114,7 @@ public class CarlaAmbassadorTest {
     }
 
     @Test
-    public void processTimeAdvanceGrant() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException {
+    public void processTimeAdvanceGrant() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException, IllegalValueException {
         List<DetectorRegistration> registeredDetectors = new ArrayList<>();
         Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
         DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
@@ -151,6 +156,55 @@ public class CarlaAmbassadorTest {
         when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenReturn(detectedObjects);
 
         ambassador.processTimeAdvanceGrant(100);
+
+        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+        verify(rtiMock, times(2)).triggerInteraction(any(DetectedObjectInteraction.class));
     }
+
+    @Test
+    public void processTimeAdvanceGrantException() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException, IllegalValueException {
+        List<DetectorRegistration> registeredDetectors = new ArrayList<>();
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+        registeredDetectors.add( registration);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"), registeredDetectors);
+
+        
+        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenThrow(XmlRpcException.class);
+        // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions are trigger and exception is caught
+        ambassador.processTimeAdvanceGrant(100);
+
+        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+        verify(rtiMock, times(0)).triggerInteraction(any(DetectedObjectInteraction.class));
+        verify(carlaXmlRpcClientMock, times(1)).closeConnection();
+
+    }
+
+    @Test
+    public void processDetectorRegistrationInteraction() throws XmlRpcException {
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+
+        ambassador.processInteraction(registration);
+
+        verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
+
+    }
+
+    @Test
+    public void processDetectorRegistrationInteractionException() throws XmlRpcException {
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+
+        doThrow(new XmlRpcException("")).when(carlaXmlRpcClientMock).createSensor(registration);
+        ambassador.processInteraction(registration);
+
+        verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
+        verify(carlaXmlRpcClientMock, times(1)).closeConnection();
+
+
+    }
+
+
 
 }
