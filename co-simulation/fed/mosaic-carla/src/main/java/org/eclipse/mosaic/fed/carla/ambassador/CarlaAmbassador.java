@@ -519,7 +519,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
-
+    /**
+     * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
+     * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
+     */
     private void receiveInteraction(DetectorRegistration interaction) {
         try {
             carlaXmlRpcClient.createSensor(interaction);

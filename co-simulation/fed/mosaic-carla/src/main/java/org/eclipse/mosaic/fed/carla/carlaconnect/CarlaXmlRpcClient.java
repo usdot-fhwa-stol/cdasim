@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 /**
- * This is a class uses xmlrpc to connect with CARLA CDASim adapter service
+ * This is a class uses xmlrpc to connect with CARLA CDASim Adapter. It includes calls 
+ * to dynamically create senors and get detected objects from created sensors.
  */
 public class CarlaXmlRpcClient{
 
@@ -61,7 +62,11 @@ public class CarlaXmlRpcClient{
         isConnected = true;
     }
 
-
+    /**
+     * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.
+     * @param registration DetectorRegistration interaction used to create sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
     public void createSensor(DetectorRegistration registration) throws XmlRpcException{
         List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
         List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
@@ -75,7 +80,13 @@ public class CarlaXmlRpcClient{
             log.warn("XMLRpcClient is not connected to CARLA Adapter!");
         }
     }
-
+    /**
+     * Calls CARLA CDA Sim Adapter get_detected_objects XMLRPC method and returns an array of DetectedObject.
+     * @param infrastructureId String infrastructure ID of sensor to get detections from.
+     * @param sensorId String sensor ID of sensor to get detections from
+     * @return DetectedObject[] from given sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
     public DetectedObject[] getDetectedObjects(String infrastructureId ,String sensorId) throws XmlRpcException{
         if (isConnected) {
             Object[] params = new Object[]{infrastructureId, sensorId};
@@ -92,7 +103,10 @@ public class CarlaXmlRpcClient{
             
         }
     }
-
+    /**
+     * Method to set isConnected field to false. Does not actually close the underlying http connection session but
+     * is used to avoid repeated timeouts/exceptions on misconfiguration of XMLRPC client.
+     */
     public void closeConnection() {
         log.warn("Closing XML RPC Client connection in CARLA Ambassador!");
         isConnected = false;

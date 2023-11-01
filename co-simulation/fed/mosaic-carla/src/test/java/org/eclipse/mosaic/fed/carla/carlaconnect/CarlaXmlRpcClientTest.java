@@ -69,7 +69,10 @@ public class CarlaXmlRpcClientTest {
         verify( mockClient, times(1)).execute("create_simulated_semantic_lidar_sensor", params);
     }
 
-
+    /**
+     * Test GetDectedObjects
+     * @throws XmlRpcException
+     */
     @Test
     public void testGetDetectedObjects() throws XmlRpcException {
         // Create return JSON String
@@ -187,7 +190,10 @@ public class CarlaXmlRpcClientTest {
 
     }
 
-
+    /**
+     * Test close connection
+     * @throws XmlRpcException
+     */
     @Test
     public void testCloseConnection() throws XmlRpcException {
         // Create request params
