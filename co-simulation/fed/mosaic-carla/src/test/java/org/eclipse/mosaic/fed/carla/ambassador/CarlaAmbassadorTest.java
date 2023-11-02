@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
+import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
@@ -106,11 +107,15 @@ public class CarlaAmbassadorTest {
 
     @Test
     public void initialize() throws Throwable {
+        CarlaConfiguration config = new CarlaConfiguration();
+        config.carlaCDASimAdapterUrl="https://testing/something";
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaConfig"), config);
 
         // RUN
         ambassador.initialize(0, 100 * TIME.SECOND);
         // ASSERT
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
+        verify(carlaXmlRpcClientMock, times(1)).initialize();
     }
 
     @Test
