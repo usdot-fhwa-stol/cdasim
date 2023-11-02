@@ -40,7 +40,6 @@ import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
-import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;

@@ -94,9 +94,7 @@ public class CarlaXmlRpcClient{
             log.debug("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
             String jsonResult = (String)result;
             Gson gson = new Gson();
-            DetectedObject[] parsedMessage = gson.fromJson(jsonResult,
-                    DetectedObject[].class);
-            return parsedMessage;
+            return gson.fromJson(jsonResult,DetectedObject[].class);
         }
         else {
             throw new XmlRpcException("XMLRpcClient is not connected to CARLA Adapter!");

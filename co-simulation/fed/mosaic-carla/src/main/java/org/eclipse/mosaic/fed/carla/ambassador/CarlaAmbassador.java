@@ -362,7 +362,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // CARLA but it seems to increment every time processTimeAdvanceGrant is called
             rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
             this.executedTimes++;
-            List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<DetectedObjectInteraction>();
+            List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
             // Get all detections from all currently registered detectors.
             for (DetectorRegistration registration: registeredDetectors ) {
                 DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
@@ -623,7 +623,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
             }
         } catch (Exception e) {
-            log.error("error occurs during sending messages to bridge: " + e.getMessage());
+            log.error("error occurs during sending messages to bridge: {}", e.getMessage());
         }
     }
 
@@ -649,7 +649,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00 });
             }
         } catch (Exception e) {
-            log.error("error occurs during process received messages: " + e.getMessage());
+            log.error("error occurs during process received messages: {}",  e.getMessage());
         }
         return message.split(";");
     }
