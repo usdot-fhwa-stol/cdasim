@@ -7,10 +7,12 @@
     <!-- Routes -->
     <route id="r_0" edges="11 10 17"/>
     <route id="r_1" edges="12 11 10 17"/>
+    <route id="r_2" edges="13 12 11 10 17"/>
     <!-- Vehicles, persons and containers (sorted by depart) -->
-    <vehicle id="v_0" type="vehicle.carlamotors.carlacola" depart="0.00" route="r_1"/>
-    <vehicle id="v_1" type="vehicle.carlamotors.carlacola" depart="4.00" route="r_0">
+    <vehicle id="v_0" type="vehicle.carlamotors.carlacola" depart="0.00" route="r_2"/>
+    <vehicle id="v_1" type="vehicle.carlamotors.carlacola" depart="3.00" route="r_1"/>
+    <vehicle id="v_2" type="vehicle.carlamotors.carlacola" depart="8.00" route="r_0">
     	<stop busStop="bs_2" duration="5.00"/>
     </vehicle>
-    <vehicle id="v_2" type="vehicle.carlamotors.carlacola" depart="999.00" route="r_0"/>
+    <vehicle id="v_3" type="vehicle.carlamotors.carlacola" depart="999.00" route="r_0"/>
 </routes>
