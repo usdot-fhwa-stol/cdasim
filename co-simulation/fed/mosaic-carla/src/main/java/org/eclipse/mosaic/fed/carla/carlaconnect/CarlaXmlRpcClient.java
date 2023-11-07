@@ -16,44 +16,44 @@
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+
 /**
- * This is a class uses xmlrpc to connect with CARLA CDASim adapter service
+ * This is a class that uses xmlrpc to connect with CARLA CDASim Adapter. It includes calls 
+ * to dynamically create sensors and get detected objects from created sensors.
  */
 public class CarlaXmlRpcClient{
 
-    boolean isConnected;
-    private String registeredFunction = "test.echo";
+    private boolean isConnected;
+    private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
+    private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
+
     private XmlRpcClient client;
+    private URL xmlRpcServerUrl;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
 
     public CarlaXmlRpcClient(URL xmlRpcServerUrl) {
-        initialize(xmlRpcServerUrl);
-    }
-
-    /**
-     * This method is used to send a stop message to the python server side to shut down server from there
-     */
-    public void closeConnection()
-    {
-        log.info("carla connection server closing");
-        isConnected = false;      
+        this.xmlRpcServerUrl = xmlRpcServerUrl;
     }
 
 
-
     /**
-     * need to getting a URL to connect to from ambassador
+     * Initialize XmlRpcClient.
      * @param xmlRpcServerUrl
      */
-    public void initialize(URL xmlRpcServerUrl)
+    public void initialize()
     {
         XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();   
         config.setServerURL(xmlRpcServerUrl);
@@ -62,34 +62,51 @@ public class CarlaXmlRpcClient{
         isConnected = true;
     }
 
-
     /**
-    * This method uses xmlrpc to connect with CARLA CDASim adapter service
-     * @throws XmlRpcException
-    */
-    public void requestCarlaList()
-    {
-        if(!isConnected)
-        {
-            
-            try {
-                throw new XmlRpcException("Server is not connected!");
-            } 
-            catch (XmlRpcException e) 
-            {
-                log.error("Server is not connected! {}", e.getMessage());
-            }
-        }
-        try{          
-            Object[] params = new Object[]{"Test " + java.time.LocalDateTime.now()};
-            Object result = client.execute(registeredFunction, params);
+     * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.
+     * @param registration DetectorRegistration interaction used to create sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
+    public void createSensor(DetectorRegistration registration) throws XmlRpcException{
+        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
+        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
+
+        if (isConnected) {
+            Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
+            Object result = client.execute(CREATE_SENSOR, params);
             log.info((String)result);
         }
-        catch (XmlRpcException x) 
-        {
-            log.error("Errors occurred with xmlrpc connection {}", x.getMessage());
-            closeConnection();
-        } 
-        
+        else {
+            log.warn("XMLRpcClient is not connected to CARLA Adapter!");
+        }
+    }
+    /**
+     * Calls CARLA CDA Sim Adapter get_detected_objects XMLRPC method and returns an array of DetectedObject.
+     * @param infrastructureId String infrastructure ID of sensor to get detections from.
+     * @param sensorId String sensor ID of sensor to get detections from
+     * @return DetectedObject[] from given sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
+    public DetectedObject[] getDetectedObjects(String infrastructureId ,String sensorId) throws XmlRpcException{
+        if (isConnected) {
+            Object[] params = new Object[]{infrastructureId, sensorId};
+            Object result = client.execute(GET_DETECTED_OBJECTS, params);
+            log.debug("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
+            String jsonResult = (String)result;
+            Gson gson = new Gson();
+            return gson.fromJson(jsonResult,DetectedObject[].class);
+        }
+        else {
+            throw new XmlRpcException("XMLRpcClient is not connected to CARLA Adapter!");
+            
+        }
+    }
+    /**
+     * Method to set isConnected field to false. Does not actually close the underlying http connection session but
+     * is used to avoid repeated timeouts/exceptions on misconfiguration of XMLRPC client.
+     */
+    public void closeConnection() {
+        log.warn("Closing XML RPC Client connection in CARLA Ambassador!");
+        isConnected = false;
     }
 }

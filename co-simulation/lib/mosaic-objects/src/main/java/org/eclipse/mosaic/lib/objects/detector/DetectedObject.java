@@ -37,15 +37,15 @@ public final class DetectedObject implements Serializable {
 
     private CartesianPoint position;
 
-    private Double[] positionCovariance = new Double[9];
+    private Double[][] positionCovariance = new Double[3][3];
 
     private Vector3d velocity;
 
-    private Double[] velocityCovariance = new Double[9];
+    private Double[][] velocityCovariance = new Double[3][3];
 
     private Vector3d angularVelocity;
 
-    private Double[] angularVelocityCovariance = new Double[9];
+    private Double[][] angularVelocityCovariance = new Double[3][3];
 
     private Size size;
     /**
@@ -96,56 +96,15 @@ public final class DetectedObject implements Serializable {
         return projString;
     }
 
-    /**
-     * Getter for 3x3 covariance associated with position represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @return
-     */
-    public Double[] getPositionCovariance() {
-        return positionCovariance;
-    }
-
-    /**
-     * Setter for 3x3 covariance associated with position represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @param positionCovariance
-     */
-    public void setPositionCovariance(Double[] positionCovariance) {
+    public void setPositionCovariance(Double[][] positionCovariance) {
         this.positionCovariance = positionCovariance;
     }
 
-    /**
-     * Getter for 3x3 covariance associated with velocity represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @return
-     */
-    public Double[] getVelocityCovariance() {
-        return velocityCovariance;
-    }
-
-    /**
-     * Setter for 3x3 covariance associated with velocity represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @param positionCovariance
-     */
-    public void setVelocityCovariance(Double[] velocityCovariance) {
+    public void setVelocityCovariance(Double[][] velocityCovariance) {
         this.velocityCovariance = velocityCovariance;
     }
-    /**
-     * Getter for 3x3 covariance associated with angular velocity represented 
-     * as a 9 element vector for JSON serialization/deserialization.
-     * @return
-     */
-    public Double[] getAngularVelocityCovariance() {
-        return angularVelocityCovariance;
-    }
 
-    /**
-     * Setter for 3x3 covariance associated with angular velocity represented 
-     * as a 9 element vector for JSON serialization/deserialization.
-     * @param positionCovariance
-     */
-    public void setAngularVelocityCovariance(Double[] angularVelocityCovariance) {
+    public void setAngularVelocityCovariance(Double[][] angularVelocityCovariance) {
         this.angularVelocityCovariance = angularVelocityCovariance;
     }
 
@@ -179,6 +138,18 @@ public final class DetectedObject implements Serializable {
      */
     public CartesianPoint getPosition() {
         return position;
+    }
+
+    public Double[][] getPositionCovariance() {
+        return positionCovariance;
+    }
+
+    public Double[][] getVelocityCovariance() {
+        return velocityCovariance;
+    }
+
+    public Double[][] getAngularVelocityCovariance() {
+        return angularVelocityCovariance;
     }
 
     /**
@@ -289,11 +260,11 @@ public final class DetectedObject implements Serializable {
         result = prime * result + ((projString == null) ? 0 : projString.hashCode());
         result = prime * result + ((objectId == null) ? 0 : objectId.hashCode());
         result = prime * result + ((position == null) ? 0 : position.hashCode());
-        result = prime * result + Arrays.hashCode(positionCovariance);
+        result = prime * result + Arrays.deepHashCode(positionCovariance);
         result = prime * result + ((velocity == null) ? 0 : velocity.hashCode());
-        result = prime * result + Arrays.hashCode(velocityCovariance);
+        result = prime * result + Arrays.deepHashCode(velocityCovariance);
         result = prime * result + ((angularVelocity == null) ? 0 : angularVelocity.hashCode());
-        result = prime * result + Arrays.hashCode(angularVelocityCovariance);
+        result = prime * result + Arrays.deepHashCode(angularVelocityCovariance);
         result = prime * result + ((size == null) ? 0 : size.hashCode());
         return result;
     }
@@ -331,21 +302,21 @@ public final class DetectedObject implements Serializable {
                 return false;
         } else if (!position.equals(other.position))
             return false;
-        if (!Arrays.equals(positionCovariance, other.positionCovariance))
+        if (!Arrays.deepEquals(positionCovariance, other.positionCovariance))
             return false;
         if (velocity == null) {
             if (other.velocity != null)
                 return false;
         } else if (!velocity.equals(other.velocity))
             return false;
-        if (!Arrays.equals(velocityCovariance, other.velocityCovariance))
+        if (!Arrays.deepEquals(velocityCovariance, other.velocityCovariance))
             return false;
         if (angularVelocity == null) {
             if (other.angularVelocity != null)
                 return false;
         } else if (!angularVelocity.equals(other.angularVelocity))
             return false;
-        if (!Arrays.equals(angularVelocityCovariance, other.angularVelocityCovariance))
+        if (!Arrays.deepEquals(angularVelocityCovariance, other.angularVelocityCovariance))
             return false;
         if (size == null) {
             if (other.size != null)
@@ -354,5 +325,7 @@ public final class DetectedObject implements Serializable {
             return false;
         return true;
     }
+
+    
 
 }

@@ -133,7 +133,7 @@ public class InfrastructureInstanceManagerTest {
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
                 new Size(3, 4, 5));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject1.setPositionCovariance(covarianceMatrix);
         detectedObject1.setVelocityCovariance(covarianceMatrix);
         detectedObject1.setAngularVelocityCovariance(covarianceMatrix);

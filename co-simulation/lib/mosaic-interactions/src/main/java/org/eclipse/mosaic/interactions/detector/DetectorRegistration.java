@@ -22,14 +22,17 @@ public class DetectorRegistration extends Interaction {
     public static final String TYPE_ID = createTypeIdentifier(DetectorRegistration.class);
 
     private Detector detector;
+
+    private String infrastructureId;
     /**
      * Constructor
      * @param time for interaction.
      * @param sensor to register.
      */
-    public DetectorRegistration(long time, Detector sensor) {
+    public DetectorRegistration(long time, Detector sensor, String infrastructureId) {
         super(time);
         this.detector = sensor;
+        this.infrastructureId = infrastructureId;
     }
     /**
      * Getter for sensor/detector information.
@@ -45,15 +48,20 @@ public class DetectorRegistration extends Interaction {
     public void setDetector(Detector sensor) {
         this.detector = sensor;
     }
-    
+    public String getInfrastructureId() {
+        return infrastructureId;
+    }
+    public void setInfrastructureId(String infrastructureId) {
+        this.infrastructureId = infrastructureId;
+    }
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
         result = prime * result + ((detector == null) ? 0 : detector.hashCode());
+        result = prime * result + ((infrastructureId == null) ? 0 : infrastructureId.hashCode());
         return result;
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -68,8 +76,15 @@ public class DetectorRegistration extends Interaction {
                 return false;
         } else if (!detector.equals(other.detector))
             return false;
+        if (infrastructureId == null) {
+            if (other.infrastructureId != null)
+                return false;
+        } else if (!infrastructureId.equals(other.infrastructureId))
+            return false;
         return true;
     }
+    
+    
     
     
 }

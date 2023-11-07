@@ -187,7 +187,7 @@ public class InfrastructureInstanceTest {
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
                 new Size(0, 0, 0));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         test_msg.setPositionCovariance(covarianceMatrix);
         test_msg.setVelocityCovariance(covarianceMatrix);
         test_msg.setAngularVelocityCovariance(covarianceMatrix);

@@ -290,7 +290,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
         log.info("Infrastructure message ambassador processing timestep to {}.", time);
         try {
-
             // Handle any new infrastructure registration requests
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
                     .getReceivedMessages();
@@ -311,7 +310,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
                     for (Detector sensor : reg.getSensors()) {
                         // Trigger Sensor registrations for all listed sensors.
-                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
+                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
                     }
                 } 
                 else {
