@@ -5,13 +5,12 @@
     </traci_server>
     <input>
         <net-file value="Town04.net.xml"/>
-        <route-files value="Town04.rou.xml"/>
-        <additional-files value="detector.xml"/>
-        <gui-settings-file value="gui.settings.xml"/>
-
+        <route-files value="carlavtypes.rou.xml,Town04.rou.xml"/>
+        <additional-files value="detector.xml, bus_stop.add.xml"/>
     </input>
     <gui_only>
         <tracker-interval value="0.1"/>
+        <gui-settings-file value="viewsettings.xml"/>
     </gui_only>
     <time>
         <step-length value="0.1"/>
