@@ -14,5 +14,6 @@
     <vehicle id="v_2" type="vehicle.carlamotors.carlacola" depart="8.00" route="r_0">
     	<stop busStop="bs_2" duration="5.00"/>
     </vehicle>
+    <!--This is for keeping the simulation alive-->
     <vehicle id="v_3" type="vehicle.carlamotors.carlacola" depart="999.00" route="r_0"/>
 </routes>
