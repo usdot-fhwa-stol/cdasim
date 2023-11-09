@@ -12,10 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from agents.navigation.global_route_planner import GlobalRoutePlanner
+from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
+
+import carla
+
 import py_trees
 
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
-from srunner.scenariomanager.scenarioatomics.atomic_behaviors import Idle, KeepVelocity
+from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (
+    Idle,
+    KeepVelocity,
+    WaypointFollower,
+)
 from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest
 from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (
     DriveDistance,
@@ -24,71 +33,7 @@ from srunner.scenarios.basic_scenario import BasicScenario
 from srunner.scenarioconfigs.scenario_configuration import ScenarioConfiguration
 
 
-SIMULATED_SENSOR_CONFIG = {
-    "prefilter": {
-        "allowed_semantic_tags": ["Vehicles", "Pedestrians"],
-        "max_distance_meters": 20.0,
-    },
-    "detection_threshold_scaling_formula": {
-        "nominal_hitpoint_detection_ratio_threshold": 0.6,
-        "hitpoint_detection_ratio_threshold_per_meter_change_rate": -0.0033,
-        "adjustable_threshold_scaling_parameters": {"dropoff_rate": 0.01},
-    },
-    "geometry_reassociation": {
-        "sample_count": 3,
-        "geometry_association_max_distance_threshold": 2.0,
-        "trailing_id_associations_count": 2,
-    },
-    "use_sensor_centric_frame": True,
-}
-
-CARLA_SENSOR_CONFIG = {
-    "lower_fov": -80.0,
-    "upper_fov": 30.0,
-    "channels": 32,
-    "range": 20.0,
-    "rotation_period": 0.1,
-    "points_per_second": 56000,
-}
-
-NOISE_MODEL_CONFIG = {
-    "noise_model_name": "GaussianNoiseModel",
-    "stages": {
-        "position_noise": True,
-        "orientation_noise": True,
-        "type_noise": False,
-        "list_inclusion_noise": False,
-    },
-    "std_deviations": {"position": [0.8, 0.8, 0.8], "orientation": [0.1, 0.1, 0.1]},
-    "type_noise": {
-        "allowed_semantic_tags": {
-            "Buildings",
-            "Fences",
-            "Ground",
-            "GuardRail",
-            "Pedestrians",
-            "Poles",
-            "RoadLines",
-            "Roads",
-            "Sidewalks",
-            "Sky",
-            "Terrain",
-            "TrafficLight",
-            "TrafficSigns",
-            "Vegetation",
-            "Vehicles",
-            "Walls",
-            "Water",
-        }
-    },
-}
-
-INFRASTRUCTURE_ID = 3
-SENSOR_ID = 7
-DETECTION_CYCLE_DELAY_SECONDS = 0.5
-
-
-class MyScenario(BasicScenario):
+class SensorlibLidarFieldOfView(BasicScenario):
     def __init__(
         self,
         world,
@@ -115,7 +60,7 @@ class MyScenario(BasicScenario):
         # references is in its __init__() function.
         self.timeout = timeout
 
-        super(MyScenario, self).__init__(
+        super(SensorlibLidarFieldOfView, self).__init__(
             "SensorlibFieldOfView",
             ego_vehicles,
             config,
@@ -125,6 +70,15 @@ class MyScenario(BasicScenario):
         )
 
         self.world_map = CarlaDataProvider.get_map()
+
+        # This is where the action takes place
+        spectator = world.get_spectator()
+        spectator.set_transform(
+            carla.Transform(
+                carla.Location(187.8024, -227.3753, 16.9967),
+                carla.Rotation(-38.1110, -39.1415, 0.0),
+            )
+        )
 
         self.carma_vehicle = ego_vehicles[0]
         self.other_actors_dict = {}
@@ -179,15 +133,28 @@ class MyScenario(BasicScenario):
             crossing_person, 2.0, 8.0, name="walk_across_street"
         )
 
-        # This end condition is commented out because it is not currently being
-        # used in the scenario. It remains here as an example/reference for
-        # how to gracefully end a ScenarioRunner scenario.
-        # end_condition = DriveDistance(carma_vehicle, 10)
+        dao = GlobalRoutePlannerDAO(CarlaDataProvider.get_map(), 2)
+        global_route_planner = GlobalRoutePlanner(dao)
+        global_route_planner.setup()
+
+        carma_vehicle = self.ego_vehicles[0]
+        route = global_route_planner.trace_route(
+            carma_vehicle.get_location(),
+            carla.Location(x=205.044693, y=-298.390015, z=0.019592),
+        )
+
+        drive_through_intersection = WaypointFollower(carma_vehicle, 5, route)
+
+        actor_behaviors = py_trees.composites.Parallel(name="actor_behaviors")
+        actor_behaviors.add_child(walk_across_street)
+        actor_behaviors.add_child(drive_through_intersection)
+
+        end_condition = DriveDistance(carma_vehicle, 10)
 
         root = py_trees.composites.Sequence(name="root_sequence")
         root.add_child(start_condition)
-        root.add_child(walk_across_street)
-        # root.add_child(end_condition)
+        root.add_child(actor_behaviors)
+        root.add_child(end_condition)
 
         return root
 
@@ -201,7 +168,7 @@ class MyScenario(BasicScenario):
         """
         return [
             # This is an example usage for including test criteria in
-            # ScnearioRunner.
+            # ScenarioRunner.
             # CollisionTest(self.carma_vehicle)
         ]
 
