@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<!--
+Copyright 2023 Leidos
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<scenarios>
+    <scenario name="SensorlibLidarFieldOfView_1" type="SensorlibLidarFieldOfView" town="Town04">
+        <ego_vehicle x="203.44" y="-230.0" z="2" yaw="-90.0" model="vehicle.audi.a2" rolename="ego_vehicle"/>
+
+        <other_actor x="214.79" y="-245.61" z="2" model="vehicle.carlamotors.carlacola" rolename="heavy_truck"/>
+        <other_actor x="216.58" y="-248.69" z="2" model="walker.pedestrian.0001" rolename="in_road_person"/>
+        <other_actor x="195.59" y="-254.18" z="2" yaw="90.0" model="walker.pedestrian.0002" rolename="crossing_person"/>
+        <other_actor x="208.58" y="-239.0" z="2" yaw="180.0" model="walker.pedestrian.0003" rolename="corner_person_01"/>
+        <other_actor x="208.58" y="-239.0" z="2" yaw="135.0" model="walker.pedestrian.0004" rolename="corner_person_02"/>
+        <other_actor x="207.88" y="-257.57" z="2" yaw="167.0" model="walker.pedestrian.0005" rolename="corner_person_03"/>
+    </scenario>
+</scenarios>
