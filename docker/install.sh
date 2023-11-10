@@ -106,7 +106,7 @@ cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 
 # Deploy scenario files
 cd /home/carma/src/co-simulation
-unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
+unzip bundle/target/bundle-*.jar 'scenarios/*' -d /opt/carma-simulation/scenarios
 
 # Install NS-3
 cd "/opt/carma-simulation/bin/fed/ns3/"
