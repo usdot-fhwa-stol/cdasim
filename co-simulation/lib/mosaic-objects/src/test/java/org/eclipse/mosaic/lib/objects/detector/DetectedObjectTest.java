@@ -44,7 +44,8 @@ public class DetectedObjectTest {
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
-                new Size(0, 0, 0));
+                new Size(0, 0, 0),
+                100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
@@ -83,11 +84,10 @@ public class DetectedObjectTest {
                 + "\"length\":0.0,"
                 + "\"height\":0.0,"
                 + "\"width\":0.0"
-                + "}"
+                + "},"
+                + "\"timestamp\":100"
                 + "}";
-        assertEquals(json,
-                json_prediction);
-        System.out.println(json);
+        assertEquals(json_prediction,json);
     }
 
     @Test
@@ -125,7 +125,8 @@ public class DetectedObjectTest {
                 + "\"length\":2.0,"
                 + "\"height\":1.0,"
                 + "\"width\":0.5"
-                + "}"
+                + "},"
+                + "\"timestamp\":100"
                 + "}";
 
         DetectedObject detectedObject = gson.fromJson(json, DetectedObject.class);
@@ -138,7 +139,8 @@ public class DetectedObjectTest {
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
-                new Size(2, 1, .5));
+                new Size(2, 1, .5),
+                100);
         Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
         predictedDetectedObject.setPositionCovariance(covarianceMatrix);
         predictedDetectedObject.setVelocityCovariance(covarianceMatrix);
@@ -159,7 +161,8 @@ public class DetectedObjectTest {
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
+                new Size(3, 4, 5),
+                0);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
@@ -192,7 +195,8 @@ public class DetectedObjectTest {
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
+                new Size(3, 4, 5),
+                100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
@@ -207,7 +211,8 @@ public class DetectedObjectTest {
                 null,
                 null,
                 null,
-                null);
+                null,
+                100);
         DetectedObject detectedObject2 = new DetectedObject(
                 null,
                 0.6,
@@ -217,7 +222,8 @@ public class DetectedObjectTest {
                 null,
                 null,
                 null,
-                null);
+                null,
+                100);
 
         assertNotEquals(detectedObject1, detectedObject);
         assertEquals(detectedObject2, detectedObject1);

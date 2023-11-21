@@ -48,6 +48,8 @@ public final class DetectedObject implements Serializable {
     private Double[][] angularVelocityCovariance = new Double[3][3];
 
     private Size size;
+
+    private int timestamp;
     /**
      * Constructor for Detected Object information.
      * 
@@ -66,7 +68,7 @@ public final class DetectedObject implements Serializable {
      * @param size              size of object including height,width and length.
      */
     public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, String objectId,
-            CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size) {
+            CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size, int timestamp) {
         this.type = type;
         this.confidence = confidence;
         this.sensorId = sensorId;
@@ -76,6 +78,7 @@ public final class DetectedObject implements Serializable {
         this.velocity = velocity;
         this.angularVelocity = angularVelocity;
         this.size = size;
+        this.timestamp = timestamp;
     }
 
     /**
@@ -248,6 +251,14 @@ public final class DetectedObject implements Serializable {
         this.size = size;
     }
 
+    public int getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(int timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -266,6 +277,7 @@ public final class DetectedObject implements Serializable {
         result = prime * result + ((angularVelocity == null) ? 0 : angularVelocity.hashCode());
         result = prime * result + Arrays.deepHashCode(angularVelocityCovariance);
         result = prime * result + ((size == null) ? 0 : size.hashCode());
+        result = prime * result + timestamp;
         return result;
     }
 
@@ -323,9 +335,7 @@ public final class DetectedObject implements Serializable {
                 return false;
         } else if (!size.equals(other.size))
             return false;
+        if (timestamp != other.timestamp)
+            return false;
         return true;
-    }
-
-    
-
-}
+    }}
