@@ -137,7 +137,8 @@ public class CarlaAmbassadorTest {
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
-                new Size(2, 1, .5));
+                new Size(2, 1, .5),
+                100);
         Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
         predictedCar.setPositionCovariance(covarianceMatrix);
         predictedCar.setVelocityCovariance(covarianceMatrix);
@@ -151,7 +152,8 @@ public class CarlaAmbassadorTest {
             CartesianPoint.xyz(1.1, 2, 3.2),
             new Vector3d(0, 0, 0),
             new Vector3d(),
-            new Size(0, 0, 0));
+            new Size(0, 0, 0),
+            100);
         Double[][] bus_covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         predictedBus.setPositionCovariance(bus_covarianceMatrix);
         predictedBus.setVelocityCovariance(bus_covarianceMatrix);
