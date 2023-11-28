@@ -131,6 +131,12 @@
             <version>${mosaic.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>gov.dot.fhwa.saxton</groupId>
+            <artifactId>mosaic-canned-detected-object</artifactId>
+            <version>${mosaic.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.eclipse.mosaic</groupId>

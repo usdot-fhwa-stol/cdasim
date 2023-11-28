@@ -270,6 +270,17 @@
                 "VehicleTypesInitialization"
             ],
             "javaClasspathEntries": []
+        },
+        {
+            "id": "canned-detected-object",
+            "classname": "gov.dot.fhwa.saxton.fed.canneddetectedobject.ambassador.CannedDetectedObjectAmbassador",
+            "priority": 50,
+            "host": "local",
+            "port": 0,
+            "deploy": false,
+            "start": false,
+            "subscriptions": [],
+            "javaClasspathEntries": []
         }
     ]
 }

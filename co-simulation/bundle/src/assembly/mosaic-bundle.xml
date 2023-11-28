@@ -109,6 +109,7 @@
             <includes>
                 <include>org.eclipse.mosaic:mosaic-*</include>
                 <include>gov.dot.fhwa.saxton:mosaic-carma-utils</include>
+                <include>gov.dot.fhwa.saxton:mosaic-canned-detected-object</include>
             </includes>
         </dependencySet>
 
@@ -166,12 +167,12 @@
                 <include>org.apache.xmlrpc:xmlrpc-common</include>
                 <include>org.apache.ws.commons.util:ws-commons-util</include>
                 <!-- [END] XmlRpc dependencies -->
-                
+
                 <include>com.jcraft:jsch</include>
                 <include>com.google.protobuf:protobuf-java</include>
                 <include>org.xerial:sqlite-jdbc</include>
                 <include>org.java-websocket:Java-WebSocket</include>
-               
+
             </includes>
         </dependencySet>
     </dependencySets>

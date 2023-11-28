@@ -17,7 +17,7 @@
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
-    
+
     <dependencies>
         <!-- Core -->
         <dependency>
@@ -142,6 +142,11 @@
         <dependency>
             <groupId>org.eclipse.mosaic</groupId>
             <artifactId>mosaic-infrastructure</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.dot.fhwa.saxton</groupId>
+            <artifactId>mosaic-canned-detected-object</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
         <!-- Tutorial Applications -->
