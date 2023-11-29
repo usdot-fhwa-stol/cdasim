@@ -49,8 +49,7 @@
             "subscriptions": [
                 "CarlaTraciResponse",
                 "SimulationStepResponse",
-                "CarlaV2xMessageReception",
-                "DetectorRegistration"
+                "CarlaV2xMessageReception"
             ],
             "javaClasspathEntries": []
         },

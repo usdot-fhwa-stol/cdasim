@@ -3,6 +3,6 @@
     "carlaUE4Path": "/opt/carla/",
     "bridgePath": "/opt/carma-simulation/scenarios/Town04/carla; bridge.sh",
     "carlaConnectionPort": 8913,
-    "carlaCDASimAdapterUrl":"http://172.2.0.5:8000/RPC2"
+    "carlaCDASimAdapterUrl":"http://127.0.0.1:8090/RPC2"
 
 }
