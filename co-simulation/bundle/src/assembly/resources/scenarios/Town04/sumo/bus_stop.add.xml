@@ -6,4 +6,10 @@
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
     <!-- StoppingPlaces -->
     <busStop id="bs_2" lane="10_3" startPos="2.00" endPos="8.00"/>
+    <tlLogic id="785" type="static" programID="test">
+    	<phase duration="100" state="GGrGGrGrrGrrrrrr"/>
+    </tlLogic>
+    <tlLogic id="483" type="static" programID="test">
+    	<phase duration="100" state="rGrGGrrrGrGGrrrr"/>
+    </tlLogic>
 </additional>
