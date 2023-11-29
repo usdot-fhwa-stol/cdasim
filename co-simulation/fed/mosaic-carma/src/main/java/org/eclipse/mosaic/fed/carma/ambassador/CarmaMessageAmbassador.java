@@ -104,7 +104,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
 
     /**
      * This method is called to tell the federate the start time and the end time.
-     * 
+     *
      * @param startTime Start time of the simulation run in nano seconds.
      * @param endTime   End time of the simulation run in nano seconds.
      * @throws InternalFederateException Exception is thrown if an error is occurred
@@ -359,7 +359,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 .ip(vehAddress)
                 .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
-                .radius(300.0)
+                .radius(1000.0)
                 .create();
 
         // Create an AdHocConfiguration object to associate the Ad-Hoc interface

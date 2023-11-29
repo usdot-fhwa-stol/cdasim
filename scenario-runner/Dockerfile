@@ -30,9 +30,11 @@ RUN apt update \
         libxerces-c-dev \
     && rm -rf /var/lib/apt/lists/*
 
+COPY CARLA_0.9.10.tar.gz /tmp/
+
 WORKDIR /tmp
-RUN wget -qO- "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_$CARLA_VERSION.tar.gz" \
-        | tar -xz PythonAPI/carla \
+
+RUN tar fxz CARLA_0.9.10.tar.gz PythonAPI/carla \
     && mkdir -p /app \
     && mv PythonAPI/carla /app \
     && rm -rf *

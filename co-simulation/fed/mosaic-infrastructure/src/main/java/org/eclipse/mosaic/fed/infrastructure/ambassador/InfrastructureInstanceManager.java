@@ -43,7 +43,7 @@ import gov.dot.fhwa.saxton.CarmaV2xMessage;
 /**
  * Session management class for Infrastructure instances communicating with
  * MOSAIC.
- * 
+ *
  * This class is responsible for managing instances of infrastructure registered
  * with the MOSAIC system. It provides methods for registering new instances,
  * checking if instances are registered, and storing and retrieving instances
@@ -56,13 +56,13 @@ public class InfrastructureInstanceManager {
 
     /**
      * Register a new infrastructure instance with the MOSAIC system.
-     * 
+     *
      * This method takes an InfrastructureRegistrationMessage, converts it to an
      * InfrastructureInstance, and adds it to the managedInstances map if it is not
      * already present.
-     * 
+     *
      * @param registration The InfrastructureRegistrationMessage to be registered.
-     * 
+     *
      */
     public void onNewRegistration(InfrastructureRegistrationMessage registration) {
         if (!managedInstances.containsKey(registration.getInfrastructureId())) {
@@ -89,16 +89,16 @@ public class InfrastructureInstanceManager {
 
     /**
      * Create a new InfrastructureInstance and add it to the managedInstances map.
-     * 
+     *
      * This method creates a new InfrastructureInstance with the provided parameters
      * and adds it to the managedInstances map.
-     * 
+     *
      * @param infrastructureId   The ID of the new instance.
      * @param rxMessageIpAddress The IP address to receive messages on.
      * @param rxMessagePort      The port to receive messages on.
      * @param timeSyncPort       The port for time synchronization.
      * @param location           The location of the instance.
-     * 
+     *
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
             int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {
@@ -120,7 +120,7 @@ public class InfrastructureInstanceManager {
     /**
      * Callback to be invoked when CARMA Platform receives a V2X Message from the
      * NS-3 simulation
-     * 
+     *
      * @param sourceAddr The V2X Message received
      * @param txMsg      The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform
@@ -144,7 +144,7 @@ public class InfrastructureInstanceManager {
                 sender.getInfrastructureId(), sender.getLocation().toGeo()).viaChannel(AdHocChannel.CCH);
 
         // TODO: Get maximum broadcast radius from configuration file.
-        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation().toGeo(), 300));
+        MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation().toGeo(), 1000));
 
         return new V2xMessageTransmission(time, new ExternalV2xMessage(routing,
                 new ExternalV2xContent(time, sender.getLocation().toGeo(), txMsg.getPayload())));
@@ -153,7 +153,7 @@ public class InfrastructureInstanceManager {
     /**
      * Callback to be invoked when an RSU receives a V2X Message from the NS-3
      * simulation
-     * 
+     *
      * @param rxMsg   The V2X Message received
      * @param rxRsuId The Host ID of the vehicle receiving the data
      * @throws RuntimeException If the socket used to communicate with the platform
@@ -176,7 +176,7 @@ public class InfrastructureInstanceManager {
      * Callback to be invoked when a infrastructure instance receives a simulated
      * object detection from a registered simulated sensors. Only send object detection
      * to the infrastructure instance that contains the sensor that reported it.
-     * 
+     *
      * @param detection Detected Object.
      */
     public void onDetectedObject(DetectedObject detection) {
@@ -194,12 +194,12 @@ public class InfrastructureInstanceManager {
         }
     }
 
-    
-    
+
+
     /**
      * This function is used to send out encoded timestep update to all registered
      * instances the manager has on the managed instances map
-     * 
+     *
      * @param message This time message is used to store current seq and timestep
      *                from the ambassador side
      * @throws IOException
@@ -217,7 +217,7 @@ public class InfrastructureInstanceManager {
     /**
      * External helper function to allow the ambassador to check if a given vehicle
      * ID is a registered CARMA Platform instance
-     * 
+     *
      * @param infrastructureId The id to check
      * @return True if managed by this object (e.g., is a registered CARMA Platform
      *         vehicle). false o.w.
@@ -226,9 +226,9 @@ public class InfrastructureInstanceManager {
         return managedInstances.keySet().contains(infrastructureId);
     }
     /**
-     * Returns Map of managed infrastructure instances with infrastructure ID as the 
+     * Returns Map of managed infrastructure instances with infrastructure ID as the
      * String Key.
-     * 
+     *
      * @return map of managed infrastructure instances.
      */
     public Map<String, InfrastructureInstance> getManagedInstances() {

@@ -165,7 +165,7 @@
             <logger name="org.eclipse.mosaic.fed.omnetpp" additivity="false" level="INFO">
                 <appender-ref ref="CommunicationLog"/>
             </logger>
-            <logger name="org.eclipse.mosaic.fed.ns3" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.ns3" additivity="false" level="DEBUG">
                 <appender-ref ref="CommunicationLog"/>
             </logger>
             <logger name="org.eclipse.mosaic.fed.sns" additivity="false" level="INFO">
@@ -217,14 +217,14 @@
                 <appender-ref ref="ActivityLog"/>
             </logger>
 
-            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorOutput" additivity="false" level="INFO">
+            <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorOutput" additivity="false" level="DEBUG">
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>
 
             <logger name="org.eclipse.mosaic.fed.ns3.ambassador.Ns3AmbassadorError" additivity="false" level="INFO">
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>
-            
+
             <logger name="org.eclipse.mosaic.fed.ns3.ambassador" additivity="false" level="INFO">
                 <appender-ref ref="CommunicationDetailsLog"/>
             </logger>

@@ -163,9 +163,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
-     * Provide infrastructure instance manager with detected objects from processed detected 
+     * Provide infrastructure instance manager with detected objects from processed detected
      * object interactions.
-     * 
+     *
      * @param interaction processed detected objected interaction.
      */
     private synchronized void receiveDetectedObjectInteraction( DetectedObjectInteraction interaction) {
@@ -229,7 +229,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 .ip(rsuAddress)
                 .subnet(IpResolver.getSingleton().getNetMask())
                 .power(50)
-                .radius(300.0)
+                .radius(1000.0)
                 .create();
 
         // Create an AdHocConfiguration object to associate the Ad-Hoc interface
@@ -299,10 +299,10 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
-                log.info("RSU Registration for {} @ x, y, z: ( {}, {}, {}) .", 
+                log.info("RSU Registration for {} @ x, y, z: ( {}, {}, {}) .",
                                             reg.getInfrastructureId(),
                                             reg.getLocation().getX(),
-                                            reg.getLocation().getY(), 
+                                            reg.getLocation().getY(),
                                             reg.getLocation().getZ());
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
                 // Check for empty list of sensors which is valid
@@ -312,7 +312,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                         // Trigger Sensor registrations for all listed sensors.
                         this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
                     }
-                } 
+                }
                 else {
                    log.warn("No sensors registered for infrastructure instance {}.", reg.getInfrastructureId());
                 }
