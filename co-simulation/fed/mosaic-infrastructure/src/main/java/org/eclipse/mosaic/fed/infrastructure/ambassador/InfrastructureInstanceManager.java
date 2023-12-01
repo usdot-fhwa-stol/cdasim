@@ -186,7 +186,7 @@ public class InfrastructureInstanceManager {
                     instance.sendDetection(detection);
                     // Assuming each sensor would only ever be registered to a single infrastructure
                     // instance
-                    log.debug("Received detected object: {}", detection);
+                    log.debug("Received detected object: {}", detection.toString());
                     break;
                 } catch (IOException e) {
                     log.error("Error occured:  {}", e.getMessage());
