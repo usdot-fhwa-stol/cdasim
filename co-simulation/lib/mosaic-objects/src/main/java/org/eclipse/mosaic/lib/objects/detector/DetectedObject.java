@@ -338,4 +338,15 @@ public final class DetectedObject implements Serializable {
         if (timestamp != other.timestamp)
             return false;
         return true;
-    }}
+    }
+
+    @Override
+    public String toString() {
+        return "DetectedObject [type=" + type + ", confidence=" + confidence + ", sensorId=" + sensorId
+                + ", projString=" + projString + ", objectId=" + objectId + ", position=" + position
+                + ", positionCovariance=" + Arrays.deepToString(positionCovariance) + ", velocity=" + velocity
+                + ", velocityCovariance=" + Arrays.deepToString(velocityCovariance) + ", angularVelocity=" + angularVelocity
+                + ", angularVelocityCovariance=" + Arrays.deepToString(angularVelocityCovariance) + ", size=" + size.toString()
+                + ", timestamp=" + timestamp + "]";
+    }
+}
