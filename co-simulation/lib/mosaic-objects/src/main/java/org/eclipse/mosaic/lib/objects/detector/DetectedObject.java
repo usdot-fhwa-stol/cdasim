@@ -17,9 +17,9 @@ package org.eclipse.mosaic.lib.objects.detector;
 
 import java.io.Serializable;
 import java.util.Arrays;
-
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
+
 
 public final class DetectedObject implements Serializable {
 
@@ -33,7 +33,7 @@ public final class DetectedObject implements Serializable {
 
     private String projString;
 
-    private String objectId;
+    private int objectId;
 
     private CartesianPoint position;
 
@@ -58,7 +58,7 @@ public final class DetectedObject implements Serializable {
      * @param sensorId          of sensor/detector reporting object detection
      * @param projString        containing information about reference frame in 
      *                          which kinematic information is reported.
-     * @param objectId          unique string ID of detected object (only guaranteed 
+     * @param objectId          unique int ID of detected object (only guaranteed 
      *                          unique among other detected objects reported by the 
      *                          same sensor).
      * @param position          position of detected object relative to sensor/detector
@@ -67,7 +67,7 @@ public final class DetectedObject implements Serializable {
      * @param angularVelocity   angular velocity of detected object in sensor/detector frame.
      * @param size              size of object including height,width and length.
      */
-    public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, String objectId,
+    public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, int objectId,
             CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size, int timestamp) {
         this.type = type;
         this.confidence = confidence;
@@ -131,7 +131,7 @@ public final class DetectedObject implements Serializable {
      * Getter for String object ID.
      * @return
      */
-    public String getObjectId() {
+    public int getObjectId() {
         return objectId;
     }
 
@@ -213,10 +213,10 @@ public final class DetectedObject implements Serializable {
     }
 
     /**
-     * Setter for detected object unique string ID.
+     * Setter for detected object unique int ID.
      * @param objectId
      */
-    public void setObjectId(String objectId) {
+    public void setObjectId(int objectId) {
         this.objectId = objectId;
     }
 
@@ -269,7 +269,7 @@ public final class DetectedObject implements Serializable {
         result = prime * result + (int) (temp ^ (temp >>> 32));
         result = prime * result + ((sensorId == null) ? 0 : sensorId.hashCode());
         result = prime * result + ((projString == null) ? 0 : projString.hashCode());
-        result = prime * result + ((objectId == null) ? 0 : objectId.hashCode());
+        result = prime * result + objectId;
         result = prime * result + ((position == null) ? 0 : position.hashCode());
         result = prime * result + Arrays.deepHashCode(positionCovariance);
         result = prime * result + ((velocity == null) ? 0 : velocity.hashCode());
@@ -304,10 +304,7 @@ public final class DetectedObject implements Serializable {
                 return false;
         } else if (!projString.equals(other.projString))
             return false;
-        if (objectId == null) {
-            if (other.objectId != null)
-                return false;
-        } else if (!objectId.equals(other.objectId))
+        if (objectId != other.objectId)
             return false;
         if (position == null) {
             if (other.position != null)

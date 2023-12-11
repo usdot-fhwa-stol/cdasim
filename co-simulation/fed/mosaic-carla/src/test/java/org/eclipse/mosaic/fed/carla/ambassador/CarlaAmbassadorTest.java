@@ -12,16 +12,10 @@
  */
 package org.eclipse.mosaic.fed.carla.ambassador;
 
-import org.junit.Test;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
@@ -43,17 +37,23 @@ import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
 import org.eclipse.mosaic.rti.config.CLocalHost;
-
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.internal.util.reflection.FieldSetter;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+
+
 
 /**
  * Tests for {@link CarlaAmbassador}.
@@ -133,7 +133,7 @@ public class CarlaAmbassadorTest {
                 0.7,
                 "sensorID1",
                 "projection String2",
-                "Object7",
+                100,
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
@@ -148,7 +148,7 @@ public class CarlaAmbassadorTest {
             0.5,
             "sensorID1",
             "projection String",
-            "Object1",
+            101,
             CartesianPoint.xyz(1.1, 2, 3.2),
             new Vector3d(0, 0, 0),
             new Vector3d(),
