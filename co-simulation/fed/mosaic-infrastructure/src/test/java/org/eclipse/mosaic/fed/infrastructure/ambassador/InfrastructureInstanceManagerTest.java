@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -39,6 +38,7 @@ import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
+
 
 
 public class InfrastructureInstanceManagerTest {
@@ -128,7 +128,7 @@ public class InfrastructureInstanceManagerTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                100,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
@@ -149,7 +149,7 @@ public class InfrastructureInstanceManagerTest {
                 0.5,
                 "sensor6",
                 "projection String",
-                "Object1",
+                101,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),

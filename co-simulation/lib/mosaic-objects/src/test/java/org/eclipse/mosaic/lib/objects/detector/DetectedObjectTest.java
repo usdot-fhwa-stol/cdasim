@@ -19,12 +19,12 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.google.gson.Gson;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.Gson;
 
 public class DetectedObjectTest {
     @Before
@@ -40,7 +40,7 @@ public class DetectedObjectTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                100,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
@@ -135,7 +135,7 @@ public class DetectedObjectTest {
                 0.7,
                 "sensor2",
                 "projection String2",
-                "Object7",
+                101,
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
@@ -157,7 +157,7 @@ public class DetectedObjectTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                102,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
@@ -191,7 +191,7 @@ public class DetectedObjectTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                103,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
@@ -207,7 +207,7 @@ public class DetectedObjectTest {
                 0.6,
                 null,
                 null,
-                null,
+                100,
                 null,
                 null,
                 null,
@@ -218,7 +218,7 @@ public class DetectedObjectTest {
                 0.6,
                 null,
                 null,
-                null,
+                101,
                 null,
                 null,
                 null,

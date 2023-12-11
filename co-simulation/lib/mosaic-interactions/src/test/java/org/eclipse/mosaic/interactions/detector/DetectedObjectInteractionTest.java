@@ -41,7 +41,7 @@ public class DetectedObjectInteractionTest {
                 0.7,
                 "sensor2",
                 "projection String2",
-                "Object7",
+                100,
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
