@@ -58,7 +58,7 @@ public final class DetectedObject implements Serializable {
      * @param sensorId          of sensor/detector reporting object detection
      * @param projString        containing information about reference frame in 
      *                          which kinematic information is reported.
-     * @param objectId          unique string ID of detected object (only guaranteed 
+     * @param objectId          unique int ID of detected object (only guaranteed 
      *                          unique among other detected objects reported by the 
      *                          same sensor).
      * @param position          position of detected object relative to sensor/detector
@@ -213,7 +213,7 @@ public final class DetectedObject implements Serializable {
     }
 
     /**
-     * Setter for detected object unique string ID.
+     * Setter for detected object unique int ID.
      * @param objectId
      */
     public void setObjectId(int objectId) {
