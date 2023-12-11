@@ -57,7 +57,7 @@ public class DetectedObjectTest {
                 + "\"confidence\":0.5,"
                 + "\"sensorId\":\"sensor1\","
                 + "\"projString\":\"projection String\","
-                + "\"objectId\":\"Object1\","
+                + "\"objectId\":100,"
                 + "\"position\":"
                 + "{"
                 + "\"x\":1.1,"
@@ -98,7 +98,7 @@ public class DetectedObjectTest {
                 + "\"confidence\":0.7,"
                 + "\"sensorId\":\"sensor2\","
                 + "\"projString\":\"projection String2\","
-                + "\"objectId\":\"Object7\","
+                + "\"objectId\":101,"
                 + "\"position\":"
                 + "{"
                 + "\"x\":-1.1,"
@@ -172,7 +172,7 @@ public class DetectedObjectTest {
         assertEquals(0.5, detectedObject.getConfidence(), .01);
         assertEquals("sensor1", detectedObject.getSensorId());
         assertEquals("projection String", detectedObject.getProjString());
-        assertEquals("Object1", detectedObject.getObjectId());
+        assertEquals(102, detectedObject.getObjectId());
         assertEquals(CartesianPoint.xyz(1.1, 2, 3.2), detectedObject.getPosition());
         assertEquals(new Vector3d(2, 3, 4), detectedObject.getVelocity());
         assertEquals(new Vector3d(-4.4, -5.5, -6.6), detectedObject.getAngularVelocity());
@@ -218,7 +218,7 @@ public class DetectedObjectTest {
                 0.6,
                 null,
                 null,
-                101,
+                100,
                 null,
                 null,
                 null,
