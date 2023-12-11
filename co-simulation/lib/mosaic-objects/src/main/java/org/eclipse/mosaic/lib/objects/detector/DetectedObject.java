@@ -33,7 +33,7 @@ public final class DetectedObject implements Serializable {
 
     private String projString;
 
-    private String objectId;
+    private int objectId;
 
     private CartesianPoint position;
 
@@ -131,7 +131,7 @@ public final class DetectedObject implements Serializable {
      * Getter for String object ID.
      * @return
      */
-    public String getObjectId() {
+    public int getObjectId() {
         return objectId;
     }
 
@@ -216,7 +216,7 @@ public final class DetectedObject implements Serializable {
      * Setter for detected object unique string ID.
      * @param objectId
      */
-    public void setObjectId(String objectId) {
+    public void setObjectId(int objectId) {
         this.objectId = objectId;
     }
 
