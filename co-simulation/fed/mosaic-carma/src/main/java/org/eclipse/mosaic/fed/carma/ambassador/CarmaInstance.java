@@ -59,6 +59,23 @@ public class CarmaInstance {
     public GeoPoint getLocation() {
         return this.location;
     }
+    
+
+    public int getV2xPort() {
+        return v2xPort;
+    }
+
+    public void setV2xPort(int v2xPort) {
+        this.v2xPort = v2xPort;
+    }
+
+    public int getTimeSyncPort() {
+        return timeSyncPort;
+    }
+
+    public void setTimeSyncPort(int timeSyncPort) {
+        this.timeSyncPort = timeSyncPort;
+    }
 
     /**
      * Sends the data to the CARMA Platform communications interface configured at construction time.
