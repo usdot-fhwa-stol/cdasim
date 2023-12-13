@@ -44,6 +44,8 @@ import org.mockito.internal.util.reflection.FieldSetter;
 
 
 
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 public class InfrastructureInstanceTest {
     /**
      * Mock Datagram socket
@@ -154,7 +156,7 @@ public class InfrastructureInstanceTest {
     @Test
     public void testSendTimeSyncMsg() throws IOException {
         // Test SendTimeSyncMsg method
-        InfrastructureTimeMessage test_msg = new InfrastructureTimeMessage();
+        TimeSyncMessage test_msg = new TimeSyncMessage();
         test_msg.setSeq(1);
         test_msg.setTimestep(100);
         instance.sendTimeSyncMsg(test_msg);

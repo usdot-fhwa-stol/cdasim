@@ -53,6 +53,7 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for Infrastructure
@@ -333,7 +334,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             }
 
             timeSyncSeq += 1;
-            InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage();
             timeSyncMessage.setSeq(timeSyncSeq);
             // nanoseconds to milliseconds for InfrastructureTimeMessage
             timeSyncMessage.setTimestep(currentSimulationTime/1000000);

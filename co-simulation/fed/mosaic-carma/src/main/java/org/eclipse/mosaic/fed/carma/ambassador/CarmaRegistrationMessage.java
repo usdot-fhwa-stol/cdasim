@@ -24,13 +24,15 @@ public class CarmaRegistrationMessage {
     private String carlaVehicleRole;
     private String rxMessageIpAddress;
     private int rxMessagePort;
+    private int rxTimeSyncPort;
 
     public CarmaRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
-            int rxMessagePort) {
+            int rxMessagePort, int rxTimeSyncPort) {
         this.carmaVehicleId = carmaVehicleId;
         this.carlaVehicleRole = carlaVehicleRole;
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.rxMessagePort = rxMessagePort;
+        this.rxTimeSyncPort = rxTimeSyncPort;
     }
     public String getCarmaVehicleId() {
         return carmaVehicleId;
@@ -56,11 +58,18 @@ public class CarmaRegistrationMessage {
     public void setRxMessagePort(int rxMessagePort) {
         this.rxMessagePort = rxMessagePort;
     }
-
+    public int getRxTimeSyncPort() {
+        return rxTimeSyncPort;
+    }
+    public void setRxTimeSyncPort(int rxTimeSyncPort) {
+        this.rxTimeSyncPort = rxTimeSyncPort;
+    }
     @Override
     public String toString() {
         return "CarmaRegistrationMessage [carmaVehicleId=" + carmaVehicleId + ", carlaVehicleRole=" + carlaVehicleRole
-                + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort + "]";
+                + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
+                + ", rxTimeSyncPort=" + rxTimeSyncPort + "]";
     }
+   
     
 }

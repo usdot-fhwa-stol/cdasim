@@ -17,6 +17,8 @@
 package org.eclipse.mosaic.fed.carma.ambassador;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
@@ -28,6 +30,8 @@ import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -56,7 +60,8 @@ public class CarmaInstanceManager {
                     registration.getCarmaVehicleId(),
                     registration.getCarlaVehicleRole(),
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
-                    registration.getRxMessagePort()
+                    registration.getRxMessagePort(),
+                    registration.getRxTimeSyncPort()
                 );
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e);
@@ -130,11 +135,31 @@ public class CarmaInstanceManager {
 
         CarmaInstance carma = managedInstances.get(rxVehicleId);
         try {
-            carma.sendMsgs(rxMsg);
+            carma.sendV2xMsgs(rxMsg);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * This function is used to send out encoded timestep update to all registered
+     * instances the manager has on the managed instances map
+     * 
+     * @param message This time message is used to store current seq and timestep
+     *                from the ambassador side
+     * @throws IOException
+     */
+    public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
+        if (managedInstances.size() == 0) {
+            log.debug("There are no registered instances");
+        }
+        Gson gson = new Gson();
+        byte[] bytes = gson.toJson(message).getBytes();
+        for (CarmaInstance currentInstance : managedInstances.values()) {
+            currentInstance.sendTimeSyncMsg(bytes);
+        }
+    }
+
 
     /**
      * Helper function to configure a new CARMA Platform instance object upon registration
@@ -143,8 +168,8 @@ public class CarmaInstanceManager {
      * @param targetAddress The IP address to which received simulated V2X messages should be sent
      * @param targetPort The port to which received simulated V2X messages should be sent
      */
-    private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int targetPort) {
-        CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, targetPort);
+    private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort) {
+        CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, v2xPort, timeSyncPort);
         try {
             tmp.bind();
             log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", carlaRoleName);

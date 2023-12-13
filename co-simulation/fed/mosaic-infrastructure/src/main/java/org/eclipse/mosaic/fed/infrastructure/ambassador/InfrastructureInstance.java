@@ -31,6 +31,8 @@ import org.eclipse.mosaic.rti.api.Interaction;
 
 import com.google.gson.Gson;
 
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 /**
  * InfrastructureInstance class represents a physical instance of an
  * infrastructure instance in the simulated environment.
@@ -248,7 +250,7 @@ public class InfrastructureInstance {
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
-    public void sendTimeSyncMsg(InfrastructureTimeMessage message) throws IOException {
+    public void sendTimeSyncMsg(TimeSyncMessage message) throws IOException {
         sendPacket(toJsonBytes(message), timeSyncPort);
     }
 
