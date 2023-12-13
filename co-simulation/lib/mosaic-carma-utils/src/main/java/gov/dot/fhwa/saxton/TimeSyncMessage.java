@@ -48,7 +48,7 @@ public class TimeSyncMessage {
 
     @Override
     public String toString() {
-        return "InfrastructureTimeMessage [timestep=" + timestep + ", seq=" + seq + "]";
+        return "TimeSyncMessage [timestep=" + timestep + ", seq=" + seq + "]";
     }
 
 }
