@@ -153,10 +153,12 @@ public class CarmaInstanceManager {
         if (managedInstances.size() == 0) {
             log.debug("There are no registered instances");
         }
-        Gson gson = new Gson();
-        byte[] bytes = gson.toJson(message).getBytes();
-        for (CarmaInstance currentInstance : managedInstances.values()) {
-            currentInstance.sendTimeSyncMsg(bytes);
+        else {
+            Gson gson = new Gson();
+            byte[] bytes = gson.toJson(message).getBytes();
+            for (CarmaInstance currentInstance : managedInstances.values()) {
+                currentInstance.sendTimeSyncMsg(bytes);
+            }
         }
     }
 

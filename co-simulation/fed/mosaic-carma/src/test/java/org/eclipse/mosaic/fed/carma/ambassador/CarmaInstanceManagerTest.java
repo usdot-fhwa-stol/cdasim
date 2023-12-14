@@ -2,7 +2,10 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
@@ -78,7 +81,25 @@ public class CarmaInstanceManagerTest {
         // Verify that all instances sendTimeSyncMsgs was called.
         verify(instance1).sendTimeSyncMsg(message_bytes);
         verify(instance2).sendTimeSyncMsg(message_bytes);
-        verify(instance2).sendTimeSyncMsg(message_bytes);
+        verify(instance3).sendTimeSyncMsg(message_bytes);
+
+    }
+
+    public void testOnTimeStepUpdateWithoutRegisteredIntstances() throws NoSuchFieldException, SecurityException, IOException{
+        // Verify that with no managed instances nothing is called and no exception is thrown.
+        Map<String, CarmaInstance>  managedInstances = new HashMap<>();
+      
+        // Set private instance field to mock using reflection
+        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
+        TimeSyncMessage message = new TimeSyncMessage();
+    
+        message.setSeq(3);
+        message.setTimestep(300);
+        assertDoesNotThrow(manager.onTimeStepUpdate(message));
+        
+        verify(instance1, never()).sendTimeSyncMsg(any());
+        verify(instance2, never()).sendTimeSyncMsg(any());
+        verify(instance3, never()).sendTimeSyncMsg(any());
 
     }
 
