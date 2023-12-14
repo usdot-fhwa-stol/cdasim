@@ -78,7 +78,7 @@ public class CarmaInstance {
     }
 
     /**
-     * Sends the data to the CARMA Platform communications interface configured at construction time.
+     * Sends the V2X message to the CARMA Platform communications interface configured at construction time.
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
@@ -92,8 +92,8 @@ public class CarmaInstance {
         rxMsgsSocket.send(packet);
     }
     /**
-     * Sends the data to the CARMA Platform communications interface configured at construction time.
-     * @param data The binary data to transmit
+     * Sends the time sync messages to the CARMA Platform to synchronize ros clock with simulation clock.
+     * @param data The binary data encoding of json time sync message
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
     public void sendTimeSyncMsg(byte[] data) throws IOException {

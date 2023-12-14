@@ -100,11 +100,11 @@ public class CarmaInstanceManager {
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
 
         log.info("Preparing to generate V2XMessageTransmission interaction for transmission on MOSAIC event bus...");
-        log.info("sim time: " + time);
-        log.info("sender id: " + sender.getCarlaRoleName());
-        log.info("location: " + sender.getLocation().toString());
-        log.info("txMsg non-null? " + (txMsg != null));
-        log.info("payload: " + txMsg.getPayload());
+        log.info("sim time: {}" , time);
+        log.info("sender id: {}", sender.getCarlaRoleName());
+        log.info("location: {}", sender.getLocation());
+        log.info("txMsg non-null? {}", (txMsg != null));
+        log.info("payload: {}", txMsg.getPayload());
         return new V2xMessageTransmission((long) time, new ExternalV2xMessage(routing,
                 new ExternalV2xContent((long) time, sender.getLocation(), txMsg.getPayload())));
     }
@@ -173,7 +173,8 @@ public class CarmaInstanceManager {
      * @param carmaVehId The CARMA Platform vehicle ID (e.g. it's license plate number)
      * @param carlaRoleName The Role Name associated with the CARMA Platform's ego vehicle in CARLA
      * @param targetAddress The IP address to which received simulated V2X messages should be sent
-     * @param targetPort The port to which received simulated V2X messages should be sent
+     * @param v2xPort The port to which received simulated V2X messages should be sent
+     * @param timeSyncPort The port to which to send time sync messages.
      */
     private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort) {
         CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, v2xPort, timeSyncPort);

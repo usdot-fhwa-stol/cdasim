@@ -79,6 +79,8 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
     private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
+    private int timeSyncSeq = 0;
+
 
     /**
      * Create a new {@link CarmaMessageAmbassador} object.
@@ -178,7 +180,9 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
 
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
             TimeSyncMessage timeSyncMessage = new TimeSyncMessage();
-            timeSyncMessage.setSeq(0);
+            timeSyncSeq += 1;
+
+            timeSyncMessage.setSeq(timeSyncSeq);
             // nanoseconds to milliseconds for InfrastructureTimeMessage
             timeSyncMessage.setTimestep(currentSimulationTime);
             carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);

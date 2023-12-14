@@ -20,14 +20,12 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
-import org.eclipse.mosaic.rti.api.Interaction;
 
 import com.google.gson.Gson;
 
