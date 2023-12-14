@@ -36,6 +36,17 @@ public class CarmaRegistrationMessageTest {
         assertEquals("127.0.0.1", message.getRxMessageIpAddress());
         assertEquals(5678, message.getRxMessagePort());
         assertEquals(8642, message.getRxTimeSyncPort());
+        message.setRxMessagePort(7777);
+        message.setRxTimeSyncPort(6666);
+        message.setCarmaVehicleId("SOMEID");
+        message.setCarlaVehicleRole("SOMEROLL");
+        message.setRxMessageIpAddress("someIP");
+        assertEquals("SOMEID", message.getCarmaVehicleId());
+        assertEquals("SOMEROLL", message.getCarlaVehicleRole());
+
+        assertEquals("someIP", message.getRxMessageIpAddress());
+        assertEquals(7777, message.getRxMessagePort());
+        assertEquals(6666, message.getRxTimeSyncPort());
 
     }
 
