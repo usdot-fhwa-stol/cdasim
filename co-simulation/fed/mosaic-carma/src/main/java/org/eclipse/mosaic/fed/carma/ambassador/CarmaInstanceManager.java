@@ -157,6 +157,11 @@ public class CarmaInstanceManager {
             Gson gson = new Gson();
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaInstance currentInstance : managedInstances.values()) {
+                log.debug("Sending CARMA Platform instance {} at {}:{} time sync message for time {}!" ,
+                    currentInstance.getCarmaVehicleId(), 
+                    currentInstance.getTargetAddress(), 
+                    currentInstance.getTimeSyncPort(), 
+                    message.getTimestep());
                 currentInstance.sendTimeSyncMsg(bytes);
             }
         }
