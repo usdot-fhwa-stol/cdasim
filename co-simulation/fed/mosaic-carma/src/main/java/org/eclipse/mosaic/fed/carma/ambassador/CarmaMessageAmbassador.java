@@ -179,12 +179,9 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             }
 
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
-            TimeSyncMessage timeSyncMessage = new TimeSyncMessage();
             timeSyncSeq += 1;
-
-            timeSyncMessage.setSeq(timeSyncSeq);
-            // nanoseconds to milliseconds for InfrastructureTimeMessage
-            timeSyncMessage.setTimestep(currentSimulationTime);
+            // Timestep in nano seconds
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime, timeSyncSeq);
             carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {

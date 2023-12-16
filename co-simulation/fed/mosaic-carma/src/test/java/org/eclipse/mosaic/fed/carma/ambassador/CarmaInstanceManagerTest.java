@@ -15,23 +15,40 @@
  */
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.junit.IpResolverRule;
+import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
+import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
+import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class CarmaInstanceManagerTest {
@@ -39,6 +56,26 @@ public class CarmaInstanceManagerTest {
     private CarmaInstance instance1;
     private CarmaInstance instance2;
     private CarmaInstance instance3;
+    private final String sampleMessage =
+    "Version=0.7\n" +
+    "Type=BSM\n" +
+    "PSID=0020\n" +
+    "Priority=6\n" +
+    "TxMode=ALT\n" +
+    "TxChannel=172\n" +
+    "TxInterval=0\n" +
+    "DeliveryStart=\n" +
+    "DeliveryStop=\n" +
+    "Signature=False\n" +
+    "Encryption=False\n" +
+    "Payload=00142500400000000f0e35a4e900eb49d20000007fffffff8ffff080fdfa1fa1007fff8000960fa0\n";
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    /**
+     * Rule to initialize {@link IpResolver} Singleton.
+     */
+    @Rule
+    public IpResolverRule ipResolverRule = new IpResolverRule();
 
     @Before
     public void setUp() throws Exception {
@@ -84,10 +121,8 @@ public class CarmaInstanceManagerTest {
 
     @Test
     public void testOnTimeStepUpdate() throws IOException {
-        TimeSyncMessage message = new TimeSyncMessage();
+        TimeSyncMessage message = new TimeSyncMessage(300, 3);
     
-        message.setSeq(3);
-        message.setTimestep(300);
         Gson gson = new Gson();
         byte[] message_bytes = gson.toJson(message).getBytes();
 
@@ -98,23 +133,41 @@ public class CarmaInstanceManagerTest {
         verify(instance3).sendTimeSyncMsg(message_bytes);
 
     }
-
+    @Test
     public void testOnTimeStepUpdateWithoutRegisteredIntstances() throws NoSuchFieldException, SecurityException, IOException{
         // Verify that with no managed instances nothing is called and no exception is thrown.
         Map<String, CarmaInstance>  managedInstances = new HashMap<>();
       
         // Set private instance field to mock using reflection
         FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
-        TimeSyncMessage message = new TimeSyncMessage();
+        TimeSyncMessage message = new TimeSyncMessage(300, 3);
     
-        message.setSeq(3);
-        message.setTimestep(300);
         manager.onTimeStepUpdate(message);
         
         verify(instance1, never()).sendTimeSyncMsg(any());
         verify(instance2, never()).sendTimeSyncMsg(any());
         verify(instance3, never()).sendTimeSyncMsg(any());
 
+    }
+    @Test
+    public void testonV2XMessageTx() {
+        CarmaV2xMessage message = new CarmaV2xMessage(sampleMessage.getBytes());
+        InetAddress address1 = mock(InetAddress.class);
+        InetAddress address2 = mock(InetAddress.class);
+        InetAddress address3 = mock(InetAddress.class);
+
+        when(instance1.getTargetAddress()).thenReturn(address1);
+        when(instance2.getTargetAddress()).thenReturn(address2);
+        when(instance3.getTargetAddress()).thenReturn(address3);
+        IpResolver.getSingleton().registerHost("veh_0");
+        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
+
+        // V2xMessageTransmission messageTransmission = new V2xMessageTransmission(1000, )
+        V2xMessageTransmission messageTx = manager.onV2XMessageTx(address1, message, 1000);
+        assertEquals(1000, messageTx.getTime());
+        assertEquals(GeoPoint.ORIGO, messageTx.getSourcePosition());
+        assertEquals("veh_0", messageTx.getMessage().getRouting().getSource().getSourceName());
     }
 
 }

@@ -72,41 +72,38 @@ public class CarmaInstanceManager {
         }
     }
     /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
-     * @param sourceAddr The V2X Message received
-     * @param txMsg The Host ID of the vehicle receiving the data
-     * @param time The timestamp at which the interaction occurs
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     * Method to be invoked when CARMA Ambassador receives a V2X message from CARMA Platform. Creates
+     * V2xMessageTransmission interaction to be sent on the MOSIAC RTI.
+     * @param sourceAddr the ip address of the CARMA Platform instance that sent the message.
+     * @param txMsg The V2X Message received.
+     * @param time The timestamp at which the interaction occurs.
+     * @throws IllegalStateException if sourceAddr does not match any address in the managed instances.
      */
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         CarmaInstance sender = null;
+        // Find the CarmaInstance with sourceAddr.
         for (CarmaInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {
                 sender = ci;
                 break;
             }
-            log.info("Instance {} with target address {} can not match with source address {}", ci.getCarlaRoleName(), ci.getTargetAddress(), sourceAddr.toString());
         }
-
+        // Unregistered instance attempting to send messages
         if (sender == null) {
-            // Unregistered instance attempting to send messages
             throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
         }
-
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
                 sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
-
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
-
-        log.info("Preparing to generate V2XMessageTransmission interaction for transmission on MOSAIC event bus...");
-        log.info("sim time: {}" , time);
-        log.info("sender id: {}", sender.getCarlaRoleName());
-        log.info("location: {}", sender.getLocation());
-        log.info("txMsg non-null? {}", (txMsg != null));
-        log.info("payload: {}", txMsg.getPayload());
-        return new V2xMessageTransmission((long) time, new ExternalV2xMessage(routing,
-                new ExternalV2xContent((long) time, sender.getLocation(), txMsg.getPayload())));
+        log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, payload: {}", 
+                time, 
+                sender.getCarmaVehicleId(),
+                sender.getLocation(),
+                txMsg.getPayload()
+            );
+        return new V2xMessageTransmission( time, new ExternalV2xMessage(routing,
+                new ExternalV2xContent( time, sender.getLocation(), txMsg.getPayload())));
     }
 
     /**

@@ -156,9 +156,7 @@ public class InfrastructureInstanceTest {
     @Test
     public void testSendTimeSyncMsg() throws IOException {
         // Test SendTimeSyncMsg method
-        TimeSyncMessage test_msg = new TimeSyncMessage();
-        test_msg.setSeq(1);
-        test_msg.setTimestep(100);
+        TimeSyncMessage test_msg = new TimeSyncMessage(100, 1);
         instance.sendTimeSyncMsg(test_msg);
 
 

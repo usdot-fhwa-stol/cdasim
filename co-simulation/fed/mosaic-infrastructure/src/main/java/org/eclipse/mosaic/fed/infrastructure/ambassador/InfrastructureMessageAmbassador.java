@@ -334,13 +334,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             }
 
             timeSyncSeq += 1;
-            TimeSyncMessage timeSyncMessage = new TimeSyncMessage();
-            timeSyncMessage.setSeq(timeSyncSeq);
             // nanoseconds to milliseconds for InfrastructureTimeMessage
-            timeSyncMessage.setTimestep(currentSimulationTime/1000000);
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime/1000000, timeSyncSeq);
             infrastructureInstanceManager.onTimeStepUpdate(timeSyncMessage);
-
-            // TODO: Handle any queued V2X message receiver's received messages
 
             // Advance the simulation time
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;

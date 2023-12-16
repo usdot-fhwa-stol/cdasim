@@ -17,17 +17,19 @@
 package gov.dot.fhwa.saxton;
 
 /**
- * Message to be sent or received by the Infrastructure Device Adapter interface
- * NOTE: TODO See .ambassador for reference
+ * Time Sync message that includes timestep and the sequence
+ * number of the step.
  * 
  */
 public class TimeSyncMessage {
-    // Timestamp in milliseconds
+    // Timestamp in units determined by user of message
     private long timestep;
     // Sequence number for time message
     private int seq;
 
-    public TimeSyncMessage() {
+    public TimeSyncMessage(long timestep, int seq) {
+        this.timestep = timestep;
+        this.seq = seq;
     }
 
     public long getTimestep() {

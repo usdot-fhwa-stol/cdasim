@@ -110,10 +110,7 @@ public class InfrastructureInstanceManagerTest {
 
     @Test
     public void testOnTimeStepUpdate() throws IOException {
-        TimeSyncMessage message = new TimeSyncMessage();
-    
-        message.setSeq(3);
-        message.setTimestep(300);
+        TimeSyncMessage message = new TimeSyncMessage(300, 3);
         manager.onTimeStepUpdate(message);
         // Verify that all instances sendTimeSyncMsgs was called.
         verify(instance1).sendTimeSyncMsg(message);

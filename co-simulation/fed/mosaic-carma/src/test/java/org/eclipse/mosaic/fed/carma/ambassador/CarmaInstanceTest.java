@@ -121,9 +121,7 @@ public class CarmaInstanceTest {
     @Test
     public void testSendTimeSyncMsg() throws IOException {
         // Test SendTimeSyncMsg method
-        TimeSyncMessage test_msg = new TimeSyncMessage();
-        test_msg.setSeq(1);
-        test_msg.setTimestep(100);
+        TimeSyncMessage test_msg = new TimeSyncMessage(1,100);
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(test_msg).getBytes();
         instance.sendTimeSyncMsg(bytes);

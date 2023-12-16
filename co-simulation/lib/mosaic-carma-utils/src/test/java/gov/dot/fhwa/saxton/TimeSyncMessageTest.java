@@ -27,10 +27,16 @@ public class TimeSyncMessageTest {
 
     @Test
     public void testGetterSetterConstructor() {
-        TimeSyncMessage msg = new TimeSyncMessage();
-        msg.setSeq(100);
-        msg.setTimestep(1200);
-        assertEquals( 100, msg.getSeq());
-        assertEquals(1200, msg.getTimestep());
+        TimeSyncMessage msg = new TimeSyncMessage(1000, 10);
+  
+        assertEquals( 10, msg.getSeq());
+        assertEquals(1000, msg.getTimestep());
+
+        msg.setSeq(20);
+        msg.setTimestep(2000);
+
+        assertEquals( 20, msg.getSeq());
+        assertEquals(2000, msg.getTimestep());
+
     }
 }
