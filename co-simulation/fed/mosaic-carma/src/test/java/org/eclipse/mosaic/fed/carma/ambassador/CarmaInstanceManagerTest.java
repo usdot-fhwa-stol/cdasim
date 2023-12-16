@@ -152,9 +152,33 @@ public class CarmaInstanceManagerTest {
     @Test
     public void testonV2XMessageTx() {
         CarmaV2xMessage message = new CarmaV2xMessage(sampleMessage.getBytes());
+        // Setup mock addresses for registered carma platform instances
         InetAddress address1 = mock(InetAddress.class);
         InetAddress address2 = mock(InetAddress.class);
         InetAddress address3 = mock(InetAddress.class);
+        when(instance1.getTargetAddress()).thenReturn(address1);
+        when(instance2.getTargetAddress()).thenReturn(address2);
+        when(instance3.getTargetAddress()).thenReturn(address3);
+        // Register host with IpResolver singleton
+        IpResolver.getSingleton().registerHost("veh_0");
+        // Set CarlaRoleName to veh_0 to macth registered host
+        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        // Set location to origin
+        when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
+
+        V2xMessageTransmission messageTx = manager.onV2XMessageTx(address1, message, 1000);
+        assertEquals(1000, messageTx.getTime());
+        assertEquals(GeoPoint.ORIGO, messageTx.getSourcePosition());
+        assertEquals("veh_0", messageTx.getMessage().getRouting().getSource().getSourceName());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testonV2XMessageTxUnregisteredCarmaPlatform() {
+        CarmaV2xMessage message = new CarmaV2xMessage(sampleMessage.getBytes());
+        InetAddress address1 = mock(InetAddress.class);
+        InetAddress address2 = mock(InetAddress.class);
+        InetAddress address3 = mock(InetAddress.class);
+        InetAddress unregisteredAddress = mock(InetAddress.class);
 
         when(instance1.getTargetAddress()).thenReturn(address1);
         when(instance2.getTargetAddress()).thenReturn(address2);
@@ -162,12 +186,10 @@ public class CarmaInstanceManagerTest {
         IpResolver.getSingleton().registerHost("veh_0");
         when(instance1.getCarlaRoleName()).thenReturn("veh_0");
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
-
-        // V2xMessageTransmission messageTransmission = new V2xMessageTransmission(1000, )
-        V2xMessageTransmission messageTx = manager.onV2XMessageTx(address1, message, 1000);
-        assertEquals(1000, messageTx.getTime());
-        assertEquals(GeoPoint.ORIGO, messageTx.getSourcePosition());
-        assertEquals("veh_0", messageTx.getMessage().getRouting().getSource().getSourceName());
+        // Attempt to create V2X Message Transmission for unregistered address.
+        // Throws IllegalStateException
+        manager.onV2XMessageTx(unregisteredAddress, message, 1000);
+        
     }
 
 }
