@@ -39,6 +39,8 @@ import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 
 
 public class InfrastructureInstanceManagerTest {
@@ -108,10 +110,7 @@ public class InfrastructureInstanceManagerTest {
 
     @Test
     public void testOnTimeStepUpdate() throws IOException {
-        InfrastructureTimeMessage message = new InfrastructureTimeMessage();
-    
-        message.setSeq(3);
-        message.setTimestep(300);
+        TimeSyncMessage message = new TimeSyncMessage(300, 3);
         manager.onTimeStepUpdate(message);
         // Verify that all instances sendTimeSyncMsgs was called.
         verify(instance1).sendTimeSyncMsg(message);
