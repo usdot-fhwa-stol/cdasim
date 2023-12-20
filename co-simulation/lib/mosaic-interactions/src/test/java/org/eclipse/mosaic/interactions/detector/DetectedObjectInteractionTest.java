@@ -41,11 +41,12 @@ public class DetectedObjectInteractionTest {
                 0.7,
                 "sensor2",
                 "projection String2",
-                "Object7",
+                100,
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
-                new Size(2, 1, .5));
+                new Size(2, 1, .5),
+                100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);

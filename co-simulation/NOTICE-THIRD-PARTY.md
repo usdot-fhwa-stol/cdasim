@@ -93,14 +93,6 @@ Apache XML-RPC Common Library (3.1.3)
  * Source: https://svn.apache.org/viewvc/webservices/xmlrpc/tags/xmlrpc-3.1.3/xmlrpc-common
 
 
-CARMA Canned Detected Object Ambassador (22.1-SNAPSHOT)
-
- * License: Eclipse Public License - v 2.0
- * Maven artifact: `gov.dot.fhwa.saxton:mosaic-canned-detected-object:22.1-SNAPSHOT`
- * Project: not available
- * Source: https://github.com/eclipse/mosaic/fed/mosaic-canned-detected-object
-
-
 Commons Compiler (2.7.5)
 
  * License: New BSD License

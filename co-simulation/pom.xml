@@ -72,7 +72,6 @@
         <module>fed/mosaic-carla</module>
         <module>fed/mosaic-carma</module>
         <module>fed/mosaic-infrastructure</module>
-        <module>fed/mosaic-canned-detected-object</module>
 
         <module>test/mosaic-integration-tests</module>
 
@@ -88,13 +87,13 @@
         <java.version>11</java.version>
         <sonar.organization>usdot-fhwa-stol</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-
+        
         <!-- JaCoCo Properties -->
         <jacoco.version>0.8.8</jacoco.version>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.language>java</sonar.language>
+        <sonar.language>java</sonar.language>	    
         <mosaic.version>22.1-SNAPSHOT</mosaic.version>
         <parent.dir>.</parent.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -488,7 +487,6 @@
                             <exclude>**/ClientServerChannelProtos.java</exclude>
                             <exclude>fed/mosaic-carma/**</exclude>
                             <exclude>fed/mosaic-carla/**</exclude>
-                            <exclude>fed/mosaic-canned-detected-object/**</exclude>
                         </excludes>
                         <useDefaultExcludes>true</useDefaultExcludes>
                         <encoding>${project.build.sourceEncoding}</encoding>

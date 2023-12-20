@@ -24,18 +24,17 @@
         }
     },
     "federates": {
-        "application": false,
+        "application": true,
         "cell": false,
         "environment": false,
         "sns": false,
-        "ns3": false,
+        "ns3": true,
         "omnetpp": false,
         "output": false,
-        "sumo": false,
-        "carla": false,
-        "carma": false,
-        "infrastructure": false,
-        "canned-detected-object": true
-
+        "sumo": true,
+        "carla": true,
+        "carma": true,
+        "infrastructure": true
+        
     }
 }

@@ -11,7 +11,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
@@ -26,6 +25,7 @@ import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
+
 
 public class CarlaXmlRpcClientTest {
     // Mock XmlRpcClient    
@@ -81,7 +81,7 @@ public class CarlaXmlRpcClientTest {
                 + "\"confidence\":0.7,"
                 + "\"sensorId\":\"sensor1\","
                 + "\"projString\":\"projection String2\","
-                + "\"objectId\":\"Object7\","
+                + "\"objectId\":100,"
                 + "\"position\":"
                 + "{"
                 + "\"x\":-1.1,"
@@ -108,14 +108,15 @@ public class CarlaXmlRpcClientTest {
                 + "\"length\":2.0,"
                 + "\"height\":1.0,"
                 + "\"width\":0.5"
-                + "}"
+                + "},"
+                + "\"timestamp\":100"
                 + "},"
                 + "{"
                 + "\"type\":\"BUS\","
                 + "\"confidence\":0.5,"
                 + "\"sensorId\":\"sensor1\","
                 + "\"projString\":\"projection String\","
-                + "\"objectId\":\"Object1\","
+                + "\"objectId\":101,"
                 + "\"position\":"
                 + "{"
                 + "\"x\":1.1,"
@@ -142,7 +143,8 @@ public class CarlaXmlRpcClientTest {
                 + "\"length\":0.0,"
                 + "\"height\":0.0,"
                 + "\"width\":0.0"
-                + "}"
+                + "},"
+                + "\"timestamp\":100"
                 + "}"
                 + "]";
         // Create request params
@@ -161,11 +163,12 @@ public class CarlaXmlRpcClientTest {
                 0.7,
                 "sensor1",
                 "projection String2",
-                "Object7",
+                100,
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
-                new Size(2, 1, .5));
+                new Size(2, 1, .5),
+                100);
         Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
         predictedCar.setPositionCovariance(covarianceMatrix);
         predictedCar.setVelocityCovariance(covarianceMatrix);
@@ -177,11 +180,12 @@ public class CarlaXmlRpcClientTest {
             0.5,
             "sensor1",
             "projection String",
-            "Object1",
+            101,
             CartesianPoint.xyz(1.1, 2, 3.2),
             new Vector3d(0, 0, 0),
             new Vector3d(),
-            new Size(0, 0, 0));
+            new Size(0, 0, 0),
+            100);
         Double[][] bus_covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         predictedBus.setPositionCovariance(bus_covarianceMatrix);
         predictedBus.setVelocityCovariance(bus_covarianceMatrix);

@@ -19,12 +19,12 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.google.gson.Gson;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.Gson;
 
 public class DetectedObjectTest {
     @Before
@@ -40,11 +40,12 @@ public class DetectedObjectTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                100,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
-                new Size(0, 0, 0));
+                new Size(0, 0, 0),
+                100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
@@ -56,7 +57,7 @@ public class DetectedObjectTest {
                 + "\"confidence\":0.5,"
                 + "\"sensorId\":\"sensor1\","
                 + "\"projString\":\"projection String\","
-                + "\"objectId\":\"Object1\","
+                + "\"objectId\":100,"
                 + "\"position\":"
                 + "{"
                 + "\"x\":1.1,"
@@ -83,11 +84,10 @@ public class DetectedObjectTest {
                 + "\"length\":0.0,"
                 + "\"height\":0.0,"
                 + "\"width\":0.0"
-                + "}"
+                + "},"
+                + "\"timestamp\":100"
                 + "}";
-        assertEquals(json,
-                json_prediction);
-        System.out.println(json);
+        assertEquals(json_prediction,json);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class DetectedObjectTest {
                 + "\"confidence\":0.7,"
                 + "\"sensorId\":\"sensor2\","
                 + "\"projString\":\"projection String2\","
-                + "\"objectId\":\"Object7\","
+                + "\"objectId\":101,"
                 + "\"position\":"
                 + "{"
                 + "\"x\":-1.1,"
@@ -125,7 +125,8 @@ public class DetectedObjectTest {
                 + "\"length\":2.0,"
                 + "\"height\":1.0,"
                 + "\"width\":0.5"
-                + "}"
+                + "},"
+                + "\"timestamp\":100"
                 + "}";
 
         DetectedObject detectedObject = gson.fromJson(json, DetectedObject.class);
@@ -134,11 +135,12 @@ public class DetectedObjectTest {
                 0.7,
                 "sensor2",
                 "projection String2",
-                "Object7",
+                101,
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
-                new Size(2, 1, .5));
+                new Size(2, 1, .5),
+                100);
         Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
         predictedDetectedObject.setPositionCovariance(covarianceMatrix);
         predictedDetectedObject.setVelocityCovariance(covarianceMatrix);
@@ -155,11 +157,12 @@ public class DetectedObjectTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                102,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
+                new Size(3, 4, 5),
+                0);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
@@ -169,7 +172,7 @@ public class DetectedObjectTest {
         assertEquals(0.5, detectedObject.getConfidence(), .01);
         assertEquals("sensor1", detectedObject.getSensorId());
         assertEquals("projection String", detectedObject.getProjString());
-        assertEquals("Object1", detectedObject.getObjectId());
+        assertEquals(102, detectedObject.getObjectId());
         assertEquals(CartesianPoint.xyz(1.1, 2, 3.2), detectedObject.getPosition());
         assertEquals(new Vector3d(2, 3, 4), detectedObject.getVelocity());
         assertEquals(new Vector3d(-4.4, -5.5, -6.6), detectedObject.getAngularVelocity());
@@ -188,11 +191,12 @@ public class DetectedObjectTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                103,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
+                new Size(3, 4, 5),
+                100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
@@ -203,21 +207,23 @@ public class DetectedObjectTest {
                 0.6,
                 null,
                 null,
+                100,
                 null,
                 null,
                 null,
                 null,
-                null);
+                100);
         DetectedObject detectedObject2 = new DetectedObject(
                 null,
                 0.6,
                 null,
                 null,
+                100,
                 null,
                 null,
                 null,
                 null,
-                null);
+                100);
 
         assertNotEquals(detectedObject1, detectedObject);
         assertEquals(detectedObject2, detectedObject1);
