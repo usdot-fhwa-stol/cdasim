@@ -33,6 +33,12 @@ from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (
 from srunner.scenarios.basic_scenario import BasicScenario
 from srunner.scenarioconfigs.scenario_configuration import ScenarioConfiguration
 
+"""
+Configurations
+"""
+
+WALKING_PERSON_SPEED_IN_MS = 1.34
+WALKING_PERSON_TRIGGER_WALKING_DISTANCE_IN_METERS = 20.0
 
 class Trb2024(BasicScenario):
     def __init__(
@@ -145,11 +151,11 @@ class Trb2024(BasicScenario):
 
         # start_condition = Idle(5, name="start_condition")
         start_condition = InTriggerDistanceToVehicle(
-            crossing_person, carma_vehicle, 10.0
+            crossing_person, carma_vehicle, WALKING_PERSON_TRIGGER_WALKING_DISTANCE_IN_METERS
         )
 
         walk_across_street = KeepVelocity(
-            crossing_person, 1.1, 8.0, name="walk_across_street"
+            crossing_person, WALKING_PERSON_SPEED_IN_MS, 10.0, name="walk_across_street"
         )
 
         dao = GlobalRoutePlannerDAO(CarlaDataProvider.get_map(), 2)
