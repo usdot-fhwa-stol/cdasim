@@ -186,6 +186,8 @@ public class InfrastructureInstanceTest {
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
+                new Vector3d(.1, .2, .3),
+                new Vector3d(.1, .2, .3),
                 new Size(0, 0, 0),
                 100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};

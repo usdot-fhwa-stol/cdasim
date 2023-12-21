@@ -40,12 +40,14 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.junit.GeoProjectionRule;
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.math.Vector3d;
+import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
+import org.eclipse.mosaic.lib.transform.GeoProjection;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
@@ -190,6 +192,8 @@ public class InfrastructureMessageAmbassadorTest {
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
+                new Vector3d(.1, .2, .3),
+                new Vector3d(.1, .2, .3),
                 new Size(3, 4, 5),
                 100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};

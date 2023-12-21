@@ -45,6 +45,8 @@ public class DetectedObjectInteractionTest {
                 CartesianPoint.xyz(-1.1, -2, -3.2),
                 new Vector3d(1, 1, 1),
                 new Vector3d(.1, .2, .3),
+                new Vector3d(.1, .2, .3),
+                new Vector3d(.1, .2, .3),
                 new Size(2, 1, .5),
                 100);
         Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};

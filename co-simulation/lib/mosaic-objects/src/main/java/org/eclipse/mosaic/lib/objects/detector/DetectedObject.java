@@ -47,6 +47,15 @@ public final class DetectedObject implements Serializable {
 
     private Double[][] angularVelocityCovariance = new Double[3][3];
 
+    private Vector3d rotation;
+
+    private Double[][] rotationCovariance = new Double[3][3];
+
+    private Vector3d orientation;
+
+    private Double[][] orientationCovariance = new Double[3][3];
+    
+
     private Size size;
 
     private int timestamp;
@@ -68,7 +77,7 @@ public final class DetectedObject implements Serializable {
      * @param size              size of object including height,width and length.
      */
     public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, int objectId,
-            CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size, int timestamp) {
+            CartesianPoint position, Vector3d velocity, Vector3d angularVelocity,  Vector3d rotation, Vector3d orientation, Size size, int timestamp ) {
         this.type = type;
         this.confidence = confidence;
         this.sensorId = sensorId;
@@ -79,7 +88,50 @@ public final class DetectedObject implements Serializable {
         this.angularVelocity = angularVelocity;
         this.size = size;
         this.timestamp = timestamp;
+        this.rotation =  rotation;
+        this.orientation = orientation;
     }
+    
+
+    public Vector3d getRotation() {
+        return rotation;
+    }
+
+
+    public void setRotation(Vector3d rotation) {
+        this.rotation = rotation;
+    }
+
+
+    public Double[][] getRotationCovariance() {
+        return rotationCovariance;
+    }
+
+
+    public void setRotationCovariance(Double[][] rotationCovariance) {
+        this.rotationCovariance = rotationCovariance;
+    }
+
+
+    public Vector3d getOrientation() {
+        return orientation;
+    }
+
+
+    public void setOrientation(Vector3d orientation) {
+        this.orientation = orientation;
+    }
+
+
+    public Double[][] getOrientationCovariance() {
+        return orientationCovariance;
+    }
+
+
+    public void setOrientationCovariance(Double[][] orientationCovariance) {
+        this.orientationCovariance = orientationCovariance;
+    }
+
 
     /**
      * Getter for {@link DetectionType}
@@ -276,6 +328,10 @@ public final class DetectedObject implements Serializable {
         result = prime * result + Arrays.deepHashCode(velocityCovariance);
         result = prime * result + ((angularVelocity == null) ? 0 : angularVelocity.hashCode());
         result = prime * result + Arrays.deepHashCode(angularVelocityCovariance);
+        result = prime * result + ((rotation == null) ? 0 : rotation.hashCode());
+        result = prime * result + Arrays.deepHashCode(rotationCovariance);
+        result = prime * result + ((orientation == null) ? 0 : orientation.hashCode());
+        result = prime * result + Arrays.deepHashCode(orientationCovariance);
         result = prime * result + ((size == null) ? 0 : size.hashCode());
         result = prime * result + timestamp;
         return result;
@@ -327,6 +383,20 @@ public final class DetectedObject implements Serializable {
             return false;
         if (!Arrays.deepEquals(angularVelocityCovariance, other.angularVelocityCovariance))
             return false;
+        if (rotation == null) {
+            if (other.rotation != null)
+                return false;
+        } else if (!rotation.equals(other.rotation))
+            return false;
+        if (!Arrays.deepEquals(rotationCovariance, other.rotationCovariance))
+            return false;
+        if (orientation == null) {
+            if (other.orientation != null)
+                return false;
+        } else if (!orientation.equals(other.orientation))
+            return false;
+        if (!Arrays.deepEquals(orientationCovariance, other.orientationCovariance))
+            return false;
         if (size == null) {
             if (other.size != null)
                 return false;
@@ -340,10 +410,8 @@ public final class DetectedObject implements Serializable {
     @Override
     public String toString() {
         return "DetectedObject [type=" + type + ", confidence=" + confidence + ", sensorId=" + sensorId
-                + ", projString=" + projString + ", objectId=" + objectId + ", position=" + position
-                + ", positionCovariance=" + Arrays.deepToString(positionCovariance) + ", velocity=" + velocity
-                + ", velocityCovariance=" + Arrays.deepToString(velocityCovariance) + ", angularVelocity=" + angularVelocity
-                + ", angularVelocityCovariance=" + Arrays.deepToString(angularVelocityCovariance) + ", size=" + size.toString()
-                + ", timestamp=" + timestamp + "]";
+                + ", projString=" + projString + ", objectId=" + objectId + ", position=" + position + ", velocity="
+                + velocity + ", angularVelocity=" + angularVelocity + ", rotation=" + rotation + ", orientation="
+                + orientation + ", size=" + size + ", timestamp=" + timestamp + "]";
     }
 }
