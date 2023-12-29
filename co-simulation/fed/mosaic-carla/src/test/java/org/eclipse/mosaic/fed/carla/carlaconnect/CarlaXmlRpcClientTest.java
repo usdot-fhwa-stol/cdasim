@@ -2,6 +2,8 @@ package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -204,31 +206,26 @@ public class CarlaXmlRpcClientTest {
          // Create Detector Registration
         Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
         DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
-        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
-        Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
         // Tell mock to return sensor ID when following method is called with following parameters
-        when( mockClient.execute("create_simulated_semantic_lidar_sensor", params)).thenReturn(registration.getSenderId());
-        Object[] get_detected_object_params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId()};
+        when( mockClient.execute( anyString(), any(Object[].class))).thenThrow(new XmlRpcException(""));
         // Tell mock to return sensor ID when following method is called with following parameters
-        when( mockClient.execute("get_detected_objects", get_detected_object_params)).thenReturn("");
         carlaConnection.closeConnection();
+        assertEquals(false, carlaConnection.isConnected() );
         try {
             carlaConnection.createSensor(registration);
         }
         catch( Exception e ) {
             assertEquals(XmlRpcException.class, e.getClass());
-            assertEquals("XMLRpcClient is not connected to CARLA Adapter!", e.getMessage());
+            assertEquals("XMLRpcClient is not connected to CARLA CDA Sim Adapter after 20 attempts!", e.getMessage());
         }
         try {
             carlaConnection.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
         }
         catch( Exception e ) {
             assertEquals(XmlRpcException.class, e.getClass());
-            assertEquals("XMLRpcClient is not connected to CARLA Adapter!", e.getMessage());
+            assertEquals("XMLRpcClient is not connected to CARLA CDA Sim Adapter after 20 attempts!", e.getMessage());
         }
-        // Assert execute is never called on XMLRPC Client after connection is closed.
-        verify( mockClient, times(0)).execute(any(String.class), any(Object[].class));
+        verify( mockClient, times(40)).execute( "connect",new Object[]{});
 
     }
 }
