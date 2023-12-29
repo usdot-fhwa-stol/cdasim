@@ -39,8 +39,8 @@ RUN wget -qO- "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_$CA
 
 COPY . .
 RUN ./install_carma_scenario_runner --prefix /app $CARLA_VERSION
-
 WORKDIR /app/scenario_runner
+RUN wget https://raw.githubusercontent.com/usdot-fhwa-stol/carma-carla-integration/develop/carma-carla-integration/carla-health-poll/src/wait_for_carla.py
 ENV PYTHONPATH "/app/carla/agents:/app/carla:/app/carla/dist/carla-$CARLA_VERSION-py3.7-linux-x86_64.egg"
 
 ENTRYPOINT ["python3", "scenario_runner.py"]
