@@ -53,6 +53,7 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for Infrastructure
@@ -290,7 +291,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         }
         log.info("Infrastructure message ambassador processing timestep to {}.", time);
         try {
-
             // Handle any new infrastructure registration requests
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
                     .getReceivedMessages();
@@ -311,7 +311,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
                     for (Detector sensor : reg.getSensors()) {
                         // Trigger Sensor registrations for all listed sensors.
-                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor));
+                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
                     }
                 } 
                 else {
@@ -334,13 +334,9 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             }
 
             timeSyncSeq += 1;
-            InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
-            timeSyncMessage.setSeq(timeSyncSeq);
             // nanoseconds to milliseconds for InfrastructureTimeMessage
-            timeSyncMessage.setTimestep(currentSimulationTime/1000000);
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime/1000000, timeSyncSeq);
             infrastructureInstanceManager.onTimeStepUpdate(timeSyncMessage);
-
-            // TODO: Handle any queued V2X message receiver's received messages
 
             // Advance the simulation time
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;

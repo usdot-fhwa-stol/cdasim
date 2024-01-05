@@ -15,6 +15,8 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
@@ -47,6 +49,8 @@ import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import javax.xml.bind.DatatypeConverter;
+
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -75,6 +79,8 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
     private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
+    private int timeSyncSeq = 0;
+
 
     /**
      * Create a new {@link CarmaMessageAmbassador} object.
@@ -173,7 +179,10 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             }
 
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
-
+            timeSyncSeq += 1;
+            // Timestep in nano seconds
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime, timeSyncSeq);
+            carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
@@ -181,7 +190,11 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         } catch (UnknownHostException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
+        } catch (IOException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
         }
+         
     }
 
     /**

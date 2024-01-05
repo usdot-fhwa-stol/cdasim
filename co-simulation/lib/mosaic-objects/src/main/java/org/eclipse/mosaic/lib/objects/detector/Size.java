@@ -93,4 +93,9 @@ public class Size implements Serializable {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "Size [length=" + length + ", height=" + height + ", width=" + width + "]";
+    }
+
 }

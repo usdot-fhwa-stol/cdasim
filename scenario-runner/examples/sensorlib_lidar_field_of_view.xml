@@ -17,10 +17,9 @@ limitations under the License.
 -->
 
 <scenarios>
-    <scenario name="MyScenario_1" type="MyScenario" town="Town04">
-        <ego_vehicle x="203.44" y="-230.0" z="2" yaw="-90.0" model="vehicle.audi.a2" rolename="carma"/>
+    <scenario name="SensorlibLidarFieldOfView_1" type="SensorlibLidarFieldOfView" town="Town04">
+        <ego_vehicle x="203.44" y="-230.0" z="2" yaw="-90.0" model="vehicle.audi.a2" rolename="ego_vehicle"/>
 
-        <other_actor x="212.68" y="-242.44" z="2" model="vehicle.diamondback.century" rolename="cyclist"/>
         <other_actor x="214.79" y="-245.61" z="2" model="vehicle.carlamotors.carlacola" rolename="heavy_truck"/>
         <other_actor x="216.58" y="-248.69" z="2" model="walker.pedestrian.0001" rolename="in_road_person"/>
         <other_actor x="195.59" y="-254.18" z="2" yaw="90.0" model="walker.pedestrian.0002" rolename="crossing_person"/>

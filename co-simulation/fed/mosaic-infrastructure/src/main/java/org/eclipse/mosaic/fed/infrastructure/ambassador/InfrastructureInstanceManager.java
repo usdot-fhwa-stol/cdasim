@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 /**
  * Session management class for Infrastructure instances communicating with
@@ -186,6 +187,7 @@ public class InfrastructureInstanceManager {
                     instance.sendDetection(detection);
                     // Assuming each sensor would only ever be registered to a single infrastructure
                     // instance
+                    log.trace("Received detected object: {}", detection);
                     break;
                 } catch (IOException e) {
                     log.error("Error occured:  {}", e.getMessage());
@@ -204,7 +206,7 @@ public class InfrastructureInstanceManager {
      *                from the ambassador side
      * @throws IOException
      */
-    public void onTimeStepUpdate(InfrastructureTimeMessage message) throws IOException {
+    public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
         if (managedInstances.size() == 0) {
             log.debug("There are no registered instances");
         }

@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -39,6 +38,9 @@ import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
+
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 
 
 public class InfrastructureInstanceManagerTest {
@@ -108,10 +110,7 @@ public class InfrastructureInstanceManagerTest {
 
     @Test
     public void testOnTimeStepUpdate() throws IOException {
-        InfrastructureTimeMessage message = new InfrastructureTimeMessage();
-    
-        message.setSeq(3);
-        message.setTimestep(300);
+        TimeSyncMessage message = new TimeSyncMessage(300, 3);
         manager.onTimeStepUpdate(message);
         // Verify that all instances sendTimeSyncMsgs was called.
         verify(instance1).sendTimeSyncMsg(message);
@@ -128,12 +127,13 @@ public class InfrastructureInstanceManagerTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                100,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+                new Size(3, 4, 5),
+                100);
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject1.setPositionCovariance(covarianceMatrix);
         detectedObject1.setVelocityCovariance(covarianceMatrix);
         detectedObject1.setAngularVelocityCovariance(covarianceMatrix);
@@ -148,11 +148,12 @@ public class InfrastructureInstanceManagerTest {
                 0.5,
                 "sensor6",
                 "projection String",
-                "Object1",
+                101,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
+                new Size(3, 4, 5),
+                100);
         detectedObject2.setPositionCovariance(covarianceMatrix);
         detectedObject2.setVelocityCovariance(covarianceMatrix);
         detectedObject2.setAngularVelocityCovariance(covarianceMatrix);

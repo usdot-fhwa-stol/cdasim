@@ -23,12 +23,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
-
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -42,7 +42,9 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.reflection.FieldSetter;
 
-import com.google.gson.Gson;
+
+
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class InfrastructureInstanceTest {
     /**
@@ -154,9 +156,7 @@ public class InfrastructureInstanceTest {
     @Test
     public void testSendTimeSyncMsg() throws IOException {
         // Test SendTimeSyncMsg method
-        InfrastructureTimeMessage test_msg = new InfrastructureTimeMessage();
-        test_msg.setSeq(1);
-        test_msg.setTimestep(100);
+        TimeSyncMessage test_msg = new TimeSyncMessage(100, 1);
         instance.sendTimeSyncMsg(test_msg);
 
 
@@ -182,12 +182,13 @@ public class InfrastructureInstanceTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                100,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(0, 0, 0),
                 new Vector3d(),
-                new Size(0, 0, 0));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+                new Size(0, 0, 0),
+                100);
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         test_msg.setPositionCovariance(covarianceMatrix);
         test_msg.setVelocityCovariance(covarianceMatrix);
         test_msg.setAngularVelocityCovariance(covarianceMatrix);

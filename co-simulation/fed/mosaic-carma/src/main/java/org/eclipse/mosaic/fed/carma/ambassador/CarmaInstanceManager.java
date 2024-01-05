@@ -17,6 +17,8 @@
 package org.eclipse.mosaic.fed.carma.ambassador;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
@@ -28,6 +30,8 @@ import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -56,7 +60,8 @@ public class CarmaInstanceManager {
                     registration.getCarmaVehicleId(),
                     registration.getCarlaVehicleRole(),
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
-                    registration.getRxMessagePort()
+                    registration.getRxMessagePort(),
+                    registration.getRxTimeSyncPort()
                 );
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e);
@@ -67,41 +72,38 @@ public class CarmaInstanceManager {
         }
     }
     /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
-     * @param sourceAddr The V2X Message received
-     * @param txMsg The Host ID of the vehicle receiving the data
-     * @param time The timestamp at which the interaction occurs
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     * Method to be invoked when CARMA Ambassador receives a V2X message from CARMA Platform. Creates
+     * V2xMessageTransmission interaction to be sent on the MOSIAC RTI.
+     * @param sourceAddr the ip address of the CARMA Platform instance that sent the message.
+     * @param txMsg The V2X Message received.
+     * @param time The timestamp at which the interaction occurs.
+     * @throws IllegalStateException if sourceAddr does not match any address in the managed instances.
      */
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         CarmaInstance sender = null;
+        // Find the CarmaInstance with sourceAddr.
         for (CarmaInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {
                 sender = ci;
                 break;
             }
-            log.info("Instance {} with target address {} can not match with source address {}", ci.getCarlaRoleName(), ci.getTargetAddress(), sourceAddr.toString());
         }
-
+        // Unregistered instance attempting to send messages
         if (sender == null) {
-            // Unregistered instance attempting to send messages
             throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
         }
-
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
                 sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
-
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
-
-        log.info("Preparing to generate V2XMessageTransmission interaction for transmission on MOSAIC event bus...");
-        log.info("sim time: " + time);
-        log.info("sender id: " + sender.getCarlaRoleName());
-        log.info("location: " + sender.getLocation().toString());
-        log.info("txMsg non-null? " + (txMsg != null));
-        log.info("payload: " + txMsg.getPayload());
-        return new V2xMessageTransmission((long) time, new ExternalV2xMessage(routing,
-                new ExternalV2xContent((long) time, sender.getLocation(), txMsg.getPayload())));
+        log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, payload: {}", 
+                time, 
+                sender.getCarmaVehicleId(),
+                sender.getLocation(),
+                txMsg.getPayload()
+            );
+        return new V2xMessageTransmission( time, new ExternalV2xMessage(routing,
+                new ExternalV2xContent( time, sender.getLocation(), txMsg.getPayload())));
     }
 
     /**
@@ -130,21 +132,49 @@ public class CarmaInstanceManager {
 
         CarmaInstance carma = managedInstances.get(rxVehicleId);
         try {
-            carma.sendMsgs(rxMsg);
+            carma.sendV2xMsgs(rxMsg);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
+     * This function is used to send out encoded timestep update to all registered
+     * instances the manager has on the managed instances map
+     * 
+     * @param message This time message is used to store current seq and timestep
+     *                from the ambassador side
+     * @throws IOException
+     */
+    public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
+        if (managedInstances.size() == 0) {
+            log.debug("There are no registered instances");
+        }
+        else {
+            Gson gson = new Gson();
+            byte[] bytes = gson.toJson(message).getBytes();
+            for (CarmaInstance currentInstance : managedInstances.values()) {
+                log.debug("Sending CARMA Platform instance {} at {}:{} time sync message for time {}!" ,
+                    currentInstance.getCarmaVehicleId(), 
+                    currentInstance.getTargetAddress(), 
+                    currentInstance.getTimeSyncPort(), 
+                    message.getTimestep());
+                currentInstance.sendTimeSyncMsg(bytes);
+            }
+        }
+    }
+
+
+    /**
      * Helper function to configure a new CARMA Platform instance object upon registration
      * @param carmaVehId The CARMA Platform vehicle ID (e.g. it's license plate number)
      * @param carlaRoleName The Role Name associated with the CARMA Platform's ego vehicle in CARLA
      * @param targetAddress The IP address to which received simulated V2X messages should be sent
-     * @param targetPort The port to which received simulated V2X messages should be sent
+     * @param v2xPort The port to which received simulated V2X messages should be sent
+     * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int targetPort) {
-        CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, targetPort);
+    private void newCarmaInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort) {
+        CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, v2xPort, timeSyncPort);
         try {
             tmp.bind();
             log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", carlaRoleName);

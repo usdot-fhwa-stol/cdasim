@@ -17,9 +17,9 @@ package org.eclipse.mosaic.lib.objects.detector;
 
 import java.io.Serializable;
 import java.util.Arrays;
-
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
+
 
 public final class DetectedObject implements Serializable {
 
@@ -33,21 +33,23 @@ public final class DetectedObject implements Serializable {
 
     private String projString;
 
-    private String objectId;
+    private int objectId;
 
     private CartesianPoint position;
 
-    private Double[] positionCovariance = new Double[9];
+    private Double[][] positionCovariance = new Double[3][3];
 
     private Vector3d velocity;
 
-    private Double[] velocityCovariance = new Double[9];
+    private Double[][] velocityCovariance = new Double[3][3];
 
     private Vector3d angularVelocity;
 
-    private Double[] angularVelocityCovariance = new Double[9];
+    private Double[][] angularVelocityCovariance = new Double[3][3];
 
     private Size size;
+
+    private int timestamp;
     /**
      * Constructor for Detected Object information.
      * 
@@ -56,7 +58,7 @@ public final class DetectedObject implements Serializable {
      * @param sensorId          of sensor/detector reporting object detection
      * @param projString        containing information about reference frame in 
      *                          which kinematic information is reported.
-     * @param objectId          unique string ID of detected object (only guaranteed 
+     * @param objectId          unique int ID of detected object (only guaranteed 
      *                          unique among other detected objects reported by the 
      *                          same sensor).
      * @param position          position of detected object relative to sensor/detector
@@ -65,8 +67,8 @@ public final class DetectedObject implements Serializable {
      * @param angularVelocity   angular velocity of detected object in sensor/detector frame.
      * @param size              size of object including height,width and length.
      */
-    public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, String objectId,
-            CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size) {
+    public DetectedObject(DetectionType type, double confidence, String sensorId, String projString, int objectId,
+            CartesianPoint position, Vector3d velocity, Vector3d angularVelocity, Size size, int timestamp) {
         this.type = type;
         this.confidence = confidence;
         this.sensorId = sensorId;
@@ -76,6 +78,7 @@ public final class DetectedObject implements Serializable {
         this.velocity = velocity;
         this.angularVelocity = angularVelocity;
         this.size = size;
+        this.timestamp = timestamp;
     }
 
     /**
@@ -96,56 +99,15 @@ public final class DetectedObject implements Serializable {
         return projString;
     }
 
-    /**
-     * Getter for 3x3 covariance associated with position represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @return
-     */
-    public Double[] getPositionCovariance() {
-        return positionCovariance;
-    }
-
-    /**
-     * Setter for 3x3 covariance associated with position represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @param positionCovariance
-     */
-    public void setPositionCovariance(Double[] positionCovariance) {
+    public void setPositionCovariance(Double[][] positionCovariance) {
         this.positionCovariance = positionCovariance;
     }
 
-    /**
-     * Getter for 3x3 covariance associated with velocity represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @return
-     */
-    public Double[] getVelocityCovariance() {
-        return velocityCovariance;
-    }
-
-    /**
-     * Setter for 3x3 covariance associated with velocity represented as
-     * a 9 element vector for JSON serialization/deserialization.
-     * @param positionCovariance
-     */
-    public void setVelocityCovariance(Double[] velocityCovariance) {
+    public void setVelocityCovariance(Double[][] velocityCovariance) {
         this.velocityCovariance = velocityCovariance;
     }
-    /**
-     * Getter for 3x3 covariance associated with angular velocity represented 
-     * as a 9 element vector for JSON serialization/deserialization.
-     * @return
-     */
-    public Double[] getAngularVelocityCovariance() {
-        return angularVelocityCovariance;
-    }
 
-    /**
-     * Setter for 3x3 covariance associated with angular velocity represented 
-     * as a 9 element vector for JSON serialization/deserialization.
-     * @param positionCovariance
-     */
-    public void setAngularVelocityCovariance(Double[] angularVelocityCovariance) {
+    public void setAngularVelocityCovariance(Double[][] angularVelocityCovariance) {
         this.angularVelocityCovariance = angularVelocityCovariance;
     }
 
@@ -169,7 +131,7 @@ public final class DetectedObject implements Serializable {
      * Getter for String object ID.
      * @return
      */
-    public String getObjectId() {
+    public int getObjectId() {
         return objectId;
     }
 
@@ -179,6 +141,18 @@ public final class DetectedObject implements Serializable {
      */
     public CartesianPoint getPosition() {
         return position;
+    }
+
+    public Double[][] getPositionCovariance() {
+        return positionCovariance;
+    }
+
+    public Double[][] getVelocityCovariance() {
+        return velocityCovariance;
+    }
+
+    public Double[][] getAngularVelocityCovariance() {
+        return angularVelocityCovariance;
     }
 
     /**
@@ -239,10 +213,10 @@ public final class DetectedObject implements Serializable {
     }
 
     /**
-     * Setter for detected object unique string ID.
+     * Setter for detected object unique int ID.
      * @param objectId
      */
-    public void setObjectId(String objectId) {
+    public void setObjectId(int objectId) {
         this.objectId = objectId;
     }
 
@@ -277,6 +251,14 @@ public final class DetectedObject implements Serializable {
         this.size = size;
     }
 
+    public int getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(int timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -287,14 +269,15 @@ public final class DetectedObject implements Serializable {
         result = prime * result + (int) (temp ^ (temp >>> 32));
         result = prime * result + ((sensorId == null) ? 0 : sensorId.hashCode());
         result = prime * result + ((projString == null) ? 0 : projString.hashCode());
-        result = prime * result + ((objectId == null) ? 0 : objectId.hashCode());
+        result = prime * result + objectId;
         result = prime * result + ((position == null) ? 0 : position.hashCode());
-        result = prime * result + Arrays.hashCode(positionCovariance);
+        result = prime * result + Arrays.deepHashCode(positionCovariance);
         result = prime * result + ((velocity == null) ? 0 : velocity.hashCode());
-        result = prime * result + Arrays.hashCode(velocityCovariance);
+        result = prime * result + Arrays.deepHashCode(velocityCovariance);
         result = prime * result + ((angularVelocity == null) ? 0 : angularVelocity.hashCode());
-        result = prime * result + Arrays.hashCode(angularVelocityCovariance);
+        result = prime * result + Arrays.deepHashCode(angularVelocityCovariance);
         result = prime * result + ((size == null) ? 0 : size.hashCode());
+        result = prime * result + timestamp;
         return result;
     }
 
@@ -321,38 +304,46 @@ public final class DetectedObject implements Serializable {
                 return false;
         } else if (!projString.equals(other.projString))
             return false;
-        if (objectId == null) {
-            if (other.objectId != null)
-                return false;
-        } else if (!objectId.equals(other.objectId))
+        if (objectId != other.objectId)
             return false;
         if (position == null) {
             if (other.position != null)
                 return false;
         } else if (!position.equals(other.position))
             return false;
-        if (!Arrays.equals(positionCovariance, other.positionCovariance))
+        if (!Arrays.deepEquals(positionCovariance, other.positionCovariance))
             return false;
         if (velocity == null) {
             if (other.velocity != null)
                 return false;
         } else if (!velocity.equals(other.velocity))
             return false;
-        if (!Arrays.equals(velocityCovariance, other.velocityCovariance))
+        if (!Arrays.deepEquals(velocityCovariance, other.velocityCovariance))
             return false;
         if (angularVelocity == null) {
             if (other.angularVelocity != null)
                 return false;
         } else if (!angularVelocity.equals(other.angularVelocity))
             return false;
-        if (!Arrays.equals(angularVelocityCovariance, other.angularVelocityCovariance))
+        if (!Arrays.deepEquals(angularVelocityCovariance, other.angularVelocityCovariance))
             return false;
         if (size == null) {
             if (other.size != null)
                 return false;
         } else if (!size.equals(other.size))
             return false;
+        if (timestamp != other.timestamp)
+            return false;
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "DetectedObject [type=" + type + ", confidence=" + confidence + ", sensorId=" + sensorId
+                + ", projString=" + projString + ", objectId=" + objectId + ", position=" + position
+                + ", positionCovariance=" + Arrays.deepToString(positionCovariance) + ", velocity=" + velocity
+                + ", velocityCovariance=" + Arrays.deepToString(velocityCovariance) + ", angularVelocity=" + angularVelocity
+                + ", angularVelocityCovariance=" + Arrays.deepToString(angularVelocityCovariance) + ", size=" + size.toString()
+                + ", timestamp=" + timestamp + "]";
+    }
 }

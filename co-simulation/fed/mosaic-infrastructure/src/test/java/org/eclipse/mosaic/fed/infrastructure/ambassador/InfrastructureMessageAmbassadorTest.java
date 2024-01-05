@@ -25,14 +25,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import java.io.File;
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
-import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
@@ -42,14 +40,12 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.junit.GeoProjectionRule;
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.math.Vector3d;
-import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
-import org.eclipse.mosaic.lib.transform.GeoProjection;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
@@ -59,7 +55,6 @@ import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
 import org.eclipse.mosaic.rti.config.CLocalHost;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,7 +63,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.reflection.FieldSetter;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+
 
 /**
  * Tests for {@link InfrastructureMessageAmbassador}.
@@ -191,12 +186,13 @@ public class InfrastructureMessageAmbassadorTest {
                 0.5,
                 "sensor1",
                 "projection String",
-                "Object1",
+                100,
                 CartesianPoint.xyz(1.1, 2, 3.2),
                 new Vector3d(2, 3, 4),
                 new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5));
-        Double[] covarianceMatrix = new Double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+                new Size(3, 4, 5),
+                100);
+        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
         detectedObject.setPositionCovariance(covarianceMatrix);
         detectedObject.setVelocityCovariance(covarianceMatrix);
         detectedObject.setAngularVelocityCovariance(covarianceMatrix);
