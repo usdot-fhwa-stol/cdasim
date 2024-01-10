@@ -1,6 +1,7 @@
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -76,6 +77,20 @@ public class CarlaXmlRpcClientTest {
     public void testConnect() throws XmlRpcException {
         carlaConnection.connect(2);
         verify(mockClient, times(1)).execute( eq("connect"), any(Object[].class));
+    }
+
+    @Test
+    public void testConnectRetry() {
+        try {
+            when(mockClient.execute(eq("connect"), any(Object[].class))).thenThrow(new XmlRpcException(""));
+            carlaConnection.connect(10);
+            verify(mockClient, times(10)).execute( eq("connect"), any(Object[].class));
+        }
+        catch (Exception e) {
+            String message = e.getMessage();
+            assertTrue(message.startsWith("Failed to connect to XML RPC Server with config"));
+            assertEquals(XmlRpcException.class,e.getClass());
+        }
     }
 
     /**
