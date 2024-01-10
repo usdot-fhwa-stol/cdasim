@@ -234,6 +234,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim "
                 + "Adapter connection! Check carla_config.json!", e);
         }
+        catch (InterruptedException e) {
+            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim "
+                + "Adapter connection! Check carla_config.json!", e);
+        }
         
     }
 

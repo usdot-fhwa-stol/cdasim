@@ -54,9 +54,10 @@ public class CarlaXmlRpcClient{
     }
 
 
-    public void connect(int retryAttempts) throws XmlRpcException{
+    public void connect(int retryAttempts) throws XmlRpcException, InterruptedException{
         boolean connected = false;
-        while( !connected && retryAttempts > 0 ) {
+        int currentAttempt = 1;
+        while( !connected && retryAttempts >= currentAttempt ) {
             try {
                 log.info("Attempting to connect to CARLA CDA Sim Adapter ... ");
                 Object[] params = new Object[]{};
@@ -64,8 +65,10 @@ public class CarlaXmlRpcClient{
                 connected = true;
             }
             catch(XmlRpcException e) {
-                log.error("Connection attempt {} to connect to CARLA CDA Sim Adapter failed : {}", retryAttempts, e);
-                retryAttempts--;
+                log.error("Connection attempt {} to connect to CARLA CDA Sim Adapter failed!", currentAttempt, e);
+                // Sleep for 1 second betweeen attempts
+                Thread.sleep(1000);
+                currentAttempt++;
             }
         } 
         if (!connected) {
