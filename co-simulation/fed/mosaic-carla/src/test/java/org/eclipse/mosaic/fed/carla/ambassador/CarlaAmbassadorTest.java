@@ -183,7 +183,6 @@ public class CarlaAmbassadorTest {
 
         verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
         verify(rtiMock, times(0)).triggerInteraction(any(DetectedObjectInteraction.class));
-        verify(carlaXmlRpcClientMock, times(1)).closeConnection();
 
     }
 
@@ -207,7 +206,6 @@ public class CarlaAmbassadorTest {
         ambassador.processInteraction(registration);
 
         verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
-        verify(carlaXmlRpcClientMock, times(1)).closeConnection();
 
 
     }

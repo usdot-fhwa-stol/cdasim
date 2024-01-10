@@ -52,6 +52,11 @@ public class CarlaConfiguration implements Serializable {
      * URL where CARLACDASimAdapter XMLRPC Server is hosted
      */
     public String carlaCDASimAdapterUrl;
+    /**
+     * Number of times Ambassador will retry failing XMLRPC Server connection.
+     */
+    public int carlaCDASimAdapterConnectionRetryAttempts;
+
 
 
 }

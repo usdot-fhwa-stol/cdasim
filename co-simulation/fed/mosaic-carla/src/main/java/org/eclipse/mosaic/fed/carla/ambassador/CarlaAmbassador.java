@@ -221,6 +221,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
             }
             carlaXmlRpcClient.initialize();
+            boolean connected = carlaXmlRpcClient.connect(carlaConfig.carlaCDASimAdapterConnectionRetryAttempts);
+            if (!connected) {
+                throw new InternalFederateException("Failed to connect to CARLA CDA Sim Adapter with CARLA Ambassador configuration : " + carlaConfig + "!");
+            }
         }
         catch (MalformedURLException m) 
         {
@@ -381,7 +385,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         catch (XmlRpcException e) {
             log.error("Failed to connect to CARLA Adapter : ", e);
-            carlaXmlRpcClient.closeConnection();
         }
     }
 
@@ -533,7 +536,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         catch(XmlRpcException e) {
             log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
-            carlaXmlRpcClient.closeConnection();
         }
 
     }

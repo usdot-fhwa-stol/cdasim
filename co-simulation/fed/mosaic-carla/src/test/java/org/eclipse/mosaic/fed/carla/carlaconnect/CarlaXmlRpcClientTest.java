@@ -209,8 +209,7 @@ public class CarlaXmlRpcClientTest {
         // Tell mock to return sensor ID when following method is called with following parameters
         when( mockClient.execute( anyString(), any(Object[].class))).thenThrow(new XmlRpcException(""));
         // Tell mock to return sensor ID when following method is called with following parameters
-        carlaConnection.closeConnection();
-        assertEquals(false, carlaConnection.isConnected() );
+        assertEquals(false, carlaConnection.connect(10) );
         try {
             carlaConnection.createSensor(registration);
         }

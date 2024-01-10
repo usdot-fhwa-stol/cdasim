@@ -35,7 +35,6 @@ import com.google.gson.Gson;
  */
 public class CarlaXmlRpcClient{
 
-    private boolean connected;
     private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     private static final String CONNECT ="connect";
@@ -65,8 +64,8 @@ public class CarlaXmlRpcClient{
         client.setConfig(config);
     }
 
-    public void connect() throws XmlRpcException {
-        int retryAttempts = 20;
+    public boolean connect(int retryAttempts) {
+        boolean connected = false;
         while( !connected && retryAttempts > 0 ) {
             try {
                 log.info("Attempting to connect to CARLA CDA Sim Adapter ... ");
@@ -78,11 +77,8 @@ public class CarlaXmlRpcClient{
                 log.error("Connection attempt {} to connect to CARLA CDA Sim Adapter failed : {}", retryAttempts, e);
                 retryAttempts--;
             }
-        }
-        if (!connected) {
-            throw new XmlRpcException("XMLRpcClient is not connected to CARLA CDA Sim Adapter after 20 attempts!");
-        }
-       
+        } 
+        return connected; 
     }
     /**
      * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.
@@ -90,9 +86,6 @@ public class CarlaXmlRpcClient{
      * @throws XmlRpcException if XMLRPC call fails or connection is lost.
      */
     public void createSensor(DetectorRegistration registration) throws XmlRpcException{
-        if (!connected) {
-           connect();  
-        }
         List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
         List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
         Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
@@ -108,9 +101,6 @@ public class CarlaXmlRpcClient{
      * @throws XmlRpcException if XMLRPC call fails or connection is lost.
      */
     public DetectedObject[] getDetectedObjects(String infrastructureId ,String sensorId) throws XmlRpcException{
-        if (!connected) {
-           connect();  
-        }
         Object[] params = new Object[]{infrastructureId, sensorId};
         Object result = client.execute(GET_DETECTED_OBJECTS, params);
         log.debug("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
@@ -118,17 +108,5 @@ public class CarlaXmlRpcClient{
         Gson gson = new Gson();
         return gson.fromJson(jsonResult,DetectedObject[].class);
        
-    }
-    /**
-     * Method to set isConnected field to false. Does not actually close the underlying http connection session but
-     * is used to avoid repeated timeouts/exceptions on misconfiguration of XMLRPC client.
-     */
-    public void closeConnection() {
-        log.warn("Closing XML RPC Client connection in CARLA Ambassador!");
-        connected = false;
-    }
-
-    public boolean isConnected() {
-        return connected;
     }
 }
