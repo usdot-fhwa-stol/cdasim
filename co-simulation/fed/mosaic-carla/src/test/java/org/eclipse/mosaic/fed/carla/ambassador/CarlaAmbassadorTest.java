@@ -115,7 +115,7 @@ public class CarlaAmbassadorTest {
         ambassador.initialize(0, 100 * TIME.SECOND);
         // ASSERT
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
-        verify(carlaXmlRpcClientMock, times(1)).initialize();
+        verify(carlaXmlRpcClientMock, times(1)).connect(60);
     }
 
     @Test

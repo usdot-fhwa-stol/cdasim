@@ -40,21 +40,10 @@ public class CarlaXmlRpcClient{
     private static final String CONNECT ="connect";
 
     private XmlRpcClient client;
-    private URL xmlRpcServerUrl;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
 
     public CarlaXmlRpcClient(URL xmlRpcServerUrl) {
-        this.xmlRpcServerUrl = xmlRpcServerUrl;
-    }
-
-
-    /**
-     * Initialize XmlRpcClient.
-     * @param xmlRpcServerUrl
-     */
-    public void initialize()
-    {
         XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();   
         config.setServerURL(xmlRpcServerUrl);
         // Set reply and connection timeout (both in ms)
@@ -64,7 +53,8 @@ public class CarlaXmlRpcClient{
         client.setConfig(config);
     }
 
-    public boolean connect(int retryAttempts) {
+
+    public void connect(int retryAttempts) throws XmlRpcException{
         boolean connected = false;
         while( !connected && retryAttempts > 0 ) {
             try {
@@ -78,7 +68,10 @@ public class CarlaXmlRpcClient{
                 retryAttempts--;
             }
         } 
-        return connected; 
+        if (!connected) {
+            throw new XmlRpcException("Failed to connect to XML RPC Server with config " + client.getConfig() + " !");
+        }
+        log.info("Connected successfully to CARLA CDA Sim Adapter!");    
     }
     /**
      * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.

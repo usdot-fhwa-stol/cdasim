@@ -213,6 +213,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.error("Error during advanceTime request", e);
             throw new InternalFederateException(e);
         }
+        // Start the CARLA simulator
+        startCarlaLocal();
         //initialize CarlaXmlRpcClient
         //set the connected server URL
         try{
@@ -220,19 +222,19 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
                 carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
             }
-            carlaXmlRpcClient.initialize();
-            boolean connected = carlaXmlRpcClient.connect(carlaConfig.carlaCDASimAdapterConnectionRetryAttempts);
-            if (!connected) {
-                throw new InternalFederateException("Failed to connect to CARLA CDA Sim Adapter with CARLA Ambassador configuration : " + carlaConfig + "!");
-            }
+            carlaXmlRpcClient.connect(60);
+            
         }
         catch (MalformedURLException m) 
         {
-            log.error("Errors occurred with {}", m.getMessage());
+            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
+                + "connection! Check carla_config.json!", m);
         }
-        // Start the CARLA simulator
-        startCarlaLocal();
-
+        catch (XmlRpcException e ) {
+            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim "
+                + "Adapter connection! Check carla_config.json!", e);
+        }
+        
     }
 
     /**
