@@ -74,7 +74,7 @@ public class CarlaXmlRpcClientTest {
         verify( mockClient, times(1)).execute("create_simulated_semantic_lidar_sensor", params);
     }
     @Test
-    public void testConnect() throws XmlRpcException {
+    public void testConnect() throws XmlRpcException, InterruptedException{
         carlaConnection.connect(2);
         verify(mockClient, times(1)).execute( eq("connect"), any(Object[].class));
     }
