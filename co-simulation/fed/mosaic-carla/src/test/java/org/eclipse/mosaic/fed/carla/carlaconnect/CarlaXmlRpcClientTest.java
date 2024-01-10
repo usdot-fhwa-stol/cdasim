@@ -72,6 +72,11 @@ public class CarlaXmlRpcClientTest {
         // Verify following method was called on mock
         verify( mockClient, times(1)).execute("create_simulated_semantic_lidar_sensor", params);
     }
+    @Test
+    public void testConnect() throws XmlRpcException {
+        carlaConnection.connect(2);
+        verify(mockClient, times(1)).execute( eq("connect"), any(Object[].class));
+    }
 
     /**
      * Test GetDectedObjects
