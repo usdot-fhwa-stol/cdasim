@@ -50,7 +50,7 @@ RUN adduser $SUMO_USER sudo --disabled-password
 COPY --chown=carma:carma . /home/carma/src
 USER carma
 WORKDIR /home/carma/src
-COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
+COPY --chown=carma:carma scripts/env.sh /home/carma/.base-image/
 RUN scripts/install_dependencies.sh
 RUN scripts/build.sh
 

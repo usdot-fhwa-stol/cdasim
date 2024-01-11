@@ -115,4 +115,7 @@ set -x
 ./ns3_installer.sh -q
 sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
 
+# Adding configuration file to fix error output from CARLA (https://github.com/carla-simulator/carla/issues/2820)
+set +H
+echo $'pcm.!default {\n  type plug\n  slave.pcm \"null\"\n}' | sudo tee /etc/asound.conf
 echo "Build complete!!!"
