@@ -13,7 +13,6 @@
 #  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #  License for the specific language governing permissions and limitations under
 #  the License.
-
 set -e
 
 # Build co-simulation tool
@@ -31,11 +30,12 @@ cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
 cd /home/carma/src/co-simulation
 unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
 
-# Install NS-3
+# Install NS-3 (has to currently be installed during build step since it's src is included in build zip file)
 cd "/opt/carma-simulation/bin/fed/ns3/"
 chmod +x ns3_installer.sh
 set -x
 ./ns3_installer.sh -q
+
 sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
 
 echo "Build complete!!!"

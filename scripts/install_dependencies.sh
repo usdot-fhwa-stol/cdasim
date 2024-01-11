@@ -88,9 +88,8 @@ tar xzvf "$CARLA_TAR" -C /opt/carla
 
 # Installation of Co-Simulation Tool
 wget "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
-sudo mkdir -p /opt/maven
-sudo chown -R carma:carma /opt/maven
-tar xzvf apache-maven-3.8.3-bin.tar.gz -C /opt/maven
-export PATH=/opt/maven/apache-maven-3.8.3/bin/:$PATH
+sudo mkdir -p /usr/share/maven
+sudo chown -R carma:carma /usr/share/maven
+tar xzvf apache-maven-3.8.3-bin.tar.gz -C /usr/share/maven
 
 echo "Install Dependencies Complete!!!"
