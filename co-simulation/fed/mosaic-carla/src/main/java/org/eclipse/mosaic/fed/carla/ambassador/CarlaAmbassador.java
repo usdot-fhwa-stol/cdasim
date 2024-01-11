@@ -380,16 +380,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                 this.rti.triggerInteraction(detectionInteraction);
             }
-        } catch (IllegalValueException e) {
-            log.error("Error during advanceTime(" + time + ")", e);
+        } 
+        catch (IllegalValueException e) {
+            log.error("Failed to process advance time grant due to : ", e);
         }
         catch (XmlRpcException e ) {
             throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
                         + "Adapter connection! Check carla_config.json!", e);
         }
         catch (InterruptedException e) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
-                        + "Adapter connection! Check carla_config.json!", e);
+            log.error("Failed to process advance time grant due to failed thread sleep!", e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -419,6 +420,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 connectionProcess.waitFor(10, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 log.warn("Something went wrong when stopping a process", e);
+                Thread.currentThread().interrupt();
             } finally {
                 connectionProcess.destroy();
             }

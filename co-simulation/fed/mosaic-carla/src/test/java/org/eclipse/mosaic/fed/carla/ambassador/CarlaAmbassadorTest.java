@@ -213,8 +213,6 @@ public class CarlaAmbassadorTest {
         ambassador.processInteraction(registration);
 
         verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
-
-
     }
 
 
