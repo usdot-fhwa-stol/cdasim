@@ -74,5 +74,8 @@ wget -q "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-mav
 sudo mkdir -p /usr/share/maven
 sudo chown -R carma:carma /usr/share/maven
 tar xzvf apache-maven-3.8.3-bin.tar.gz -C /usr/share/maven
+# Adding configuration file to fix error output from CARLA (https://github.com/carla-simulator/carla/issues/2820)
+set +H
+echo $'pcm.!default {\n  type plug\n  slave.pcm \"null\"\n}' | sudo tee /etc/asound.conf
 
 echo "Install Dependencies Complete!!!"
