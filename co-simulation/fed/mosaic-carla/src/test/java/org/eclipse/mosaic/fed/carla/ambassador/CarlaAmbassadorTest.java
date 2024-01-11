@@ -182,7 +182,7 @@ public class CarlaAmbassadorTest {
         when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenThrow(XmlRpcException.class);
         // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions are trigger and exception is caught
         try {
-            ambassador.processTimeAdvanceGrant(100);
+            ambassador.processTimeAdvanceGrant(0);
         }catch (Exception e) {
             assertEquals(InternalFederateException.class, e.getClass());
             assertEquals(XmlRpcException.class, e.getCause().getClass());
