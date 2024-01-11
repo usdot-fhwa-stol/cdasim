@@ -35,7 +35,6 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   wget vim nano xterm libprotobuf-dev git
 sudo rm -rf /var/lib/apt/lists/*
 
-#update-alternatives --set python /usr/bin/python3.7
 sudo apt-get clean
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
