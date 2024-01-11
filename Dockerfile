@@ -46,12 +46,12 @@ RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password
+RUN scripts/install_dependencies.sh
 
 COPY --chown=carma:carma . /home/carma/src
 USER carma
 WORKDIR /home/carma/src
 COPY --chown=carma:carma scripts/env.sh /home/carma/.base-image/
-RUN scripts/install_dependencies.sh
 RUN scripts/build.sh
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
