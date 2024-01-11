@@ -14,7 +14,7 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 set -e
-
+source /home/carma/.base-image/env.sh
 # Build co-simulation tool
 cd /home/carma/src/co-simulation
 mvn clean install -DskipTests
