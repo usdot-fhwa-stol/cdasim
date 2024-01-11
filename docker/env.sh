@@ -2,7 +2,7 @@
 # Set environment variables here.
 
 export NS3_HOME="/opt/carma-simulation/bin/fed/ns3"
-export JAVA_HOME="/usr/lib/jvm/java-11-jdk-amd64"
+export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 export SUMO_HOME="/opt/sumo/sumo-1_15_0"
 export CARLA_HOME="/opt/carla"
 export CARMA_SIMULATION_HOME="/opt/carma-simulation"
