@@ -3,7 +3,5 @@
     "carlaUE4Path": "D:/CARLA_0.9.10/",
     "bridgePath": "./scenarios/Town04_10/carla; bridge.bat",
     "carlaConnectionPort": 8913,
-    "carlaCDASimAdapterUrl":"http://127.0.0.1:8090/RPC2",
-    "carlaCDASimAdapterConnectionRetryAttempts": 20
-
+    "carlaCDASimAdapterUrl":"http://127.0.0.1:8090/RPC2"
 }
