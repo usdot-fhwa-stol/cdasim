@@ -54,4 +54,5 @@ public class CarlaConfiguration implements Serializable {
     public String carlaCDASimAdapterUrl;
 
 
+
 }

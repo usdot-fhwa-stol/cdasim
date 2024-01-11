@@ -213,6 +213,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.error("Error during advanceTime request", e);
             throw new InternalFederateException(e);
         }
+        // Start the CARLA simulator
+        startCarlaLocal();
         //initialize CarlaXmlRpcClient
         //set the connected server URL
         try{
@@ -220,15 +222,14 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
                 carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
             }
-            carlaXmlRpcClient.initialize();
+            
         }
         catch (MalformedURLException m) 
         {
-            log.error("Errors occurred with {}", m.getMessage());
+            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
+                + "connection! Check carla_config.json!", m);
         }
-        // Start the CARLA simulator
-        startCarlaLocal();
-
+        
     }
 
     /**
@@ -352,7 +353,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-
+            if ( time == 0 ) {
+                // Try to connect to CARLA CDA Sim Adapter on first timestep
+                carlaXmlRpcClient.connect(60);
+            }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
@@ -376,12 +380,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                 this.rti.triggerInteraction(detectionInteraction);
             }
-        } catch (IllegalValueException e) {
-            log.error("Error during advanceTime(" + time + ")", e);
+        } 
+        catch (IllegalValueException e) {
+            log.error("Failed to process advance time grant due to : ", e);
         }
-        catch (XmlRpcException e) {
-            log.error("Failed to connect to CARLA Adapter : ", e);
-            carlaXmlRpcClient.closeConnection();
+        catch (XmlRpcException e ) {
+            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
+                        + "Adapter connection! Check carla_config.json!", e);
+        }
+        catch (InterruptedException e) {
+            log.error("Failed to process advance time grant due to failed thread sleep!", e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -411,6 +420,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 connectionProcess.waitFor(10, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 log.warn("Something went wrong when stopping a process", e);
+                Thread.currentThread().interrupt();
             } finally {
                 connectionProcess.destroy();
             }
@@ -524,6 +534,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     /**
      * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
      * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
+     * @throws InterruptedException
      */
     private void receiveInteraction(DetectorRegistration interaction) {
         try {
@@ -532,7 +543,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         catch(XmlRpcException e) {
             log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
-            carlaXmlRpcClient.closeConnection();
         }
 
     }
