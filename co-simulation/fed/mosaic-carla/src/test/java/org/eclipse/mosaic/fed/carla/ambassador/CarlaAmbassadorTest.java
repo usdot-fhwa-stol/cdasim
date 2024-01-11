@@ -44,6 +44,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.internal.util.reflection.FieldSetter;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -115,7 +116,8 @@ public class CarlaAmbassadorTest {
         ambassador.initialize(0, 100 * TIME.SECOND);
         // ASSERT
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
-        verify(carlaXmlRpcClientMock, times(1)).connect(60);
+        
+
     }
 
     @Test
@@ -179,7 +181,12 @@ public class CarlaAmbassadorTest {
         
         when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenThrow(XmlRpcException.class);
         // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions are trigger and exception is caught
-        ambassador.processTimeAdvanceGrant(100);
+        try {
+            ambassador.processTimeAdvanceGrant(100);
+        }catch (Exception e) {
+            assertEquals(InternalFederateException.class, e.getClass());
+            assertEquals(XmlRpcException.class, e.getCause().getClass());
+        }
 
         verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
         verify(rtiMock, times(0)).triggerInteraction(any(DetectedObjectInteraction.class));

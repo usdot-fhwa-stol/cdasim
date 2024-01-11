@@ -222,21 +222,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
                 carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
             }
-            carlaXmlRpcClient.connect(60);
             
         }
         catch (MalformedURLException m) 
         {
             throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
                 + "connection! Check carla_config.json!", m);
-        }
-        catch (XmlRpcException e ) {
-            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim "
-                + "Adapter connection! Check carla_config.json!", e);
-        }
-        catch (InterruptedException e) {
-            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim "
-                + "Adapter connection! Check carla_config.json!", e);
         }
         
     }
@@ -362,7 +353,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-
+            if ( time == 0 ) {
+                // Try to connect to CARLA CDA Sim Adapter on first timestep
+                carlaXmlRpcClient.connect(60);
+            }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
@@ -389,8 +383,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
         }
-        catch (XmlRpcException e) {
-            log.error("Failed to connect to CARLA Adapter : ", e);
+        catch (XmlRpcException e ) {
+            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
+                        + "Adapter connection! Check carla_config.json!", e);
+        }
+        catch (InterruptedException e) {
+            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
+                        + "Adapter connection! Check carla_config.json!", e);
         }
     }
 
