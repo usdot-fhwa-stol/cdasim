@@ -34,7 +34,6 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
   wget vim nano xterm libprotobuf-dev git
 sudo rm -rf /var/lib/apt/lists/*
-export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
 #update-alternatives --set python /usr/bin/python3.7
 sudo apt-get clean
@@ -42,25 +41,9 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /u
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 sudo update-alternatives --set python /usr/bin/python3.7
 
-cd /home/carma/src
-
-# Install Protobuf - OPTIONAL
-#
-# Pulled in via apt-get instead of compiled
-#
-#wget "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.3.0.tar.gz"
-#tar xvf v3.3.0.tar.gz
-#cd protobuf-3.3.0
-#./autogen.sh
-#./configure --prefix=/usr
-
-#make
-#make check
-#sudo make install
-
 # Install SUMO-1.15.0
 cd /home/carma/src/
-wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_15_0.tar.gz"
+wget -q "https://github.com/eclipse/sumo/archive/refs/tags/v1_15_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
 tar xvf v1_15_0.tar.gz -C /opt/sumo
@@ -79,7 +62,7 @@ CARLA_TAR="CARLA_0.9.10.tar.gz"
 cd /home/carma/src/
 if [[ ! -f "$CARLA_TAR" ]]; then
     echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
-    wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
+    wget "-q https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
 fi
 
 sudo mkdir -p /opt/carla
@@ -87,7 +70,7 @@ sudo chown -R carma:carma /opt/carla
 tar xzvf "$CARLA_TAR" -C /opt/carla
 
 # Installation of Co-Simulation Tool
-wget "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
+wget -q "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
 sudo mkdir -p /usr/share/maven
 sudo chown -R carma:carma /usr/share/maven
 tar xzvf apache-maven-3.8.3-bin.tar.gz -C /usr/share/maven
