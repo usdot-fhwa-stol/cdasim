@@ -46,10 +46,9 @@ RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password
-COPY scripts/ /home/carma/src
-WORKDIR /home/carma/src
+COPY scripts/ /home/carma/src/scripts
 
-RUN scripts/install_dependencies.sh
+RUN /home/carma/src/scripts/install_dependencies.sh
 
 COPY --chown=carma:carma . /home/carma/src
 USER carma
