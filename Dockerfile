@@ -54,7 +54,7 @@ COPY --chown=carma:carma . /home/carma/src
 USER carma
 WORKDIR /home/carma/src
 COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
-RUN scripts/build.sh
+RUN docker/build.sh
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
 CMD [ "mosaic.sh", "-s", "Tiergarten" ]
