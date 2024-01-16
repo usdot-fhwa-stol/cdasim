@@ -7,6 +7,6 @@ export SUMO_HOME="/opt/sumo/sumo-1_15_0"
 export CARLA_HOME="/opt/carla"
 export CARMA_SIMULATION_HOME="/opt/carma-simulation"
 export PATH="/usr/local/share/sumo/bin:/usr/local/share/sumo/tools:$PATH"
-export PATH="/usr/share/maven/apache-maven-3.8.3/bin:$PATH"
+export PATH="/opt/apache-maven-3.8.3/bin:$PATH"
 export PATH="/opt/carma-simulation:$PATH"
 
