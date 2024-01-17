@@ -18,6 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+        # TODO Update pom.xml to use java 17 and sonar-maven-plugin
         run: |
           cd co-simulation
-          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io        
+          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io -Dsonar.scanner.force-deprecated-java-version=true     

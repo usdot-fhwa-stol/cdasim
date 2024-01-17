@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Copyright (C) 2018-2020 LEIDOS.
+#  Copyright (C) 2018-2024 LEIDOS.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy of
@@ -34,33 +34,15 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
   wget vim nano xterm libprotobuf-dev git
 sudo rm -rf /var/lib/apt/lists/*
-export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
-#update-alternatives --set python /usr/bin/python3.7
 sudo apt-get clean
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 sudo update-alternatives --set python /usr/bin/python3.7
 
-cd /home/carma/src
-
-# Install Protobuf - OPTIONAL
-#
-# Pulled in via apt-get instead of compiled
-#
-#wget "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.3.0.tar.gz"
-#tar xvf v3.3.0.tar.gz
-#cd protobuf-3.3.0
-#./autogen.sh
-#./configure --prefix=/usr
-
-#make
-#make check
-#sudo make install
-
 # Install SUMO-1.15.0
 cd /home/carma/src/
-wget "https://github.com/eclipse/sumo/archive/refs/tags/v1_15_0.tar.gz"
+wget -q "https://github.com/eclipse/sumo/archive/refs/tags/v1_15_0.tar.gz"
 sudo mkdir -p /opt/sumo
 sudo chown -R carma:carma /opt/sumo
 tar xvf v1_15_0.tar.gz -C /opt/sumo
@@ -79,40 +61,19 @@ CARLA_TAR="CARLA_0.9.10.tar.gz"
 cd /home/carma/src/
 if [[ ! -f "$CARLA_TAR" ]]; then
     echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
-    wget "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
+    wget -q "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
 fi
 
 sudo mkdir -p /opt/carla
 sudo chown -R carma:carma /opt/carla
 tar xzvf "$CARLA_TAR" -C /opt/carla
+# Adding configuration file to fix error output from CARLA (https://github.com/carla-simulator/carla/issues/2820)
+echo $'pcm.!default {\n  type plug\n  slave.pcm \"null\"\n}' | sudo tee /etc/asound.conf
 
-# Installation of Co-Simulation Tool
-wget "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
-sudo mkdir -p /opt/maven
-sudo chown -R carma:carma /opt/maven
-tar xzvf apache-maven-3.8.3-bin.tar.gz -C /opt/maven
-export PATH=/opt/maven/apache-maven-3.8.3/bin/:$PATH
+# Installation of maven
+wget -q "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
+tar xzvf apache-maven-3.8.3-bin.tar.gz -C /opt/
+sudo chown -R carma:carma /opt/apache-maven-3.8.3/
+rm apache-maven-3.8.3-bin.tar.gz
 
-# Build co-simulation tool
-cd /home/carma/src/co-simulation
-mvn clean install -DskipTests
-cd bundle/target
-sudo mkdir -p /opt/carma-simulation
-sudo chown -R carma:carma /opt/carma-simulation
-unzip carla-sumo-mosaic-22.1-SNAPSHOT.zip -d /opt/carma-simulation
-sudo chmod +x /opt/carma-simulation/mosaic.sh
-sudo mkdir /opt/carma-simulation/scenarios/tmp_scenario
-cp bundle-22.1-SNAPSHOT.jar /opt/carma-simulation
-
-# Deploy scenario files
-cd /home/carma/src/co-simulation
-unzip sample_scenario.zip -d /opt/carma-simulation/scenarios
-
-# Install NS-3
-cd "/opt/carma-simulation/bin/fed/ns3/"
-chmod +x ns3_installer.sh
-set -x
-./ns3_installer.sh -q
-sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
-
-echo "Build complete!!!"
+echo "Install Dependencies Complete!!!"

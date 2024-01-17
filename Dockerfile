@@ -46,12 +46,15 @@ RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN adduser $SUMO_USER sudo --disabled-password
+COPY docker/ /home/carma/src/docker
+
+RUN /home/carma/src/docker/install_dependencies.sh
 
 COPY --chown=carma:carma . /home/carma/src
 USER carma
 WORKDIR /home/carma/src
 COPY --chown=carma:carma docker/env.sh /home/carma/.base-image/
-RUN docker/install.sh
+RUN docker/build.sh
 
 ENTRYPOINT [ "/home/carma/src/docker/entrypoint.sh" ]
 CMD [ "mosaic.sh", "-s", "Tiergarten" ]
