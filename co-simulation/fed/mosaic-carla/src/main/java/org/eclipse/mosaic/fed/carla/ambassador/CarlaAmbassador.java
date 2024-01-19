@@ -94,10 +94,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private int connectionAttempts = 5;
 
-    /**
-     * Maximum amount of attempts to connect to CARLA simulator.
-     */
-     private int executedTimes = 0;
 
     /**
      * Carla simulator client port
@@ -360,8 +356,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
-                nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
-                isSimulationStep = false;
                 List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                 // Get all detections from all currently registered detectors.
                 for (DetectorRegistration registration: registeredDetectors ) {
@@ -374,12 +368,14 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                     this.rti.triggerInteraction(detectionInteraction);
                 }
+                nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
+                isSimulationStep = false;
+                rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
             }
             // TODO: What is this. Why are we request a time advance based on this counter and 
             // what is it counting. It is labeled as counting the times we attempt to connect to 
             // CARLA but it seems to increment every time processTimeAdvanceGrant is called
-            rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
-            this.executedTimes++;
+            
             
         } 
         catch (IllegalValueException e) {
