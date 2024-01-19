@@ -570,7 +570,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
             if (carlaConnection.getDataOutputStream() != null) {
                 carlaConnection.getDataOutputStream().write(interaction.getResult());
-                this.executedTimes = 0;
             }
 
         } catch (Exception e) {
