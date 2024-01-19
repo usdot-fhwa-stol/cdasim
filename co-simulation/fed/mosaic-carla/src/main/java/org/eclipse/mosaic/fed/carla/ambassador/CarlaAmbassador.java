@@ -362,24 +362,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             if (isSimulationStep) {
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
+                List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
+                // Get all detections from all currently registered detectors.
+                for (DetectorRegistration registration: registeredDetectors ) {
+                    DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                    for (DetectedObject detected: detections) {
+                        detectedObjectInteractions.add(new DetectedObjectInteraction(time, detected));
+                    }
+                }
+                // trigger all detection interactions
+                for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                    this.rti.triggerInteraction(detectionInteraction);
+                }
             }
             // TODO: What is this. Why are we request a time advance based on this counter and 
             // what is it counting. It is labeled as counting the times we attempt to connect to 
             // CARLA but it seems to increment every time processTimeAdvanceGrant is called
             rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
             this.executedTimes++;
-            List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
-            // Get all detections from all currently registered detectors.
-            for (DetectorRegistration registration: registeredDetectors ) {
-                DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
-                for (DetectedObject detected: detections) {
-                    detectedObjectInteractions.add(new DetectedObjectInteraction(time, detected));
-                }
-            }
-            // trigger all detection interactions
-            for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
-                this.rti.triggerInteraction(detectionInteraction);
-            }
+            
         } 
         catch (IllegalValueException e) {
             log.error("Failed to process advance time grant due to : ", e);
