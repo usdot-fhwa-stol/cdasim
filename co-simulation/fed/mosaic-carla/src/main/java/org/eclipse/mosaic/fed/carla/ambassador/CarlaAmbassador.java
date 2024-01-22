@@ -355,7 +355,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
-            if (isSimulationStep) {
+=            if (isSimulationStep) {
                 List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                 // Get all detections from all currently registered detectors.
                 for (DetectorRegistration registration: registeredDetectors ) {
@@ -372,10 +372,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 isSimulationStep = false;
                 rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
             }
-            // TODO: What is this. Why are we request a time advance based on this counter and 
-            // what is it counting. It is labeled as counting the times we attempt to connect to 
-            // CARLA but it seems to increment every time processTimeAdvanceGrant is called
-            
             
         } 
         catch (IllegalValueException e) {
