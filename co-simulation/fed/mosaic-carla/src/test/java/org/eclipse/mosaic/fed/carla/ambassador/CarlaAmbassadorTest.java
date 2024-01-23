@@ -163,6 +163,8 @@ public class CarlaAmbassadorTest {
 
         DetectedObject[] detectedObjects = {predictedBus, predictedCar};
         when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenReturn(detectedObjects);
+        // Set is simulation timestep to true 
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("isSimulationStep"), true);
 
         ambassador.processTimeAdvanceGrant(100);
 
@@ -180,6 +182,8 @@ public class CarlaAmbassadorTest {
 
         
         when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenThrow(XmlRpcException.class);
+         // Set is simulation timestep to true 
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("isSimulationStep"), true);
         // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions are trigger and exception is caught
         try {
             ambassador.processTimeAdvanceGrant(0);
