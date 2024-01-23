@@ -355,7 +355,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
-=            if (isSimulationStep) {
+            if (isSimulationStep) {
                 List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                 // Get all detections from all currently registered detectors.
                 for (DetectorRegistration registration: registeredDetectors ) {
