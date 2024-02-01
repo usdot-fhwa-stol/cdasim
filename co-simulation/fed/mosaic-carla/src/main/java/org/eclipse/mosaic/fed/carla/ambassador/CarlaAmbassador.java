@@ -361,7 +361,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 for (DetectorRegistration registration: registeredDetectors ) {
                     DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
                     for (DetectedObject detected: detections) {
-                        detectedObjectInteractions.add(new DetectedObjectInteraction(time, detected));
+                        DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                        // Convert nanosecond timestamp to millisecond timestamp
+                        interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                        detectedObjectInteractions.add(interaction);
                     }
                 }
                 // trigger all detection interactions
