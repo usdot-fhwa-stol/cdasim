@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest  
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 11
+      - name: Set up JDK 11 (Default) and 17 (Sonar)
         uses: actions/setup-java@v3 # The setup-java action provides the functionality for GitHub Actions runners for Downloading and setting up a requested version of Java
         with:
           # Last java version is default and set for JAVA_HOME
           java-version: |
             17
-            8
+            11
           distribution: "temurin"        
       - name: Build and analyze
         env:
@@ -25,7 +25,7 @@ jobs:
         # Run sonar plugin using Java 17
         run: |
           cd co-simulation
-          export JAVA_HOME=$JAVA_HOME_8_X64
+          export JAVA_HOME=$JAVA_HOME_11_X64
           mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report 
           export JAVA_HOME=$JAVA_HOME_17_X64
           mvn sonar:sonar -Dsonar.java.jdkHome=${JAVA_17_X64} -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io 
