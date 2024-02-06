@@ -23,5 +23,7 @@ jobs:
         # TODO Update pom.xml to use java 17 and sonar-maven-plugin
         run: |
           cd co-simulation
-          printenv
-          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dsonar.java.jdkHome=${JAVA_17_X64} -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io   
+          export JAVA_HOME=$JAVA_HOME_8_X64
+          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report 
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          mvn sonar:sonar -Dsonar.java.jdkHome=${JAVA_17_X64} -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io 
