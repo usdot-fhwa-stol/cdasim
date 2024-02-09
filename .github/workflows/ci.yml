@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [develop, master]
+    branches: [develop, master, release/lavida]
 jobs:          
   sonar: # sonar job is to setup and run sonar scan analysis on telematic cloud messaging code
     runs-on: ubuntu-latest  
