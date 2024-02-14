@@ -157,6 +157,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             // simulation time step
             return;
         }
+        log.info("Carma message ambassador processing timestep to {}.", time);
 
         try {
             List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
@@ -164,25 +165,26 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 carmaInstanceManager.onNewRegistration(reg);
                 onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
             }
-
-
+            // Set current simulation time to most recent time update
+            currentSimulationTime = time;
             if (currentSimulationTime == 0) {
                 // For the first timestep, clear the message receive queues.
                 v2xMessageReceiver.getReceivedMessages(); // Automatically empties the queues.
             } else {
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                    V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), time);
+                    V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     rti.triggerInteraction(msgInt);
                 }
             }
-
-            currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
-            timeSyncSeq += 1;
-            // Timestep in nano seconds
+            // Time Syncmessage in nano seconds
             TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime, timeSyncSeq);
             carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);
+            // Increment time 
+            currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
+            timeSyncSeq += 1;
+           
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
