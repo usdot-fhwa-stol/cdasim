@@ -16,43 +16,18 @@
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
 import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
-import org.eclipse.mosaic.lib.objects.detector.Detector;
-import org.eclipse.mosaic.lib.objects.detector.DetectorType;
-import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Test;
 
-public class InfrastructureRegistrationMessageTest {
+public class CarmaCloudRegistrationMessageTest {
     @Test
     public void testGetterSettersConstructor() {
         // Test Constructor
-        ArrayList<Detector> sensors = new ArrayList<>();
-        sensors.add(
-            new Detector(
-                "String sensorId", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 0.0,0.0,0.0),
-                CartesianPoint.ORIGO));
-        InfrastructureRegistrationMessage message = new InfrastructureRegistrationMessage(
-                "127.0.0.1",
-                 "rsu_1", 
-                 4567 , 
-                 5678, 
-                 8642, 
-                 CartesianPoint.xy(1, 2), 
-                 sensors);
+        CarmaCloudRegistrationMessage message = new CarmaCloudRegistrationMessage(
+                "carma-cloud",
+                 "http://someaddress:8080/carmacloud/simulation");
+
         // Test Getter
-        assertEquals("rsu_1",message.getInfrastructureId());
-        assertEquals("127.0.0.1", message.getRxMessageIpAddress() );
-        assertEquals(4567, message.getRxMessagePort());
-        assertEquals(5678, message.getTimeSyncPort());
-        assertEquals(8642, message.getSimulatedInteractionPort());
-        assertEquals(CartesianPoint.xy(1,2), message.getLocation());
-        assertEquals(sensors, message.getSensors());
-
+        assertEquals("carma-cloud", message.getId());
+        assertEquals("http://someaddress:8080/carmacloud/simulation", message.getUrl() );
     }
-
 }
