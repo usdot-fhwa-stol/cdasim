@@ -63,7 +63,7 @@
          InetAddress address = InetAddress.getLocalHost();
          sendSocket.connect(new InetSocketAddress(address, TEST_PORT), 10000);
          DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
-         out.writeUTF(String.format("{\"id\":\"carma-cloud\", \"url\":\"%s\"}", m_sCarmaCloudUrl));
+         out.writeUTF(json);
          out.close();
  
          // Wait for the message to be received
