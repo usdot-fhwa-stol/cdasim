@@ -137,7 +137,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 			List<CarmaCloudRegistrationMessage> newRegistrations = carmaCloudRegistrationReceiver.getReceivedMessages();
 			for (CarmaCloudRegistrationMessage reg : newRegistrations)
 			{
-				log.info("Processing new registration request for  {}.", reg.getCarmaCloudId());
+				log.info("Processing new registration request for  {}.", reg.getId());
 				// Store new instance registration to carmaCloud instance manager
 				carmaCloudInstanceManager.onNewRegistration(reg);
 
