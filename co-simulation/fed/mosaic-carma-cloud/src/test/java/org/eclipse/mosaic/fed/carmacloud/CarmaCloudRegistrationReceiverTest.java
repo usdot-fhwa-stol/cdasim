@@ -59,9 +59,9 @@
  
          // Send the test message to the receiver
          InetAddress address = InetAddress.getLocalHost();
-         sendSocket.connect(new InetSocketAddress(address, 1617), 10000);
-				     DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
-				     out.writeUTF(String.format("{\"id\":\"carma-cloud\", \"url\":\"%s\"}", m_sCarmaCloudUrl));
+         sendSocket.connect(new InetSocketAddress(address, TEST_PORT), 10000);
+         DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
+         out.writeUTF(String.format("{\"id\":\"carma-cloud\", \"url\":\"%s\"}", m_sCarmaCloudUrl));
          out.close();
  
          // Wait for the message to be received
