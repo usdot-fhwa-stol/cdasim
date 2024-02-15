@@ -13,127 +13,81 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.gson.Gson;
-import java.io.DataInputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Worker thread Runnable for operating a listen socket to receive outbound
- * CARMA Cloud Messages from CARMA Cloud instances
- * This {@link Runnable} instance will operate a UDP socket to subscribe to
- * packets from a CARMA Cloud adapter. 
- * Upon receiving a packet, it will be queued for the primary thread
- * to process the data once it ticks to a simulation processing step
+ * A message to be sent by CARMA Cloud instance when it registers with the
+ * carmacloud-mosaic ambassador
  */
-public class CarmaCloudRegistrationReceiver implements Runnable
+public class CarmaCloudRegistrationMessage
 {
-	private static final int LISTEN_PORT = 1617; // which port for CARMA Cloud?
-	private final AtomicBoolean running = new AtomicBoolean(false);
-	private final Logger log = LoggerFactory.getLogger(this.getClass());
-	private final Queue<CarmaCloudRegistrationMessage> rxQueue = new LinkedList<>();
-	private ServerSocket m_oSrvr;
+	// unique simulation identifier for the CARMA Cloud instance
+	private String m_sCarmaCloudId;
+	// URL endpoint where to send simulation time sync messages
+	private String m_sCarmaCloudUrl;
 
 
 	/**
-	 * Initialize the listen socket for messages from the CARMA Cloud instance adapter
+	 * Constructor for a CarmaCloudRegistrationMessage
 	 * 
-	 * @throws RuntimeException if socket instantiation fails
-	 */
-	public void init()
+	 * @param sId          the ID of the CARMA Cloud instance.
+	 * @param sUrl         the receive time synchronization message port of the infrastructure.
+	 */ 
+	public CarmaCloudRegistrationMessage(String sId, String sUrl)
 	{
-		try
-		{
-			m_oSrvr = new ServerSocket(LISTEN_PORT);
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
+		m_sCarmaCloudId = sId;
+		m_sCarmaCloudUrl = sUrl;
 	}
 
 
 	/**
-	 * The main method of the worker thread. Listens for incoming messages and
-	 * queues them for processing on the primary thread.
+	 * Returns the URL endpoint of the CARMA Cloud instance
+	 * 
+	 * @return String URL endpoint of the CARMA Cloud instance
 	 */
+	public String getUrl()
+	{
+		return m_sCarmaCloudUrl;
+	}
+
+
+	/**
+	 * Set the URL endpoint of the CARMA Cloud instance
+	 * 
+	 * @param sUrl          the receive time synchronization message endpoint of the infrastructure.
+	 */
+	public void setUrl(String sUrl)
+	{
+		m_sCarmaCloudUrl = sUrl;
+	}
+
+
+	/**
+	 * Returns the ID of the CARMA Cloud instance
+	 * 
+	 * @return String the ID of the CARMA Cloud instance
+	 */
+	public String getId()
+	{
+			return m_sCarmaCloudId;
+	}
+
+
+	/**
+	 * Set the ID of the CARMA Cloud instance
+	 * 
+	 * @param sId          the ID of the CARMA Cloud instance.
+	 */
+	public void setId(String sId)
+	{
+		m_sCarmaCloudId = sId;
+	}
+
+
 	@Override
-	public void run()
+	public String toString()
 	{
-		running.set(true);
-		try
-		{
-			while (running.get())
-			{
-				Socket oSock = m_oSrvr.accept();
-        DataInputStream oIn = new DataInputStream(oSock.getInputStream());
-
-				// parse message
-				CarmaCloudRegistrationMessage parsedMessage = 
-					new Gson().fromJson(oIn.readUTF(), CarmaCloudRegistrationMessage.class);
-
-				// Enqueue message for processing on main thread
-				synchronized (rxQueue)
-				{
-					log.info("New CARMA Cloud instance '{}' received with CARMA Cloud Registration Receiver.", parsedMessage.getId());
-					rxQueue.add(parsedMessage);
-				}
-			}
-		}
-		catch (Exception oEx)
-		{
-			log.error("Error occurred", oEx);
-		}
-	}
-
-
-	/**
-	 * Stop the runnable instance and close the listen socket.
-	 */
-	public void stop()
-	{
-		running.set(false);
-		if (m_oSrvr != null)
-		{
-			try
-			{
-				m_oSrvr.close();
-			}
-			catch (Exception oEx)
-			{
-				log.error("Error occurred", oEx);
-			}
-		}
-	}
-
-
-	/**
-	 * Query the current buffer of outbound messages. Clears the currently stored
-	 * buffer once called. Thread-safe.
-	 * 
-	 * @return The list of received outbound message from all Infrastructure Device
-	 *         instances since last call of this method
-	 */
-	public List<CarmaCloudRegistrationMessage> getReceivedMessages()
-	{
-		List<CarmaCloudRegistrationMessage> output = new ArrayList<>();
-		synchronized (rxQueue)
-		{
-			output.addAll(rxQueue);
-			rxQueue.clear();
-		}
-		return output;
+		return String.format("CarmaCloudRegistrationMessage id %s url %s", m_sCarmaCloudId, m_sCarmaCloudUrl);
 	}
 }
