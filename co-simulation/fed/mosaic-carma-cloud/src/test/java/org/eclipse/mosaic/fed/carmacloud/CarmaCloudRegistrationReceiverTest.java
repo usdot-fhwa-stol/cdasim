@@ -59,26 +59,21 @@
  
          // Send the test message to the receiver
          InetAddress address = InetAddress.getLocalHost();
-         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, TEST_PORT);
-         sendSocket.send(packet);
+         sendSocket.connect(new InetSocketAddress(address, 1617), 10000);
+				     DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
+				     out.writeUTF(String.format("{\"id\":\"carma-cloud\", \"url\":\"%s\"}", m_sCarmaCloudUrl));
+         out.close();
  
          // Wait for the message to be received
          Thread.sleep(1000);
  
          // Verify that the message was received correctly
-         List<InfrastructureRegistrationMessage> msgs = receiver.getReceivedMessages();
+         List<CarmaCloudRegistrationMessage> msgs = receiver.getReceivedMessages();
          assertEquals(1, msgs.size());
  
-         InfrastructureRegistrationMessage msg = msgs.get(0);
-         double delta = 0.001; // maximum allowed difference for GeoLocation lat and lon
- 
-         assertEquals("192.168.0.1", msg.getRxMessageIpAddress());
-         assertEquals("rsu_1", msg.getInfrastructureId());
-         assertEquals(1234, msg.getRxMessagePort());
-         assertEquals(5678, msg.getTimeSyncPort());
-         assertEquals(37.3382, msg.getLocation().getX(), delta);
-         assertEquals(121.8863, msg.getLocation().getY(), delta);
-         assertEquals(1.0, msg.getLocation().getZ(), delta);
+         CarmaCloudRegistrationMessage msg = msgs.get(0);
+         assertEquals("carma-cloud", msg.getId());
+         assertEquals("http://someaddress:8080/carmacloud/simulation", msg.getUrl());
      }
  }
  
