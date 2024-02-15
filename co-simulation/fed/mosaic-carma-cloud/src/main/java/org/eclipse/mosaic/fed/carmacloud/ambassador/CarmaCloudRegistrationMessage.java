@@ -23,16 +23,16 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 public class CarmaCloudRegistrationMessage
 {
 	// unique simulation identifier for the CARMA Cloud instance
-	private final String m_sCarmaCloudId;
+	private String m_sCarmaCloudId;
 	// URL endpoint where to send simulation time sync messages
-	private final String m_sCarmaCloudUrl;
+	private String m_sCarmaCloudUrl;
 
 
 	/**
 	 * Constructor for a CarmaCloudRegistrationMessage
 	 * 
 	 * @param sId          the ID of the CARMA Cloud instance.
-	 * @param sUrl              the receive time synchronization message port of the infrastructure.
+	 * @param sUrl         the receive time synchronization message port of the infrastructure.
 	 */ 
 	public CarmaCloudRegistrationMessage(String sId, String sUrl)
 	{
@@ -46,9 +46,20 @@ public class CarmaCloudRegistrationMessage
 	 * 
 	 * @return String URL endpoint of the CARMA Cloud instance
 	 */
-	public String getCarmaCloudUrl()
+	public String getUrl()
 	{
 		return m_sCarmaCloudUrl;
+	}
+
+
+	/**
+	 * Set the URL endpoint of the CARMA Cloud instance
+	 * 
+	 * @param sUrl          the receive time synchronization message endpoint of the infrastructure.
+	 */
+	public void setUrl(String sUrl)
+	{
+		m_sCarmaCloudUrl = sUrl;
 	}
 
 
@@ -57,9 +68,20 @@ public class CarmaCloudRegistrationMessage
 	 * 
 	 * @return String the ID of the CARMA Cloud instance
 	 */
-	public String getCarmaCloudId()
+	public String getId()
 	{
 			return m_sCarmaCloudId;
+	}
+
+
+	/**
+	 * Set the ID of the CARMA Cloud instance
+	 * 
+	 * @param sId          the ID of the CARMA Cloud instance.
+	 */
+	public void setId(String sId)
+	{
+		m_sCarmaCloudId = sId;
 	}
 
 
