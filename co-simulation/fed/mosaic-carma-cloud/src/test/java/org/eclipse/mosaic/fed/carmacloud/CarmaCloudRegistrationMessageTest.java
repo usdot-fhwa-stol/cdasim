@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.fed.infrastructure.ambassador;
+package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
