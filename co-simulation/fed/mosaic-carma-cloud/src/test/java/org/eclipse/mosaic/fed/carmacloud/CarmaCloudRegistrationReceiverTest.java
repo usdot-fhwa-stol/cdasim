@@ -31,7 +31,7 @@
      private static final int TEST_PORT = 1617;
  
      private Socket sendSocket;
-     private RegistrationReceiver receiver;
+     private CarmaCloudRegistrationReceiver receiver;
  
      @Before
      public void setup() throws Exception {
@@ -39,7 +39,7 @@
          sendSocket = new Socket();
  
          // Initialize the receiver
-         receiver = new RegistrationReceiver();
+         receiver = new CarmaCloudRegistrationReceiver();
          receiver.init();
          Thread receiverThread = new Thread(receiver);
          receiverThread.start();
@@ -55,8 +55,7 @@
      @Test
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
-         String json = "{\"rxMessageIpAddress\":\"192.168.0.1\",\"Id\":\"rsu_1\",\"rxMessagePort\":1234,\"timeSyncPort\":5678,\"location\":{\"x\":37.3382,\"y\":121.8863, \"z\":1.0}}";
-         byte[] buffer = json.getBytes();
+         String json = "{\"id\":\"carma-cloud\",\"url\":\"http://someaddress:8080/carmacloud/simulation\"}";
  
          // Send the test message to the receiver
          InetAddress address = InetAddress.getLocalHost();
@@ -67,22 +66,19 @@
          Thread.sleep(1000);
  
          // Verify that the message was received correctly
-         List<RegistrationMessage> msgs = receiver.getReceivedMessages();
+         List<InfrastructureRegistrationMessage> msgs = receiver.getReceivedMessages();
          assertEquals(1, msgs.size());
  
-         RegistrationMessage msg = msgs.get(0);
+         InfrastructureRegistrationMessage msg = msgs.get(0);
          double delta = 0.001; // maximum allowed difference for GeoLocation lat and lon
  
          assertEquals("192.168.0.1", msg.getRxMessageIpAddress());
-         assertEquals("rsu_1", msg.getId());
+         assertEquals("rsu_1", msg.getInfrastructureId());
          assertEquals(1234, msg.getRxMessagePort());
          assertEquals(5678, msg.getTimeSyncPort());
          assertEquals(37.3382, msg.getLocation().getX(), delta);
          assertEquals(121.8863, msg.getLocation().getY(), delta);
          assertEquals(1.0, msg.getLocation().getZ(), delta);
      }
-
-
- 
  }
  
