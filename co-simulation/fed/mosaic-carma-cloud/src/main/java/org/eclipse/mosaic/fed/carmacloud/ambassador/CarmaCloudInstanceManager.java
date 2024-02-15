@@ -51,13 +51,13 @@ public class CarmaCloudInstanceManager
 	 */
 	public void onNewRegistration(CarmaCloudRegistrationMessage registration)
 	{
-		if (!managedInstances.containsKey(registration.getCarmaCloudId()))
+		if (!managedInstances.containsKey(registration.getId()))
 		{
-			CarmaCloudInstance tmp = new CarmaCloudInstance(registration.getCarmaCloudId(), registration.getCarmaCloudUrl());
-			managedInstances.put(registration.getCarmaCloudId(), tmp);
+			CarmaCloudInstance tmp = new CarmaCloudInstance(registration.getId(), registration.getUrl());
+			managedInstances.put(registration.getId(), tmp);
 		}
 		else
-			log.warn("Registration message received for already registered CARMA Cloud with ID: {}", registration.getCarmaCloudId());
+			log.warn("Registration message received for already registered CARMA Cloud with ID: {}", registration.getId());
 	}
 
 
