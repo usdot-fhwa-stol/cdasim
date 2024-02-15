@@ -14,12 +14,11 @@
  * the License.
  */
  
- package org.eclipse.mosaic.fed.infrastructure.ambassador;
+ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
  import static org.junit.Assert.assertEquals;
  
- import java.net.DatagramPacket;
- import java.net.DatagramSocket;
+ import java.net.Socket;
  import java.net.InetAddress;
  import java.util.List;
  
@@ -27,20 +26,20 @@
  import org.junit.Before;
  import org.junit.Test;
  
- public class InfrastructureRegistrationReceiverTest {
+ public class CarmaCloudRegistrationReceiverTest {
  
-     private static final int TEST_PORT = 1615;
+     private static final int TEST_PORT = 1617;
  
-     private DatagramSocket sendSocket;
-     private InfrastructureRegistrationReceiver receiver;
+     private Socket sendSocket;
+     private RegistrationReceiver receiver;
  
      @Before
      public void setup() throws Exception {
-         // Set up a UDP socket to send messages
-         sendSocket = new DatagramSocket();
+         // Set up a TCP socket to send messages
+         sendSocket = new Socket();
  
          // Initialize the receiver
-         receiver = new InfrastructureRegistrationReceiver();
+         receiver = new RegistrationReceiver();
          receiver.init();
          Thread receiverThread = new Thread(receiver);
          receiverThread.start();
@@ -56,7 +55,7 @@
      @Test
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
-         String json = "{\"rxMessageIpAddress\":\"192.168.0.1\",\"infrastructureId\":\"rsu_1\",\"rxMessagePort\":1234,\"timeSyncPort\":5678,\"location\":{\"x\":37.3382,\"y\":121.8863, \"z\":1.0}}";
+         String json = "{\"rxMessageIpAddress\":\"192.168.0.1\",\"Id\":\"rsu_1\",\"rxMessagePort\":1234,\"timeSyncPort\":5678,\"location\":{\"x\":37.3382,\"y\":121.8863, \"z\":1.0}}";
          byte[] buffer = json.getBytes();
  
          // Send the test message to the receiver
@@ -68,14 +67,14 @@
          Thread.sleep(1000);
  
          // Verify that the message was received correctly
-         List<InfrastructureRegistrationMessage> msgs = receiver.getReceivedMessages();
+         List<RegistrationMessage> msgs = receiver.getReceivedMessages();
          assertEquals(1, msgs.size());
  
-         InfrastructureRegistrationMessage msg = msgs.get(0);
+         RegistrationMessage msg = msgs.get(0);
          double delta = 0.001; // maximum allowed difference for GeoLocation lat and lon
  
          assertEquals("192.168.0.1", msg.getRxMessageIpAddress());
-         assertEquals("rsu_1", msg.getInfrastructureId());
+         assertEquals("rsu_1", msg.getId());
          assertEquals(1234, msg.getRxMessagePort());
          assertEquals(5678, msg.getTimeSyncPort());
          assertEquals(37.3382, msg.getLocation().getX(), delta);
