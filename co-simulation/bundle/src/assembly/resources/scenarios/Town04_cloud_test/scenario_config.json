@@ -35,7 +35,7 @@
         "carla": true,
         "carma": true,
         "infrastructure": true,
-        "carma-cloud": false
+        "carma-cloud": true
         
     }
 }

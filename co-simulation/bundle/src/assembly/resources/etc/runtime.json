@@ -124,7 +124,7 @@
         {
             "id": "carma-cloud",
             "classname": "org.eclipse.mosaic.fed.carmacloud.ambassador.CarmaCloudInstanceManager",
-            "configuration": "infrastructure_config.json",
+            "configuration": "carma-cloud_config.json",
             "priority": 50,
             "host": "local",
             "port": 0,
