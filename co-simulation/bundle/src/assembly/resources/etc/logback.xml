@@ -209,6 +209,10 @@
                 <appender-ref ref="InfrastructureLog"/>
             </logger>
 
+            <logger name="org.eclipse.mosaic.fed.carmacloud" additivity="false" level="TRACE">
+                <appender-ref ref="CarmaCloudLog"/>
+            </logger>
+
             <logger name="org.eclipse.mosaic.fed.output" additivity="false" level="INFO">
                 <appender-ref ref="MosaicLog"/>
             </logger>

@@ -121,6 +121,21 @@
             ],
             "javaClasspathEntries": []
         },
+        {
+            "id": "carma-cloud",
+            "classname": "org.eclipse.mosaic.fed.carmacloud.ambassador.CarmaCloudInstanceManager",
+            "configuration": "infrastructure_config.json",
+            "priority": 50,
+            "host": "local",
+            "port": 0,
+            "deploy": false,
+            "start": false,
+            "subscriptions": [
+                "V2xMessageReception",
+                "DetectedObjectInteraction"
+            ],
+            "javaClasspathEntries": []
+        },
 
         {
             "id": "mapping",

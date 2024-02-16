@@ -86,7 +86,7 @@
 
   <profiles>
         <profile>
-            <id>skip-infrastructure-tests</id>
+            <id>skip-carma-cloud-tests</id>
 
             <build>
                 <pluginManagement>
