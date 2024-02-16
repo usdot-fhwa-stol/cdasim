@@ -87,7 +87,7 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 				// Enqueue message for processing on main thread
 				synchronized (rxQueue)
 				{
-					log.info("New CARMA Cloud instance '{}' received with CARMA Cloud Registration Receiver.", parsedMessage.getCarmaCloudId());
+					log.info("New CARMA Cloud instance '{}' received with CARMA Cloud Registration Receiver.", parsedMessage.getId());
 					rxQueue.add(parsedMessage);
 				}
 			}
