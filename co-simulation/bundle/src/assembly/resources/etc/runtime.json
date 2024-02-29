@@ -123,7 +123,7 @@
         },
         {
             "id": "carma-cloud",
-            "classname": "org.eclipse.mosaic.fed.carmacloud.ambassador.CarmaCloudInstanceManager",
+            "classname": "org.eclipse.mosaic.fed.carmacloud.ambassador.CarmaCloudMessageAmbassador",
             "configuration": "carma-cloud_config.json",
             "priority": 50,
             "host": "local",

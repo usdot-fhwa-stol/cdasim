@@ -46,7 +46,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 
 	private CarmaCloudRegistrationReceiver carmaCloudRegistrationReceiver;
 	private Thread registrationRxBackgroundThread;
-	private final CarmaCloudInstanceManager carmaCloudInstanceManager = new CarmaCloudInstanceManager();
+	private CarmaCloudInstanceManager carmaCloudInstanceManager = new CarmaCloudInstanceManager();
 	private int timeSyncSeq;
 
 
