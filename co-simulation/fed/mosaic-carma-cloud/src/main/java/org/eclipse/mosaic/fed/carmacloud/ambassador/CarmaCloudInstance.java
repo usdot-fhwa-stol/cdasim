@@ -18,7 +18,7 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import javax.net.ssl.HttpsURLConnection;
+import java.net.HttpURLConnection;
 import com.google.gson.Gson;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
@@ -80,7 +80,7 @@ public class CarmaCloudInstance
 	public void sendTimeSyncMsg(TimeSyncMessage oMsg)
 		throws IOException
 	{
-		HttpsURLConnection oHttp = (HttpsURLConnection)new URL(m_sCarmaCloudUrl).openConnection();
+		HttpURLConnection oHttp = (HttpURLConnection)new URL(m_sCarmaCloudUrl).openConnection();
 		oHttp.setRequestMethod("POST");
 		oHttp.setDoOutput(true);
 		try (DataOutputStream oOut = new DataOutputStream(oHttp.getOutputStream()))
