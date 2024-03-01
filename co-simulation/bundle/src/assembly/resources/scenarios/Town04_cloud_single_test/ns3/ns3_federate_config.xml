@@ -2,7 +2,7 @@
 <ns3>
 
  <NetworkConfig>
-     <component name="CommType" value="LTE"/>
+     <component name="CommType" value="DSRC"/>
      <component name="NumOfNodes" value="5"/>
  </NetworkConfig>
 
