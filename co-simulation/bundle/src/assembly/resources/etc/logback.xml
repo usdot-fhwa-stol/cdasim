@@ -98,6 +98,13 @@
                     <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
+            <appender name="CarmaCloudLog" class="ch.qos.logback.core.FileAppender">
+                <charset>UTF-8</charset>
+                <file>${logDirectory}/CarmaCloud.log</file>
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
+                </encoder>
+            </appender>
             <appender name="EnvironmentLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Environment.log</file>
