@@ -33,8 +33,9 @@
         "output": false,
         "sumo": true,
         "carla": true,
-        "carma": true,
-        "infrastructure": true
+        "carma": false,
+        "infrastructure": false,
+        "carma-cloud": true
         
     }
 }
