@@ -25,6 +25,7 @@ import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+import org.eclipse.mosaic.rti.TIME;
 
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
@@ -46,7 +47,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 
 	private CarmaCloudRegistrationReceiver carmaCloudRegistrationReceiver;
 	private Thread registrationRxBackgroundThread;
-	private CarmaCloudInstanceManager carmaCloudInstanceManager = new CarmaCloudInstanceManager();
+	private final CarmaCloudInstanceManager carmaCloudInstanceManager = new CarmaCloudInstanceManager();
 	private int timeSyncSeq;
 
 
@@ -127,6 +128,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 	{
 		// Process the time advance only if the time is equal or greater than the next
 		// simulation time step
+		log.info("processTimeAdvanceGrant {} {}", currentSimulationTime, time);
 		if (time < currentSimulationTime)
 				return;
 
@@ -147,7 +149,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 				carmaCloudInstanceManager.onTimeStepUpdate(timeSyncMessage);
 
 				// Advance the simulation time
-				currentSimulationTime = time;
+				currentSimulationTime += CarmaCloudConfiguration.updateInterval * TIME.MILLI_SECOND;
 
 				// Request the next time advance from the RTI
 				log.info("Requesting timestep updated to  {}.", currentSimulationTime);
