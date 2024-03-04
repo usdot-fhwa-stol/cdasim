@@ -22,4 +22,5 @@ import java.io.Serializable;
 public class CarmaCloudConfiguration implements Serializable
 {
     private static final long serialVersionUID = 1705520136000000000L;
+	public static long updateInterval = 100L;
 }
