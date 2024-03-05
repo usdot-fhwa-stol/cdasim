@@ -61,7 +61,7 @@ CARLA_TAR="CARLA_0.9.10.tar.gz"
 cd /home/carma/src/
 if [[ ! -f "$CARLA_TAR" ]]; then
     echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
-    wget -q "https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.tar.gz"
+    wget -q "https://carla-releases.s3.us-east-005.backblazeb2.com/Linux/CARLA_0.9.10.tar.gz"
 fi
 
 sudo mkdir -p /opt/carla
