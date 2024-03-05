@@ -142,19 +142,19 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 				log.info("Processing new registration request for  {}.", reg.getId());
 				// Store new instance registration to carmaCloud instance manager
 				carmaCloudInstanceManager.onNewRegistration(reg);
-
-				timeSyncSeq += 1;
-				// nanoseconds to milliseconds for CarmaCloudTimeMessage
-				TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime / 1000000L, timeSyncSeq);
-				carmaCloudInstanceManager.onTimeStepUpdate(timeSyncMessage);
-
-				// Advance the simulation time
-				currentSimulationTime += CarmaCloudConfiguration.updateInterval * TIME.MILLI_SECOND;
-
-				// Request the next time advance from the RTI
-				log.info("Requesting timestep updated to  {}.", currentSimulationTime);
-				rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
 			}
+
+			timeSyncSeq += 1;
+			// nanoseconds to milliseconds for CarmaCloudTimeMessage
+			TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime / 1000000L, timeSyncSeq);
+			carmaCloudInstanceManager.onTimeStepUpdate(timeSyncMessage);
+
+			// Advance the simulation time
+			currentSimulationTime += CarmaCloudConfiguration.updateInterval * TIME.MILLI_SECOND;
+
+			// Request the next time advance from the RTI
+			log.info("Requesting timestep updated to  {}.", currentSimulationTime);
+			rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
 		}
 		catch (IllegalValueException e)
 		{
