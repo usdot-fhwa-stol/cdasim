@@ -72,6 +72,7 @@
         <module>fed/mosaic-carla</module>
         <module>fed/mosaic-carma</module>
         <module>fed/mosaic-infrastructure</module>
+        <module>fed/mosaic-carma-cloud</module>
 
         <module>test/mosaic-integration-tests</module>
 

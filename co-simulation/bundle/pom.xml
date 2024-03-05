@@ -144,6 +144,11 @@
             <artifactId>mosaic-infrastructure</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-carma-cloud</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
         <!-- Tutorial Applications -->
 
         <dependency>
