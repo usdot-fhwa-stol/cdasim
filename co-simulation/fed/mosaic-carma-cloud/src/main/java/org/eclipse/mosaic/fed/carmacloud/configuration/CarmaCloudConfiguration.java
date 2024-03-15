@@ -14,6 +14,8 @@
 package org.eclipse.mosaic.fed.carmacloud.configuration;
 
 import java.io.Serializable;
+import com.google.gson.annotations.JsonAdapter;
+import org.eclipse.mosaic.lib.util.gson.TimeFieldAdapter;
 
 
 /**
@@ -21,6 +23,9 @@ import java.io.Serializable;
  */
 public class CarmaCloudConfiguration implements Serializable
 {
-    private static final long serialVersionUID = 1705520136000000000L;
-	public static long updateInterval = 100L;
+	private static final long serialVersionUID = 1705520136000000000L;
+
+
+	@JsonAdapter(TimeFieldAdapter.LegacyMilliSeconds.class)
+	public Long updateInterval = 100L;
 }
