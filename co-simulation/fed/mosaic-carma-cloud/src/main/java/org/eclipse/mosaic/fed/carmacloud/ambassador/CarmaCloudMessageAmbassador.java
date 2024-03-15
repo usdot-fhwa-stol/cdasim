@@ -60,6 +60,22 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 	public CarmaCloudMessageAmbassador(AmbassadorParameter ambassadorParameter)
 	{
 		super(ambassadorParameter);
+		try // load configuration file
+		{
+			carmaCloudConfiguration = new ObjectInstantiation<>(carmaCloudConfiguration.class, log)
+				.readFile(ambassadorParameter.configuration);
+		}
+		catch (InstantiationException e)
+		{
+			log.error("Configuration object could not be instantiated: ", e);
+		}
+
+		log.info("The update interval of CARMA Cloud message ambassador is {}.", carmaCloudConfiguration.updateInterval);
+		
+		if (carmaCloudConfiguration.updateInterval <= 0L)
+		{
+			throw new RuntimeException("Invalid update interval for CARMA Cloud message ambassador, should be > 0.");
+		}
 		log.info("CARMA Cloud message ambassador is generated.");
 	}
 
@@ -150,7 +166,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 			carmaCloudInstanceManager.onTimeStepUpdate(timeSyncMessage);
 
 			// Advance the simulation time
-			currentSimulationTime += CarmaCloudConfiguration.updateInterval * TIME.MILLI_SECOND;
+			currentSimulationTime += carmaCloudConfiguration.updateInterval * TIME.MILLI_SECOND;
 
 			// Request the next time advance from the RTI
 			log.info("Requesting timestep updated to  {}.", currentSimulationTime);
