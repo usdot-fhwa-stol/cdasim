@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.mosaic.fed.carmacloud.configuration.CarmaCloudConfiguration;
+import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.Interaction;
@@ -62,7 +63,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 		super(ambassadorParameter);
 		try // load configuration file
 		{
-			carmaCloudConfiguration = new ObjectInstantiation<>(carmaCloudConfiguration.class, log)
+			carmaCloudConfiguration = new ObjectInstantiation<>(CarmaCloudConfiguration.class, log)
 				.readFile(ambassadorParameter.configuration);
 		}
 		catch (InstantiationException e)
