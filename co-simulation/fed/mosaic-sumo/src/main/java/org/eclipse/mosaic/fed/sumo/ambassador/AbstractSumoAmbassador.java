@@ -207,12 +207,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
     protected boolean receivedSimulationStep = false;
 
     /**
-     * received simulation step from carla
-     *
-     */
-    protected boolean firstTimePrintingTime = true;
-
-    /**
      * CARLA federate is enabled
      */
     protected boolean sumoCarlaCoSimulation = false;
@@ -1199,13 +1193,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
-        if (!receivedSimulationStep && firstTimePrintingTime)
-        {
-            long millis = System.currentTimeMillis();
-            log.info("Simulation Time: {} where current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
-            firstTimePrintingTime = false;
-        }
-
         if (time > lastAdvanceTime) {
             // actually add vehicles in sumo, before we reach the next advance time
             flushNotYetAddedVehicles(lastAdvanceTime);
@@ -1242,7 +1229,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 rti.triggerInteraction(simulationStepResult.getTrafficDetectorUpdates());
                 this.rti.triggerInteraction(simulationStepResult.getTrafficLightUpdates());
                 receivedSimulationStep = false;
-                firstTimePrintingTime = true;
             }
 
             // System.out.println("Sumo request time advance at time: " + nextTimeStep);

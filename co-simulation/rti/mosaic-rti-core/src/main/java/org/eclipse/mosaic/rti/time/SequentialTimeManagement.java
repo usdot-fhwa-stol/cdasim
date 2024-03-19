@@ -87,10 +87,6 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
             if (ambassador != null) {
                 federation.getMonitor().onBeginActivity(event);
                 long startTime = System.currentTimeMillis();
-
-                long millis = System.currentTimeMillis();
-                this.logger.info("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), millis, event.getFederateId());
-
                 ambassador.advanceTime(event.getRequestedTime());
                 federation.getMonitor().onEndActivity(event, System.currentTimeMillis() - startTime);
 
