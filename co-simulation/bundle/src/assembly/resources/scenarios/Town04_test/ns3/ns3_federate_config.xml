@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ns3>
-
- <NetworkConfig>
-     <component name="CommType" value="LTE"/>
-     <component name="NumOfNodes" value="5"/>
- </NetworkConfig>
- 
  <LogLevel>
      <!-- for name, refer to corresponding ns3 model -->
      <!-- possible level values: error warn debug info function logic all * -->
