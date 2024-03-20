@@ -15,6 +15,9 @@
 
 package org.eclipse.mosaic.rti.time;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.mosaic.rti.MosaicComponentParameters;
 import org.eclipse.mosaic.rti.api.ComponentProvider;
 import org.eclipse.mosaic.rti.api.FederateAmbassador;
@@ -30,6 +33,9 @@ import org.eclipse.mosaic.rti.api.time.FederateEvent;
 public class SequentialTimeManagement extends AbstractTimeManagement {
 
     private final int realtimeBrake;
+
+    // Debugging & Logging
+    HashMap<String, Long> logging_map = new HashMap<String, Long>();
 
     /**
      * Creates a new instance of the sequential time management.
@@ -88,8 +94,16 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
                 federation.getMonitor().onBeginActivity(event);
                 long startTime = System.currentTimeMillis();
 
-                long millis = System.currentTimeMillis();
-                this.logger.info("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), millis, event.getFederateId());
+                if (!logging_map.containsKey(event.getFederateId())) // first time printing, then directly save the last simulation time requested and print
+                {
+                    logging_map.put(event.getFederateId(), event.getRequestedTime());
+                    this.logger.info("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
+                } // only print if last simulation time printed is different than new one
+                else if (logging_map.containsKey(event.getFederateId()) && logging_map.get(event.getFederateId()) != event.getRequestedTime())
+                {
+                    logging_map.put(event.getFederateId(), event.getRequestedTime());
+                    this.logger.info("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
+                }
 
                 ambassador.advanceTime(event.getRequestedTime());
                 federation.getMonitor().onEndActivity(event, System.currentTimeMillis() - startTime);
