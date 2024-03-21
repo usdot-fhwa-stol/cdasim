@@ -15,6 +15,9 @@
 
 package org.eclipse.mosaic.rti.time;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.mosaic.rti.MosaicComponentParameters;
 import org.eclipse.mosaic.rti.api.ComponentProvider;
 import org.eclipse.mosaic.rti.api.FederateAmbassador;
@@ -30,6 +33,26 @@ import org.eclipse.mosaic.rti.api.time.FederateEvent;
 public class SequentialTimeManagement extends AbstractTimeManagement {
 
     private final int realtimeBrake;
+
+    // Debugging & Logging
+    HashMap<String, Long> loggingMap = new HashMap<>();
+
+    /**
+     * Prints log for time synchronization monitor script. Only meant to be printed for debugging purposes.
+     * Please see https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
+     *
+     * @param event FederateEvent requested by one of the ambassadaor
+     * @param startTime current system time when the event request was received
+     */
+
+    private void printTimeSyncDebugLogs(FederateEvent event, long startTime){
+        if (!loggingMap.containsKey(event.getFederateId()) ||
+            (loggingMap.containsKey(event.getFederateId()) && loggingMap.get(event.getFederateId()) != event.getRequestedTime()))
+        {
+            loggingMap.put(event.getFederateId(), event.getRequestedTime());
+            this.logger.debug("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
+        }
+    }
 
     /**
      * Creates a new instance of the sequential time management.
@@ -87,6 +110,15 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
             if (ambassador != null) {
                 federation.getMonitor().onBeginActivity(event);
                 long startTime = System.currentTimeMillis();
+
+                // A script to validate time synchronization of tools in CDASim currently relies on the following
+                // log line. TODO: This line is meant to be removed in the future upon completion of this work:
+                // https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
+                if (this.logger.isDebugEnabled())
+                {
+                    printTimeSyncDebugLogs(event, startTime);
+                }
+
                 ambassador.advanceTime(event.getRequestedTime());
                 federation.getMonitor().onEndActivity(event, System.currentTimeMillis() - startTime);
 

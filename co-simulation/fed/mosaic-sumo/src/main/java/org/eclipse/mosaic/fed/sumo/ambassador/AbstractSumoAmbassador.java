@@ -207,6 +207,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
     protected boolean receivedSimulationStep = false;
 
     /**
+     * First time when the sumo ambassador is called to progress to the next simulation step
+     *
+     */
+    protected boolean firstAttemptToAdvanceToNextStep = true;
+
+    /**
      * CARLA federate is enabled
      */
     protected boolean sumoCarlaCoSimulation = false;
@@ -1193,6 +1199,16 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
+        // A script to validate time synchronization of tools in CDASim currently relies on the following
+        // log line. TODO: This line is meant to be removed in the future upon completion of this work:
+        // https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
+        if (log.isDebugEnabled() && (!receivedSimulationStep && firstAttemptToAdvanceToNextStep))
+        {
+            long millis = System.currentTimeMillis();
+            log.info("Simulation Time: {} here current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
+            firstAttemptToAdvanceToNextStep = false;
+        }
+
         if (time > lastAdvanceTime) {
             // actually add vehicles in sumo, before we reach the next advance time
             flushNotYetAddedVehicles(lastAdvanceTime);
@@ -1229,6 +1245,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 rti.triggerInteraction(simulationStepResult.getTrafficDetectorUpdates());
                 this.rti.triggerInteraction(simulationStepResult.getTrafficLightUpdates());
                 receivedSimulationStep = false;
+                firstAttemptToAdvanceToNextStep = true;
             }
 
             // System.out.println("Sumo request time advance at time: " + nextTimeStep);
