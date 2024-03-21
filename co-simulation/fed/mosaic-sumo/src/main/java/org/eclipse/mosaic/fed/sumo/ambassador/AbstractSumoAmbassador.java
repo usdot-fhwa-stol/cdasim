@@ -1199,11 +1199,14 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
-        if (!receivedSimulationStep && firstTimePrintingTime)
+        if (log.isDebugEnabled())
         {
-            long millis = System.currentTimeMillis();
-            log.info("Simulation Time: {} where current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
-            firstTimePrintingTime = false;
+            if (!receivedSimulationStep && firstTimePrintingTime)
+            {
+                long millis = System.currentTimeMillis();
+                log.info("Simulation Time: {} where current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
+                firstTimePrintingTime = false;
+            }
         }
 
         if (time > lastAdvanceTime) {
