@@ -38,6 +38,23 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
     HashMap<String, Long> loggingMap = new HashMap<>();
 
     /**
+     * Prints log for time synchronization monitor script. Only meant to be printed for debugging purposes.
+     * Please see https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
+     *
+     * @param event FederateEvent requested by one of the ambassadaor
+     * @param startTime current system time when the event request was received
+     */
+
+    private void printTimeSyncDebugLogs(FederateEvent event, long startTime){
+        if (!loggingMap.containsKey(event.getFederateId()) ||
+            (loggingMap.containsKey(event.getFederateId()) && loggingMap.get(event.getFederateId()) != event.getRequestedTime()))
+        {
+            loggingMap.put(event.getFederateId(), event.getRequestedTime());
+            this.logger.debug("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
+        }
+    }
+
+    /**
      * Creates a new instance of the sequential time management.
      *
      * @param federation    reference to the <code>ComponentFactory</code> to access simulation components
@@ -99,12 +116,7 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
                 // https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
                 if (this.logger.isDebugEnabled())
                 {
-                    if (!loggingMap.containsKey(event.getFederateId()) ||
-                        (loggingMap.containsKey(event.getFederateId()) && loggingMap.get(event.getFederateId()) != event.getRequestedTime()))
-                    {
-                        loggingMap.put(event.getFederateId(), event.getRequestedTime());
-                        this.logger.debug("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
-                    }
+                    printTimeSyncDebugLogs(event, startTime);
                 }
 
                 ambassador.advanceTime(event.getRequestedTime());
