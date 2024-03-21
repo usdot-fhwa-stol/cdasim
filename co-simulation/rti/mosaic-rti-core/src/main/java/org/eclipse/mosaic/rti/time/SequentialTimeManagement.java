@@ -35,7 +35,7 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
     private final int realtimeBrake;
 
     // Debugging & Logging
-    HashMap<String, Long> logging_map = new HashMap<String, Long>();
+    HashMap<String, Long> loggingMap = new HashMap<String, Long>();
 
     /**
      * Creates a new instance of the sequential time management.
@@ -94,15 +94,13 @@ public class SequentialTimeManagement extends AbstractTimeManagement {
                 federation.getMonitor().onBeginActivity(event);
                 long startTime = System.currentTimeMillis();
 
-                if (!logging_map.containsKey(event.getFederateId())) // first time printing, then directly save the last simulation time requested and print
+                // A script to validate time synchronization of tools in CDASim currently relies on the following
+                // log line. TODO: This line is meant to be removed in the future upon completion of this work:
+                // https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
+                if (this.logger.isDebugEnabled() && (!loggingMap.containsKey(event.getFederateId()) || (loggingMap.containsKey(event.getFederateId()) && loggingMap.get(event.getFederateId()) != event.getRequestedTime())))
                 {
-                    logging_map.put(event.getFederateId(), event.getRequestedTime());
-                    this.logger.info("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
-                } // only print if last simulation time printed is different than new one
-                else if (logging_map.containsKey(event.getFederateId()) && logging_map.get(event.getFederateId()) != event.getRequestedTime())
-                {
-                    logging_map.put(event.getFederateId(), event.getRequestedTime());
-                    this.logger.info("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
+                    loggingMap.put(event.getFederateId(), event.getRequestedTime());
+                    this.logger.debug("Simulation Time: {} where current system time is: {} and requested from id: {}", (int) (event.getRequestedTime()/1e6), startTime, event.getFederateId());
                 }
 
                 ambassador.advanceTime(event.getRequestedTime());
