@@ -1199,6 +1199,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
+        // A script to validate time synchronization of tools in CDASim currently relies on the following
+        // log line. TODO: This line is meant to be removed in the future upon completion of this work:
+        // https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
         if (log.isDebugEnabled())
         {
             if (!receivedSimulationStep && firstTimePrintingTime)
