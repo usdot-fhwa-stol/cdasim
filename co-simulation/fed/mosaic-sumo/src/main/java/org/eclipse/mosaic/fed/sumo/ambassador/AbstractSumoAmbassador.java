@@ -207,10 +207,10 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
     protected boolean receivedSimulationStep = false;
 
     /**
-     * received simulation step from carla
+     * First time when the sumo ambassador is called to progress to the next simulation step
      *
      */
-    protected boolean firstTimePrintingTime = true;
+    protected boolean firstAttemptToAdvanceToNextStep = true;
 
     /**
      * CARLA federate is enabled
@@ -1202,11 +1202,11 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         // A script to validate time synchronization of tools in CDASim currently relies on the following
         // log line. TODO: This line is meant to be removed in the future upon completion of this work:
         // https://github.com/usdot-fhwa-stol/carma-analytics-fotda/pull/43
-        if (log.isDebugEnabled() && (!receivedSimulationStep && firstTimePrintingTime))
+        if (log.isDebugEnabled() && (!receivedSimulationStep && firstAttemptToAdvanceToNextStep))
         {
             long millis = System.currentTimeMillis();
-            log.info("Simulation Time: {} where current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
-            firstTimePrintingTime = false;
+            log.info("Simulation Time: {} here current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
+            firstAttemptToAdvanceToNextStep = false;
         }
 
         if (time > lastAdvanceTime) {
@@ -1245,7 +1245,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 rti.triggerInteraction(simulationStepResult.getTrafficDetectorUpdates());
                 this.rti.triggerInteraction(simulationStepResult.getTrafficLightUpdates());
                 receivedSimulationStep = false;
-                firstTimePrintingTime = true;
+                firstAttemptToAdvanceToNextStep = true;
             }
 
             // System.out.println("Sumo request time advance at time: " + nextTimeStep);
