@@ -76,8 +76,10 @@ public class CarmaCloudInstanceManager
 			log.debug("There are no registered instances");
 		else
 		{
-			for (CarmaCloudInstance currentInstance : managedInstances.values())
+			for (CarmaCloudInstance currentInstance : managedInstances.values()){
 				currentInstance.sendTimeSyncMsg(message);
+				log.debug("Sent time message to CARMA-Cloud" + message.toString());
+			}
 		}
 	}
 
