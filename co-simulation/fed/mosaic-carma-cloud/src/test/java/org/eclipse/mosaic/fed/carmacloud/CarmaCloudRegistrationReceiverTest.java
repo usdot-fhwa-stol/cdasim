@@ -66,9 +66,6 @@
          out.writeUTF(json);
          out.close();
  
-         // Wait for the message to be received
-         Thread.sleep(1000);
- 
          // Verify that the message was received correctly
          List<CarmaCloudRegistrationMessage> msgs = receiver.getReceivedMessages();
          assertEquals(1, msgs.size());
