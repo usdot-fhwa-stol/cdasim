@@ -78,7 +78,7 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 			while (running.get())
 			{
 				Socket oSock = m_oSrvr.accept();
-        DataInputStream oIn = new DataInputStream(oSock.getInputStream());
+        		DataInputStream oIn = new DataInputStream(oSock.getInputStream());
 
 				// parse message
 				CarmaCloudRegistrationMessage parsedMessage = 
