@@ -88,6 +88,6 @@ public class CarmaCloudInstance
 			oOut.write(new Gson().toJson(oMsg).getBytes());
 		}
 		if (oHttp.getResponseCode() != 200)
-			throw new IOException();
+			throw new IOException(String.format("CARMA Cloud failure %d %s", oHttp.getResponseCode(), oHttp.getResponseMessage()));
 	}
 }
