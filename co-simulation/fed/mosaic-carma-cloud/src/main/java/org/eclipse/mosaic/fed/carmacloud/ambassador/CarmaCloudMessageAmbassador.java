@@ -147,7 +147,9 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 		// simulation time step
 		log.info("processTimeAdvanceGrant {} {}", currentSimulationTime, time);
 		if (time < currentSimulationTime)
-				return;
+		{
+			return;
+		}
 
 		log.info("CarmaCloud message ambassador processing timestep to {}.", time);
 		try
@@ -175,11 +177,11 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 		}
 		catch (IllegalValueException e)
 		{
-				throw new InternalFederateException(e);
+			throw new InternalFederateException(e);
 		}
-		catch (IOException e1)
+		catch (IOException e)
 		{
-			log.error("Error during updating timestep :", e1);
+			log.error("Error during updating timestep :", e);
 		}
 	}
 

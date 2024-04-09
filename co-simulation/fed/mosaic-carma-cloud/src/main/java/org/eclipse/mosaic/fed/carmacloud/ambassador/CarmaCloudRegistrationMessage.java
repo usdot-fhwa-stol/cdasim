@@ -59,7 +59,7 @@ public class CarmaCloudRegistrationMessage
 	 */
 	public String getId()
 	{
-			return id;
+		return id;
 	}
 
 

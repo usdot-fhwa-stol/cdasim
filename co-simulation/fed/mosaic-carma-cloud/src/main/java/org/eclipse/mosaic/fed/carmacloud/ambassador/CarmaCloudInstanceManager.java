@@ -57,7 +57,10 @@ public class CarmaCloudInstanceManager
 			managedInstances.put(registration.getId(), tmp);
 		}
 		else
+		{
 			log.warn("Registration message received for already registered CARMA Cloud with ID: {}", registration.getId());
+		}
+			
 	}
 
 
@@ -72,8 +75,9 @@ public class CarmaCloudInstanceManager
 	public void onTimeStepUpdate(TimeSyncMessage message)
 		throws IOException
 	{
-		if (managedInstances.isEmpty())
+		if (managedInstances.isEmpty()){
 			log.debug("There are no registered instances");
+		}
 		else
 		{
 			for (CarmaCloudInstance currentInstance : managedInstances.values()){
@@ -85,15 +89,15 @@ public class CarmaCloudInstanceManager
 
 
 	/**
-	 * External helper function to allow the ambassador to check if a given vehicle
-	 * ID is a registered CARMA Platform instance
+	 * External helper function to allow the ambassador to check if a given CARMA Cloud
+	 * ID is a registered
 	 * 
 	 * @param carmaCloudId The id to check
 	 * @return True if managed by this object (e.g., is a registered CARMA Platform
 	 *         vehicle). false o.w.
 	 */
 	public boolean checkIfRegistered(String carmaCloudId) {
-			return managedInstances.keySet().contains(carmaCloudId);
+		return managedInstances.keySet().contains(carmaCloudId);
 	}
 
 
