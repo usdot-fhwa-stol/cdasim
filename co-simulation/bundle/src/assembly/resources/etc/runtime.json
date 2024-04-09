@@ -131,7 +131,6 @@
             "deploy": false,
             "start": false,
             "subscriptions": [
-                "V2xMessageReception"
             ],
             "javaClasspathEntries": []
         },
