@@ -44,7 +44,7 @@ public class CarmaCloudInstanceTest {
     class TimeSyncHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange oExch) throws IOException {
-            BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody())
+            BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody());
             parsedMessage = new Gson().fromJson(oIn.readUTF(), TimeSyncMessage.class);
             oExch.sendResponseHeaders(200, -1L);
             oExch.close();
