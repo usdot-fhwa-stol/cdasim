@@ -16,14 +16,10 @@
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
-import java.io.DataOutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
@@ -31,7 +27,6 @@ import com.sun.net.httpserver.HttpHandler;
 
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.net.InetAddress;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,19 +76,8 @@ public class CarmaCloudInstanceTest {
         assertTrue(parsedMessage != null);
         if (parsedMessage != null)
         {
-            assertEquals(parsedMessage.getSeq(), );
+            assertEquals(parsedMessage.getSeq(), 11);
+            assertEquals(parsedMessage.getTimestep(), 999);
         }
-        // ArgumentCaptor to capture parameters passed to mock on method calls
-        ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
-        // Verify socket.send(DatagramPacket packet) is called and capture packet
-        // parameter
-        verify(socket, times(1)).send(packet.capture());
-        // Convert message to bytes
-        Gson gson = new Gson();
-        byte[] message_bytes = gson.toJson(test_msg).getBytes();
-        // Verify parameter members
-        assertArrayEquals(message_bytes, packet.getValue().getData());
-        assertEquals(instance.getTimeSyncPort(), packet.getValue().getPort());
-        assertEquals(address, packet.getValue().getAddress());
     }
 }
