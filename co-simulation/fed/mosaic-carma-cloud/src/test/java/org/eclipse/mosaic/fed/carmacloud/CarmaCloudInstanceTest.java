@@ -15,13 +15,9 @@
  */
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
@@ -46,13 +42,13 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 public class CarmaCloudInstanceTest {
 
     private CarmaCloudInstance instance;
-	private TimeSyncMessage parsedMessage;
+    private TimeSyncMessage parsedMessage = new TimeSyncMessage(-1L, -1L);
 
     class TimeSyncHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange oExch) throws IOException {
-		BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody())
-		parsedMessage = new Gson().fromJson(oIn.readUTF(), CarmaCloudRegistrationMessage.class);
+            BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody())
+            parsedMessage = new Gson().fromJson(oIn.readUTF(), TimeSyncMessage.class);
             oExch.sendResponseHeaders(200, -1L);
             oExch.close();
         }
@@ -72,10 +68,15 @@ public class CarmaCloudInstanceTest {
 
     @Test
     public void testSendTimeSyncMsg() throws IOException {
+        HttpServer oSrvr = HttpServer.create(new InetSocketAddress("localhost", 8080), 0);
+        HttpContext oCtx = oSrvr.createContext("/carmacloud/simulation");
+        oCtx.setHandler(new TimeSyncHandler());
+        oSrvr.start();
+
         // Test SendTimeSyncMsg method
         TimeSyncMessage test_msg = new TimeSyncMessage(11, 999);
         instance.sendTimeSyncMsg(test_msg);
-
+        oSrvr.stop(0);
 
         // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
