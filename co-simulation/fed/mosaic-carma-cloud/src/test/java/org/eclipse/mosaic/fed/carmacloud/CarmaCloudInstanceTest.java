@@ -69,15 +69,15 @@ public class CarmaCloudInstanceTest {
         oSrvr.start();
 
         // Test SendTimeSyncMsg method
-        TimeSyncMessage test_msg = new TimeSyncMessage(11, 999);
+        TimeSyncMessage test_msg = new TimeSyncMessage(999L, 11);
         instance.sendTimeSyncMsg(test_msg);
         oSrvr.stop(0);
 
         assertTrue(parsedMessage != null);
         if (parsedMessage != null)
         {
+            assertEquals(parsedMessage.getTimestep(), 999L);
             assertEquals(parsedMessage.getSeq(), 11);
-            assertEquals(parsedMessage.getTimestep(), 999);
         }
     }
 }
