@@ -18,9 +18,11 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,6 +34,8 @@ public class CarmaCloudInstanceManagerTest {
 
     private CarmaCloudInstanceManager manager;
     private CarmaCloudInstance instance1;
+    private static final String carmacloudId = "carma-cloud";
+    private static final String carmacloudUrl = "carma-cloud-url";
 
     @Before
     public void setUp() throws Exception {
@@ -42,8 +46,6 @@ public class CarmaCloudInstanceManagerTest {
     @Test
     public void testOnNewRegistration() {
         // Set up the registration object
-        String carmacloudId = "";
-        String carmacloudUrl = "";
         CarmaCloudRegistrationMessage registration = new CarmaCloudRegistrationMessage(carmacloudId, carmacloudUrl);
 
         // Ensure checkIfRegistered returns false for CARMA Cloud id before registering 
@@ -55,61 +57,16 @@ public class CarmaCloudInstanceManagerTest {
         assertTrue(manager.checkIfRegistered(carmacloudId));
         // Ensure checkIfRegistered returns false for other Ids
         assertFalse(manager.checkIfRegistered(carmacloudId + "something") );
+
+        // replace registered CARMA Cloud instance with mock instance
+        manager.getManagedInstances().put(carmacloudId, instance1);
     }
 
     @Test
     public void testOnTimeStepUpdate() throws IOException {
-        TimeSyncMessage message = new TimeSyncMessage(300, 3);
+        TimeSyncMessage message = new TimeSyncMessage(999L, 11);
         manager.onTimeStepUpdate(message);
         // Verify that all instances sendTimeSyncMsgs was called.
         verify(instance1).sendTimeSyncMsg(message);
-        verify(instance2).sendTimeSyncMsg(message);
-        verify(instance2).sendTimeSyncMsg(message);
-
     }
-
-    @Test
-    public void testOnDetectedObject() throws IOException{
-        // Create detected object
-        DetectedObject detectedObject1 = new DetectedObject(
-                DetectionType.VAN,
-                0.5,
-                "sensor1",
-                "projection String",
-                100,
-                CartesianPoint.xyz(1.1, 2, 3.2),
-                new Vector3d(2, 3, 4),
-                new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5),
-                100);
-        Double[][] covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
-        detectedObject1.setPositionCovariance(covarianceMatrix);
-        detectedObject1.setVelocityCovariance(covarianceMatrix);
-        detectedObject1.setAngularVelocityCovariance(covarianceMatrix);
-        // Attempt to send detected object to infrastructure instance
-        manager.onDetectedObject(detectedObject1);
-        // Verify CarmaCloud Manager attempted to sent Detected Object
-        // to instance1
-        verify(instance1, times(1)).sendDetection(detectedObject1);
-        // Create second detected object
-        DetectedObject detectedObject2 = new DetectedObject(
-                DetectionType.VAN,
-                0.5,
-                "sensor6",
-                "projection String",
-                101,
-                CartesianPoint.xyz(1.1, 2, 3.2),
-                new Vector3d(2, 3, 4),
-                new Vector3d(-4.4,-5.5,-6.6),
-                new Size(3, 4, 5),
-                100);
-        detectedObject2.setPositionCovariance(covarianceMatrix);
-        detectedObject2.setVelocityCovariance(covarianceMatrix);
-        detectedObject2.setAngularVelocityCovariance(covarianceMatrix);
-        manager.onDetectedObject(detectedObject2);
-        doThrow(new IOException("Something went wrong")).when(instance3).sendDetection(detectedObject2);
-        verify(instance3, times(1)).sendDetection(detectedObject2);
-        verify(instance2, never()).sendDetection(any(DetectedObject.class));
-    }
-
 }
