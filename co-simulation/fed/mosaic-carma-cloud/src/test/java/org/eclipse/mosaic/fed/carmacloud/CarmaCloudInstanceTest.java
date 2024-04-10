@@ -52,7 +52,7 @@ public class CarmaCloudInstanceTest {
     }
 
     @Before
-    public void setUp() throws NoSuchFieldException {
+    public void setUp() throws IOException {
         instance = new CarmaCloudInstance("carma-cloud", "http://localhost:8080/carmacloud/simulation");
         oSrvr = HttpServer.create(new InetSocketAddress("localhost", 8080), 0);
         HttpContext oCtx = oSrvr.createContext("/carmacloud/simulation");
@@ -61,7 +61,7 @@ public class CarmaCloudInstanceTest {
     }
 
     @After
-    public void tearDown() throws NoSuchFieldException {
+    public void tearDown() throws IOException {
         oSrvr.stop(0);
     }
 
