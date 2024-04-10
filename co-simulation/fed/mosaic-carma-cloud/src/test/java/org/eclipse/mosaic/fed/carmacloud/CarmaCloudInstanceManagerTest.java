@@ -14,28 +14,13 @@
  * the License.
  */
  
-package org.eclipse.mosaic.fed.infrastructure.ambassador;
+package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
-import org.eclipse.mosaic.lib.math.Vector3d;
-import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
-import org.eclipse.mosaic.lib.objects.detector.DetectionType;
-import org.eclipse.mosaic.lib.objects.detector.Detector;
-import org.eclipse.mosaic.lib.objects.detector.DetectorType;
-import org.eclipse.mosaic.lib.objects.detector.Orientation;
-import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
 
