@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.fed.infrastructure.ambassador;
+package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -46,13 +46,13 @@ import org.mockito.internal.util.reflection.FieldSetter;
 
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
-public class InfrastructureInstanceTest {
+public class CarmaCloudInstanceTest {
     /**
      * Mock Datagram socket
      */
     private DatagramSocket socket;
 
-    private InfrastructureInstance instance;
+    private CarmaCloudInstance instance;
     /**
      * Mock InetAddress
      */
@@ -63,7 +63,7 @@ public class InfrastructureInstanceTest {
         // Initialize Mocks
         address = mock(InetAddress.class);
         socket = mock(DatagramSocket.class);
-        // Initialize Infrastructure Instance
+        // Initialize CarmaCloud Instance
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
                 new Detector(
@@ -77,7 +77,7 @@ public class InfrastructureInstanceTest {
                         DetectorType.SEMANTIC_LIDAR,
                         new Orientation(20.0, 20.0, 0.0),
                         CartesianPoint.ORIGO));
-        instance = new InfrastructureInstance(
+        instance = new CarmaCloudInstance(
                 "SomeID",
                 address,
                 3456,
@@ -101,13 +101,13 @@ public class InfrastructureInstanceTest {
     @Test
     public void testGetterSetterConstructor() {
         // Test getters and constructor for setting and retrieving class members
-        assertEquals("SomeID", instance.getInfrastructureId());
+        assertEquals("SomeID", instance.getCarmaCloudId());
         assertEquals(CartesianPoint.ORIGO, instance.getLocation());
         assertEquals(3456, instance.getRxMessagePort());
         assertEquals(5667, instance.getTimeSyncPort());
         // Test Setter
-        instance.setInfrastructureId("DifferentID");
-        assertEquals("DifferentID", instance.getInfrastructureId());
+        instance.setCarmaCloudId("DifferentID");
+        assertEquals("DifferentID", instance.getCarmaCloudId());
         instance.setLocation(CartesianPoint.xy(40, 50));
         assertEquals(CartesianPoint.xy(40, 50), instance.getLocation());
         instance.setTimeSyncPort(4321);
