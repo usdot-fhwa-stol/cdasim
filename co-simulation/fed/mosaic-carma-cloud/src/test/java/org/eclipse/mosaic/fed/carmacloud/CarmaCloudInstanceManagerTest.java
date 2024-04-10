@@ -32,65 +32,29 @@ public class CarmaCloudInstanceManagerTest {
 
     private CarmaCloudInstanceManager manager;
     private CarmaCloudInstance instance1;
-    private CarmaCloudInstance instance2;
-    private CarmaCloudInstance instance3;
 
     @Before
     public void setUp() throws Exception {
         manager = new CarmaCloudInstanceManager();
         instance1 = mock(CarmaCloudInstance.class);
-        instance2 = mock(CarmaCloudInstance.class);
-        instance3 = mock(CarmaCloudInstance.class);
-        // Add mocks to managed instances
-        manager.getManagedInstances().put("instance1", instance1);
-        manager.getManagedInstances().put("instance2", instance2);
-        manager.getManagedInstances().put("instance3", instance3);
-        // Mocks will account for detected objects with the given sensor IDs.
-        when(instance1.containsSensor("sensor1")).thenReturn(true);
-        when(instance1.containsSensor("sensor2")).thenReturn(true);
-        when(instance2.containsSensor("sensor3")).thenReturn(true);
-        when(instance2.containsSensor("sensor4")).thenReturn(true);
-        when(instance3.containsSensor("sensor5")).thenReturn(true);
-        when(instance3.containsSensor("sensor6")).thenReturn(true);
-        
     }
 
     @Test
     public void testOnNewRegistration() {
         // Set up the registration object
-        String infrastructureId = "infrastructure-123";
-        int rxMessagePort = 1234;
-        int timeSyncPort = 5678;
-        int simulatedInteractionPort = 2355;
-        String ipAddressString = "127.0.0.1";
-        CartesianPoint pt = CartesianPoint.xyz(37.3382, -121.8863, 1.0);
-        ArrayList<Detector> sensors = new ArrayList<>();
-        sensors.add(
-            new Detector(
-                "String sensorId", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 0.0,0.0,0.0),
-                CartesianPoint.ORIGO));
+        String carmacloudId = "";
+        String carmacloudUrl = "";
+        CarmaCloudRegistrationMessage registration = new CarmaCloudRegistrationMessage(carmacloudId, carmacloudUrl);
 
-        // Mock the behavior of the registration object
-        CarmaCloudRegistrationMessage registration = new CarmaCloudRegistrationMessage(
-                                                                            ipAddressString, 
-                                                                            infrastructureId, 
-                                                                            rxMessagePort, 
-                                                                            timeSyncPort, 
-                                                                            simulatedInteractionPort ,
-                                                                            pt, 
-                                                                            sensors);
-        // Ensure checkIfRegistered returns false for infrastructure ID before registering 
-        assertFalse( manager.checkIfRegistered(infrastructureId) );
-
+        // Ensure checkIfRegistered returns false for CARMA Cloud id before registering 
+        assertFalse(manager.checkIfRegistered(carmacloudId));
         // Call the onNewRegistration method with the mocked registration object
         manager.onNewRegistration(registration);
 
         // Verify that the infrastructure instance was added to the manager
-        assertTrue( manager.checkIfRegistered(infrastructureId) );
+        assertTrue(manager.checkIfRegistered(carmacloudId));
         // Ensure checkIfRegistered returns false for other Ids
-        assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
+        assertFalse(manager.checkIfRegistered(carmacloudId + "something") );
     }
 
     @Test
