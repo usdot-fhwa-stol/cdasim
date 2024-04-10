@@ -27,6 +27,7 @@ import com.sun.net.httpserver.HttpHandler;
 
 import com.google.gson.Gson;
 import java.io.IOException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,6 +39,7 @@ public class CarmaCloudInstanceTest {
 
     private CarmaCloudInstance instance;
     private TimeSyncMessage parsedMessage;
+    private HttpServer oSrvr;
 
     class TimeSyncHandler implements HttpHandler {
         @Override
@@ -50,8 +52,17 @@ public class CarmaCloudInstanceTest {
     }
 
     @Before
-    public void setup() throws NoSuchFieldException {
+    public void setUp() throws NoSuchFieldException {
         instance = new CarmaCloudInstance("carma-cloud", "http://localhost:8080/carmacloud/simulation");
+        oSrvr = HttpServer.create(new InetSocketAddress("localhost", 8080), 0);
+        HttpContext oCtx = oSrvr.createContext("/carmacloud/simulation");
+        oCtx.setHandler(new TimeSyncHandler());
+        oSrvr.start();
+    }
+
+    @After
+    public void tearDown() throws NoSuchFieldException {
+        oSrvr.stop(0);
     }
 
     @Test
@@ -63,15 +74,9 @@ public class CarmaCloudInstanceTest {
 
     @Test
     public void testSendTimeSyncMsg() throws IOException {
-        HttpServer oSrvr = HttpServer.create(new InetSocketAddress("localhost", 8080), 0);
-        HttpContext oCtx = oSrvr.createContext("/carmacloud/simulation");
-        oCtx.setHandler(new TimeSyncHandler());
-        oSrvr.start();
-
         // Test SendTimeSyncMsg method
         TimeSyncMessage test_msg = new TimeSyncMessage(999L, 11);
         instance.sendTimeSyncMsg(test_msg);
-        oSrvr.stop(0);
 
         assertTrue(parsedMessage != null);
         if (parsedMessage != null)
