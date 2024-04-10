@@ -42,7 +42,7 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 public class CarmaCloudInstanceTest {
 
     private CarmaCloudInstance instance;
-    private TimeSyncMessage parsedMessage = new TimeSyncMessage(-1L, -1L);
+    private TimeSyncMessage parsedMessage;
 
     class TimeSyncHandler implements HttpHandler {
         @Override
@@ -78,6 +78,11 @@ public class CarmaCloudInstanceTest {
         instance.sendTimeSyncMsg(test_msg);
         oSrvr.stop(0);
 
+        assertTrue(parsedMessage != null);
+        if (parsedMessage != null)
+        {
+            assertEquals(parsedMessage.getSeq(), );
+        }
         // ArgumentCaptor to capture parameters passed to mock on method calls
         ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
         // Verify socket.send(DatagramPacket packet) is called and capture packet
