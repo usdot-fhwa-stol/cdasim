@@ -23,24 +23,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.io.BufferedInputStream;
+import java.io.DataOutputStream;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
-import org.eclipse.mosaic.lib.math.Vector3d;
-import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
-import org.eclipse.mosaic.lib.objects.detector.DetectionType;
-import org.eclipse.mosaic.lib.objects.detector.Detector;
-import org.eclipse.mosaic.lib.objects.detector.DetectorType;
-import org.eclipse.mosaic.lib.objects.detector.Orientation;
-import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.internal.util.reflection.FieldSetter;
 
 
 
@@ -49,6 +46,24 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 public class CarmaCloudInstanceTest {
 
     private CarmaCloudInstance instance;
+
+    class TimeSyncHandler implements HttpHandler
+	{
+        @Override
+        public void handle(HttpExchange oExch)
+            throws IOException
+        {
+            int nChar;
+            StringBuilder sBuf = new StringBuilder();
+            BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody());
+            while ((nChar = oIn.read()) >= 0)
+                sBuf.append((char)nChar);
+
+            System.out.println(sBuf.toString());
+            oExch.sendResponseHeaders(200, -1L);
+            oExch.close();
+        }
+    }
 
     @Before
     public void setup() throws NoSuchFieldException {
