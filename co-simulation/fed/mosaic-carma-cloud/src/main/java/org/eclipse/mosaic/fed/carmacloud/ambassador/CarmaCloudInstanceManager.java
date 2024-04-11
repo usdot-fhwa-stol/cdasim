@@ -51,16 +51,13 @@ public class CarmaCloudInstanceManager
 	 */
 	public void onNewRegistration(CarmaCloudRegistrationMessage registration)
 	{
-		if (!managedInstances.containsKey(registration.getId()))
-		{
-			CarmaCloudInstance tmp = new CarmaCloudInstance(registration.getId(), registration.getUrl());
-			managedInstances.put(registration.getId(), tmp);
-		}
-		else
-		{
-			log.warn("Registration message received for already registered CARMA Cloud with ID: {}", registration.getId());
-		}
-			
+            if (!managedInstances.containsKey(registration.getId()))
+            {
+                CarmaCloudInstance tmp = new CarmaCloudInstance(registration.getId(), registration.getUrl());
+                managedInstances.put(registration.getId(), tmp);
+            }
+            else
+                log.warn("Registration message received for already registered CARMA Cloud with ID: {}", registration.getId());
 	}
 
 
@@ -75,17 +72,32 @@ public class CarmaCloudInstanceManager
 	public void onTimeStepUpdate(TimeSyncMessage message)
 		throws IOException
 	{
-		if (managedInstances.isEmpty()){
-			log.debug("There are no registered instances");
-		}
-		else
-		{
-			for (CarmaCloudInstance currentInstance : managedInstances.values()){
-				currentInstance.sendTimeSyncMsg(message);
-				log.debug("Sent time message to CARMA-Cloud" + message.toString());
-			}
-		}
+            if (managedInstances.isEmpty())
+                log.debug("There are no registered instances");
+            else
+            {
+                log.debug("onTimeStepUpdate instance count {}", managedInstances.size());			
+                for (CarmaCloudInstance currentInstance : managedInstances.values())
+                {
+                    currentInstance.sendTimeSyncMsg(message);
+                    log.debug("Sent time message to CARMA-Cloud " + message.toString());
+                }
+            }
 	}
+
+
+	/**
+	 * External helper function to allow the ambassador to check if a given 
+	 * CARMA Cloud ID is a registered CARMA Cloud instance
+	 * 
+	 * @param carmaCloudId The id to check
+	 * @return True if managed by this object (e.g., is a registered CARMA Platform
+	 *         vehicle). false o.w.
+	 */
+	public boolean checkIfRegistered(String carmaCloudId) {
+            return managedInstances.keySet().contains(carmaCloudId);
+	}
+
 
 	/**
 	 * Returns Map of managed CARMA Cloud instances with CARMA Cloud ID as the 
@@ -95,6 +107,6 @@ public class CarmaCloudInstanceManager
 	 */
 	public Map<String, CarmaCloudInstance> getManagedInstances()
 	{
-		return managedInstances;
+            return managedInstances;
 	}
 }
