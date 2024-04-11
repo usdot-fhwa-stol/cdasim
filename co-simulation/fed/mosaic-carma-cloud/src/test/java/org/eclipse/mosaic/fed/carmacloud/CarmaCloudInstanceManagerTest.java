@@ -57,13 +57,13 @@ public class CarmaCloudInstanceManagerTest {
         assertTrue(manager.checkIfRegistered(carmacloudId));
         // Ensure checkIfRegistered returns false for other Ids
         assertFalse(manager.checkIfRegistered(carmacloudId + "something") );
-
-        // replace registered CARMA Cloud instance with mock instance
-        manager.getManagedInstances().put(carmacloudId, instance1);
     }
 
     @Test
     public void testOnTimeStepUpdate() throws IOException {
+        // replace registered CARMA Cloud instance with mock instance
+        manager.getManagedInstances().put(carmacloudId, instance1);
+
         TimeSyncMessage message = new TimeSyncMessage(999L, 11);
         manager.onTimeStepUpdate(message);
         // Verify that all instances sendTimeSyncMsgs was called.
