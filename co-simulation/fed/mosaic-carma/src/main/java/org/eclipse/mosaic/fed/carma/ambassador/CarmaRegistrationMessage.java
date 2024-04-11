@@ -17,50 +17,70 @@
 package org.eclipse.mosaic.fed.carma.ambassador;
 
 /**
- * JSON compatible message to be sent by CARMA Platform when it registers with the carma-mosaic ambassador
+ * JSON compatible message to be sent by CARMA Platform when it registers with
+ * the carma-mosaic ambassador
  */
 public class CarmaRegistrationMessage {
     private String carmaVehicleId;
     private String carlaVehicleRole;
     private String rxMessageIpAddress;
     private int rxMessagePort;
+    private int rxTimeSyncPort;
 
     public CarmaRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
-            int rxMessagePort) {
+            int rxMessagePort, int rxTimeSyncPort) {
         this.carmaVehicleId = carmaVehicleId;
         this.carlaVehicleRole = carlaVehicleRole;
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.rxMessagePort = rxMessagePort;
+        this.rxTimeSyncPort = rxTimeSyncPort;
     }
+
     public String getCarmaVehicleId() {
         return carmaVehicleId;
     }
+
     public void setCarmaVehicleId(String carmaVehicleId) {
         this.carmaVehicleId = carmaVehicleId;
     }
+
     public String getCarlaVehicleRole() {
         return carlaVehicleRole;
     }
+
     public void setCarlaVehicleRole(String carlaVehicleRole) {
         this.carlaVehicleRole = carlaVehicleRole;
     }
+
     public String getRxMessageIpAddress() {
         return rxMessageIpAddress;
     }
+
     public void setRxMessageIpAddress(String rxMessageIpAddress) {
         this.rxMessageIpAddress = rxMessageIpAddress;
     }
+
     public int getRxMessagePort() {
         return rxMessagePort;
     }
+
     public void setRxMessagePort(int rxMessagePort) {
         this.rxMessagePort = rxMessagePort;
+    }
+
+    public int getRxTimeSyncPort() {
+        return rxTimeSyncPort;
+    }
+
+    public void setRxTimeSyncPort(int rxTimeSyncPort) {
+        this.rxTimeSyncPort = rxTimeSyncPort;
     }
 
     @Override
     public String toString() {
         return "CarmaRegistrationMessage [carmaVehicleId=" + carmaVehicleId + ", carlaVehicleRole=" + carlaVehicleRole
-                + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort + "]";
+                + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
+                + ", rxTimeSyncPort=" + rxTimeSyncPort + "]";
     }
-    
+
 }

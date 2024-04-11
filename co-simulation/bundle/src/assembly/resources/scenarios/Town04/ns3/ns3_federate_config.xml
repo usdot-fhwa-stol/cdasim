@@ -12,13 +12,13 @@
      <component name="MosaicNs3Server" value="warn|error|debug|info"/>
      <component name="MosaicNodeManager" value="warn|error|debug|info"/>
      <component name="MosaicProxyApp" value="warn|error|debug|info|function|func"/>
-     
+
      <component name="UdpSocketImpl" value="warn|error|info"/>
      <component name="UdpL4Protocol" value="warn|error|info"/>
      <component name="Ipv4L3Protocol" value="warn|error|info"/>
      <component name="Ipv4Interface" value="warn|error|info"/>
      <component name="TrafficControlLayer" value="warn|error|info"/>
-     
+
      <component name="PropagationLossModel" value="warn|error|info"/>
      <component name="YansWifiPhy" value="warn|error|info"/>
      <component name="WaveNetDevice" value="warn|error|info"/>
@@ -32,7 +32,7 @@
  <default name="ns3::MosaicNodeManager::DelayModel" value="ns3::ConstantSpeedPropagationDelayModel"/>
  <default name="ns3::MosaicNodeManager::LossModel" value="ns3::FriisPropagationLossModel"/>
 
- 
+
 <!-- NS3 model settings -->
  <default name="ns3::RandomPropagationDelayModel::Variable" value="ns3::UniformRandomVariable"/>
  <default name="ns3::ConstantSpeedPropagationDelayModel::Speed" value="2.99792e+08"/>

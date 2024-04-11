@@ -39,6 +39,6 @@ if [[ "$BRANCH" = "develop" ]]; then
       git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ~/src/carma-msgs --branch $BRANCH --depth 1
       git clone https://github.com/usdot-fhwa-stol/carma-utils.git ~/src/carma-utils --branch $BRANCH --depth 1    
 else
-      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch carma-system-4.4.3 --depth 1
-      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch carma-system-4.4.3 --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-msgs.git ${dir}/src/carma-msgs --branch carma-system-4.5.0 --depth 1
+      git clone https://github.com/usdot-fhwa-stol/carma-utils.git ${dir}/src/carma-utils --branch carma-system-4.5.0 --depth 1
 fi

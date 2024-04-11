@@ -82,6 +82,8 @@
          assertEquals(121.8863, msg.getLocation().getY(), delta);
          assertEquals(1.0, msg.getLocation().getZ(), delta);
      }
+
+
  
  }
  

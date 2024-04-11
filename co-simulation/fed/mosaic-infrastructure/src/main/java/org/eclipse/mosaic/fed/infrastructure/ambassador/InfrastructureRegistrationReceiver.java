@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.Gson;
 
@@ -44,7 +44,7 @@ public class InfrastructureRegistrationReceiver implements Runnable {
     private Queue<InfrastructureRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1615;
-    private boolean running = false;
+    private AtomicBoolean running = new AtomicBoolean(false);
     private static final int UDP_MTU = 1635;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -70,13 +70,14 @@ public class InfrastructureRegistrationReceiver implements Runnable {
     @Override
     public void run() {
         byte[] buf = new byte[UDP_MTU];
-        running = true;
-        while (running) {
+        running.set(true);
+        while (running.get()) {
             DatagramPacket msg = new DatagramPacket(buf, buf.length);
             try {
                 listenSocket.receive(msg);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Error occurred", e);
+                continue;
             }
 
             // parse message
@@ -98,10 +99,10 @@ public class InfrastructureRegistrationReceiver implements Runnable {
      * Stop the runnable instance and close the listen socket.
      */
     public void stop() {
+        running.set(false);
         if (listenSocket != null) {
             listenSocket.close();
         }
-        running = false;
     }
 
     /**

@@ -16,23 +16,30 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.Gson;
+
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 /**
  * Session management class for Infrastructure instances communicating with
@@ -47,6 +54,7 @@ public class InfrastructureInstanceManager {
     private Map<String, InfrastructureInstance> managedInstances = new HashMap<>();
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+
     /**
      * Register a new infrastructure instance with the MOSAIC system.
      * 
@@ -65,7 +73,10 @@ public class InfrastructureInstanceManager {
                         InetAddress.getByName(registration.getRxMessageIpAddress()),
                         registration.getRxMessagePort(),
                         registration.getTimeSyncPort(),
-                        registration.getLocation());
+                        registration.getSimulatedInteractionPort(),
+                        registration.getLocation(),
+                        registration.getSensors());
+
             } catch (UnknownHostException e) {
                 log.error("Failed to create infrastructure instance with ID '{}' due to an unknown host exception: {}",
                         registration.getInfrastructureId(), e.getMessage());
@@ -91,25 +102,30 @@ public class InfrastructureInstanceManager {
      * 
      */
     private void newInfrastructureInstance(String infrastructureId, InetAddress rxMessageIpAddress, int rxMessagePort,
-            int timeSyncPort, CartesianPoint location) {
+            int timeSyncPort, int simulatedInteractionPort, CartesianPoint location, List<Detector> sensors) {
         InfrastructureInstance tmp = new InfrastructureInstance(infrastructureId, rxMessageIpAddress, rxMessagePort,
-                timeSyncPort, location);
+                timeSyncPort, simulatedInteractionPort, location, sensors);
         try {
-            tmp.bind();
-            log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.", infrastructureId);
+            tmp.connect();
+            log.info("New Infrastructure instance '{}' registered with Infrastructure Instance Manager.",
+                    infrastructureId);
         } catch (IOException e) {
             log.error("Failed to bind infrastructure instance with ID '{}' to its RX message socket: {}",
                     infrastructureId, e.getMessage());
             log.error("Stack trace:", e);
         }
+
         managedInstances.put(infrastructureId, tmp);
     }
 
     /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * Callback to be invoked when CARMA Platform receives a V2X Message from the
+     * NS-3 simulation
+     * 
      * @param sourceAddr The V2X Message received
-     * @param txMsg The Host ID of the vehicle receiving the data
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     * @param txMsg      The Host ID of the vehicle receiving the data
+     * @throws RuntimeException If the socket used to communicate with the platform
+     *                          experiences failure
      */
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         InfrastructureInstance sender = null;
@@ -121,7 +137,8 @@ public class InfrastructureInstanceManager {
 
         if (sender == null) {
             // Unregistered instance attempting to send messages
-            throw new IllegalStateException("Unregistered CARMA Streets/V2XHub instance attempting to send messages via MOSAIC");
+            throw new IllegalStateException(
+                    "Unregistered CARMA Streets/V2XHub instance attempting to send messages via MOSAIC");
         }
 
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
@@ -135,21 +152,67 @@ public class InfrastructureInstanceManager {
     }
 
     /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
-     * @param rxMsg The V2X Message received
+     * Callback to be invoked when an RSU receives a V2X Message from the NS-3
+     * simulation
+     * 
+     * @param rxMsg   The V2X Message received
      * @param rxRsuId The Host ID of the vehicle receiving the data
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     * @throws RuntimeException If the socket used to communicate with the platform
+     *                          experiences failure
      */
     public void onV2XMessageRx(byte[] rxMsg, String rxRsuId) {
-        if (!managedInstances.containsKey(rxRsuId))  {
+        if (!managedInstances.containsKey(rxRsuId)) {
             return;
         }
 
         InfrastructureInstance rsu = managedInstances.get(rxRsuId);
         try {
-            rsu.sendMsgs(rxMsg);
+            rsu.sendV2xMsg(rxMsg);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Callback to be invoked when a infrastructure instance receives a simulated
+     * object detection from a registered simulated sensors. Only send object detection
+     * to the infrastructure instance that contains the sensor that reported it.
+     * 
+     * @param detection Detected Object.
+     */
+    public void onDetectedObject(DetectedObject detection) {
+        for (InfrastructureInstance instance : managedInstances.values()) {
+            if (instance.containsSensor(detection.getSensorId())) {
+                try {
+                    instance.sendDetection(detection);
+                    // Assuming each sensor would only ever be registered to a single infrastructure
+                    // instance
+                    log.trace("Received detected object: {}", detection);
+                    break;
+                } catch (IOException e) {
+                    log.error("Error occured:  {}", e.getMessage());
+                }
+            }
+        }
+    }
+
+    
+    
+    /**
+     * This function is used to send out encoded timestep update to all registered
+     * instances the manager has on the managed instances map
+     * 
+     * @param message This time message is used to store current seq and timestep
+     *                from the ambassador side
+     * @throws IOException
+     */
+    public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
+        if (managedInstances.size() == 0) {
+            log.debug("There are no registered instances");
+        }
+
+        for (InfrastructureInstance currentInstance : managedInstances.values()) {
+            currentInstance.sendTimeSyncMsg(message);
         }
     }
 
@@ -164,6 +227,12 @@ public class InfrastructureInstanceManager {
     public boolean checkIfRegistered(String infrastructureId) {
         return managedInstances.keySet().contains(infrastructureId);
     }
+    /**
+     * Returns Map of managed infrastructure instances with infrastructure ID as the 
+     * String Key.
+     * 
+     * @return map of managed infrastructure instances.
+     */
     public Map<String, InfrastructureInstance> getManagedInstances() {
         return managedInstances;
     }

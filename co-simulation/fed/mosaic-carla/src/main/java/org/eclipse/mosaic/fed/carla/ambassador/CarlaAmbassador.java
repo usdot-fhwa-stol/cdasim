@@ -16,12 +16,17 @@ package org.eclipse.mosaic.fed.carla.ambassador;
 import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
 import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.interactions.application.*;
+import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
@@ -39,6 +44,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -51,6 +58,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Connection between CARLA federate and CARLA simulator.
      */
     private CarlaConnection carlaConnection = null;
+
+    /**
+     * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
+     */
+    private CarlaXmlRpcClient carlaXmlRpcClient = null;
 
     /**
      * Command used to start CARLA simulator.
@@ -82,10 +94,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private int connectionAttempts = 5;
 
-    /**
-     * Maximum amount of attempts to connect to CARLA simulator.
-     */
-     private int executedTimes = 0;
 
     /**
      * Carla simulator client port
@@ -101,6 +109,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Queue for temporary storage of V2X messages that CARLA vehicles receive
      */
     private final PriorityBlockingQueue<CarlaV2xMessageReception> carlaV2xInteractionQueue = new PriorityBlockingQueue<>();
+
+    private List<DetectorRegistration> registeredDetectors = new ArrayList<>();
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -201,7 +211,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         // Start the CARLA simulator
         startCarlaLocal();
-
+        //initialize CarlaXmlRpcClient
+        //set the connected server URL
+        try{
+            if (carlaXmlRpcClient== null) {
+                URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
+                carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+            }
+            
+        }
+        catch (MalformedURLException m) 
+        {
+            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
+                + "connection! Check carla_config.json!", m);
+        }
+        
     }
 
     /**
@@ -215,6 +239,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Start the Carla connection server
         String bridgePath = null;
         int carlaConnectionPort = 8913;
+        
         if (carlaConfig.carlaConnectionPort != 0)
             carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
 
@@ -324,18 +349,44 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-
+            if ( time == 0 ) {
+                // Try to connect to CARLA CDA Sim Adapter on first timestep
+                carlaXmlRpcClient.connect(60);
+            }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
+                List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
+                // Get all detections from all currently registered detectors.
+                for (DetectorRegistration registration: registeredDetectors ) {
+                    DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                    for (DetectedObject detected: detections) {
+                        DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                        // Convert nanosecond timestamp to millisecond timestamp
+                        interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                        detectedObjectInteractions.add(interaction);
+                    }
+                }
+                // trigger all detection interactions
+                for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                    this.rti.triggerInteraction(detectionInteraction);
+                }
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
+                rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
             }
-            rti.requestAdvanceTime(nextTimeStep + this.executedTimes, 0, (byte) 2);
-            this.executedTimes++;
-        } catch (IllegalValueException e) {
-            log.error("Error during advanceTime(" + time + ")", e);
-            throw new InternalFederateException(e);
+            
+        } 
+        catch (IllegalValueException e) {
+            log.error("Failed to process advance time grant due to : ", e);
+        }
+        catch (XmlRpcException e ) {
+            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
+                        + "Adapter connection! Check carla_config.json!", e);
+        }
+        catch (InterruptedException e) {
+            log.error("Failed to process advance time grant due to failed thread sleep!", e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -365,6 +416,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 connectionProcess.waitFor(10, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 log.warn("Something went wrong when stopping a process", e);
+                Thread.currentThread().interrupt();
             } finally {
                 connectionProcess.destroy();
             }
@@ -470,6 +522,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } else if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((CarlaV2xMessageReception) interaction);
         }
+        else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
+            this.receiveInteraction((DetectorRegistration) interaction);
+        }
+    }
+
+    /**
+     * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
+     * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
+     * @throws InterruptedException
+     */
+    private void receiveInteraction(DetectorRegistration interaction) {
+        try {
+            carlaXmlRpcClient.createSensor(interaction);
+            registeredDetectors.add(interaction);
+        }
+        catch(XmlRpcException e) {
+            log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
+        }
+
     }
 
     /**
@@ -484,7 +555,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 carlaConnection.getDataOutputStream().write(interaction.getResult());
             }
         } catch (Exception e) {
-            log.error("error occurs during process carla traci response interaction: " + e.getMessage());
+            log.error("error occurs during process carla traci response interaction: {} ", e.getMessage());
         }
     }
 
@@ -498,11 +569,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
             if (carlaConnection.getDataOutputStream() != null) {
                 carlaConnection.getDataOutputStream().write(interaction.getResult());
-                this.executedTimes = 0;
             }
 
         } catch (Exception e) {
-            log.error("error occurs during process simulation step response interaction: " + e.getMessage());
+            log.error("error occurs during process simulation step response interaction: {}", e.getMessage());
         }
     }
 
@@ -512,7 +582,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @param interaction CarlaV2xMessageReception interaction
      */
     private void receiveInteraction(CarlaV2xMessageReception interaction) {
-        log.info("{} received V2x message: {}.", interaction.getReceiverID(), interaction.getMessage().toString());
+        log.info("{} received V2x message: {}.", interaction.getReceiverID(), interaction.getMessage());
 
         interactionQueue.add(interaction);
     }
@@ -560,7 +630,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
             }
         } catch (Exception e) {
-            log.error("error occurs during sending messages to bridge: " + e.getMessage());
+            log.error("error occurs during sending messages to bridge: {}", e.getMessage());
         }
     }
 
@@ -586,7 +656,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00 });
             }
         } catch (Exception e) {
-            log.error("error occurs during process received messages: " + e.getMessage());
+            log.error("error occurs during process received messages: {}",  e.getMessage());
         }
         return message.split(";");
     }

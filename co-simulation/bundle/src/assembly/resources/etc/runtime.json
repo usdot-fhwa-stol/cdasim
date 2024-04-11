@@ -49,7 +49,8 @@
             "subscriptions": [
                 "CarlaTraciResponse",
                 "SimulationStepResponse",
-                "CarlaV2xMessageReception"
+                "CarlaV2xMessageReception",
+                "DetectorRegistration"
             ],
             "javaClasspathEntries": []
         },
@@ -63,7 +64,8 @@
             "deploy": false,
             "start": false,
             "subscriptions": [
-                "V2xMessageReception"
+                "V2xMessageReception",
+                "VehicleUpdates"
             ],
             "javaClasspathEntries": []
         },
@@ -114,7 +116,8 @@
             "deploy": false,
             "start": false,
             "subscriptions": [
-                "V2xMessageReception"
+                "V2xMessageReception",
+                "DetectedObjectInteraction"
             ],
             "javaClasspathEntries": []
         },

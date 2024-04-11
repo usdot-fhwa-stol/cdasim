@@ -1,21 +1,34 @@
 name: "CI: Run tests"
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
   push:
+    branches:
+      - develop
+      - master
+      - "release/*"
 jobs:          
   sonar: # sonar job is to setup and run sonar scan analysis on telematic cloud messaging code
     runs-on: ubuntu-latest  
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 11
+      - name: Set up JDK 11 (Default) and 17 (Sonar)
         uses: actions/setup-java@v3 # The setup-java action provides the functionality for GitHub Actions runners for Downloading and setting up a requested version of Java
         with:
-          java-version: 11
+          # Last java version is default and set for JAVA_HOME
+          java-version: |
+            17
+            11
           distribution: "temurin"        
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+        # Build and package application using Java 8
+        # Run sonar plugin using Java 17
         run: |
           cd co-simulation
-          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io        
+          export JAVA_HOME=$JAVA_HOME_11_X64
+          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report 
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          mvn sonar:sonar -Dsonar.java.jdkHome=${JAVA_17_X64} -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io 

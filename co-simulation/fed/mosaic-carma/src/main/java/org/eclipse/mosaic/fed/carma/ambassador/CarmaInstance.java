@@ -32,14 +32,16 @@ public class CarmaInstance {
     private DatagramSocket rxMsgsSocket = null;
 
     private InetAddress targetAddress;
-    private int port;
+    private int v2xPort;
+    private int timeSyncPort;
     private GeoPoint location = GeoPoint.ORIGO;
 
-    public CarmaInstance(String carmaVehicleId, String carlaRoleName, InetAddress targetAddress, int port) {
+    public CarmaInstance(String carmaVehicleId, String carlaRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort ) {
         this.carmaVehicleId = carmaVehicleId;
         this.carlaRoleName = carlaRoleName;
         this.targetAddress = targetAddress;
-        this.port = port;
+        this.v2xPort = v2xPort;
+        this.timeSyncPort = timeSyncPort;
     }
 
     public InetAddress getTargetAddress() {
@@ -57,18 +59,49 @@ public class CarmaInstance {
     public GeoPoint getLocation() {
         return this.location;
     }
+    
+
+    public int getV2xPort() {
+        return v2xPort;
+    }
+
+    public void setV2xPort(int v2xPort) {
+        this.v2xPort = v2xPort;
+    }
+
+    public int getTimeSyncPort() {
+        return timeSyncPort;
+    }
+
+    public void setTimeSyncPort(int timeSyncPort) {
+        this.timeSyncPort = timeSyncPort;
+    }
 
     /**
-     * Sends the data to the CARMA Platform communications interface configured at construction time.
+     * Sends the V2X message to the CARMA Platform communications interface configured at construction time.
      * @param data The binary data to transmit
      * @throws IOException If there is an issue with the underlying socket object or methods
      */
-    public void sendMsgs(byte[] data) throws IOException {
+    public void sendV2xMsgs(byte[] data) throws IOException {
         if (rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
 
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, port);
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, v2xPort);
+
+        rxMsgsSocket.send(packet);
+    }
+    /**
+     * Sends the time sync messages to the CARMA Platform to synchronize ros clock with simulation clock.
+     * @param data The binary data encoding of json time sync message
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
+    public void sendTimeSyncMsg(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, timeSyncPort);
 
         rxMsgsSocket.send(packet);
     }

@@ -15,6 +15,8 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
+
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
@@ -47,6 +49,8 @@ import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import javax.xml.bind.DatatypeConverter;
+
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -75,6 +79,8 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
     private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
+    private int timeSyncSeq = 0;
+
 
     /**
      * Create a new {@link CarmaMessageAmbassador} object.
@@ -151,6 +157,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             // simulation time step
             return;
         }
+        log.info("Carma message ambassador processing timestep to {}.", time);
 
         try {
             List<CarmaRegistrationMessage> newRegistrations = carmaRegistrationReceiver.getReceivedMessages();
@@ -158,22 +165,26 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
                 carmaInstanceManager.onNewRegistration(reg);
                 onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
             }
-
-
+            // Set current simulation time to most recent time update
+            currentSimulationTime = time;
             if (currentSimulationTime == 0) {
                 // For the first timestep, clear the message receive queues.
                 v2xMessageReceiver.getReceivedMessages(); // Automatically empties the queues.
             } else {
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                    V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), time);
+                    V2xMessageTransmission msgInt = carmaInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     rti.triggerInteraction(msgInt);
                 }
             }
-
+            // Time Syncmessage in nano seconds
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime, timeSyncSeq);
+            carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);
+            // Increment time 
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
-
+            timeSyncSeq += 1;
+           
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
@@ -181,7 +192,11 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
         } catch (UnknownHostException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
+        } catch (IOException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
         }
+         
     }
 
     /**

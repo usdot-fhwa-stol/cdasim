@@ -69,6 +69,30 @@ Apache Commons Text (1.6)
  * Source: https://git-wip-us.apache.org/repos/asf?p=commons-text
 
 
+Apache WebServices Common Utilities (1.0.2)
+
+ * License: The Apache Software License, Version 2.0
+ * Maven artifact: `org.apache.ws.commons.util:ws-commons-util:1.0.2`
+ * Project: http://ws.apache.org/commons/util
+ * Source: https://svn.apache.org/viewcvs.cgi/webservices/commons/trunk/util
+
+
+Apache XML-RPC Client Library (3.1.3)
+
+ * License: The Apache Software License, Version 2.0
+ * Maven artifact: `org.apache.xmlrpc:xmlrpc-client:3.1.3`
+ * Project: http://ws.apache.org/xmlrpc/xmlrpc-client/
+ * Source: https://svn.apache.org/viewvc/webservices/xmlrpc/tags/xmlrpc-3.1.3/xmlrpc-client
+
+
+Apache XML-RPC Common Library (3.1.3)
+
+ * License: The Apache Software License, Version 2.0
+ * Maven artifact: `org.apache.xmlrpc:xmlrpc-common:3.1.3`
+ * Project: http://ws.apache.org/xmlrpc/xmlrpc-common/
+ * Source: https://svn.apache.org/viewvc/webservices/xmlrpc/tags/xmlrpc-3.1.3/xmlrpc-common
+
+
 Commons Compiler (2.7.5)
 
  * License: New BSD License
@@ -355,5 +379,13 @@ Woodstox (5.1.0)
  * Maven artifact: `com.fasterxml.woodstox:woodstox-core:5.1.0`
  * Project: https://github.com/FasterXML/woodstox
  * Source: https://github.com/FasterXML/woodstox
+
+
+XML Commons External Components XML APIs (1.0.b2)
+
+ * License: The Apache Software License, Version 2.0
+ * Maven artifact: `xml-apis:xml-apis:1.0.b2`
+ * Project: http://xml.apache.org/commons/#external
+ * Source: https://svn.apache.org/viewvc/xml/commons/tags/xml-commons-1_0_b2
 
 

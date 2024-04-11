@@ -16,14 +16,23 @@
 
 package org.eclipse.mosaic.fed.infrastructure.ambassador;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
-import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.List;
+
+import javax.xml.bind.DatatypeConverter;
+
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.infrastructure.configuration.InfrastructureConfiguration;
 import org.eclipse.mosaic.interactions.application.InfrastructureV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
+import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
@@ -31,6 +40,7 @@ import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -41,13 +51,9 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-import javax.xml.bind.DatatypeConverter;
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.List;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for Infrastructure
@@ -72,8 +78,6 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     private Thread v2xMessageBackgroundThread;
 
     private InfrastructureInstanceManager infrastructureInstanceManager = new InfrastructureInstanceManager();
-    private InfrastructureTimeInterface infrastructureTimeInterface = new InfrastructureTimeInterface(
-            infrastructureInstanceManager);
 
     private int timeSyncSeq = 0;
 
@@ -154,15 +158,26 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (interaction.getTypeId().equals(InfrastructureV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((InfrastructureV2xMessageReception) interaction);
         }
+        if (interaction.getTypeId().equals(DetectedObjectInteraction.TYPE_ID)) {
+            this.receiveDetectedObjectInteraction((DetectedObjectInteraction) interaction);
+        }
     }
 
+    /**
+     * Provide infrastructure instance manager with detected objects from processed detected 
+     * object interactions.
+     * 
+     * @param interaction processed detected objected interaction.
+     */
+    private synchronized void receiveDetectedObjectInteraction( DetectedObjectInteraction interaction) {
+        log.trace("Process Detected Object Interaction {}", interaction);
+        infrastructureInstanceManager.onDetectedObject(interaction.getDetectedObject());
+    }
     /**
      * Extract external message from received
      * {@link InfrastructureV2xMessageReception} interaction.
      *
-     * @param interaction Interaction indicates that the
-     *                                          external message is received by a
-     *                                          rsu.
+     * @param interaction Interaction indicates that the external message is received by a rsu.
      */
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
         String rsuId = interaction.getReceiverName();
@@ -190,6 +205,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
     }
+
 
     /**
      *
@@ -273,20 +289,34 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (time < currentSimulationTime) {
             return;
         }
-        log.info("Infrastructure message ambassador processing timestep to " + time);
+        log.info("Infrastructure message ambassador processing timestep to {}.", time);
         try {
-
             // Handle any new infrastructure registration requests
             List<InfrastructureRegistrationMessage> newRegistrations = infrastructureRegistrationReceiver
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
-                log.info("Processing new registration request for " + reg.getInfrastructureId());
+                log.info("Processing new registration request for  {}.", reg.getInfrastructureId());
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg);
                 // Process registration requests for RSUs and DSRCs
                 onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
-                log.info("RSU Registration for "+ reg.getInfrastructureId() + " @ x, y, z: (" + reg.getLocation().getX() + ", " + reg.getLocation().getY() + ", " + reg.getLocation().getZ() + ")");
+                log.info("RSU Registration for {} @ x, y, z: ( {}, {}, {}) .", 
+                                            reg.getInfrastructureId(),
+                                            reg.getLocation().getX(),
+                                            reg.getLocation().getY(), 
+                                            reg.getLocation().getZ());
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
+                // Check for empty list of sensors which is valid
+                if (reg.getSensors() != null ) {
+                    log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
+                    for (Detector sensor : reg.getSensors()) {
+                        // Trigger Sensor registrations for all listed sensors.
+                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
+                    }
+                } 
+                else {
+                   log.warn("No sensors registered for infrastructure instance {}.", reg.getInfrastructureId());
+                }
             }
 
             if (currentSimulationTime == 0) {
@@ -295,7 +325,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             } else {
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                    log.info("Processing new V2X transmit event of type " + msg.getB().getType());
+                    log.info("Processing new V2X transmit event of type {}.", msg.getB().getType());
                     V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     log.info("Inserted message ID {} into v2xmessage cache.", msgInt.getMessageId());
@@ -304,25 +334,20 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             }
 
             timeSyncSeq += 1;
-            InfrastructureTimeMessage timeSyncMessage = new InfrastructureTimeMessage();
-            timeSyncMessage.setSeq(timeSyncSeq);
             // nanoseconds to milliseconds for InfrastructureTimeMessage
-            timeSyncMessage.setTimestep(currentSimulationTime/1000000);
-            infrastructureTimeInterface.onTimeStepUpdate(timeSyncMessage);
-
-            // TODO: Handle any queued V2X message receiver's received messages
+            TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime/1000000, timeSyncSeq);
+            infrastructureInstanceManager.onTimeStepUpdate(timeSyncMessage);
 
             // Advance the simulation time
             currentSimulationTime += infrastructureConfiguration.updateInterval * TIME.MILLI_SECOND;
 
             // Request the next time advance from the RTI
-            log.info("Requesting timestep updated to " + currentSimulationTime);
+            log.info("Requesting timestep updated to  {}.", currentSimulationTime);
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {
-            log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
         } catch (IOException e1) {
-            log.error("Error during updating timestep :" + e1.getMessage());
+            log.error("Error during updating timestep :", e1);
         }
     }
 
