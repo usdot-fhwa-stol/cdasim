@@ -16,6 +16,8 @@
 
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
+import org.eclipse.mosaic.rti.api.InternalFederateException;
+import org.eclipse.mosaic.rti.api.IllegalValueException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
