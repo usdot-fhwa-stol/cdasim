@@ -18,7 +18,7 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.net.InetSocketAddress;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpContext;
@@ -44,7 +44,7 @@ public class CarmaCloudInstanceTest {
     class TimeSyncHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange oExch) throws IOException {
-            BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody());
+            DataInputStream oIn = new DataInputStream(oExch.getRequestBody());
             parsedMessage = new Gson().fromJson(oIn.readUTF(), TimeSyncMessage.class);
             oExch.sendResponseHeaders(200, -1L);
             oExch.close();
