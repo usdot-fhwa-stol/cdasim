@@ -16,6 +16,7 @@
 
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
+import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.Interaction;
@@ -49,6 +50,8 @@ import org.junit.rules.TemporaryFolder;
 public class CarmaCloudMessageAmbassadorTest {
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    private final TestFileRule testFileRule = new TestFileRule(temporaryFolder).basedir("carmacloud");
 
     /**
      * {@link RtiAmbassador} mock.
