@@ -16,8 +16,9 @@
 
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
-import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
+import org.eclipse.mosaic.rti.api.InternalFederateException;
+import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
@@ -106,7 +107,10 @@ public class CarmaCloudMessageAmbassadorTest {
 
     @Test
     public void testProcessInteraction() throws InternalFederateException {
-        assertTrue(true);
+        Interaction interactionMock = mock(Interaction.class);
+        ambassador.processInteraction(interactionMock);
+        verify(interactionMock).getTypeId();
+        verify(interactionMock).getTime();
     }
 
     @Test
