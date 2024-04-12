@@ -18,6 +18,7 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
+import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.TIME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,6 +46,11 @@ public class CarmaCloudMessageAmbassadorTest {
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+    /**
+     * {@link RtiAmbassador} mock.
+     */
+    private RtiAmbassador rtiMock;
+
     private CarmaCloudMessageAmbassador ambassador;
     /**
      * {@link CarmaCloudInstanceManager} mock.
@@ -60,6 +66,7 @@ public class CarmaCloudMessageAmbassadorTest {
     @Before
     public void setUp() throws IOException, NoSuchFieldException, InternalFederateException, IllegalValueException {
         // Initialize Mocks
+        rtiMock = mock(RtiAmbassador.class);
         instanceManagerMock = mock(CarmaCloudInstanceManager.class);
         receiverMock = mock(CarmaCloudRegistrationReceiver.class);
 
@@ -70,6 +77,7 @@ public class CarmaCloudMessageAmbassadorTest {
         ambassador = new CarmaCloudMessageAmbassador(new AmbassadorParameter("carmacloud",
             temporaryFolder.newFile("carmacloud/carmacloud_config.json")));
 
+        ambassador.setRtiAmbassador(rtiMock);
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carmaCloudRegistrationReceiver"), receiverMock);
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carmaCloudInstanceManager"), instanceManagerMock);
     }
