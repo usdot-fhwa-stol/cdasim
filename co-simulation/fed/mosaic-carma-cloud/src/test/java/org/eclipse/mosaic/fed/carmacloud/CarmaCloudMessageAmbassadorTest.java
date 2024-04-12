@@ -19,6 +19,8 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
+import org.eclipse.mosaic.rti.config.CLocalHost;
 import org.eclipse.mosaic.rti.TIME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -67,17 +69,27 @@ public class CarmaCloudMessageAmbassadorTest {
     public void setUp() throws IOException, NoSuchFieldException, InternalFederateException, IllegalValueException {
         // Initialize Mocks
         rtiMock = mock(RtiAmbassador.class);
+        FederateDescriptor handleMock = mock(FederateDescriptor.class);
         instanceManagerMock = mock(CarmaCloudInstanceManager.class);
         receiverMock = mock(CarmaCloudRegistrationReceiver.class);
+        File workingDir = temporaryFolder.getRoot();
+        CLocalHost testHostConfig = new CLocalHost();
+        testHostConfig.workingDirectory = workingDir.getAbsolutePath();
 
-        CarmaCloudRegistrationMessage message = new CarmaCloudRegistrationMessage("", "");
+        // Mock methods     
+        when(handleMock.getHost()).thenReturn(testHostConfig);
+        when(handleMock.getId()).thenReturn("carmacloud");
+        CarmaCloudRegistrationMessage message = new CarmaCloudRegistrationMessage("carmacloud-id", "carmacloud-url");
         registrationMessages = new ArrayList<>();
         registrationMessages.add(message);
+        when(receiverMock.getReceivedMessages()).thenReturn(registrationMessages);
 
+        // Set mocks as ambassador members through reflection or setters
         ambassador = new CarmaCloudMessageAmbassador(new AmbassadorParameter("carmacloud",
             temporaryFolder.newFile("carmacloud/carmacloud_config.json")));
 
         ambassador.setRtiAmbassador(rtiMock);
+        ambassador.setFederateDescriptor(handleMock);
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carmaCloudRegistrationReceiver"), receiverMock);
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carmaCloudInstanceManager"), instanceManagerMock);
     }
