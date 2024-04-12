@@ -116,6 +116,9 @@ public class CarmaCloudMessageAmbassadorTest {
     @Test
     public void testProcessTimeAdvanceGrant() throws InternalFederateException, IllegalValueException, NoSuchFieldException, SecurityException
     {
-        assertTrue(true);
+        //Test processTimeAdvanceGrant for Infrastructure Registration
+        ambassador.processTimeAdvanceGrant(100);
+        // Verify received messages were attempted to be pulled from Infrastructure Registration Receiver mock
+        verify(receiverMock, times(1)).getReceivedMessages();
     }
 }
