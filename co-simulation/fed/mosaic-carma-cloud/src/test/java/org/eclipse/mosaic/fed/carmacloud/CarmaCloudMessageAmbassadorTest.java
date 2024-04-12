@@ -18,6 +18,7 @@ package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
+import org.eclipse.mosaic.rti.TIME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,12 +35,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 
 /**
  * Tests for {@link CarmaCloudMessageAmbassador}.
  */
 public class CarmaCloudMessageAmbassadorTest {
+
+    private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private CarmaCloudMessageAmbassador ambassador;
     /**
@@ -61,11 +66,21 @@ public class CarmaCloudMessageAmbassadorTest {
         CarmaCloudRegistrationMessage message = new CarmaCloudRegistrationMessage("", "");
         registrationMessages = new ArrayList<>();
         registrationMessages.add(message);
+
+        ambassador = new CarmaCloudMessageAmbassador(new AmbassadorParameter("carmacloud",
+            temporaryFolder.newFile("carmacloud/carmacloud_config.json")));
+
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carmaCloudRegistrationReceiver"), receiverMock);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carmaCloudInstanceManager"), instanceManagerMock);
     }
 
     @Test
     public void testInitialize() throws InternalFederateException, IllegalValueException {
-        assertTrue(true);
+        // Test initialize method
+        ambassador.initialize(0, 100 * TIME.SECOND);
+        verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
+        // cleanup threads and sockets
+        ambassador.close();
     }
 
     @Test
