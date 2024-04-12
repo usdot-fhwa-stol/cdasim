@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -49,7 +50,8 @@ import org.junit.rules.TemporaryFolder;
  */
 public class CarmaCloudMessageAmbassadorTest {
 
-    private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @Rule
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private final TestFileRule testFileRule = new TestFileRule(temporaryFolder).basedir("carmacloud");
 
