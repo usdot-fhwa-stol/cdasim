@@ -50,8 +50,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class CarmaCloudMessageAmbassadorTest {
 
-    @Rule
-    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+    private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private final TestFileRule testFileRule = new TestFileRule(temporaryFolder).basedir("carmacloud");
 
