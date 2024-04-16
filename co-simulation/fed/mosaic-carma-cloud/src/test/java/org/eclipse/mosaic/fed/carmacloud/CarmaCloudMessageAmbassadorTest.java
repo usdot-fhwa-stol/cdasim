@@ -92,7 +92,7 @@ public class CarmaCloudMessageAmbassadorTest {
 
         // Set mocks as ambassador members through reflection or setters
         ambassador = new CarmaCloudMessageAmbassador(new AmbassadorParameter("carmacloud",
-            temporaryFolder.newFile("carmacloud/carmacloud_config.json")));
+            temporaryFolder.newFile("carmacloud/carma-cloud_config.json")));
 
         ambassador.setRtiAmbassador(rtiMock);
         ambassador.setFederateDescriptor(handleMock);
