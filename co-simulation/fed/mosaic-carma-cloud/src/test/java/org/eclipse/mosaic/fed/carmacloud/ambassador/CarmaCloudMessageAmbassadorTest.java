@@ -42,6 +42,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 
@@ -53,6 +54,9 @@ public class CarmaCloudMessageAmbassadorTest {
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private final TestFileRule testFileRule = new TestFileRule(temporaryFolder).basedir("carmacloud");
+
+    @Rule
+    public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(testFileRule);
 
     /**
      * {@link RtiAmbassador} mock.
