@@ -120,14 +120,14 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 	 * @throws InternalFederateException Exception is thrown if an error is occurred
 	 *                                   while execute of a federate.
 	 */
-	@Override
-	public void processInteraction(Interaction interaction)
-		throws InternalFederateException
-	{
-		String type = interaction.getTypeId();
-		long interactionTime = interaction.getTime();
-		log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-	}
+//	@Override
+//	public void processInteraction(Interaction interaction)
+//		throws InternalFederateException
+//	{
+//		String type = interaction.getTypeId();
+//		long interactionTime = interaction.getTime();
+//		log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
+//	}
 
 
 	/**
