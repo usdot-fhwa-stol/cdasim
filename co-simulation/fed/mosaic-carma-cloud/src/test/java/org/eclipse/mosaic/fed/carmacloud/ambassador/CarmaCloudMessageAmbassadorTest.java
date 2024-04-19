@@ -128,6 +128,6 @@ public class CarmaCloudMessageAmbassadorTest {
         ambassador.processTimeAdvanceGrant(10);
         // Verify received messages were attempted to be pulled from CARMA Cloud Registration Receiver mock
         verify(receiverMock, times(1)).getReceivedMessages();
-        verify(rtiMock, times(1)).requestAdvanceTime(eq(1000000L), eq(0L), eq((byte) 2));
+        verify(rtiMock, times(1)).requestAdvanceTime(eq(100000000L), eq(0L), eq((byte) 2));
     }
 }
