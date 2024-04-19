@@ -32,40 +32,49 @@
  
      private static final int TEST_PORT = 1617;
  
-     private Socket sendSocket;
-     private CarmaCloudRegistrationReceiver receiver;
+//     private Socket sendSocket;
+//     private CarmaCloudRegistrationReceiver receiver;
  
-     @Before
-     public void setup() throws Exception {
+//     @Before
+//     public void setup() throws Exception {
          // Set up a TCP socket to send messages
-         sendSocket = new Socket();
+//         sendSocket = new Socket();
  
          // Initialize the receiver
-         receiver = new CarmaCloudRegistrationReceiver();
-         receiver.init();
-         Thread receiverThread = new Thread(receiver);
-         receiverThread.start();
-     }
+ //        receiver = new CarmaCloudRegistrationReceiver();
+ //        receiver.init();
+ //        Thread receiverThread = new Thread(receiver);
+ //        receiverThread.start();
+ //    }
  
-     @After
-     public void teardown() throws Exception {
+ //    @After
+ //    public void teardown() throws Exception {
          // Stop the receiver and close the send socket
-         receiver.stop();
-         sendSocket.close();
-     }
+ //        receiver.stop();
+ //        sendSocket.close();
+ //    }
  
      @Test
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
          String json = "{\"id\":\"carma-cloud\",\"url\":\"http://someaddress:8080/carmacloud/simulation\"}";
- 
+
+         // Setup the registration receiver
+         CarmaCloudRegistrationReceiver receiver = new CarmaCloudRegistrationReceiver();
+         receiver.init();
+         new Thread(receiver).start();
+      
          // Send the test message to the receiver
-         InetAddress address = InetAddress.getLocalHost();
-         sendSocket.connect(new InetSocketAddress(address, TEST_PORT), 10000);
-         DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
-         out.writeUTF(json);
-         out.close();
- 
+         try
+         (
+             Socket sendSocket = new Socket(InetAddress.getLocalHost(), TEST_PORT);
+             DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
+         )
+         {
+             out.writeUTF(json);
+         }
+         receiver.stop();
+
          // Verify that the message was received correctly
          List<CarmaCloudRegistrationMessage> msgs = receiver.getReceivedMessages();
          assertEquals(1, msgs.size());
