@@ -17,10 +17,15 @@
  package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
  import static org.junit.Assert.assertEquals;
- 
+ import static org.mockito.Mockito.mock;
+ import static org.mockito.Mockito.when;
+ import org.mockito.internal.util.reflection.FieldSetter;
+
+ import java.io.ByteArrayInputStream;
  import java.io.DataOutputStream;
  import java.net.InetAddress;
  import java.net.InetSocketAddress;
+ import java.net.ServerSocket;
  import java.net.Socket;
  import java.util.List;
  
@@ -58,22 +63,18 @@
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
          String json = "{\"id\":\"carma-cloud\",\"url\":\"http://someaddress:8080/carmacloud/simulation\"}";
+         MockServer = mock(ServerSocket.class);
+         MockSock = mock(Socket.class);
+
+         // mock socket server, socket, and inputstream
+         Mockito.when(MockServer.accept()).thenReturn(MockSock);
+         ByteArrayInputStream oIn = new ByteArrayInputStream(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+         Mockito.when(MockSock.getInputStream()).thenReturn(oIn);
 
          // Setup the registration receiver
          CarmaCloudRegistrationReceiver receiver = new CarmaCloudRegistrationReceiver();
-         receiver.init();
-         new Thread(receiver).start();
-      
-         // Send the test message to the receiver
-         try
-         (
-             Socket sendSocket = new Socket(InetAddress.getLocalHost(), TEST_PORT);
-             DataOutputStream out = new DataOutputStream(sendSocket.getOutputStream());
-         )
-         {
-             out.writeUTF(json);
-         }
-         receiver.stop();
+         FieldSetter.setField(receiver, receiver.getClass().getDeclaredField("m_oSrvr"), MockServer);
+         receiver.run(); // multi-threading not needed here
 
          // Verify that the message was received correctly
          List<CarmaCloudRegistrationMessage> msgs = receiver.getReceivedMessages();
