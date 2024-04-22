@@ -22,6 +22,7 @@
  import org.mockito.internal.util.reflection.FieldSetter;
 
  import java.io.ByteArrayInputStream;
+ import java.io.ByteArrayOutputStream;
  import java.io.DataOutputStream;
  import java.net.InetAddress;
  import java.net.InetSocketAddress;
@@ -63,13 +64,16 @@
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
          String json = "{\"id\":\"carma-cloud\",\"url\":\"http://someaddress:8080/carmacloud/simulation\"}";
+         DataOutputStream oOut = new DataOutputStream(new ByteArrayOutputStream());
+         oOut.writeUTF(json);
+         oOut.close(); // flush contents
+      
          ServerSocket MockServer = mock(ServerSocket.class);
          Socket MockSock = mock(Socket.class);
 
          // mock socket server, socket, and inputstream
          when(MockServer.accept()).thenReturn(MockSock);
-         ByteArrayInputStream oIn = new ByteArrayInputStream(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-         when(MockSock.getInputStream()).thenReturn(oIn);
+         when(MockSock.getInputStream()).thenReturn(new ByteArrayInputStream(oOut.toByteArray()));
 
          // Setup the registration receiver
          CarmaCloudRegistrationReceiver receiver = new CarmaCloudRegistrationReceiver();
