@@ -63,8 +63,8 @@
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
          String json = "{\"id\":\"carma-cloud\",\"url\":\"http://someaddress:8080/carmacloud/simulation\"}";
-         MockServer = mock(ServerSocket.class);
-         MockSock = mock(Socket.class);
+         ServerSocket MockServer = mock(ServerSocket.class);
+         Socket MockSock = mock(Socket.class);
 
          // mock socket server, socket, and inputstream
          Mockito.when(MockServer.accept()).thenReturn(MockSock);
