@@ -64,7 +64,8 @@
      public void testMessageReceive() throws Exception {
          // Define a test message in JSON format
          String json = "{\"id\":\"carma-cloud\",\"url\":\"http://someaddress:8080/carmacloud/simulation\"}";
-         DataOutputStream oOut = new DataOutputStream(new ByteArrayOutputStream());
+         ByteArrayOutputStream oBytes = new ByteArrayOutputStream();
+         DataOutputStream oOut = new DataOutputStream(oBytes);
          oOut.writeUTF(json);
          oOut.close(); // flush contents
       
@@ -73,7 +74,7 @@
 
          // mock socket server, socket, and inputstream
          when(MockServer.accept()).thenReturn(MockSock);
-         when(MockSock.getInputStream()).thenReturn(new ByteArrayInputStream(oOut.toByteArray()));
+         when(MockSock.getInputStream()).thenReturn(new ByteArrayInputStream(oBytes.toByteArray()));
 
          // Setup the registration receiver
          CarmaCloudRegistrationReceiver receiver = new CarmaCloudRegistrationReceiver();
