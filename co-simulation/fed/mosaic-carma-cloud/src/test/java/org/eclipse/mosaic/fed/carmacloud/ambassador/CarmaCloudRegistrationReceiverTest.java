@@ -67,9 +67,9 @@
          Socket MockSock = mock(Socket.class);
 
          // mock socket server, socket, and inputstream
-         Mockito.when(MockServer.accept()).thenReturn(MockSock);
+         when(MockServer.accept()).thenReturn(MockSock);
          ByteArrayInputStream oIn = new ByteArrayInputStream(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-         Mockito.when(MockSock.getInputStream()).thenReturn(oIn);
+         when(MockSock.getInputStream()).thenReturn(oIn);
 
          // Setup the registration receiver
          CarmaCloudRegistrationReceiver receiver = new CarmaCloudRegistrationReceiver();
