@@ -85,8 +85,8 @@ public class CarmaCloudInstanceTest {
         if (messageBuf.length() > 0)
         {
             TimeSyncMessage parsedMessage = new Gson().fromJson(messageBuf.toString(), TimeSyncMessage.class);
-            assertEquals(parsedMessage.getTimestep(), 999L);
-            assertEquals(parsedMessage.getSeq(), 11);
+            assertEquals(999L, parsedMessage.getTimestep());
+            assertEquals(11, parsedMessage.getSeq());
         }
     }
 }
