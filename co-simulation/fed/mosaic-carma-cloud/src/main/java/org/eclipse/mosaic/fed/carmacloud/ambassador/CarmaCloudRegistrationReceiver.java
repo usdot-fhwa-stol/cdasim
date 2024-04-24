@@ -44,7 +44,7 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
 	private final Queue<CarmaCloudRegistrationMessage> rxQueue = new LinkedList<>();
-	private ServerSocket m_oSrvr;
+	private ServerSocket srvr;
 
 
 	/**
@@ -52,15 +52,15 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 	 * 
 	 * @throws RuntimeException if socket instantiation fails
 	 */
-	public void init()
+	public void init() throws RuntimeException
 	{
 		try
 		{
-			m_oSrvr = new ServerSocket(LISTEN_PORT);
+			srvr = new ServerSocket(LISTEN_PORT);
 		}
 		catch (Exception oEx)
 		{
-			throw new RuntimeException(oEx);
+			throw new RuntimeException("server socket instantiation failure", oEx);
 		}
 	}
 
@@ -77,7 +77,7 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 		{
 			while (running.get())
 			{
-				Socket oSock = m_oSrvr.accept();
+				Socket oSock = srvr.accept();
         		DataInputStream oIn = new DataInputStream(oSock.getInputStream());
 
 				// parse message
@@ -105,11 +105,11 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 	public void stop()
 	{
 		running.set(false);
-		if (m_oSrvr != null)
+		if (srvr != null)
 		{
 			try
 			{
-				m_oSrvr.close();
+				srvr.close();
 			}
 			catch (Exception oEx)
 			{
