@@ -47,7 +47,6 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 	CarmaCloudConfiguration carmaCloudConfiguration;
 
 	private CarmaCloudRegistrationReceiver carmaCloudRegistrationReceiver;
-	private Thread registrationRxBackgroundThread;
 	private final CarmaCloudInstanceManager carmaCloudInstanceManager = new CarmaCloudInstanceManager();
 	private int timeSyncSeq;
 
@@ -58,7 +57,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 	 * @param ambassadorParameter includes parameters for the
 	 *                            CarmaCloudMessageAmbassador.
 	 */
-	public CarmaCloudMessageAmbassador(AmbassadorParameter ambassadorParameter)
+	public CarmaCloudMessageAmbassador(AmbassadorParameter ambassadorParameter) throws RuntimeException
 	{
 		super(ambassadorParameter);
 		try // load configuration file
@@ -98,8 +97,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 
 		carmaCloudRegistrationReceiver = new CarmaCloudRegistrationReceiver();
 		carmaCloudRegistrationReceiver.init();
-		registrationRxBackgroundThread = new Thread(carmaCloudRegistrationReceiver);
-		registrationRxBackgroundThread.start();
+		new Thread(carmaCloudRegistrationReceiver).start();
 
 		try
 		{
@@ -111,23 +109,6 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 			throw new InternalFederateException(e);
 		}
 	}
-
-
-	/**
-	 * This method processes the interactions.
-	 *
-	 * @param interaction The interaction that can be processed.
-	 * @throws InternalFederateException Exception is thrown if an error is occurred
-	 *                                   while execute of a federate.
-	 */
-//	@Override
-//	public void processInteraction(Interaction interaction)
-//		throws InternalFederateException
-//	{
-//		String type = interaction.getTypeId();
-//		long interactionTime = interaction.getTime();
-//		log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-//	}
 
 
 	/**
