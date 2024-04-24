@@ -108,7 +108,7 @@ public class CarmaCloudMessageAmbassadorTest {
     public void testInitialize() throws InternalFederateException, IllegalValueException {
         // Test initialize method
         ambassador.initialize(0, 100 * TIME.SECOND);
-        verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
+        verify(rtiMock, times(1)).requestAdvanceTime(0L, 0L, ((byte) 1));
         // cleanup threads and sockets
         ambassador.close();
     }
@@ -128,6 +128,6 @@ public class CarmaCloudMessageAmbassadorTest {
         ambassador.processTimeAdvanceGrant(10);
         // Verify received messages were attempted to be pulled from CARMA Cloud Registration Receiver mock
         verify(receiverMock, times(1)).getReceivedMessages();
-        verify(rtiMock, times(1)).requestAdvanceTime(eq(100000000L), eq(0L), eq((byte) 2));
+        verify(rtiMock, times(1)).requestAdvanceTime(100000000L, 0L, ((byte) 2));
     }
 }
