@@ -38,7 +38,7 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 public class CarmaCloudInstanceTest {
 
     private CarmaCloudInstance instance;
-    private StringBuilder parsedMessage = new StringBuilder();
+    private StringBuilder messageBuf = new StringBuilder();
     private HttpServer oSrvr;
 
     class TimeSyncHandler implements HttpHandler {
@@ -47,7 +47,7 @@ public class CarmaCloudInstanceTest {
             int nChar;
             BufferedInputStream oIn = new BufferedInputStream(oExch.getRequestBody());
             while ((nChar = oIn.read()) >= 0)
-                parsedMessage.append((char)nChar);
+                messageBuf.append((char)nChar);
 
             oExch.sendResponseHeaders(200, -1L);
             oExch.close();
@@ -80,11 +80,13 @@ public class CarmaCloudInstanceTest {
         // Test SendTimeSyncMsg method
         TimeSyncMessage test_msg = new TimeSyncMessage(999L, 11);
         instance.sendTimeSyncMsg(test_msg);
-        System.out.println(parsedMessage.toString());
-        if (parsedMessage.length() > 0)
+
+        assertTrue(messageBuf.length() > 0);
+        if (messageBuf.length() > 0)
         {
-//            assertEquals(parsedMessage.getTimestep(), 999L);
-//            assertEquals(parsedMessage.getSeq(), 11);
+            TimeSyncMessage parsedMessage = new Gson().fromJson(messageBuf.toString(), TimeSyncMessage.class);
+            assertEquals(parsedMessage.getTimestep(), 999L);
+            assertEquals(parsedMessage.getSeq(), 11);
         }
     }
 }
