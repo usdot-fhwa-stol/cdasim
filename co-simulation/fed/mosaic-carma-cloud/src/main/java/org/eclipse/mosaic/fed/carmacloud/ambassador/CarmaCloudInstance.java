@@ -31,9 +31,9 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 public class CarmaCloudInstance
 {
 	// unique simulation identifier for the CARMA Cloud instance
-	private final String m_sCarmaCloudId;
+	private final String carmaCloudId;
 	// URL endpoint where to send simulation time sync messages
-	private final String m_sCarmaCloudUrl;
+	private final String carmaCloudUrl;
 
 
 	/**
@@ -44,8 +44,8 @@ public class CarmaCloudInstance
 	 */ 
 	public CarmaCloudInstance(String sId, String sUrl)
 	{
-		m_sCarmaCloudId = sId;
-		m_sCarmaCloudUrl = sUrl;
+		carmaCloudId = sId;
+		carmaCloudUrl = sUrl;
 	}
 
 
@@ -56,7 +56,7 @@ public class CarmaCloudInstance
 	 */
 	public String getCarmaCloudUrl()
 	{
-		return m_sCarmaCloudUrl;
+		return carmaCloudUrl;
 	}
 
 
@@ -67,7 +67,7 @@ public class CarmaCloudInstance
 	 */
 	public String getCarmaCloudId()
 	{
-			return m_sCarmaCloudId;
+			return carmaCloudId;
 	}
 
 
@@ -80,7 +80,7 @@ public class CarmaCloudInstance
 	public void sendTimeSyncMsg(TimeSyncMessage oMsg)
 		throws IOException
 	{
-		HttpURLConnection oHttp = (HttpURLConnection)new URL(m_sCarmaCloudUrl).openConnection();
+		HttpURLConnection oHttp = (HttpURLConnection)new URL(carmaCloudUrl).openConnection();
 		oHttp.setRequestMethod("POST");
 		oHttp.setDoOutput(true);
 		try (DataOutputStream oOut = new DataOutputStream(oHttp.getOutputStream()))
