@@ -78,7 +78,7 @@
 
          // Setup the registration receiver
          CarmaCloudRegistrationReceiver receiver = new CarmaCloudRegistrationReceiver();
-         FieldSetter.setField(receiver, receiver.getClass().getDeclaredField("m_oSrvr"), MockServer);
+         FieldSetter.setField(receiver, receiver.getClass().getDeclaredField("srvr"), MockServer);
          receiver.run(); // multi-threading not needed here
 
          // Verify that the message was received correctly
