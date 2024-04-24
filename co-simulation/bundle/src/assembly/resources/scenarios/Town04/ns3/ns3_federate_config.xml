@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ns3>
-
- <NetworkConfig>
-     <component name="CommType" value="LTE"/>
-     <component name="NumOfNodes" value="5"/>
- </NetworkConfig>
-
  <LogLevel>
      <!-- for name, refer to corresponding ns3 model -->
      <!-- possible level values: error warn debug info function logic all * -->
@@ -18,13 +12,13 @@
      <component name="MosaicNs3Server" value="warn|error|debug|info"/>
      <component name="MosaicNodeManager" value="warn|error|debug|info"/>
      <component name="MosaicProxyApp" value="warn|error|debug|info|function|func"/>
-     
+
      <component name="UdpSocketImpl" value="warn|error|info"/>
      <component name="UdpL4Protocol" value="warn|error|info"/>
      <component name="Ipv4L3Protocol" value="warn|error|info"/>
      <component name="Ipv4Interface" value="warn|error|info"/>
      <component name="TrafficControlLayer" value="warn|error|info"/>
-     
+
      <component name="PropagationLossModel" value="warn|error|info"/>
      <component name="YansWifiPhy" value="warn|error|info"/>
      <component name="WaveNetDevice" value="warn|error|info"/>
@@ -38,7 +32,7 @@
  <default name="ns3::MosaicNodeManager::DelayModel" value="ns3::ConstantSpeedPropagationDelayModel"/>
  <default name="ns3::MosaicNodeManager::LossModel" value="ns3::FriisPropagationLossModel"/>
 
- 
+
 <!-- NS3 model settings -->
  <default name="ns3::RandomPropagationDelayModel::Variable" value="ns3::UniformRandomVariable"/>
  <default name="ns3::ConstantSpeedPropagationDelayModel::Speed" value="2.99792e+08"/>
@@ -79,13 +73,8 @@
 
  <default name="ns3::ConstantRateWifiManager::DataMode" value="OfdmRate6Mbps"/>
  <default name="ns3::ConstantRateWifiManager::ControlMode" value="OfdmRate6Mbps"/>
- <!-- 
-    Fabian Eckermann NS-3 C-V2X cannot take ns3::QueueBase::MaxPackets 
-    configuration. By removing this config, the default setting will be 
-    unbounded. Without a set limit on MaxPackets, the queue would not drop 
-    packets solely because it has exceeded a specified packet count. 
- -->
- <!-- <default name="ns3::QueueBase::MaxPackets" value="400"/> -->
+
+ <default name="ns3::QueueBase::MaxPackets" value="400"/>
  <default name="ns3::WifiMacQueue::MaxDelay" value="+500000000.0ns"/>
  <default name="ns3::WifiNetDevice::Mtu" value="2296"/>
 
@@ -101,26 +90,4 @@
  <default name="ns3::WifiMac::MaxPropagationDelay" value="+3333.0ns"/>
  <default name="ns3::WifiMac::Ssid" value="default"/>
  <global name="RngSeed" value="1"/>
-
-
- <default name="ns3::LteUePhy::TxPower" value="23"/>
- <default name="ns3::LteUePhy::RsrpUeMeasThreshold" value="-10"/>
- <default name="ns3::LteUePhy::EnableV2x" value="true"/>
- <default name="ns3::LteUePowerControl::Pcmax" value="2"/>
- <default name="ns3::LteUePowerControl::PsschTxPower" value="23"/>
- <default name="ns3::LteUePowerControl::PscchTxPower" value="23"/>
- <default name="ns3::LteUeMac::UlBandwidth" value="30"/>
- <default name="ns3::LteUeMac::EnableV2xHarq" value="false"/>
- <default name="ns3::LteUeMac::EnableAdjacencyPscchPssch" value="true"/>
- <default name="ns3::LteUeMac::EnablePartialSensing" value="false"/>
- <default name="ns3::LteUeMac::SlGrantMcs" value="20"/>
- <default name="ns3::LteUeMac::SlSubchannelSize" value="10"/>
- <default name="ns3::LteUeMac::SlSubchannelNum" value="3"/>
- <default name="ns3::LteUeMac::SlStartRbSubchannel" value="0"/>
- <default name="ns3::LteUeMac::SlPrsvp" value="100"/>
- <default name="ns3::LteUeMac::SlProbResourceKeep" value="0"/>
- <default name="ns3::LteUeMac::SelectionWindowT1" value="4"/>
- <default name="ns3::LteUeMac::SelectionWindowT2" value="100"/>
- <default name="ns3::LteEnbNetDevice::UlEarfcn" value="54990"/>
-
 </ns3>
