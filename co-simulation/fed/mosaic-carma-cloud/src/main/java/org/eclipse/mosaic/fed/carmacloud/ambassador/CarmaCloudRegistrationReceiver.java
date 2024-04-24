@@ -58,9 +58,9 @@ public class CarmaCloudRegistrationReceiver implements Runnable
 		{
 			m_oSrvr = new ServerSocket(LISTEN_PORT);
 		}
-		catch (Exception e)
+		catch (Exception oEx)
 		{
-			throw new RuntimeException(e);
+			throw new RuntimeException(oEx);
 		}
 	}
 
