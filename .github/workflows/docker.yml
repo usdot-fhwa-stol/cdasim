@@ -6,4 +6,4 @@ jobs:
   docker:
     uses: usdot-fhwa-stol/actions/.github/workflows/docker.yml@main
     with:
-      runner: ubuntu-latest-16-core
+      runner: ubuntu-latest-16-cores
