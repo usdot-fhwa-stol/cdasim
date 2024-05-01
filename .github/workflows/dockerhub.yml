@@ -5,6 +5,8 @@ on:
       - "develop"
       - "master"
       - "release/*"
+    tags:
+      - "carma-system-*"
 
 jobs:
   dockerhub:
