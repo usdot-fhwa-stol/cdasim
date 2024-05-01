@@ -153,7 +153,7 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 			currentSimulationTime = time;
 
 			// Request the next time advance from the RTI
-			log.info("Requesting timestep updated to  {}.", currentSimulationTime + carmaCloudConfiguration.updateInterval);
+			log.info("Requesting timestep updated to  {}.", currentSimulationTime + carmaCloudConfiguration.updateInterval* TIME.MILLI_SECOND);
 			rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
 		}
 		catch (IllegalValueException e)
