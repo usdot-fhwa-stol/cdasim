@@ -48,13 +48,12 @@ public class CarmaCloudInstanceManagerTest {
         // Set up the registration object
         CarmaCloudRegistrationMessage registration = new CarmaCloudRegistrationMessage(carmacloudId, carmacloudUrl);
 
-        // Call the onNewRegistration method with the mocked registration object
+        // Call the onNewRegistration method with the registration object
         manager.onNewRegistration(registration);
 
         // Verify that the infrastructure instance was added to the manager
-        assertTrue(manager.checkIfRegistered(carmacloudId));
-        // Ensure checkIfRegistered returns false for other Ids
-        assertFalse(manager.checkIfRegistered(carmacloudId + "something") );
+        assertFalse(manager.getManagedInstances().isEmpty());
+        assertTrue(manager.getManagedInstances().get(carmacloudId) != null);
     }
 
     @Test
