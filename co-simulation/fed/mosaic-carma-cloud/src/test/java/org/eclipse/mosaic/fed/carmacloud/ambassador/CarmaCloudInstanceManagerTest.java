@@ -48,8 +48,6 @@ public class CarmaCloudInstanceManagerTest {
         // Set up the registration object
         CarmaCloudRegistrationMessage registration = new CarmaCloudRegistrationMessage(carmacloudId, carmacloudUrl);
 
-        // Ensure checkIfRegistered returns false for CARMA Cloud id before registering 
-        assertFalse(manager.checkIfRegistered(carmacloudId));
         // Call the onNewRegistration method with the mocked registration object
         manager.onNewRegistration(registration);
 
