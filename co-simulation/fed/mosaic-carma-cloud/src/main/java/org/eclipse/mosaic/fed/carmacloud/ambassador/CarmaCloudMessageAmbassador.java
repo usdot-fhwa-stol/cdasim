@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.mosaic.fed.carmacloud.configuration.CarmaCloudConfiguration;
+import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
@@ -108,6 +109,26 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 			log.error("Error during advanceTime request", e);
 			throw new InternalFederateException(e);
 		}
+	}
+
+	/**
+	 * This function is designed for logging purposes to record data for analysis.
+	 *
+	 * @param interaction The interaction that can be processed.
+	 * @throws InternalFederateException Exception is thrown if an error is occurred
+	 *                                   while execute of a federate.
+	 */
+	@Override
+	public void processInteraction(Interaction interaction)
+		throws InternalFederateException
+	{
+		
+		if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
+            V2xMessageReception v2xmsgRec = (V2xMessageReception) interaction;
+			String type = v2xmsgRec.getTypeId();
+			long interactionTime = v2xmsgRec.getTime();
+			log.trace("Process interaction with type '{}'; ID: {} at time: {}", type, v2xmsgRec.getMessageId(), interactionTime);
+        }
 	}
 
 
