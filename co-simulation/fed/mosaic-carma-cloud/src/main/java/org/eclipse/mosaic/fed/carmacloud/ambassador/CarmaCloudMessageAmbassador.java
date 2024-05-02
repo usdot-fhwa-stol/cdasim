@@ -147,13 +147,13 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 	{
 		// Process the time advance only if the time is equal or greater than the next
 		// simulation time step
-		log.info("processTimeAdvanceGrant {} {}", currentSimulationTime, time);
+		log.debug("Process time advance grant from {} to {}.", currentSimulationTime, time);
 		if (time < currentSimulationTime)
 		{
 			return;
 		}
-
-		log.info("CarmaCloud message ambassador processing timestep to {}.", time);
+		
+		currentSimulationTime = time;
 		try
 		{
 			// Handle any new carmaCloud registration requests
@@ -171,10 +171,10 @@ public class CarmaCloudMessageAmbassador extends AbstractFederateAmbassador
 			carmaCloudInstanceManager.onTimeStepUpdate(timeSyncMessage);
 
 			// Advance the simulation time
-			currentSimulationTime = time;
+			currentSimulationTime += carmaCloudConfiguration.updateInterval* TIME.MILLI_SECOND;
 
 			// Request the next time advance from the RTI
-			log.info("Requesting timestep updated to  {}.", currentSimulationTime + carmaCloudConfiguration.updateInterval* TIME.MILLI_SECOND);
+			log.debug("Requesting timestep updated to  {}.", currentSimulationTime);
 			rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
 		}
 		catch (IllegalValueException e)
