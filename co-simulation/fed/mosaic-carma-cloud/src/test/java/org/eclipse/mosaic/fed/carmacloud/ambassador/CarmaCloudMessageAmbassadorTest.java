@@ -116,7 +116,7 @@ public class CarmaCloudMessageAmbassadorTest {
     @Test
     public void testProcessInteraction() throws InternalFederateException {
         Interaction interactionMock = mock(Interaction.class);
-        when(receiverMock.getTypeId()).thenReturn("testProcessInteraction");
+        when(interactionMock.getTypeId()).thenReturn("testProcessInteraction");
         ambassador.processInteraction(interactionMock);
         verify(interactionMock).getTypeId();
         verify(interactionMock).getTime();
