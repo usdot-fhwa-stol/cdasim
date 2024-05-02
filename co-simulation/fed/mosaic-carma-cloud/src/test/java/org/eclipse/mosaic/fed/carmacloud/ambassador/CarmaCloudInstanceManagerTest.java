@@ -17,7 +17,7 @@
 package org.eclipse.mosaic.fed.carmacloud.ambassador;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -53,7 +53,7 @@ public class CarmaCloudInstanceManagerTest {
 
         // Verify that the infrastructure instance was added to the manager
         assertFalse(manager.getManagedInstances().isEmpty());
-        assertTrue(manager.getManagedInstances().get(carmacloudId) != null);
+        assertNotNull(manager.getManagedInstances().get(carmacloudId));
     }
 
     @Test
