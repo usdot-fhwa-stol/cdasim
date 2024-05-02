@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CarmaCloudRegistrationReceiver implements Runnable
 {
-	private static final int LISTEN_PORT = 1617; // which port for CARMA Cloud?
+	private static final int LISTEN_PORT = 1617;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
 	private final Queue<CarmaCloudRegistrationMessage> rxQueue = new LinkedList<>();
