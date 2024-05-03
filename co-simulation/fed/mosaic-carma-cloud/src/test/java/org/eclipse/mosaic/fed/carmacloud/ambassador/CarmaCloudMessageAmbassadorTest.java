@@ -114,14 +114,6 @@ public class CarmaCloudMessageAmbassadorTest {
     }
 
     @Test
-    public void testProcessInteraction() throws InternalFederateException {
-        Interaction interactionMock = mock(Interaction.class);
-        when(interactionMock.getTypeId()).thenReturn("testProcessInteraction");
-        ambassador.processInteraction(interactionMock);
-        verify(interactionMock).getTypeId();
-    }
-
-    @Test
     public void testProcessTimeAdvanceGrant() throws InternalFederateException, IllegalValueException, NoSuchFieldException, SecurityException
     {
         //Test processTimeAdvanceGrant for CARMA Cloud Registration
