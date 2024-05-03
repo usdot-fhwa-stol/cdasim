@@ -98,6 +98,13 @@
                     <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
                 </encoder>
             </appender>
+            <appender name="CarmaCloudLog" class="ch.qos.logback.core.FileAppender">
+                <charset>UTF-8</charset>
+                <file>${logDirectory}/CarmaCloud.log</file>
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <pattern>%date %-5level %C{0}:%line - %msg%n</pattern>
+                </encoder>
+            </appender>
             <appender name="EnvironmentLog" class="ch.qos.logback.core.FileAppender">
                 <charset>UTF-8</charset>
                 <file>${logDirectory}/Environment.log</file>
@@ -207,6 +214,10 @@
 
             <logger name="org.eclipse.mosaic.fed.infrastructure" additivity="false" level="TRACE">
                 <appender-ref ref="InfrastructureLog"/>
+            </logger>
+
+            <logger name="org.eclipse.mosaic.fed.carmacloud" additivity="false" level="TRACE">
+                <appender-ref ref="CarmaCloudLog"/>
             </logger>
 
             <logger name="org.eclipse.mosaic.fed.output" additivity="false" level="INFO">
