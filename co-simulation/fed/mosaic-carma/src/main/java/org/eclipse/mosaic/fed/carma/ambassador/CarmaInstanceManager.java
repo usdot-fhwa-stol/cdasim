@@ -96,7 +96,7 @@ public class CarmaInstanceManager {
                 sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
-        log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, payload: {}, type: {}", 
+        log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, type: {}, payload: {}", 
                 time, 
                 sender.getCarmaVehicleId(),
                 sender.getLocation(),
