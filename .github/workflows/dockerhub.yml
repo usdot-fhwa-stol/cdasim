@@ -2,8 +2,8 @@ name: Docker Hub build
 on:
   push:
     branches:
-      - "develop"
-      - "master"
+      - develop
+      - master
       - "release/*"
     tags:
       - "carma-system-*"
@@ -14,3 +14,5 @@ jobs:
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    with:
+      runner: ubuntu-latest-16-cores
