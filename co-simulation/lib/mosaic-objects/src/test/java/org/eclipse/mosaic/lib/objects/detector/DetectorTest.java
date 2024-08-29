@@ -31,26 +31,30 @@ public class DetectorTest {
 
     @Test
     public void testDetectorJsonSerialization() {
-        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
-                CartesianPoint.xyz(1, 2, 3));
+        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR,new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                CartesianPoint.xyz(1, 2, 3), new Orientation(23.0, 0, 0)));
         Gson gson = new Gson();
         String sensorJson = gson.toJson(sensor);
         String predictedSensorJson = "{"
         +   "\"sensorId\":\"something\","
         +   "\"type\":\"SemanticLidar\","
-        +   "\"orientation\":"
-        +   "{"
-        +       "\"yaw\":23.0,"
-        +       "\"pitch\":0.0,"
-        +       "\"roll\":0.0"
-        +   "},"
-        +   "\"location\":"
-        +   "{"
-        +       "\"x\":1.0,"
-        +       "\"y\":2.0,"
-        +       "\"z\":3.0"
-        +   "}"
-        +"}";
+        +   "\"ref\":{"
+        +       "\"type\":\"CARTESIAN\","
+        +       "\"location\":"
+        +       "{"
+        +           "\"x\":1.0,"
+        +           "\"y\":2.0,"
+        +           "\"z\":3.0"
+        +       "},"
+        +       "\"orientation\":"
+        +       "{"
+        +           "\"yaw\":23.0,"
+        +           "\"pitch\":0.0,"
+        +           "\"roll\":0.0"
+        +       "}"
+        +  "}"
+        + "}";
+        
         assertEquals(sensorJson, predictedSensorJson);
     }
 
@@ -58,23 +62,26 @@ public class DetectorTest {
     public void testDetectorJsonDeserialization() {
         String predictedSensorJson = "{"
         +   "\"sensorId\":\"something\","
-        +   "\"type\":\"SemanticLidar\","
-        +   "\"orientation\":"
-        +   "{"
-        +       "\"yaw\":23.0,"
-        +       "\"pitch\":0.0,"
-        +       "\"roll\":0.0"
-        +   "},"
-        +   "\"location\":"
-        +   "{"
-        +       "\"x\":1.0,"
-        +       "\"y\":2.0,"
-        +       "\"z\":3.0"
+                + "\"type\":\"SemanticLidar\","
+        +   "\"ref\":{"
+        +       "\"type\":\"CARTESIAN\","
+        +       "\"orientation\":"
+        +       "{"
+        +           "\"yaw\":23.0,"
+        +           "\"pitch\":0.0,"
+        +           "\"roll\":0.0"
+        +       "},"
+        +       "\"location\":"
+        +       "{"
+        +           "\"x\":1.0,"
+        +           "\"y\":2.0,"
+        +           "\"z\":3.0"
+        +       "}"
         +   "}"
         +"}";
         Gson gson = new Gson();
-        Detector predictedSensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
-                CartesianPoint.xyz(1, 2, 3));
+        Detector predictedSensor = new Detector("something", DetectorType.SEMANTIC_LIDAR,new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+        CartesianPoint.xyz(1, 2, 3), new Orientation(23.0, 0, 0)));
         Detector sensor = gson.fromJson(predictedSensorJson, Detector.class);
         assertEquals(sensor, predictedSensor);
         assertEquals(sensor.hashCode(), predictedSensor.hashCode());
@@ -82,29 +89,27 @@ public class DetectorTest {
 
     @Test
     public void testGetterSetterConstructor() {
-        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
-                CartesianPoint.xyz(1, 2, 3));
+        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR,new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+            CartesianPoint.xyz(1, 2, 3), new Orientation(23.0, 0, 0)));
         assertEquals("something", sensor.getSensorId());
         assertEquals(DetectorType.SEMANTIC_LIDAR, sensor.getType());
-        assertEquals(new Orientation(23.0, 0, 0), sensor.getOrientation());
-        assertEquals(CartesianPoint.xyz(1,2,3), sensor.getLocation());
+        assertEquals(new Orientation(23.0, 0, 0), sensor.getRef().getOrientation());
+        assertEquals(CartesianPoint.xyz(1,2,3), sensor.getRef().getLocation());
         // Test Setters
         sensor.setSensorId("NewSensor");
-        sensor.setLocation(CartesianPoint.xy(45,67));
-        sensor.setOrientation(new Orientation(22, 33, 44));
+        sensor.getRef().setLocation(CartesianPoint.xy(45,67));
+        sensor.getRef().setOrientation(new Orientation(22, 33, 44));
         sensor.setType(DetectorType.INSTANCE_SEGMENTATION_CAMERA);
         assertEquals("NewSensor", sensor.getSensorId());
         assertEquals(DetectorType.INSTANCE_SEGMENTATION_CAMERA, sensor.getType());
-        assertEquals(new Orientation(22, 33, 44), sensor.getOrientation());
-        assertEquals(CartesianPoint.xy(45,67), sensor.getLocation());
+        assertEquals(new Orientation(22, 33, 44), sensor.getRef().getOrientation());
+        assertEquals(CartesianPoint.xy(45,67), sensor.getRef().getLocation());
     }
     @Test
     public void testToString() {
-        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
-                CartesianPoint.xyz(1, 2, 3));
-        String sensoString = "Detector [sensorId=something, type=SEMANTIC_LIDAR, "
-                            + "orientation=Orientation [yaw=23.0, pitch=0.0, roll=0.0], "
-                            + "location=CartesianPoint{x=1.00,y=2.00,z=3.00}]";      
+        Detector sensor = new Detector("something", DetectorType.SEMANTIC_LIDAR,new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+        CartesianPoint.xyz(1, 2, 3), new Orientation(23.0, 0, 0)));
+        String sensoString = "Detector [sensorId=something, type=SEMANTIC_LIDAR, ref=DetectorReferenceLocation [locationDataType=CARTESIAN, location=CartesianPoint{x=1.00,y=2.00,z=3.00}, orientation=Orientation [yaw=23.0, pitch=0.0, roll=0.0]]]";      
         assertEquals(sensoString, sensor.toString());
     }
 }

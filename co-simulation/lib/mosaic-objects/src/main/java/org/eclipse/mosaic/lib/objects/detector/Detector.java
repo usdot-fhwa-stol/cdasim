@@ -24,22 +24,20 @@ public class Detector implements Serializable {
 
     private String sensorId;
     private DetectorType type;
-    private Orientation orientation;
-    private CartesianPoint location;
+    private DetectorReferenceLocation ref;
 
     /**
      * Sensor/Detector constructor
      * 
      * @param sensorId unique string ID of sensor/detector.
      * @param type of the sensor/detector.
-     * @param orientation of the sensor/detector. 
-     * @param location of the sensor/detector.
+     * @param ref reference location of sensor
      */
-    public Detector(String sensorId, DetectorType type, Orientation orientation, CartesianPoint location) {
+    public Detector(String sensorId, DetectorType type,
+            DetectorReferenceLocation ref) {
         this.sensorId = sensorId;
         this.type = type;
-        this.orientation = orientation;
-        this.location = location;
+        this.ref = ref;
     }
 
     /**
@@ -74,36 +72,16 @@ public class Detector implements Serializable {
         this.type = type;
     }
 
-    /**
-     * Get sensor/detector {@link Orientation}.
-     * @return
-     */
-    public Orientation getOrientation() {
-        return orientation;
+
+    public DetectorReferenceLocation getRef() {
+        return ref;
     }
 
-    /**
-     * Set sensor/detector {@link Orientation}.
-     * @param orientation
-     */
-    public void setOrientation(Orientation orientation) {
-        this.orientation = orientation;
+
+    public void setRef(DetectorReferenceLocation ref) {
+        this.ref = ref;
     }
 
-    /**
-     * Get sensor/detector location.
-     * @return {@link CartesianPoint}.
-     */
-    public CartesianPoint getLocation() {
-        return location;
-    }
-    /**
-     * Set sensor/detector location
-     * @param point {@link CartesianPoint}.
-     */
-    public void setLocation(CartesianPoint point) {
-        this.location = point;
-    }
 
     @Override
     public int hashCode() {
@@ -111,10 +89,10 @@ public class Detector implements Serializable {
         int result = 1;
         result = prime * result + ((sensorId == null) ? 0 : sensorId.hashCode());
         result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + ((orientation == null) ? 0 : orientation.hashCode());
-        result = prime * result + ((location == null) ? 0 : location.hashCode());
+        result = prime * result + ((ref == null) ? 0 : ref.hashCode());
         return result;
     }
+
 
     @Override
     public boolean equals(Object obj) {
@@ -132,24 +110,23 @@ public class Detector implements Serializable {
             return false;
         if (type != other.type)
             return false;
-        if (orientation == null) {
-            if (other.orientation != null)
+        if (ref == null) {
+            if (other.ref != null)
                 return false;
-        } else if (!orientation.equals(other.orientation))
-            return false;
-        if (location == null) {
-            if (other.location != null)
-                return false;
-        } else if (!location.equals(other.location))
+        } else if (!ref.equals(other.ref))
             return false;
         return true;
     }
 
+
     @Override
     public String toString() {
-        return "Detector [sensorId=" + sensorId + ", type=" + type + ", orientation=" + orientation + ", location="
-                + location + "]";
+        return "Detector [sensorId=" + sensorId + ", type=" + type  + ", ref=" + ref + "]";
     }
+
+    
+
+    
     
 
     

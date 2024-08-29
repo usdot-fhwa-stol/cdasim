@@ -34,7 +34,9 @@ import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorReferenceLocation;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.LocationDataType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
@@ -67,16 +69,18 @@ public class InfrastructureInstanceTest {
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
                 new Detector(
-                        "sensor1",
-                        DetectorType.SEMANTIC_LIDAR,
-                        new Orientation(0.0, 0.0, 0.0),
-                        CartesianPoint.ORIGO));
+                    "sensor1",
+                    DetectorType.SEMANTIC_LIDAR,
+                    new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                    CartesianPoint.xyz(0, 0, 0),
+                    new Orientation(0, 0, 0))));
         sensors.add(
-                new Detector(
-                        "NewSensor",
-                        DetectorType.SEMANTIC_LIDAR,
-                        new Orientation(20.0, 20.0, 0.0),
-                        CartesianPoint.ORIGO));
+            new Detector(
+                "NewSensor",
+                DetectorType.SEMANTIC_LIDAR,
+                new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                CartesianPoint.xyz(0, 0, 0),
+                new Orientation(20, 20, 0))));
         instance = new InfrastructureInstance(
                 "SomeID",
                 address,
@@ -118,17 +122,19 @@ public class InfrastructureInstanceTest {
         assertEquals(9999, instance.getSimulatedInteractionPort());
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
-                new Detector(
-                        "sensor1",
-                        DetectorType.SEMANTIC_LIDAR,
-                        new Orientation(1.0, 2.0, 3.0),
-                        CartesianPoint.ORIGO));
+            new Detector(
+                "sensor1",
+                DetectorType.SEMANTIC_LIDAR,
+                new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                CartesianPoint.xyz(0, 0, 0),
+                new Orientation(1, 2, 3))));
         sensors.add(
-                new Detector(
-                        "NewSensor",
-                        DetectorType.SEMANTIC_LIDAR,
-                        new Orientation(24.0, 25.0, 6.0),
-                        CartesianPoint.ORIGO));
+            new Detector(
+                "newSensor",
+                DetectorType.SEMANTIC_LIDAR,
+                new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                CartesianPoint.xyz(0, 0, 0),
+                new Orientation(25, 26, 6))));
         instance.setSensors(sensors);
         assertEquals(sensors, instance.getSensors());
         instance.setTargetAddress(address);

@@ -21,7 +21,9 @@ import java.util.ArrayList;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorReferenceLocation;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.LocationDataType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Test;
 
@@ -31,11 +33,8 @@ public class InfrastructureRegistrationMessageTest {
         // Test Constructor
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
-            new Detector(
-                "String sensorId", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 0.0,0.0,0.0),
-                CartesianPoint.ORIGO));
+            new Detector("something", DetectorType.SEMANTIC_LIDAR,new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+            CartesianPoint.ORIGO, new Orientation(23.0, 0, 0))));
         InfrastructureRegistrationMessage message = new InfrastructureRegistrationMessage(
                 "127.0.0.1",
                  "rsu_1", 

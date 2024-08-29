@@ -20,7 +20,9 @@ import static org.junit.Assert.assertNotEquals;
 
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorReferenceLocation;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.LocationDataType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,8 +36,8 @@ public class DetectorRegistrationTest {
 
     @Test
     public void testGetterSetterConstructor() {
-        Detector detector = new Detector("something", DetectorType.SEMANTIC_LIDAR, new Orientation(23.0, 0, 0),
-                CartesianPoint.xyz(1, 2, 3));
+        Detector detector = new Detector("something", DetectorType.SEMANTIC_LIDAR,new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+            CartesianPoint.xyz(1, 2, 3), new Orientation(23.0, 0, 0)));
         detectorRegistration.setDetector(detector);
         assertEquals(detector, detectorRegistration.getDetector());
 

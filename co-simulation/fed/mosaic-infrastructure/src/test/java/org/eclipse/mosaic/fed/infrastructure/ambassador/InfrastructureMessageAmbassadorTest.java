@@ -40,12 +40,16 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.junit.GeoProjectionRule;
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.math.Vector3d;
+import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorReferenceLocation;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.LocationDataType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
+import org.eclipse.mosaic.lib.transform.GeoProjection;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
@@ -128,23 +132,26 @@ public class InfrastructureMessageAmbassadorTest {
         // Create Infrastructure registration
         ArrayList<Detector> rsu_1_sensors = new ArrayList<>();
         rsu_1_sensors.add(
-            new Detector(
-                "sensor1", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 0.0,0.0,0.0),
-                CartesianPoint.ORIGO));
+                new Detector(
+                    "sensor1",
+                    DetectorType.SEMANTIC_LIDAR,
+                    new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                    CartesianPoint.xyz(0, 0, 0),
+                    new Orientation(0, 0, 0))));
         rsu_1_sensors.add(
             new Detector(
-                "sensor2", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 20.0,0.0,0.0),
-                CartesianPoint.xy(1,1)));
+                    "sensor2",
+                    DetectorType.SEMANTIC_LIDAR,
+                    new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                    CartesianPoint.xyz(1, 1, 0),
+                    new Orientation(20, 0, 0))));
         rsu_1_sensors.add(
             new Detector(
-                "sensor3", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 180.0,0.0,0.0),
-                CartesianPoint.xy(-1,1)));
+                    "sensor3",
+                    DetectorType.SEMANTIC_LIDAR,
+                    new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                    CartesianPoint.xyz(-11, 1, 0),
+                    new Orientation(180, 0, 0))));
         InfrastructureRegistrationMessage message = new InfrastructureRegistrationMessage(
                 "127.0.0.1",
                  "rsu_1", 

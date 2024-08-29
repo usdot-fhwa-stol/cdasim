@@ -26,7 +26,9 @@ import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorReferenceLocation;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.LocationDataType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
@@ -53,9 +55,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
-
-
 /**
  * Tests for {@link CarlaAmbassador}.
  */
@@ -79,7 +78,7 @@ public class CarlaAmbassadorTest {
 
         rtiMock = mock(RtiAmbassador.class);
 
-        carlaXmlRpcClientMock = mock(CarlaXmlRpcClient.class); 
+        carlaXmlRpcClientMock = mock(CarlaXmlRpcClient.class);
 
         FederateDescriptor handleMock = mock(FederateDescriptor.class);
 
@@ -100,33 +99,38 @@ public class CarlaAmbassadorTest {
 
         ambassador.setFederateDescriptor(handleMock);
 
-        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaXmlRpcClient"), carlaXmlRpcClientMock);
-
-       
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaXmlRpcClient"),
+                carlaXmlRpcClientMock);
 
     }
 
     @Test
     public void initialize() throws Throwable {
         CarlaConfiguration config = new CarlaConfiguration();
-        config.carlaCDASimAdapterUrl="https://testing/something";
+        config.carlaCDASimAdapterUrl = "https://testing/something";
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaConfig"), config);
 
         // RUN
         ambassador.initialize(0, 100 * TIME.SECOND);
         // ASSERT
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
-        
 
     }
 
     @Test
-    public void processTimeAdvanceGrant() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException, IllegalValueException {
+    public void processTimeAdvanceGrant() throws InternalFederateException, NoSuchFieldException, SecurityException,
+            XmlRpcException, IllegalValueException {
         List<DetectorRegistration> registeredDetectors = new ArrayList<>();
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        Detector detector = new Detector(
+                "sensorId",
+                DetectorType.SEMANTIC_LIDAR,
+                new DetectorReferenceLocation(LocationDataType.CARTESIAN,
+                        CartesianPoint.xyz(0, 0, 0),
+                        new Orientation(0, 0, 0)));
         DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-        registeredDetectors.add( registration);
-        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"), registeredDetectors);
+        registeredDetectors.add(registration);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"),
+                registeredDetectors);
 
         // Setup Get detected objects return
         // Object 1 is CAR
@@ -141,65 +145,81 @@ public class CarlaAmbassadorTest {
                 new Vector3d(.1, .2, .3),
                 new Size(2, 1, .5),
                 100);
-        Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
+        Double[][] covarianceMatrix = { { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 } };
         predictedCar.setPositionCovariance(covarianceMatrix);
         predictedCar.setVelocityCovariance(covarianceMatrix);
         predictedCar.setAngularVelocityCovariance(covarianceMatrix);
         DetectedObject predictedBus = new DetectedObject(
-            DetectionType.BUS,
-            0.5,
-            "sensorID1",
-            "projection String",
-            101,
-            CartesianPoint.xyz(1.1, 2, 3.2),
-            new Vector3d(0, 0, 0),
-            new Vector3d(),
-            new Size(0, 0, 0),
-            100);
-        Double[][] bus_covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
+                DetectionType.BUS,
+                0.5,
+                "sensorID1",
+                "projection String",
+                101,
+                CartesianPoint.xyz(1.1, 2, 3.2),
+                new Vector3d(0, 0, 0),
+                new Vector3d(),
+                new Size(0, 0, 0),
+                100);
+        Double[][] bus_covarianceMatrix = { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } };
         predictedBus.setPositionCovariance(bus_covarianceMatrix);
         predictedBus.setVelocityCovariance(bus_covarianceMatrix);
         predictedBus.setAngularVelocityCovariance(bus_covarianceMatrix);
 
-        DetectedObject[] detectedObjects = {predictedBus, predictedCar};
-        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenReturn(detectedObjects);
-        // Set is simulation timestep to true 
+        DetectedObject[] detectedObjects = { predictedBus, predictedCar };
+        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(),
+                registration.getDetector().getSensorId())).thenReturn(detectedObjects);
+        // Set is simulation timestep to true
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("isSimulationStep"), true);
 
         ambassador.processTimeAdvanceGrant(100);
 
-        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(),
+                registration.getDetector().getSensorId());
         verify(rtiMock, times(2)).triggerInteraction(any(DetectedObjectInteraction.class));
     }
 
     @Test
-    public void processTimeAdvanceGrantException() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException, IllegalValueException {
+    public void processTimeAdvanceGrantException() throws InternalFederateException, NoSuchFieldException,
+            SecurityException, XmlRpcException, IllegalValueException {
         List<DetectorRegistration> registeredDetectors = new ArrayList<>();
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        Detector detector =   new Detector(
+            "sensorId",
+            DetectorType.SEMANTIC_LIDAR,
+            new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+            CartesianPoint.xyz(0, 0, 0),
+            new Orientation(0, 0, 0)));
         DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-        registeredDetectors.add( registration);
-        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"), registeredDetectors);
+        registeredDetectors.add(registration);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"),
+                registeredDetectors);
 
-        
-        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenThrow(XmlRpcException.class);
-         // Set is simulation timestep to true 
+        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(),
+                registration.getDetector().getSensorId())).thenThrow(XmlRpcException.class);
+        // Set is simulation timestep to true
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("isSimulationStep"), true);
-        // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions are trigger and exception is caught
+        // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions
+        // are trigger and exception is caught
         try {
             ambassador.processTimeAdvanceGrant(0);
-        }catch (Exception e) {
+        } catch (Exception e) {
             assertEquals(InternalFederateException.class, e.getClass());
             assertEquals(XmlRpcException.class, e.getCause().getClass());
         }
 
-        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(),
+                registration.getDetector().getSensorId());
         verify(rtiMock, times(0)).triggerInteraction(any(DetectedObjectInteraction.class));
 
     }
 
     @Test
     public void processDetectorRegistrationInteraction() throws XmlRpcException {
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        Detector detector =   new Detector(
+            "sensorId",
+            DetectorType.SEMANTIC_LIDAR,
+            new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+            CartesianPoint.xyz(0, 0, 0),
+            new Orientation(0, 0, 0)));
         DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
 
         ambassador.processInteraction(registration);
@@ -210,7 +230,12 @@ public class CarlaAmbassadorTest {
 
     @Test
     public void processDetectorRegistrationInteractionException() throws XmlRpcException {
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        Detector detector =   new Detector(
+            "sensorId",
+            DetectorType.SEMANTIC_LIDAR,
+            new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+            CartesianPoint.xyz(0, 0, 0),
+            new Orientation(0, 0, 0)));
         DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
 
         doThrow(new XmlRpcException("")).when(carlaXmlRpcClientMock).createSensor(registration);
@@ -218,7 +243,5 @@ public class CarlaAmbassadorTest {
 
         verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
     }
-
-
 
 }

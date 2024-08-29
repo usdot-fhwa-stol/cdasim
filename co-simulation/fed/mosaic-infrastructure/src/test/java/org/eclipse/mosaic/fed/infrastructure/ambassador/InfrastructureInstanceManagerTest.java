@@ -33,7 +33,9 @@ import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorReferenceLocation;
 import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.LocationDataType;
 import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.junit.Before;
@@ -81,11 +83,12 @@ public class InfrastructureInstanceManagerTest {
         CartesianPoint pt = CartesianPoint.xyz(37.3382, -121.8863, 1.0);
         ArrayList<Detector> sensors = new ArrayList<>();
         sensors.add(
-            new Detector(
-                "String sensorId", 
-                DetectorType.SEMANTIC_LIDAR, 
-                new Orientation( 0.0,0.0,0.0),
-                CartesianPoint.ORIGO));
+           new Detector(
+                    "sensorId",
+                    DetectorType.SEMANTIC_LIDAR,
+                    new DetectorReferenceLocation( LocationDataType.CARTESIAN,
+                    CartesianPoint.xyz(0, 0, 0),
+                    new Orientation(0, 0, 0))));
 
         // Mock the behavior of the registration object
         InfrastructureRegistrationMessage registration = new InfrastructureRegistrationMessage(
