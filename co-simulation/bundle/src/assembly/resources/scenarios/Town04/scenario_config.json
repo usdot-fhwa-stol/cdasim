@@ -9,8 +9,8 @@
                 "longitude": 0
             },
             "cartesianOffset": {
-                "x": 0,
-                "y": 0
+                "x": 503.02,
+                "y": 423.76
             }
         },
         "network": {
@@ -36,6 +36,6 @@
         "carma": true,
         "infrastructure": true,
         "carma-cloud": true
-        
+
     }
 }
