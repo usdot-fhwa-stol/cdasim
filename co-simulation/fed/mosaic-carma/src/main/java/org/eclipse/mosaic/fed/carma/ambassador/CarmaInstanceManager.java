@@ -96,8 +96,8 @@ public class CarmaInstanceManager {
                 sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
-        log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, type: {}, payload: {}", 
-                time, 
+        log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, type: {}, payload: {}",
+                time,
                 sender.getCarmaVehicleId(),
                 sender.getLocation(),
                 txMsg.getType(),
@@ -116,6 +116,7 @@ public class CarmaInstanceManager {
         for (VehicleData veh : vui.getUpdated()) {
             if (managedInstances.containsKey(veh.getName())) {
                 managedInstances.get(veh.getName()).setLocation(veh.getPosition());
+                log.warn("On vehicle updates in carma instance manager, vehicle position, veh_name:{}, position {}", veh.getName(), veh.getPosition().toString());
             }
         }
     }
@@ -142,7 +143,7 @@ public class CarmaInstanceManager {
     /**
      * This function is used to send out encoded timestep update to all registered
      * instances the manager has on the managed instances map
-     * 
+     *
      * @param message This time message is used to store current seq and timestep
      *                from the ambassador side
      * @throws IOException
@@ -156,9 +157,9 @@ public class CarmaInstanceManager {
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaInstance currentInstance : managedInstances.values()) {
                 log.debug("Sending CARMA Platform instance {} at {}:{} time sync message for time {}!" ,
-                    currentInstance.getCarmaVehicleId(), 
-                    currentInstance.getTargetAddress(), 
-                    currentInstance.getTimeSyncPort(), 
+                    currentInstance.getCarmaVehicleId(),
+                    currentInstance.getTargetAddress(),
+                    currentInstance.getTimeSyncPort(),
                     message.getTimestep());
                 currentInstance.sendTimeSyncMsg(bytes);
             }

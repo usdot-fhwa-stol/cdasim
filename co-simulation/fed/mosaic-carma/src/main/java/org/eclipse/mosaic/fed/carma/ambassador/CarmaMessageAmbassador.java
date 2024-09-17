@@ -110,7 +110,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
 
     /**
      * This method is called to tell the federate the start time and the end time.
-     * 
+     *
      * @param startTime Start time of the simulation run in nano seconds.
      * @param endTime   End time of the simulation run in nano seconds.
      * @throws InternalFederateException Exception is thrown if an error is occurred
@@ -182,10 +182,10 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             // Time Syncmessage in nano seconds
             TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime, timeSyncSeq);
             carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);
-            // Increment time 
+            // Increment time
             currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
             timeSyncSeq += 1;
-           
+
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
         } catch (IllegalValueException e) {
             log.error("Error during advanceTime(" + time + ")", e);
@@ -197,7 +197,7 @@ public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
         }
-         
+
     }
 
     /**

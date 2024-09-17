@@ -490,6 +490,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             throw new InternalFederateException(
                     "Interaction time lies in the future:" + interaction.getTime() + ", current time:" + time);
         }
+        log.warn("Received interaction of type: {}",interaction.getTypeId());
 
         if (interaction.getTypeId().equals(VehicleFederateAssignment.TYPE_ID)) {
             receiveInteraction((VehicleFederateAssignment) interaction);
@@ -564,6 +565,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             vehicleState = externalVehicleMap.get(updatedVehicle.getName());
             if (vehicleState != null) {
                 vehicleState.setLastMovementInfo(updatedVehicle);
+                log.warn("Received interaction for externally simulated vehicle {} with position x {}, y {}", vehicleState.getLastMovementInfo().getProjectedPosition().getX(), vehicleState.getLastMovementInfo().getProjectedPosition().getY());
             }
         }
 
@@ -572,6 +574,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 traci.getSimulationControl().removeVehicle(removed, VehicleSetRemove.Reason.ARRIVED);
             }
         }
+
     }
 
     /**
@@ -1237,6 +1240,14 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 log.trace("Leaving advance time: {}", time);
                 removeExternalVehiclesFromUpdates(simulationStepResult.getVehicleUpdates());
                 propagateNewRoutes(simulationStepResult.getVehicleUpdates(), time);
+                log.warn("Updated vehicle list");
+                List<VehicleData> vehicle_data_list = simulationStepResult.getVehicleUpdates().getUpdated();
+                for (int i =0; i < vehicle_data_list.size(); i++)
+                {
+                    VehicleData veh_data = vehicle_data_list.get(i);
+                    log.warn("Vehicle name: {}, geoPoint lat: {} lon: {}", veh_data.getName(), veh_data.getPosition().getLatitude(), veh_data.getPosition().getLongitude());
+                    log.warn("Vehicle name: {}, projectedPosition lat: {} lon: {}", veh_data.getName(), veh_data.getProjectedPosition().getX(), veh_data.getProjectedPosition().getY());
+                }
 
                 nextTimeStep += sumoConfig.updateInterval * TIME.MILLI_SECOND;
                 simulationStepResult.getVehicleUpdates().setNextUpdate(nextTimeStep);

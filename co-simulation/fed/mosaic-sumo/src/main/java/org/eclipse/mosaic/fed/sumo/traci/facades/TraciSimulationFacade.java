@@ -62,6 +62,7 @@ import org.eclipse.mosaic.lib.objects.vehicle.VehicleSensors;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleSignals;
 import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
 import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
+import org.eclipse.mosaic.lib.transform.GeoProjection;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 
@@ -368,6 +369,7 @@ public class TraciSimulationFacade {
             for (AbstractSubscriptionResult subscriptionResult : subscriptions) {
                 if (subscriptionResult instanceof VehicleSubscriptionResult) {
                     veh = (VehicleSubscriptionResult) subscriptionResult;
+                    log.warn("Got vehicle from subscription result, position x:{} y:{}", veh.position.getX(), veh.position.getY());
                 } else {
                     continue;
                 }
@@ -392,6 +394,7 @@ public class TraciSimulationFacade {
                     }
                     continue;
                 } else {
+                    log.warn("Constructing new vehicleData");
                     vehicleData = new VehicleData.Builder(time, veh.id)
                             .position(veh.position.getGeographicPosition(), veh.position.getProjectedPosition())
                             .road(getRoadPosition(lastVehicleData, veh))
@@ -407,7 +410,13 @@ public class TraciSimulationFacade {
                             .create();
                 }
 
+
+
                 this.lastVehicleData.put(vehicleData.getName(), vehicleData);
+
+                log.warn("{\"id\":{}, \"Latitude\":{}, \"Longitude\":{}, \"x\":{}, \"y\":{}}",vehicleData.getName(), vehicleData.getPosition().getLatitude(), vehicleData.getPosition().getLongitude(), vehicleData.getProjectedPosition().getX(), vehicleData.getProjectedPosition().getY());
+                log.warn(vehicleData.getPosition().toString());
+                log.warn("Test position to geo function: ", vehicleData.getProjectedPosition().toGeo().toString());
 
                 updateVehicleLists(addedVehicles, updatedVehicles, removedVehicles, vehicleData);
             }

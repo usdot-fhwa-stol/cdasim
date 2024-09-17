@@ -4,6 +4,7 @@ on:
     branches:
       - develop
       - master
+      - test/map_frame_pose
       - "release/*"
     tags:
       - "carma-system-*"

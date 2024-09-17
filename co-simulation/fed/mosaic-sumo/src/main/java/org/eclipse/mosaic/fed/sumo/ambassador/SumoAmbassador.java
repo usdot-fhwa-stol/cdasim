@@ -190,6 +190,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         } else {
             log.debug("Won't subscribe to vehicle \"{}\".", vehicleId);
         }
+        log.warn("Received vehicle registration interaction for vehicle id: {}", vehicleId);
     }
 
     /**
