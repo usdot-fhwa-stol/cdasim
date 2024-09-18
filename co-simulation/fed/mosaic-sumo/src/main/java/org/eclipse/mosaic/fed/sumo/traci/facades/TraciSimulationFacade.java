@@ -47,6 +47,7 @@ import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.vehicle.VehicleStop;
 import org.eclipse.mosaic.lib.enums.DriveDirection;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
 import org.eclipse.mosaic.lib.objects.road.SimpleRoadPosition;
 import org.eclipse.mosaic.lib.objects.traffic.InductionLoopInfo;
@@ -417,6 +418,8 @@ public class TraciSimulationFacade {
                 log.warn("{\"id\":{}, \"Latitude\":{}, \"Longitude\":{}, \"x\":{}, \"y\":{}}",vehicleData.getName(), vehicleData.getPosition().getLatitude(), vehicleData.getPosition().getLongitude(), vehicleData.getProjectedPosition().getX(), vehicleData.getProjectedPosition().getY());
                 log.warn(vehicleData.getPosition().toString());
                 log.warn("Test position to geo function: ", vehicleData.getProjectedPosition().toGeo().toString());
+                GeoPoint calculated_geo = GeoProjection.getInstance().cartesianToGeographic(vehicleData.getProjectedPosition());
+                log.warn("Using GeoProjection {}", calculated_geo.toString());
 
                 updateVehicleLists(addedVehicles, updatedVehicles, removedVehicles, vehicleData);
             }
