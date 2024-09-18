@@ -116,7 +116,8 @@ public class CarmaInstanceManager {
         for (VehicleData veh : vui.getUpdated()) {
             if (managedInstances.containsKey(veh.getName())) {
                 managedInstances.get(veh.getName()).setLocation(veh.getPosition());
-                log.warn("On vehicle updates in carma instance manager, vehicle position, veh_name:{}, position {}", veh.getName(), veh.getPosition().toString());
+
+                log.warn("On vehicle updates in carma instance manager, vehicle position, veh_name:{}, position {};   projected position: {}", veh.getName(), veh.getPosition().toString(), veh.getProjectedPosition().toString());
             }
         }
     }
