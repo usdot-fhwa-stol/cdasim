@@ -147,6 +147,9 @@ class MsgerVehicleCfg:
         Parameters:
         - veh_id: The ID of the vehicle.
         - state: The new state to set for the vehicle.
+        * 0: vehicle not created
+        * 1: vehicle is created and is driving in the scene
+        * 2: vehicle is created but finish the route and destroyed
         type: int
         """
         if veh_id in self._veh_state_dict:
