@@ -18,6 +18,8 @@ package org.eclipse.mosaic.rti.config;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * Configuration for the Projection of geographic coordinates to cartesian coordinates.
  */
@@ -32,5 +34,8 @@ public class CProjection {
      * The cartesian offset which is considered when transformation from or to geographic coordinates.
      */
     public CartesianPoint cartesianOffset;
+
+    @Nullable
+    public String georeference;
 }
 
