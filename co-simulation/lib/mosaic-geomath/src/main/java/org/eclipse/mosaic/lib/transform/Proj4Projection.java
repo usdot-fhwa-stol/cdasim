@@ -56,11 +56,19 @@ public class Proj4Projection extends GeoProjection {
 
     public Proj4Projection(GeoPoint origin, double x_offset, double y_offset, String georef){
         this.geoOrigin = origin;
-        this.cartesianReferenceString = georef;
-        this.wgs84ReferenceString = "EPSG:4326";
         this.x_offset = x_offset;
         this.y_offset = y_offset;
 
+        // The proj library being used currently doesn't support use of vertical keywords
+        //such as geodgrids and vunits, resulting in no vertical accuracy in the transforms calculated
+        //Isssue tracked under: https://github.com/locationtech/proj4j/issues/20
+        //Remove unaccepted parameters from georeference
+        String regex = "(\\+geoidgrids=[^\\s]+\\s?)|(\\+vunits=[^\\s]+\\s?)";
+        georef.replaceAll(regex, "").trim();
+
+
+        this.cartesianReferenceString = georef;
+        this.wgs84ReferenceString = "EPSG:4326";
 
         CRSFactory crsFactory = new CRSFactory();
         this.cartesianCRS = crsFactory.createFromParameters("custom_proj", this.cartesianReferenceString);
@@ -80,13 +88,13 @@ public class Proj4Projection extends GeoProjection {
 
     @Override
     public Vector3d geographicToVector(GeoPoint geographic, Vector3d result){
-        // TODO: Update - required to be defined by the base class, but is non-essential here
+        // TODO: Update - required to be defined by the base class, but is non-essential
         return (new Vector3d());
     }
 
     @Override
     public MutableGeoPoint vectorToGeographic(Vector3d vector3d, MutableGeoPoint result) {
-        // TODO: Update - required to be defined by the base class, but is non-essential here
+        // TODO: Update - required to be defined by the base class, but is non-essential
         return (new MutableGeoPoint());
     }
 
