@@ -64,10 +64,8 @@ public class Proj4Projection extends GeoProjection {
         //Isssue tracked under: https://github.com/locationtech/proj4j/issues/20
         //Remove unaccepted parameters from georeference
         String regex = "(\\+geoidgrids=[^\\s]+\\s?)|(\\+vunits=[^\\s]+\\s?)";
-        georef.replaceAll(regex, "").trim();
 
-
-        this.cartesianReferenceString = georef;
+        this.cartesianReferenceString = georef.replaceAll(regex, "").trim();;
         this.wgs84ReferenceString = "EPSG:4326";
 
         CRSFactory crsFactory = new CRSFactory();
@@ -75,14 +73,7 @@ public class Proj4Projection extends GeoProjection {
         this.wgs84CRS = crsFactory.createFromName(wgs84ReferenceString);
 
         this.zone = getUTMZone(origin);
-        String utm_proj_str;
-        if (this.zone.isNorthernHemisphere())
-        {
-            utm_proj_str = "+proj=utm +zone=" + zone.number + " +north";
-        }
-        else{
-            utm_proj_str = "+proj=utm +zone=" + zone.number + " +south";
-        }
+        String utm_proj_str = "+proj=utm +zone=" + zone.number;
 
         this.utmCRS = crsFactory.createFromParameters("custom_proj", utm_proj_str);
 
