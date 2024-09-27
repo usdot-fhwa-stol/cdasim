@@ -88,14 +88,14 @@ public class Proj4Projection extends GeoProjection {
 
     @Override
     public Vector3d geographicToVector(GeoPoint geographic, Vector3d result){
-        // TODO: Update - required to be defined by the base class, but is non-essential
-        return (new Vector3d());
+        getGeoCalculator().distanceBetween(geoOrigin, geographic, result);
+        return result;
     }
 
     @Override
     public MutableGeoPoint vectorToGeographic(Vector3d vector3d, MutableGeoPoint result) {
-        // TODO: Update - required to be defined by the base class, but is non-essential
-        return (new MutableGeoPoint());
+        getGeoCalculator().pointFromDirection(geoOrigin, vector3d, result);
+        return result;
     }
 
     @Override
@@ -129,13 +129,11 @@ public class Proj4Projection extends GeoProjection {
 
     @Override
     public Vector3d utmToVector(UtmPoint utm, Vector3d result) {
-        // TODO: Update - required to be defined by the base class, but is non-essential here
         return geographicToVector(utmToGeographic(utm));
     }
 
     @Override
     public MutableUtmPoint vectorToUtm(Vector3d vector, MutableUtmPoint result) {
-        // TODO: Update - required to be defined by the base class, but is non-essential here
         return geographicToUtm(vectorToGeographic(vector), result);
     }
 
