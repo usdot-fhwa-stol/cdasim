@@ -80,8 +80,10 @@ public class Proj4Projection extends GeoProjection {
         {
             utm_proj_str = "+proj=utm +zone=" + zone.number + " +north";
         }
+        else{
+            utm_proj_str = "+proj=utm +zone=" + zone.number + " +south";
+        }
 
-        utm_proj_str = "+proj=utm +zone=" + zone.number + " +south";
         this.utmCRS = crsFactory.createFromParameters("custom_proj", utm_proj_str);
 
     }
