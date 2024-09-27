@@ -169,7 +169,6 @@ public class Proj4Projection extends GeoProjection {
     public UtmZone getUTMZone(GeoPoint geoPoint){
         int zoneNumber;
 
-        // Make sure the longitude is between -180.00 .. 179.9
         double longTemp = (geoPoint.getLongitude() + 180) - (int) ((geoPoint.getLongitude() + 180) / 360) * 360 - 180;
 
         zoneNumber = (int) ((longTemp + 180) / 6) + 1;
