@@ -107,9 +107,9 @@ public class Proj4Projection extends GeoProjection {
         CoordinateTransform transform = ctFactory.createTransform(cartesianCRS, wgs84CRS);
 
         transform.transform(sourceCoord, targetCoord);
-        MutableCartesianPoint output = new MutableCartesianPoint(targetCoord.x, targetCoord.y, 0.0);
+        result.set(targetCoord.x, targetCoord.y, 0.0);
 
-        return (output);
+        return result;
     }
 
     @Override
@@ -122,9 +122,9 @@ public class Proj4Projection extends GeoProjection {
 
         transform.transform(sourceCoord, targetCoord);
         //Transform returned as lat,lon = (targetCoord.y, targetCoord.x)
-        MutableGeoPoint output = new MutableGeoPoint(targetCoord.y, targetCoord.x);
+        result.set(targetCoord.y, targetCoord.x, 0.0);
 
-        return output;
+        return result;
     }
 
     @Override
@@ -146,9 +146,9 @@ public class Proj4Projection extends GeoProjection {
         CoordinateTransform transform = ctFactory.createTransform(cartesianCRS, utmCRS);
 
         transform.transform(sourceCoord, targetCoord);
-        MutableUtmPoint output = new MutableUtmPoint(targetCoord.x, targetCoord.y, 0.0, getUTMZone(geoPoint));
+        result.set(targetCoord.x, targetCoord.y, 0.0, getUTMZone(geoPoint));
 
-        return (output);
+        return result;
     }
 
     @Override
@@ -161,7 +161,9 @@ public class Proj4Projection extends GeoProjection {
 
         transform.transform(sourceCoord, targetCoord);
         //Transform returned as lon,lat = (targetCoord.x, targetCoord.y)
-        return new MutableGeoPoint(targetCoord.x, targetCoord.y);
+        result.set(targetCoord.x, targetCoord.y, 0.0);
+
+        return result;
     }
 
     public UtmZone getUTMZone(GeoPoint geoPoint){
