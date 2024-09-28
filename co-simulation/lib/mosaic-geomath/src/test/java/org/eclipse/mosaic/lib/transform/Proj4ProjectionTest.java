@@ -31,7 +31,7 @@ import org.junit.Test;
 
 public class Proj4ProjectionTest {
     @Test
-    public void convert_cartesian_to_geographic() {
+    public void convertCartesianToGeographic() {
 
         String georeference = "+proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
 
@@ -47,11 +47,12 @@ public class Proj4ProjectionTest {
 
     }
 
-    public void convert_geographic_to_cartesian(){
+    @Test
+    public void convertGeographicToCartesian(){
         String georeference = "+proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
         GeoProjection transform = new Proj4Projection(GeoPoint.latLon(0.0, 0.0), 0.0,0.0, georeference);
 
-        GeoPoint testGeoPoint = GeoPoint.latLon(0.0,0.0);
+        GeoPoint testGeoPoint = GeoPoint.latLon(0.000,0.000);
 
         CartesianPoint actualCartesian = transform.geographicToCartesian(testGeoPoint);
         assertEquals(actualCartesian.getX(), 0.0, 1d);
@@ -60,5 +61,23 @@ public class Proj4ProjectionTest {
 
     }
 
+
+    @Test
+    public void convertGeographictoUTM(){
+        String georeference = "+proj=tmerc +lat_0=42.30059341574939 +lon_0=-83.69928318881136 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
+
+        GeoProjection transform = new Proj4Projection(GeoPoint.latLon(42.30059341574939, -83.69928318881136), 0.0, 0.0, georeference);
+
+        GeoPoint testGeoPoint = GeoPoint.latLon(38.9548994, -77.1481211);
+        UtmZone zone = UtmZone.from(18,'n');
+        UtmPoint actualUtmPoint = new MutableUtmPoint(313863.1656767028, 4313966.065972516, 0.0, zone);
+
+
+        UtmPoint calculatedUtmPoint = transform.geographicToUtm(testGeoPoint);
+        assertEquals(actualUtmPoint.getEasting(), calculatedUtmPoint.getEasting(), 1d);
+        assertEquals(actualUtmPoint.getNorthing(), calculatedUtmPoint.getNorthing(), 1d);
+        assertEquals(actualUtmPoint.getAltitude(), calculatedUtmPoint.getAltitude(), 1d);
+        assertEquals(18, calculatedUtmPoint.getZone().number);
+    }
 
 }
