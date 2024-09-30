@@ -41,6 +41,13 @@ class MsgerVehicleCfg:
         """
         Initializes the vehicle configuration manager by loading vehicle data from a JSON file.
 
+        Each vehicle's configuration is stored in the dictionary `_msger_veh_dict`, keyed by the vehicle's ID. This dictionary includes:
+        - 'route': list of strings representing the sequence of edges the vehicle will travel over in the simulation.
+        - 'speed': float, the maximum speed of the vehicle in meters per second.
+        - 'departureTime': int, the simulation time at which the vehicle starts.
+        - 'lcm': int, an integer representing the lane change mode using SUMO's encoding.
+        - 'cfm': str, the car following model that determines how the vehicle follows other vehicles.
+        
         Parameters:
         - cfg_path: The file path to the JSON configuration file containing messenger vehicle data.
         type: str
