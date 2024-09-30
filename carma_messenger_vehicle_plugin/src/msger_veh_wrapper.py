@@ -16,6 +16,7 @@ import argparse
 import logging
 from sumo_connector import SumoConnector
 from msger_veh_cfg import MsgerVehicleCfg
+from msger_veh_cfg import VehicleState 
 
 def setup_logging(level):
     numeric_level = getattr(logging, level.upper(), None)
@@ -44,7 +45,7 @@ def run(args):
                 for msg_veh_id in msg_veh_ids:
 
                     if msg_veh_id not in sumo_veh_ids and \
-                       msger_veh_cfg.get_veh_state(msg_veh_id) == 0 and \
+                       msger_veh_cfg.get_veh_state(msg_veh_id) == VehicleState.NOT_CREATED and \
                        msger_veh_cfg.get_veh_departure_time(msg_veh_id) <= sumo_connector.get_sim_time():
                         ### Init
                         logging.info("Adding new vehicle with ID: " + msg_veh_id)
@@ -53,10 +54,10 @@ def run(args):
                         sumo_connector.set_veh_speed(msg_veh_id, msger_veh_cfg.get_veh_speed(msg_veh_id))
                         sumo_connector.set_veh_lcm(msg_veh_id, msger_veh_cfg.get_veh_lcm(msg_veh_id))
                         sumo_connector.set_veh_type(msg_veh_id, msger_veh_cfg.get_veh_cfm(msg_veh_id))
-                        msger_veh_cfg.set_veh_state(msg_veh_id, 1)
-                    elif msg_veh_id not in sumo_veh_ids and msger_veh_cfg.get_veh_state(msg_veh_id) == 1:
+                        msger_veh_cfg.set_veh_state(msg_veh_id, VehicleState.CREATED_AND_DRIVING)
+                    elif msg_veh_id not in sumo_veh_ids and msger_veh_cfg.get_veh_state(msg_veh_id) == VehicleState.CREATED_AND_DRIVING:
                         ### Remove
-                        msger_veh_cfg.set_veh_state(msg_veh_id, 2)
+                        msger_veh_cfg.set_veh_state(msg_veh_id, VehicleState.FINISHED_AND_DESTROYED)
                         logging.info("Vehicle " + msg_veh_id + " finished route.")
                     
                     ## TODO

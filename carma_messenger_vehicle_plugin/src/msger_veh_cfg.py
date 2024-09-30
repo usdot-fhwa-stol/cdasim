@@ -14,6 +14,13 @@
 
 import json
 import logging
+from enum import Enum
+
+class VehicleState(Enum):
+    NOT_CREATED = 0
+    CREATED_AND_DRIVING = 1
+    FINISHED_AND_DESTROYED = 2
+
 
 class MsgerVehicleCfg:
 
@@ -57,7 +64,7 @@ class MsgerVehicleCfg:
                         "lcm": veh["lcm"],
                         "cfm": veh["cfm"]
                     }
-                    self._veh_state_dict[veh_id] = 0
+                    self._veh_state_dict[veh_id] = VehicleState.NOT_CREATED
             logging.info("Vehicle configuration loaded successfully.")
         except FileNotFoundError:
             logging.error("Configuration file not found. Please check the file path.")
@@ -147,13 +154,11 @@ class MsgerVehicleCfg:
         Parameters:
         - veh_id: The ID of the vehicle.
         - state: The new state to set for the vehicle.
-        * 0: vehicle not created
-        * 1: vehicle is created and is driving in the scene
-        * 2: vehicle is created but finish the route and destroyed
         type: int
         """
         if veh_id in self._veh_state_dict:
             self._veh_state_dict[veh_id] = state
+            logging.info("Set vehicle " + str(veh_id) + " state to " + state.name)
         else:
             logging.warning(f"Attempted to set state for a non-existent vehicle ID: {veh_id}")
     
