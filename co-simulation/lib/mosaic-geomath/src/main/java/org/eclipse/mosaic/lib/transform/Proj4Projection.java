@@ -1,16 +1,17 @@
 /*
- * Copyright (c) 2020 Fraunhofer FOKUS and others. All rights reserved.
+ * Copyright (C) 2024 LEIDOS.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
  *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * SPDX-License-Identifier: EPL-2.0
- *
- * Contact: mosaic@fokus.fraunhofer.de
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 
  package org.eclipse.mosaic.lib.transform;
@@ -49,8 +50,9 @@ public class Proj4Projection extends GeoProjection {
 
     private String wgs84ReferenceString;
     private String cartesianReferenceString;
-    CoordinateReferenceSystem wgs84CRS;
-    CoordinateReferenceSystem cartesianCRS;
+    private CoordinateReferenceSystem wgs84CRS;
+    private CoordinateReferenceSystem cartesianCRS;
+    private CoordinateTransformFactory ctFactory;
 
 
     public Proj4Projection(GeoPoint origin, double x_offset, double y_offset, String georef){
@@ -71,6 +73,8 @@ public class Proj4Projection extends GeoProjection {
         this.cartesianCRS = crsFactory.createFromParameters("custom_proj", this.cartesianReferenceString);
         this.wgs84CRS = crsFactory.createFromName(wgs84ReferenceString);
 
+        this.ctFactory = new CoordinateTransformFactory();
+
     }
 
     @Override
@@ -90,8 +94,7 @@ public class Proj4Projection extends GeoProjection {
 
         ProjCoordinate sourceCoord = new ProjCoordinate(geographic.getLongitude(),geographic.getLatitude());
         ProjCoordinate targetCoord = new ProjCoordinate();
-        CoordinateTransformFactory ctFactory = new CoordinateTransformFactory();
-        CoordinateTransform transform = ctFactory.createTransform(wgs84CRS, cartesianCRS);
+        CoordinateTransform transform = this.ctFactory.createTransform(wgs84CRS, cartesianCRS);
 
         transform.transform(sourceCoord, targetCoord);
         result.set(targetCoord.x, targetCoord.y, 0.0);
@@ -104,8 +107,8 @@ public class Proj4Projection extends GeoProjection {
 
         ProjCoordinate sourceCoord = new ProjCoordinate(cartesian.getX() - this.x_offset, cartesian.getY() - this.y_offset);
         ProjCoordinate targetCoord = new ProjCoordinate();
-        CoordinateTransformFactory ctFactory = new CoordinateTransformFactory();
-        CoordinateTransform transform = ctFactory.createTransform(cartesianCRS, wgs84CRS);
+
+        CoordinateTransform transform = this.ctFactory.createTransform(cartesianCRS, wgs84CRS);
 
         transform.transform(sourceCoord, targetCoord);
         //Transform returned as lat,lon = (targetCoord.y, targetCoord.x)
@@ -129,7 +132,6 @@ public class Proj4Projection extends GeoProjection {
 
         ProjCoordinate sourceCoord = new ProjCoordinate(geoPoint.getLongitude(),geoPoint.getLatitude());
         ProjCoordinate targetCoord = new ProjCoordinate();
-        CoordinateTransformFactory ctFactory = new CoordinateTransformFactory();
 
         //UTMCRS created dynamically since it depends on the zone
         zone = getUTMZone(geoPoint);
@@ -137,7 +139,7 @@ public class Proj4Projection extends GeoProjection {
         CRSFactory crsFactory = new CRSFactory();
         CoordinateReferenceSystem utmCRS = crsFactory.createFromParameters("custom_proj", utm_proj_str);
 
-        CoordinateTransform transform = ctFactory.createTransform(wgs84CRS, utmCRS);
+        CoordinateTransform transform = this.ctFactory.createTransform(wgs84CRS, utmCRS);
 
         transform.transform(sourceCoord, targetCoord);
         result.set(targetCoord.x, targetCoord.y, 0.0, getUTMZone(geoPoint));
@@ -150,14 +152,13 @@ public class Proj4Projection extends GeoProjection {
 
         ProjCoordinate sourceCoord = new ProjCoordinate(utmPoint.getEasting(), utmPoint.getNorthing());
         ProjCoordinate targetCoord = new ProjCoordinate();
-        CoordinateTransformFactory ctFactory = new CoordinateTransformFactory();
 
         //UTMCRS created dynamically since it depends on the zone
         String utm_proj_str = "+proj=utm +zone=" + utmPoint.getZone().number;
         CRSFactory crsFactory = new CRSFactory();
         CoordinateReferenceSystem utmCRS = crsFactory.createFromParameters("custom_proj", utm_proj_str);
 
-        CoordinateTransform transform = ctFactory.createTransform(utmCRS, wgs84CRS);
+        CoordinateTransform transform = this.ctFactory.createTransform(utmCRS, wgs84CRS);
 
         transform.transform(sourceCoord, targetCoord);
         //Transform returned as lon,lat = (targetCoord.x, targetCoord.y)
