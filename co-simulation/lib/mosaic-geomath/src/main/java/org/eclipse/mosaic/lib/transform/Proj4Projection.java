@@ -75,6 +75,7 @@ public class Proj4Projection extends GeoProjection {
 
         this.ctFactory = new CoordinateTransformFactory();
 
+        setGeoCalculator(new UtmGeoCalculator(this));
     }
 
     @Override
@@ -142,7 +143,7 @@ public class Proj4Projection extends GeoProjection {
         CoordinateTransform transform = this.ctFactory.createTransform(wgs84CRS, utmCRS);
 
         transform.transform(sourceCoord, targetCoord);
-        result.set(targetCoord.x, targetCoord.y, 0.0, getUTMZone(geoPoint));
+        result.set(targetCoord.x, targetCoord.y, 0.0, zone);
 
         return result;
     }
