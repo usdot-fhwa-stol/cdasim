@@ -4,6 +4,7 @@ on:
     branches:
       - develop
       - master
+      - test-build
       - "release/*"
     tags:
       - "carma-system-*"
