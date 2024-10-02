@@ -163,7 +163,7 @@ public class Proj4Projection extends GeoProjection {
 
         transform.transform(sourceCoord, targetCoord);
         //Transform returned as lon,lat = (targetCoord.x, targetCoord.y)
-        result.set(targetCoord.x, targetCoord.y, 0.0);
+        result.set(targetCoord.y, targetCoord.x, 0.0);
 
         return result;
     }

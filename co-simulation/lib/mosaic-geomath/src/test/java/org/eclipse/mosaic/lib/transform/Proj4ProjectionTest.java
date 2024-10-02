@@ -79,6 +79,18 @@ public class Proj4ProjectionTest {
         assertEquals(actualUtmPoint.getNorthing(), calculatedUtmPoint.getNorthing(), 1d);
         assertEquals(actualUtmPoint.getAltitude(), calculatedUtmPoint.getAltitude(), 1d);
         assertEquals(18, calculatedUtmPoint.getZone().number);
+
+        //Test Special Zone Norway
+        GeoPoint testGeoPoint2 = GeoPoint.latLon(77.8750, 20.9752);
+        UtmPoint calculatedUtmPoint2 = transform.geographicToUtm(testGeoPoint2);
+        assertEquals(33, calculatedUtmPoint2.getZone().number);
+
+        //Test convert back to geographic
+        GeoPoint calculatedGeoPoint = transform.utmToGeographic(calculatedUtmPoint);
+        assertEquals(calculatedGeoPoint.getLatitude(), testGeoPoint.getLatitude(), 0.0001d);
+        assertEquals(calculatedGeoPoint.getLongitude(),testGeoPoint.getLongitude(), 0.0001d);
+
+
     }
 
 }
