@@ -168,7 +168,7 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
             List<CarmaMessengerRegistrationMessage> newRegistrations = carmaMessengerRegistrationReceiver.getReceivedMessages();
             for (CarmaMessengerRegistrationMessage reg : newRegistrations) {
                 carmaMessengerInstanceManager.onNewRegistration(reg);
-                onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
+                onDsrcRegistrationRequest(reg.getSumoVehicleRole());
             }
             // Set current simulation time to most recent time update
             currentSimulationTime = time;

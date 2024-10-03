@@ -24,7 +24,7 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 public class CarmaMessengerInstance {
     private String carmaVehicleId;
-    private String carlaRoleName;
+    private String sumoRoleName;
     private DatagramSocket rxMsgsSocket = null;
 
     private InetAddress targetAddress;
@@ -33,9 +33,9 @@ public class CarmaMessengerInstance {
     private GeoPoint location = GeoPoint.ORIGO;
     private String messengerEmergencyState;
 
-    public CarmaMessengerInstance(String carmaVehicleId, String carlaRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
+    public CarmaMessengerInstance(String carmaVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
         this.carmaVehicleId = carmaVehicleId;
-        this.carlaRoleName = carlaRoleName;
+        this.sumoRoleName = sumoRoleName;
         this.targetAddress = targetAddress;
         this.v2xPort = v2xPort;
         this.timeSyncPort = timeSyncPort;
@@ -120,12 +120,12 @@ public class CarmaMessengerInstance {
         this.carmaVehicleId = carmaVehicleId;
     }
 
-    public String getCarlaRoleName() {
-        return carlaRoleName;
+    public String getSumoRoleName() {
+        return sumoRoleName;
     }
 
-    public void setCarlaRoleName(String carlaRoleName) {
-        this.carlaRoleName = carlaRoleName;
+    public void setSumoRoleName(String sumoRoleName) {
+        this.sumoRoleName = sumoRoleName;
     }
 
     /**

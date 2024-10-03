@@ -17,7 +17,7 @@ package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 public class CarmaMessengerRegistrationMessage {
     private String carmaVehicleId;
-    private String carlaVehicleRole;
+    private String sumoVehicleRole;
     private String rxMessageIpAddress;
     private int rxMessagePort;
     private int rxTimeSyncPort;
@@ -26,7 +26,7 @@ public class CarmaMessengerRegistrationMessage {
     public CarmaMessengerRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
             int rxMessagePort, int rxTimeSyncPort, String messengerEmergencyState) {
         this.carmaVehicleId = carmaVehicleId;
-        this.carlaVehicleRole = carlaVehicleRole;
+        this.sumoVehicleRole = carlaVehicleRole;
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.rxMessagePort = rxMessagePort;
         this.rxTimeSyncPort = rxTimeSyncPort;
@@ -41,12 +41,12 @@ public class CarmaMessengerRegistrationMessage {
         this.carmaVehicleId = carmaVehicleId;
     }
 
-    public String getCarlaVehicleRole() {
-        return carlaVehicleRole;
+    public String getSumoVehicleRole() {
+        return sumoVehicleRole;
     }
 
-    public void setCarlaVehicleRole(String carlaVehicleRole) {
-        this.carlaVehicleRole = carlaVehicleRole;
+    public void setSumoVehicleRole(String carlaVehicleRole) {
+        this.sumoVehicleRole = carlaVehicleRole;
     }
 
     public String getRxMessageIpAddress() {
@@ -83,7 +83,7 @@ public class CarmaMessengerRegistrationMessage {
 
     @Override
     public String toString() {
-        return "CarmaMessengerRegistrationMessage [carmaVehicleId=" + carmaVehicleId + ", carlaVehicleRole=" + carlaVehicleRole
+        return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + carmaVehicleId + ", sumoVehicleRole=" + sumoVehicleRole
                 + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
                 + ", rxTimeSyncPort=" + rxTimeSyncPort + ", MessengerEmergencyState=" + messengerEmergencyState + "]";
     }

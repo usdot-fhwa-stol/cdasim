@@ -31,7 +31,7 @@ public class CarmaMessengerRegistrationMessageTest {
                 "MockState");
         // Test Getter
         assertEquals("MockID", message.getCarmaVehicleId());
-        assertEquals("MockRole", message.getCarlaVehicleRole());
+        assertEquals("MockRole", message.getSumoVehicleRole());
 
         assertEquals("127.0.0.1", message.getRxMessageIpAddress());
         assertEquals(5678, message.getRxMessagePort());
@@ -39,11 +39,11 @@ public class CarmaMessengerRegistrationMessageTest {
         message.setRxMessagePort(5555);
         message.setRxTimeSyncPort(6666);
         message.setCarmaVehicleId("SOMEID");
-        message.setCarlaVehicleRole("SOMEROLL");
+        message.setSumoVehicleRole("SOMEROLL");
         message.setRxMessageIpAddress("someIP");
         message.setMessengerEmergencyState("NewState");
         assertEquals("SOMEID", message.getCarmaVehicleId());
-        assertEquals("SOMEROLL", message.getCarlaVehicleRole());
+        assertEquals("SOMEROLL", message.getSumoVehicleRole());
 
         assertEquals("someIP", message.getRxMessageIpAddress());
         assertEquals(5555, message.getRxMessagePort());

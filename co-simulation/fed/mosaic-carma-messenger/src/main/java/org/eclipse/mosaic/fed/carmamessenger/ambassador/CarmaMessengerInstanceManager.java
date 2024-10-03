@@ -42,7 +42,7 @@ public class CarmaMessengerInstanceManager {
     private Map<String, CarmaMessengerInstance>  managedInstances = new HashMap<>();
 
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
-    private static final int TARGET_PORT = 5374;
+    private static final int TARGET_PORT = 5500;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
@@ -50,11 +50,11 @@ public class CarmaMessengerInstanceManager {
      * @param registration The new instance's registration data
      */
     public void onNewRegistration(CarmaMessengerRegistrationMessage registration) {
-        if (!managedInstances.containsKey(registration.getCarlaVehicleRole())) {
+        if (!managedInstances.containsKey(registration.getSumoVehicleRole())) {
             try {
                 newCarmaMessengerInstance(
                     registration.getCarmaVehicleId(),
-                    registration.getCarlaVehicleRole(),
+                    registration.getSumoVehicleRole(),
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
                     registration.getRxMessagePort(),
                     registration.getRxTimeSyncPort(),
@@ -65,7 +65,7 @@ public class CarmaMessengerInstanceManager {
             }
         } else {
             // log warning
-            log.warn("Received duplicate registration for vehicle " + registration.getCarlaVehicleRole());
+            log.warn("Received duplicate registration for vehicle " + registration.getSumoVehicleRole());
         }
     }
     /**
@@ -90,7 +90,7 @@ public class CarmaMessengerInstanceManager {
             throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
         }
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
-                sender.getCarlaRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
+                sender.getSumoRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
         // TODO: Get maximum broadcast radius from configuration file.
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
         log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, type: {}, payload: {}", 
@@ -166,24 +166,24 @@ public class CarmaMessengerInstanceManager {
 
     /**
      * Helper function to configure a new CARMA Platform instance object upon registration
-     * @param carmaVehId The CARMA Platform vehicle ID (e.g. it's license plate number)
-     * @param carlaRoleName The Role Name associated with the CARMA Platform's ego vehicle in CARLA
+     * @param carmaMessengerVehId The CARMA Platform vehicle ID (e.g. it's license plate number)
+     * @param sumoRoleName The Role Name associated with the CARMA Platform's ego vehicle in CARLA
      * @param targetAddress The IP address to which received simulated V2X messages should be sent
      * @param v2xPort The port to which received simulated V2X messages should be sent
      * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaMessengerInstance(String carmaVehId, String carlaRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaVehId, carlaRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState);
+    private void newCarmaMessengerInstance(String carmaVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState);
         try {
             tmp.bind();
-            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", carlaRoleName);
+            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
         } catch (IOException e) {
             log.error("Failed to bind CARMA instance with ID '{}' to its RX message socket: {}",
-            carlaRoleName, e.getMessage());
+            sumoRoleName, e.getMessage());
             log.error("Stack trace:", e);
             throw new RuntimeException(e);
         }
-        managedInstances.put(carlaRoleName, tmp);
+        managedInstances.put(sumoRoleName, tmp);
     }
 
     /**

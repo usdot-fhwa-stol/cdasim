@@ -1,8 +1,0 @@
-{
-    "java.project.sourcePaths": [
-        "co-simulation/fed"
-    ],
-    "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic",
-    "java.debug.settings.onBuildFailureProceed": true
-}

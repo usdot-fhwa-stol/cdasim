@@ -157,7 +157,7 @@ public class CarmaMessengerInstanceManagerTest {
         // Register host with IpResolver singleton
         IpResolver.getSingleton().registerHost("veh_0");
         // Set CarlaRoleName to veh_0 to macth registered host
-        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getSumoRoleName()).thenReturn("veh_0");
         // Set location to origin
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
 
@@ -179,7 +179,7 @@ public class CarmaMessengerInstanceManagerTest {
         when(instance2.getTargetAddress()).thenReturn(address2);
         when(instance3.getTargetAddress()).thenReturn(address3);
         IpResolver.getSingleton().registerHost("veh_0");
-        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getSumoRoleName()).thenReturn("veh_0");
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
         // Attempt to create V2X Message Transmission for unregistered address.
         // Throws IllegalStateException
