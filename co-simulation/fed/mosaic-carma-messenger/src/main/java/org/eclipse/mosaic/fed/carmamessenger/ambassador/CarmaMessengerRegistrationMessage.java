@@ -21,14 +21,16 @@ public class CarmaMessengerRegistrationMessage {
     private String rxMessageIpAddress;
     private int rxMessagePort;
     private int rxTimeSyncPort;
+    private String messengerEmergencyState;
 
     public CarmaMessengerRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
-            int rxMessagePort, int rxTimeSyncPort) {
+            int rxMessagePort, int rxTimeSyncPort, String messengerEmergencyState) {
         this.carmaVehicleId = carmaVehicleId;
         this.carlaVehicleRole = carlaVehicleRole;
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.rxMessagePort = rxMessagePort;
         this.rxTimeSyncPort = rxTimeSyncPort;
+        this.messengerEmergencyState = messengerEmergencyState;
     }
 
     public String getCarmaVehicleId() {

@@ -15,12 +15,12 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import org.eclipse.mosaic.lib.geo.GeoPoint;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 public class CarmaMessengerInstance {
     private String carmaVehicleId;
@@ -39,7 +39,7 @@ public class CarmaMessengerInstance {
         this.targetAddress = targetAddress;
         this.v2xPort = v2xPort;
         this.timeSyncPort = timeSyncPort;
-        this.messengerEmergencyState = messengerEmergencyState
+        this.messengerEmergencyState = messengerEmergencyState;
     }
 
     public InetAddress getTargetAddress() {

@@ -15,8 +15,11 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
-import gov.dot.fhwa.saxton.TimeSyncMessage;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
@@ -32,11 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class CarmaMessengerInstanceManager {
     private Map<String, CarmaMessengerInstance>  managedInstances = new HashMap<>();
@@ -52,7 +52,7 @@ public class CarmaMessengerInstanceManager {
     public void onNewRegistration(CarmaMessengerRegistrationMessage registration) {
         if (!managedInstances.containsKey(registration.getCarlaVehicleRole())) {
             try {
-                newCarmaInstance(
+                newCarmaMessengerInstance(
                     registration.getCarmaVehicleId(),
                     registration.getCarlaVehicleRole(),
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
@@ -77,7 +77,7 @@ public class CarmaMessengerInstanceManager {
      * @throws IllegalStateException if sourceAddr does not match any address in the managed instances.
      */
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
-        CarmaInstance sender = null;
+        CarmaMessengerInstance sender = null;
         // Find the CarmaInstance with sourceAddr.
         for (CarmaMessengerInstance ci : managedInstances.values()) {
             if (ci.getTargetAddress().equals(sourceAddr)) {

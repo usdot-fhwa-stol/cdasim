@@ -73,6 +73,7 @@
         <module>fed/mosaic-carma</module>
         <module>fed/mosaic-infrastructure</module>
         <module>fed/mosaic-carma-cloud</module>
+        <module>fed/mosaic-carma-messenger</module>
 
         <module>test/mosaic-integration-tests</module>
 
@@ -490,6 +491,7 @@
                             <exclude>**/ClientServerChannelProtos.java</exclude>
                             <exclude>fed/mosaic-carma/**</exclude>
                             <exclude>fed/mosaic-carla/**</exclude>
+                            <exclude>fed/mosaic-carma-messenger/**</exclude>
                         </excludes>
                         <useDefaultExcludes>true</useDefaultExcludes>
                         <encoding>${project.build.sourceEncoding}</encoding>

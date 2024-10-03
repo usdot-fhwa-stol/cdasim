@@ -11,8 +11,8 @@
         <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>mosaic-carma</artifactId>
-  <name>CARMA Message Ambassador</name>
+  <artifactId>mosaic-carma-messenger</artifactId>
+  <name>CARMA Messenger Ambassador</name>
 
   <dependencies>
     <dependency>

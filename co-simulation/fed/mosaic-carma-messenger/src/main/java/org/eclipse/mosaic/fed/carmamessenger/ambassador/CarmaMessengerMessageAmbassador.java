@@ -15,12 +15,18 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
-import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
-import gov.dot.fhwa.saxton.TimeSyncMessage;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
-import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
+import org.eclipse.mosaic.fed.carmamessenger.configuration.CarmaMessengerConfiguration;
 import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
@@ -39,7 +45,15 @@ import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
 import org.eclipse.mosaic.lib.objects.road.SimpleRoadPosition;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
-import org.eclipse.mosaic.lib.objects.vehicle.*;
+import org.eclipse.mosaic.lib.objects.vehicle.Consumptions;
+import org.eclipse.mosaic.lib.objects.vehicle.Emissions;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleBatteryState;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleConsumptions;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleEmissions;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleSensors;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleSignals;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleType;
 import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
 import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -50,15 +64,9 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-import javax.xml.bind.DatatypeConverter;
-
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import gov.dot.fhwa.saxton.CarmaV2xMessage;
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
     /**
@@ -69,18 +77,18 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
     /**
      * CarmaMessageAmbassador configuration file.
      */
-    CarmaConfiguration carmaConfiguration;
+    CarmaMessengerConfiguration carmaMessengerConfiguration;
 
-    private CarmaRegistrationReceiver carmaMessengerRegistrationReceiver;
+    private CarmaMessengerRegistrationReceiver carmaMessengerRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
-    private CarmaInstanceManager carmaMessengerInstanceManager = new CarmaMessengerInstanceManager();
+    private CarmaMessengerInstanceManager carmaMessengerInstanceManager = new CarmaMessengerInstanceManager();
     private int timeSyncSeq = 0;
 
 
     /**
-     * Create a new {@link CarmaMessageAmbassador} object.
+     * Create a new {@link CarmaMessengerMessageAmbassador} object.
      *
      * @param ambassadorParameter includes parameters for the
      *                            CarmaMessageAmbassador.
@@ -90,16 +98,16 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
 
         try {
             // Read the CARMA message ambassador configuration file
-            carmaConfiguration = new ObjectInstantiation<>(CarmaConfiguration.class, log)
+            carmaMessengerConfiguration = new ObjectInstantiation<>(CarmaMessengerConfiguration.class, log)
                     .readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
         }
 
-        log.info("The update interval of CARMA message ambassador is " + carmaConfiguration.updateInterval + " .");
+        log.info("The update interval of CARMA message ambassador is " + carmaMessengerConfiguration.updateInterval + " .");
 
         // Check the CARMA update interval
-        if (carmaConfiguration.updateInterval <= 0) {
+        if (carmaMessengerConfiguration.updateInterval <= 0) {
             throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
         }
         log.info("CARMA message ambassador is generated.");
@@ -178,9 +186,9 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
             }
             // Time Syncmessage in nano seconds
             TimeSyncMessage timeSyncMessage = new TimeSyncMessage(currentSimulationTime, timeSyncSeq);
-            carmaInstanceManager.onTimeStepUpdate(timeSyncMessage);
+            carmaMessengerInstanceManager.onTimeStepUpdate(timeSyncMessage);
             // Increment time 
-            currentSimulationTime += carmaConfiguration.updateInterval * TIME.MILLI_SECOND;
+            currentSimulationTime += carmaMessengerConfiguration.updateInterval * TIME.MILLI_SECOND;
             timeSyncSeq += 1;
            
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 2);
@@ -265,7 +273,7 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
      */
     private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
         String carlaRoleName = interaction.getReceiverName();
-        if (!carmaInstanceManager.checkIfRegistered(carlaRoleName)) {
+        if (!carmaMessengerInstanceManager.checkIfRegistered(carlaRoleName)) {
             // Abort early as we only are concerned with CARMA Platform vehicles
             return;
         }
@@ -276,7 +284,7 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
 
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
-            carmaInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
+            carmaMessengerInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
             log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
         } else {
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
