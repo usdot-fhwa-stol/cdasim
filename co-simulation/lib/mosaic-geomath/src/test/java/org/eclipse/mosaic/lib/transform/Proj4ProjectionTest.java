@@ -34,7 +34,7 @@ public class Proj4ProjectionTest {
     @Test
     public void convertCartesianToGeographic() {
 
-        String georeference = "+proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
+        String georeference = " +proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
 
         MutableCartesianPoint cartesianOffset = new MutableCartesianPoint(200.00, 300.00, 0);
         GeoProjection transform = new Proj4Projection(GeoPoint.latLon(0.0, 0.0), cartesianOffset.getX(), cartesianOffset.getY(), georeference);
@@ -50,7 +50,7 @@ public class Proj4ProjectionTest {
 
     @Test
     public void convertGeographicToCartesian(){
-        String georeference = "+proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
+        String georeference = " +proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
         GeoProjection transform = new Proj4Projection(GeoPoint.latLon(0.0, 0.0), 0.0,0.0, georeference);
 
         GeoPoint testGeoPoint = GeoPoint.latLon(0.000,0.000);
@@ -65,7 +65,7 @@ public class Proj4ProjectionTest {
 
     @Test
     public void convertGeographictoUTM(){
-        String georeference = "+proj=tmerc +lat_0=42.30059341574939 +lon_0=-83.69928318881136 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
+        String georeference = " +proj=tmerc +lat_0=42.30059341574939 +lon_0=-83.69928318881136 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
 
         GeoProjection transform = new Proj4Projection(GeoPoint.latLon(42.30059341574939, -83.69928318881136), 0.0, 0.0, georeference);
 
@@ -89,7 +89,42 @@ public class Proj4ProjectionTest {
         GeoPoint calculatedGeoPoint = transform.utmToGeographic(calculatedUtmPoint);
         assertEquals(calculatedGeoPoint.getLatitude(), testGeoPoint.getLatitude(), 0.0001d);
         assertEquals(calculatedGeoPoint.getLongitude(),testGeoPoint.getLongitude(), 0.0001d);
+    }
 
+    @Test
+    public void geo_utm_vector_conversion() {
+        String georeference = " +proj=tmerc +lat_0=0.0 +lon_0=0.0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +geoidgrids=egm96_15.gtx +vunits=m +no_defs";
+        GeoProjection transform = new Proj4Projection(GeoPoint.latLon(0.0, 0.0), 0.0, 0.0, georeference);
+        GeoPoint origin = GeoPoint.latLon(0.0, 0.0);
+
+
+        for (int i = 0; i < 3; i++) {
+            double x = Math.cos(i * Math.PI / 5) * 0.1;
+            double y = Math.sin(i * Math.PI / 5) * 0.1;
+
+            GeoPoint tstGeoPt = GeoPoint.latLon(origin.getLatitude() + y, origin.getLongitude() + x);
+
+            UtmPoint geoToUtm = transform.geographicToUtm(tstGeoPt);
+            Vector3d geoToVec = transform.geographicToVector(tstGeoPt);
+
+            Vector3d utmToVec = transform.utmToVector(geoToUtm);
+            GeoPoint utmToGeo = transform.utmToGeographic(geoToUtm);
+
+            GeoPoint vecToGeo = transform.vectorToGeographic(geoToVec);
+            UtmPoint vecToUtm = transform.vectorToUtm(geoToVec);
+
+            assertEquals(geoToVec.x, utmToVec.x, 0.01);
+            assertEquals(geoToVec.y, utmToVec.y, 0.01);
+            assertEquals(geoToVec.z, utmToVec.z, 0.01);
+
+            assertEquals(geoToUtm.getNorthing(), vecToUtm.getNorthing(), 0.01);
+            assertEquals(geoToUtm.getEasting(), vecToUtm.getEasting(), 0.01);
+            assertEquals(geoToUtm.getAltitude(), vecToUtm.getAltitude(), 0.01);
+
+            assertEquals(utmToGeo.getLatitude(), vecToGeo.getLatitude(), 0.01);
+            assertEquals(utmToGeo.getLongitude(), vecToGeo.getLongitude(), 0.01);
+            assertEquals(utmToGeo.getAltitude(), vecToGeo.getAltitude(), 0.01);
+        }
 
     }
 
