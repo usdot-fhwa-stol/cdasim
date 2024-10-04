@@ -16,41 +16,17 @@
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 import java.io.IOException;
-import java.net.Inet4Address;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.ambassador.CarmaMessageAmbassador;
 import org.eclipse.mosaic.fed.carmamessenger.configuration.CarmaMessengerConfiguration;
-import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
-import org.eclipse.mosaic.interactions.mapping.advanced.ExternalVehicleRegistration;
-import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
-import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.enums.DriveDirection;
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
-import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
-import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
-import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
-import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
-import org.eclipse.mosaic.lib.objects.road.SimpleRoadPosition;
-import org.eclipse.mosaic.lib.objects.vehicle.Consumptions;
-import org.eclipse.mosaic.lib.objects.vehicle.Emissions;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleBatteryState;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleConsumptions;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleEmissions;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleSensors;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleSignals;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleType;
-import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
-import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
@@ -159,7 +135,9 @@ public class CarmaMessengerMessageAmbassador extends CarmaMessageAmbassador{
             List<CarmaMessengerRegistrationMessage> newRegistrations = carmaMessengerRegistrationReceiver.getReceivedMessengerMessages();
             for (CarmaMessengerRegistrationMessage reg : newRegistrations) {
                 carmaMessengerInstanceManager.onNewRegistration(reg);
-                onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
+                Method method = CarmaMessageAmbassador.class.getDeclaredMethod("onDsrcRegistrationRequest");
+                method.setAccessible(true);
+                method.invoke(this, reg.getCarlaVehicleRole());
             }
             // Set current simulation time to most recent time update
             currentSimulationTime = time;
@@ -192,119 +170,19 @@ public class CarmaMessengerMessageAmbassador extends CarmaMessageAmbassador{
         } catch (IOException e) {
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
+        } catch (NoSuchMethodException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
+        } catch (IllegalAccessException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
+        } catch (IllegalArgumentException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
+        } catch (InvocationTargetException e) {
+            log.error("Error during advanceTime(" + time + ")", e);
+            throw new InternalFederateException(e);
         }
          
-    }
-
-    private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
-        ExternalVehicleRegistration tempRegistration = new ExternalVehicleRegistration(
-                currentSimulationTime,
-                vehicleId,
-                "carma",
-                null,
-                new VehicleType("carma"));
-
-        try {
-            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
-            this.rti.triggerInteraction(tempRegistration);
-        } catch (InternalFederateException | IllegalValueException e) {
-            // Log error message if there was an issue with the RTI interaction
-            log.error(e.getMessage());
-        }
-
-        VehicleSignals tmpSignals  = new VehicleSignals(
-                false,
-                false,
-                false,
-                false,
-                false);
-
-        VehicleEmissions tmpEmissions = new VehicleEmissions(
-                new Emissions(
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0
-                ),
-                new Emissions(
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0
-                ));
-
-        VehicleBatteryState tmpBattery = new VehicleBatteryState("", currentSimulationTime);
-        IRoadPosition tmpPos = new SimpleRoadPosition("", 0, 0.0, 0.0);
-        VehicleSensors tmpSensors = new VehicleSensors(
-                new DistanceSensor(0.0,
-                        0.0,
-                        0.0,
-                        0.0),
-                new RadarSensor(0.0));
-        VehicleConsumptions tmpConsumptions = new VehicleConsumptions(
-                new Consumptions(0.0, 0.0),
-                new Consumptions(0.0, 0.0));
-        VehicleData tmpVehicle = new VehicleData.Builder(currentSimulationTime, vehicleId)
-                .position(GeoPoint.ORIGO, CartesianPoint.ORIGO)
-                .movement(0.0, 0.0, 0.0)
-                .consumptions(tmpConsumptions)
-                .emissions(tmpEmissions)
-                .electric(tmpBattery)
-                .laneArea("")
-                .sensors(tmpSensors)
-                .road(tmpPos)
-                .signals(tmpSignals)
-                .orientation(DriveDirection.FORWARD, 0.0, 0.0)
-                .stopped(false)
-                .route("")
-                .create();
-        VehicleUpdates tempUpdates = new VehicleUpdates(
-                currentSimulationTime,
-                new ArrayList<>(Arrays.asList(tmpVehicle)),
-                new ArrayList<>(),
-                new ArrayList<>());
-
-        try {
-            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
-            this.rti.triggerInteraction(tempUpdates);
-        } catch (InternalFederateException | IllegalValueException e) {
-            // Log error message if there was an issue with the RTI interaction
-            log.error(e.getMessage());
-        }
-
-
-        // Create an InterfaceConfiguration object to represent the configuration of the
-        // Ad-Hoc interface
-        // TODO: Replace the transmit power of the ad-hoc interface (in dBm) if necessary
-        // TODO: Replace the communication range of the ad-hoc interface (in meters) if necessary
-        Inet4Address vehAddress = IpResolver.getSingleton().registerHost(vehicleId);
-        log.info("Assigned registered comms device " + vehicleId + " with IP address " + vehAddress.toString());
-        InterfaceConfiguration interfaceConfig = new InterfaceConfiguration.Builder(AdHocChannel.CCH)
-                .ip(vehAddress)
-                .subnet(IpResolver.getSingleton().getNetMask())
-                .power(50)
-                .radius(300.0)
-                .create();
-
-        // Create an AdHocConfiguration object to associate the Ad-Hoc interface
-        // configuration with the infrastructure instance's ID
-        AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(vehicleId)
-                .addInterface(interfaceConfig)
-                .create();
-
-        // Create an AdHocCommunicationConfiguration object to specify the time and
-        // Ad-Hoc configuration for exchange with another vehicle or component
-        AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
-                adHocConfig);
-        log.info("Communications comms device " + vehicleId + " with IP address " + vehAddress.toString() + " success!");
-        try {
-            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
-            this.rti.triggerInteraction(communicationConfig);
-        } catch (InternalFederateException | IllegalValueException e) {
-            // Log error message if there was an issue with the RTI interaction
-            log.error(e.getMessage());
-        }
     }
 }

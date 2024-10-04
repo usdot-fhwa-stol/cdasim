@@ -68,12 +68,15 @@ public class CarmaMessengerInstanceTest {
     public void testGetterSetterConstructor() {
         assertEquals("MockID", instance.getCarmaMessengerVehicleId());
         assertEquals(GeoPoint.ORIGO, instance.getLocation());
+        assertEquals("MockRolename", instance.getSumoRoleName());
         assertEquals(3456, instance.getV2xPort());
         assertEquals(7890, instance.getTimeSyncPort());
         assertEquals("MockState", instance.getMessengerEmergencyState());
 
         instance.setCarmaMessengerVehicleId("NewID");
         assertEquals("NewID", instance.getCarmaMessengerVehicleId());
+        instance.setSumoRoleName("NewRole");
+        assertEquals("NewRole", instance.getSumoRoleName());
         instance.setV2xPort(1234);
         assertEquals(1234, instance.getV2xPort());
         instance.setTimeSyncPort(5678);
