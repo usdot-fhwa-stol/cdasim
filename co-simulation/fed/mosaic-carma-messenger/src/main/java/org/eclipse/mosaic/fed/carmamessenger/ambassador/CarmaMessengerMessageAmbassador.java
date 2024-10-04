@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import org.eclipse.mosaic.fed.carma.ambassador.CarmaMessageAmbassador;
-import org.eclipse.mosaic.fed.carmamessenger.configuration.CarmaMessengerConfiguration;
+import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -46,7 +46,7 @@ public class CarmaMessengerMessageAmbassador extends CarmaMessageAmbassador{
     /**
      * CarmaMessageAmbassador configuration file.
      */
-    CarmaMessengerConfiguration carmaMessengerConfiguration;
+    CarmaConfiguration carmaMessengerConfiguration;
 
     private CarmaMessengerRegistrationReceiver carmaMessengerRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
@@ -67,7 +67,7 @@ public class CarmaMessengerMessageAmbassador extends CarmaMessageAmbassador{
 
         try {
             // Read the CARMA message ambassador configuration file
-            carmaMessengerConfiguration = new ObjectInstantiation<>(CarmaMessengerConfiguration.class, log)
+            carmaMessengerConfiguration = new ObjectInstantiation<>(CarmaConfiguration.class, log)
                     .readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
