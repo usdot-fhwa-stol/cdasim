@@ -23,13 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaMessageAmbassador;
 import org.eclipse.mosaic.fed.carmamessenger.configuration.CarmaMessengerConfiguration;
-import org.eclipse.mosaic.interactions.application.CarmaV2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
-import org.eclipse.mosaic.interactions.communication.V2xMessageReception;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.interactions.mapping.advanced.ExternalVehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
@@ -43,8 +40,6 @@ import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
 import org.eclipse.mosaic.lib.objects.road.SimpleRoadPosition;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
-import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
 import org.eclipse.mosaic.lib.objects.vehicle.Consumptions;
 import org.eclipse.mosaic.lib.objects.vehicle.Emissions;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleBatteryState;
@@ -58,9 +53,7 @@ import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
 import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
-import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
 import org.eclipse.mosaic.rti.api.IllegalValueException;
-import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
@@ -68,7 +61,7 @@ import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
-public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
+public class CarmaMessengerMessageAmbassador extends CarmaMessageAmbassador{
     /**
      * Simulation time.
      */
@@ -123,8 +116,6 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
      */
     @Override
     public void initialize(long startTime, long endTime) throws InternalFederateException {
-        super.initialize(startTime, endTime);
-
         currentSimulationTime = startTime;
         try {
             rti.requestAdvanceTime(currentSimulationTime, 0, (byte) 1);
@@ -146,7 +137,7 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
         v2xRxBackgroundThread.start();
     }
 
-    /**
+        /**
      * This method is called by the AbstractFederateAmbassador when a time advance
      * has been granted by the RTI. Before this call is placed, any unprocessed
      * interaction is forwarded to the federate using the processInteraction method.
@@ -165,10 +156,10 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
         log.info("Carma message ambassador processing timestep to {}.", time);
 
         try {
-            List<CarmaMessengerRegistrationMessage> newRegistrations = carmaMessengerRegistrationReceiver.getReceivedMessages();
+            List<CarmaMessengerRegistrationMessage> newRegistrations = carmaMessengerRegistrationReceiver.getReceivedMessengerMessages();
             for (CarmaMessengerRegistrationMessage reg : newRegistrations) {
                 carmaMessengerInstanceManager.onNewRegistration(reg);
-                onDsrcRegistrationRequest(reg.getSumoVehicleRole());
+                onDsrcRegistrationRequest(reg.getCarlaVehicleRole());
             }
             // Set current simulation time to most recent time update
             currentSimulationTime = time;
@@ -203,92 +194,6 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
             throw new InternalFederateException(e);
         }
          
-    }
-
-    /**
-     * Return whether this federate is time constrained. Is set if the federate is
-     * sensitive towards the correct ordering of events. The federate ambassador
-     * will ensure that the message processing happens in time stamp order. If set
-     * to false, interactions will be processed in receive order.
-     *
-     * @return {@code true} if this federate is time constrained, else
-     *         {@code false}.
-     */
-    @Override
-    public boolean isTimeConstrained() {
-        return true;
-    }
-
-    /**
-     * Return whether this federate is time regulating. Is set if the federate
-     * influences other federates and can prevent them from advancing their local
-     * time.
-     *
-     * @return {@code true} if this federate is time regulating, {@code false} else.
-     */
-    @Override
-    public boolean isTimeRegulating() {
-        return true;
-    }
-
-    /**
-     * This method processes the interactions.
-     *
-     * @param interaction The interaction that can be processed.
-     * @throws InternalFederateException Exception is thrown if an error is occurred
-     *                                   while execute of a federate.
-     */
-    @Override
-    public void processInteraction(Interaction interaction) throws InternalFederateException {
-        String type = interaction.getTypeId();
-        long interactionTime = interaction.getTime();
-        log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-        if (interaction.getTypeId().equals(V2xMessageReception.TYPE_ID)) {
-            receiveV2xReceptionInteraction((V2xMessageReception) interaction);
-        }
-        if (interaction.getTypeId().equals(CarmaV2xMessageReception.TYPE_ID)) {
-            receiveInteraction((CarmaV2xMessageReception) interaction);
-        }
-        if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
-            receiveVehicleUpdateInteraction((VehicleUpdates) interaction);
-        }
-    }
-
-    private synchronized void receiveVehicleUpdateInteraction(VehicleUpdates interaction) {
-        carmaMessengerInstanceManager.onVehicleUpdates(interaction);
-    }
-
-    /**
-     * Helper function to retrieve previously transmitted messages by ID from the buffer
-     * @param id The id of the message to return
-     * @return The {@link V2xMessage} object if the id exists in the buffer, null o.w.
-     */
-    private V2xMessage lookupV2xMsgIdInBuffer(int id) {
-        return SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(id);
-    }
-
-    /**
-     * Callback to be invoked when the network simulator determines that a simulated radio has received a V2X message
-     * @param interaction The v2x message receipt data
-     */
-    private synchronized void receiveV2xReceptionInteraction(V2xMessageReception interaction) {
-        String carlaRoleName = interaction.getReceiverName();
-        if (!carmaMessengerInstanceManager.checkIfRegistered(carlaRoleName)) {
-            // Abort early as we only are concerned with CARMA Platform vehicles
-            return;
-        }
-        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId());
-
-        int messageId = interaction.getMessageId();
-        V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
-
-        if (msg != null && msg instanceof ExternalV2xMessage) {
-            ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
-            carmaMessengerInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
-            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
-        } else {
-            log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
-        }
     }
 
     private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
@@ -386,20 +291,20 @@ public class CarmaMessengerMessageAmbassador extends AbstractFederateAmbassador{
         // Create an AdHocConfiguration object to associate the Ad-Hoc interface
         // configuration with the infrastructure instance's ID
         AdHocConfiguration adHocConfig = new AdHocConfiguration.Builder(vehicleId)
-        .addInterface(interfaceConfig)
-        .create();
+                .addInterface(interfaceConfig)
+                .create();
 
-// Create an AdHocCommunicationConfiguration object to specify the time and
-// Ad-Hoc configuration for exchange with another vehicle or component
-AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
-        adHocConfig);
-log.info("Communications comms device " + vehicleId + " with IP address " + vehAddress.toString() + " success!");
-try {
-    // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
-    this.rti.triggerInteraction(communicationConfig);
-} catch (InternalFederateException | IllegalValueException e) {
-    // Log error message if there was an issue with the RTI interaction
-    log.error(e.getMessage());
-}
-}
+        // Create an AdHocCommunicationConfiguration object to specify the time and
+        // Ad-Hoc configuration for exchange with another vehicle or component
+        AdHocCommunicationConfiguration communicationConfig = new AdHocCommunicationConfiguration(currentSimulationTime,
+                adHocConfig);
+        log.info("Communications comms device " + vehicleId + " with IP address " + vehAddress.toString() + " success!");
+        try {
+            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
+            this.rti.triggerInteraction(communicationConfig);
+        } catch (InternalFederateException | IllegalValueException e) {
+            // Log error message if there was an issue with the RTI interaction
+            log.error(e.getMessage());
+        }
+    }
 }

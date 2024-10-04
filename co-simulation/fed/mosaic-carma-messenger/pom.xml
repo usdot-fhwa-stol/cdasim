@@ -97,6 +97,12 @@
           <artifactId>jaxb-runtime</artifactId>
           <version>2.3.2</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.mosaic</groupId>
+        <artifactId>mosaic-carma</artifactId>
+        <version>22.1-SNAPSHOT</version>
+        <scope>compile</scope>
+      </dependency>
   </dependencies>
 
   <profiles>

@@ -15,30 +15,31 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-public class CarmaMessengerRegistrationMessage {
-    private String carmaVehicleId;
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+
+public class CarmaMessengerRegistrationMessage extends CarmaRegistrationMessage{
+    private String carmaMessengerVehicleId;
     private String sumoVehicleRole;
     private String rxMessageIpAddress;
     private int rxMessagePort;
     private int rxTimeSyncPort;
     private String messengerEmergencyState;
 
-    public CarmaMessengerRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
+    public CarmaMessengerRegistrationMessage(String carmaMessengerVehicleId, String sumoVehicleRole, String rxMessageIpAddress,
             int rxMessagePort, int rxTimeSyncPort, String messengerEmergencyState) {
-        this.carmaVehicleId = carmaVehicleId;
-        this.sumoVehicleRole = carlaVehicleRole;
-        this.rxMessageIpAddress = rxMessageIpAddress;
-        this.rxMessagePort = rxMessagePort;
-        this.rxTimeSyncPort = rxTimeSyncPort;
+        super(carmaMessengerVehicleId, sumoVehicleRole, rxMessageIpAddress, rxMessagePort, rxTimeSyncPort);
+        this.carmaMessengerVehicleId = carmaMessengerVehicleId;
+        this.sumoVehicleRole = sumoVehicleRole;
+
         this.messengerEmergencyState = messengerEmergencyState;
     }
 
-    public String getCarmaVehicleId() {
-        return carmaVehicleId;
+    public String getCarmaMessengerVehicleId() {
+        return carmaMessengerVehicleId;
     }
 
-    public void setCarmaVehicleId(String carmaVehicleId) {
-        this.carmaVehicleId = carmaVehicleId;
+    public void setCarmaMessengerVehicleId(String carmaMessengerVehicleId) {
+        this.carmaMessengerVehicleId = carmaMessengerVehicleId;
     }
 
     public String getSumoVehicleRole() {
@@ -47,30 +48,6 @@ public class CarmaMessengerRegistrationMessage {
 
     public void setSumoVehicleRole(String carlaVehicleRole) {
         this.sumoVehicleRole = carlaVehicleRole;
-    }
-
-    public String getRxMessageIpAddress() {
-        return rxMessageIpAddress;
-    }
-
-    public void setRxMessageIpAddress(String rxMessageIpAddress) {
-        this.rxMessageIpAddress = rxMessageIpAddress;
-    }
-
-    public int getRxMessagePort() {
-        return rxMessagePort;
-    }
-
-    public void setRxMessagePort(int rxMessagePort) {
-        this.rxMessagePort = rxMessagePort;
-    }
-
-    public int getRxTimeSyncPort() {
-        return rxTimeSyncPort;
-    }
-
-    public void setRxTimeSyncPort(int rxTimeSyncPort) {
-        this.rxTimeSyncPort = rxTimeSyncPort;
     }
 
     public String getMessengerEmergencyState() {
@@ -83,7 +60,7 @@ public class CarmaMessengerRegistrationMessage {
 
     @Override
     public String toString() {
-        return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + carmaVehicleId + ", sumoVehicleRole=" + sumoVehicleRole
+        return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + carmaMessengerVehicleId + ", sumoVehicleRole=" + sumoVehicleRole
                 + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
                 + ", rxTimeSyncPort=" + rxTimeSyncPort + ", MessengerEmergencyState=" + messengerEmergencyState + "]";
     }

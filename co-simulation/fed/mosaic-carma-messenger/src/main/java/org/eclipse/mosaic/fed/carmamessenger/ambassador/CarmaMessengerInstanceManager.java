@@ -21,15 +21,14 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaInstanceManager;
 import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
-import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
 import org.eclipse.mosaic.lib.geo.GeoCircle;
 import org.eclipse.mosaic.lib.objects.addressing.AdHocMessageRoutingBuilder;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.MessageRouting;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +37,8 @@ import com.google.gson.Gson;
 import gov.dot.fhwa.saxton.CarmaV2xMessage;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
-public class CarmaMessengerInstanceManager {
-    private Map<String, CarmaMessengerInstance>  managedInstances = new HashMap<>();
+public class CarmaMessengerInstanceManager extends CarmaInstanceManager{
+    private Map<String, CarmaMessengerInstance>managedInstances = new HashMap<>();
 
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
     private static final int TARGET_PORT = 5500;
@@ -76,6 +75,7 @@ public class CarmaMessengerInstanceManager {
      * @param time The timestamp at which the interaction occurs.
      * @throws IllegalStateException if sourceAddr does not match any address in the managed instances.
      */
+    @Override
     public V2xMessageTransmission onV2XMessageTx(InetAddress sourceAddr, CarmaV2xMessage txMsg, long time) {
         CarmaMessengerInstance sender = null;
         // Find the CarmaInstance with sourceAddr.
@@ -95,45 +95,13 @@ public class CarmaMessengerInstanceManager {
         MessageRouting routing = messageRoutingBuilder.geoBroadCast(new GeoCircle(sender.getLocation(), 300));
         log.debug("Generating V2XMessageTransmission interaction sim time: {}, sender id: {}, location: {}, type: {}, payload: {}", 
                 time, 
-                sender.getCarmaVehicleId(),
+                sender.getCarmaMessengerVehicleId(),
                 sender.getLocation(),
                 txMsg.getType(),
                 txMsg.getPayload()
             );
         return new V2xMessageTransmission( time, new ExternalV2xMessage(routing,
                 new ExternalV2xContent( time, sender.getLocation(), txMsg.getPayload())));
-    }
-
-    /**
-     * Callback to be invoked when the simulation emits a VehicleUpdates event, used to track the location of CARMA
-     * Platform instances in this manager.
-     * @param vui The vehicle update information
-     */
-    public void onVehicleUpdates(VehicleUpdates vui) {
-        for (VehicleData veh : vui.getUpdated()) {
-            if (managedInstances.containsKey(veh.getName())) {
-                managedInstances.get(veh.getName()).setLocation(veh.getPosition());
-            }
-        }
-    }
-
-    /**
-     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
-     * @param rxMsg The V2X Message received
-     * @param rxVehicleId The Host ID of the vehicle receiving the data
-     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
-     */
-    public void onV2XMessageRx(byte[] rxMsg, String rxVehicleId) {
-        if (!managedInstances.containsKey(rxVehicleId))  {
-            return;
-        }
-
-        CarmaMessengerInstance carmaMessenger = managedInstances.get(rxVehicleId);
-        try {
-            carmaMessenger.sendV2xMsgs(rxMsg);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**
@@ -144,6 +112,7 @@ public class CarmaMessengerInstanceManager {
      *                from the ambassador side
      * @throws IOException
      */
+    @Override
     public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
         if (managedInstances.size() == 0) {
             log.debug("There are no registered instances");
@@ -153,7 +122,7 @@ public class CarmaMessengerInstanceManager {
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
                 log.debug("Sending CARMA Messenger instance {} at {}:{} time sync message for time {}!" ,
-                    currentInstance.getCarmaVehicleId(), 
+                    currentInstance.getCarmaMessengerVehicleId(), 
                     currentInstance.getTargetAddress(), 
                     currentInstance.getTimeSyncPort(),
                     currentInstance.getMessengerEmergencyState(), 
@@ -172,27 +141,27 @@ public class CarmaMessengerInstanceManager {
      * @param v2xPort The port to which received simulated V2X messages should be sent
      * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaMessengerInstance(String carmaVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState);
+    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState);
         try {
             tmp.bind();
-            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
+            log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
         } catch (IOException e) {
-            log.error("Failed to bind CARMA instance with ID '{}' to its RX message socket: {}",
+            log.error("Failed to bind CARMA Messenger instance with ID '{}' to its RX message socket: {}",
             sumoRoleName, e.getMessage());
             log.error("Stack trace:", e);
             throw new RuntimeException(e);
         }
         managedInstances.put(sumoRoleName, tmp);
     }
-
     /**
      * External helper function to allow the ambassador to check if a given vehicle ID is a registered CARMA Platform
      * instance
      * @param mosiacVehicleId The id to check
      * @return True if managed by this object (e.g., is a registered CARMA Platform vehicle). false o.w.
      */
+    @Override
     public boolean checkIfRegistered(String mosiacVehicleId) {
-        return managedInstances.keySet().contains(mosiacVehicleId);
+        return this.managedInstances.keySet().contains(mosiacVehicleId);
     }
 }

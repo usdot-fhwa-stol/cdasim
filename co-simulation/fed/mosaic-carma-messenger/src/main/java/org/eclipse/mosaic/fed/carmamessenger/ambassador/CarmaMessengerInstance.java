@@ -20,104 +20,32 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaInstance;
 
-public class CarmaMessengerInstance {
-    private String carmaVehicleId;
+
+public class CarmaMessengerInstance extends CarmaInstance{
+    private String carmaMessengerVehicleId;
     private String sumoRoleName;
+
     private DatagramSocket rxMsgsSocket = null;
 
-    private InetAddress targetAddress;
-    private int v2xPort;
-    private int timeSyncPort;
-    private GeoPoint location = GeoPoint.ORIGO;
     private String messengerEmergencyState;
 
-    public CarmaMessengerInstance(String carmaVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
-        this.carmaVehicleId = carmaVehicleId;
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
+        super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
+
+        this.carmaMessengerVehicleId = carmaMessengerVehicleId;
         this.sumoRoleName = sumoRoleName;
-        this.targetAddress = targetAddress;
-        this.v2xPort = v2xPort;
-        this.timeSyncPort = timeSyncPort;
+
         this.messengerEmergencyState = messengerEmergencyState;
     }
 
-    public InetAddress getTargetAddress() {
-        return targetAddress;
+    public String getCarmaMessengerVehicleId() {
+        return carmaMessengerVehicleId;
     }
 
-    public void setTargetAddress(InetAddress targetAddress) {
-        this.targetAddress = targetAddress;
-    }
-
-    public void setLocation(GeoPoint location) {
-        this.location = location;
-    }
-
-    public GeoPoint getLocation() {
-        return this.location;
-    }
-    
-
-    public int getV2xPort() {
-        return v2xPort;
-    }
-
-    public void setV2xPort(int v2xPort) {
-        this.v2xPort = v2xPort;
-    }
-
-    public int getTimeSyncPort() {
-        return timeSyncPort;
-    }
-
-    public void setTimeSyncPort(int timeSyncPort) {
-        this.timeSyncPort = timeSyncPort;
-    }
-
-    /**
-     * Sends the V2X message to the CARMA Platform communications interface configured at construction time.
-     * @param data The binary data to transmit
-     * @throws IOException If there is an issue with the underlying socket object or methods
-     */
-    public void sendV2xMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, v2xPort);
-
-        rxMsgsSocket.send(packet);
-    }
-    /**
-     * Sends the time sync messages to the CARMA Platform to synchronize ros clock with simulation clock.
-     * @param data The binary data encoding of json time sync message
-     * @throws IOException If there is an issue with the underlying socket object or methods
-     */
-    public void sendTimeSyncMsg(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-
-        DatagramPacket packet = new DatagramPacket(data, data.length, targetAddress, timeSyncPort);
-
-        rxMsgsSocket.send(packet);
-    }
-
-    /**
-     * Connects the sockt to receive messages from the CARMA Platform instance
-     * @throws IOException If the socket creation fails
-     */
-    public void bind() throws IOException {
-        rxMsgsSocket = new DatagramSocket();
-    }
-
-    public String getCarmaVehicleId() {
-        return carmaVehicleId;
-    }
-
-    public void setCarmaVehicleId(String carmaVehicleId) {
-        this.carmaVehicleId = carmaVehicleId;
+    public void setCarmaMessengerVehicleId(String carmaMessengerVehicleId) {
+        this.carmaMessengerVehicleId = carmaMessengerVehicleId;
     }
 
     public String getSumoRoleName() {
@@ -139,4 +67,35 @@ public class CarmaMessengerInstance {
     public void setMessengerEmergencyState(String messengerEmergencyState) {
         this.messengerEmergencyState = messengerEmergencyState;
     }
+
+
+    /**
+     * Sends the V2X message to the CARMA Platform communications interface configured at construction time.
+     * @param data The binary data to transmit
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
+    public void sendV2xMsgs(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+        
+        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), super.getV2xPort());
+
+        rxMsgsSocket.send(packet);
+    }
+    /**
+     * Sends the time sync messages to the CARMA Platform to synchronize ros clock with simulation clock.
+     * @param data The binary data encoding of json time sync message
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
+    public void sendTimeSyncMsg(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), super.getTimeSyncPort());
+
+        rxMsgsSocket.send(packet);
+    }
+
 }

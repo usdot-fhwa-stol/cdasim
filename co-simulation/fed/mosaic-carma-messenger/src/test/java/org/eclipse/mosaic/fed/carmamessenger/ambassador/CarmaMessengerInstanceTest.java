@@ -15,21 +15,20 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 import org.eclipse.mosaic.lib.geo.GeoPoint;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import com.google.gson.Gson;
@@ -61,20 +60,20 @@ public class CarmaMessengerInstanceTest {
             3456,
             7890,
             "MockState"
-        );
+        );   
         FieldSetter.setField(instance, instance.getClass().getDeclaredField("rxMsgsSocket"), socket);
     }
 
     @Test
     public void testGetterSetterConstructor() {
-        assertEquals("MockID", instance.getCarmaVehicleId());
+        assertEquals("MockID", instance.getCarmaMessengerVehicleId());
         assertEquals(GeoPoint.ORIGO, instance.getLocation());
         assertEquals(3456, instance.getV2xPort());
         assertEquals(7890, instance.getTimeSyncPort());
         assertEquals("MockState", instance.getMessengerEmergencyState());
 
-        instance.setCarmaVehicleId("NewID");
-        assertEquals("NewID", instance.getCarmaVehicleId());
+        instance.setCarmaMessengerVehicleId("NewID");
+        assertEquals("NewID", instance.getCarmaMessengerVehicleId());
         instance.setV2xPort(1234);
         assertEquals(1234, instance.getV2xPort());
         instance.setTimeSyncPort(5678);

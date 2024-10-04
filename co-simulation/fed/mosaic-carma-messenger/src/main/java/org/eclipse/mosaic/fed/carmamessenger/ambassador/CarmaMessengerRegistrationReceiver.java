@@ -24,12 +24,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationReceiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-public class CarmaMessengerRegistrationReceiver implements Runnable{
+public class CarmaMessengerRegistrationReceiver extends CarmaRegistrationReceiver{
     private Queue<CarmaMessengerRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1715;
@@ -37,10 +38,12 @@ public class CarmaMessengerRegistrationReceiver implements Runnable{
     private static final int UDP_MTU = 1535;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
+
     /**
      * Initialize the listen socket for messages from the CARMA Platform NS-3 Adapter
      * @throws RuntimeException iff socket instantiation fails
      */
+    @Override
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
@@ -75,21 +78,10 @@ public class CarmaMessengerRegistrationReceiver implements Runnable{
     }
 
     /**
-     * Stop the runnable instance
-     */
-    public void stop() {
-        if (listenSocket != null) {
-            listenSocket.close();
-        }
-
-        running = false;
-    }
-
-    /**
      * Query the current buffer of outbound messages. Clears the currently stored buffer once called. Thread-safe.
      * @return The list of received outbound message from all CARMA Platform instances since last call of this method
      */
-    public List<CarmaMessengerRegistrationMessage> getReceivedMessages() {
+    public List<CarmaMessengerRegistrationMessage> getReceivedMessengerMessages() {
         List<CarmaMessengerRegistrationMessage> output = new ArrayList<>();
 
         synchronized (rxQueue) {
