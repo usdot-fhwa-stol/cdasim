@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 LEIDOS.
+ * Copyright (C) 2023 LEIDOS.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,9 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-
-package org.eclipse.mosaic.fed.carma.ambassador;
+package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -26,29 +24,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationReceiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-/**
- * Worker thread Runnable for operating a listen socket to receive outbound V2X Messages from CARMA Platform instances
- * This {@link Runnable} instance will operate a UDP socket to subscribe to packets from the CARMA Platfomr's NS-3
- * adapter. Upon receiving a packet, it will be enqueued for the primary thread to process the data once it ticks to a
- * simulation processing step
- */
-public class CarmaRegistrationReceiver implements Runnable {
-    private Queue<CarmaRegistrationMessage> rxQueue = new LinkedList<>();
+public class CarmaMessengerRegistrationReceiver extends CarmaRegistrationReceiver{
+    private Queue<CarmaMessengerRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1515;
+    private static final int listenPort = 1715;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+
 
     /**
      * Initialize the listen socket for messages from the CARMA Platform NS-3 Adapter
      * @throws RuntimeException iff socket instantiation fails
      */
+    @Override
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
@@ -72,33 +67,22 @@ public class CarmaRegistrationReceiver implements Runnable {
             String receivedPacket = new String(msg.getData(), 0, msg.getLength());
             log.debug("Registration JSON received:  {}", receivedPacket);
             Gson gson = new Gson();
-            CarmaRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaRegistrationMessage.class);
+            CarmaMessengerRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaMessengerRegistrationMessage.class);
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                log.info("New CARMA instance '{}' received with CARMA Registration Receiver.", parsedMessage.getCarmaVehicleId());
+                log.info("New CARMA messenger instance '{}' received with CARMA messenger Registration Receiver.", parsedMessage.getCarmaVehicleId());
                 rxQueue.add(parsedMessage);
             }
        }
     }
 
     /**
-     * Stop the runnable instance
-     */
-    public void stop() {
-        if (listenSocket != null) {
-            listenSocket.close();
-        }
-
-        running = false;
-    }
-
-    /**
      * Query the current buffer of outbound messages. Clears the currently stored buffer once called. Thread-safe.
      * @return The list of received outbound message from all CARMA Platform instances since last call of this method
      */
-    public List<CarmaRegistrationMessage> getReceivedMessages() {
-        List<CarmaRegistrationMessage> output = new ArrayList<>();
+    public List<CarmaMessengerRegistrationMessage> getReceivedMessengerMessages() {
+        List<CarmaMessengerRegistrationMessage> output = new ArrayList<>();
 
         synchronized (rxQueue) {
             output.addAll(rxQueue);
