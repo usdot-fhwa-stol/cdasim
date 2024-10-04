@@ -41,7 +41,8 @@ public class CarmaMessengerInstanceManager extends CarmaInstanceManager{
     private Map<String, CarmaMessengerInstance>managedInstances = new HashMap<>();
 
     // TODO: Verify actual port for CARMA Platform NS-3 adapter
-    private static final int TARGET_PORT = 5500;
+    private static final int ADAPTER_TARGET_PORT = 5500;
+    private static final int BRIDGE_TARGET_PORT = 5500;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
@@ -57,7 +58,8 @@ public class CarmaMessengerInstanceManager extends CarmaInstanceManager{
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
                     registration.getRxMessagePort(),
                     registration.getRxTimeSyncPort(),
-                    registration.getMessengerEmergencyState()
+                    registration.getMessengerEmergencyState(),
+                    registration.getRxBridgeMessagePort()
                 );
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e);
@@ -141,8 +143,8 @@ public class CarmaMessengerInstanceManager extends CarmaInstanceManager{
      * @param v2xPort The port to which received simulated V2X messages should be sent
      * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState);
+    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState, rxBridgeMessagePort);
         try {
             tmp.bind();
             log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
@@ -163,5 +165,25 @@ public class CarmaMessengerInstanceManager extends CarmaInstanceManager{
     @Override
     public boolean checkIfRegistered(String mosiacVehicleId) {
         return this.managedInstances.keySet().contains(mosiacVehicleId);
+    }
+
+    /**
+     * Callback to be invoked when CARMA Platform receives a V2X Message from the NS-3 simulation
+     * @param rxMsg The V2X Message received
+     * @param rxVehicleId The Host ID of the vehicle receiving the data
+     * @throws RuntimeException If the socket used to communicate with the platform experiences failure
+     */
+    @Override
+    public void onV2XMessageRx(byte[] rxMsg, String rxVehicleId) {
+        if (!managedInstances.containsKey(rxVehicleId))  {
+            return;
+        }
+
+        CarmaMessengerInstance carmaMessenger = managedInstances.get(rxVehicleId);
+        try {
+            carmaMessenger.sendV2xMsgs(rxMsg);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

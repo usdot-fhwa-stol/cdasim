@@ -24,14 +24,16 @@ public class CarmaMessengerRegistrationMessage extends CarmaRegistrationMessage{
     private int rxMessagePort;
     private int rxTimeSyncPort;
     private String messengerEmergencyState;
+    private int rxBridgeMessagePort;
 
     public CarmaMessengerRegistrationMessage(String carmaMessengerVehicleId, String sumoVehicleRole, String rxMessageIpAddress,
-            int rxMessagePort, int rxTimeSyncPort, String messengerEmergencyState) {
+            int rxMessagePort, int rxTimeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
         super(carmaMessengerVehicleId, sumoVehicleRole, rxMessageIpAddress, rxMessagePort, rxTimeSyncPort);
         this.carmaMessengerVehicleId = carmaMessengerVehicleId;
         this.sumoVehicleRole = sumoVehicleRole;
 
         this.messengerEmergencyState = messengerEmergencyState;
+        this.rxBridgeMessagePort = rxBridgeMessagePort;
     }
 
     public String getCarmaMessengerVehicleId() {
@@ -58,10 +60,18 @@ public class CarmaMessengerRegistrationMessage extends CarmaRegistrationMessage{
         this.messengerEmergencyState = messengerEmergencyState;
     }
 
+    public int getRxBridgeMessagePort(){
+        return rxBridgeMessagePort;
+    }
+
+    public void setRxBridgeMessagePort(int rxBridgeMessagePort){
+        this.rxBridgeMessagePort = rxBridgeMessagePort;
+    }
+
     @Override
     public String toString() {
         return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + carmaMessengerVehicleId + ", sumoVehicleRole=" + sumoVehicleRole
                 + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
-                + ", rxTimeSyncPort=" + rxTimeSyncPort + ", MessengerEmergencyState=" + messengerEmergencyState + "]";
+                + ", rxTimeSyncPort=" + rxTimeSyncPort + ", MessengerEmergencyState=" + messengerEmergencyState + ", rxBridgeMessagePort=" + rxBridgeMessagePort +"]";
     }
 }

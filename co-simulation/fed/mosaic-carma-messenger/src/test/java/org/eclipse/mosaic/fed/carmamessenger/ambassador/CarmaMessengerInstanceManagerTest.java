@@ -93,6 +93,7 @@ public class CarmaMessengerInstanceManagerTest {
         int timeSyncPort = 5678;
         String ipAddressString = "127.0.0.1";
         String emergencyState = "MockState";
+        int rxBridgeMessagePort = 5600;
       
         // Mock the behavior of the registration object
         CarmaMessengerRegistrationMessage registration = new CarmaMessengerRegistrationMessage(
@@ -101,7 +102,8 @@ public class CarmaMessengerInstanceManagerTest {
                                                                             ipAddressString, 
                                                                             rxMessagePort, 
                                                                             timeSyncPort,
-                                                                            emergencyState);
+                                                                            emergencyState,
+                                                                            rxBridgeMessagePort);
         // Ensure checkIfRegistered returns false for infrastructure ID before registering 
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 

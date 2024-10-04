@@ -30,14 +30,16 @@ public class CarmaMessengerInstance extends CarmaInstance{
     private DatagramSocket rxMsgsSocket = null;
 
     private String messengerEmergencyState;
+    private int rxBridgeMessagePort;
 
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState) {
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
         super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
 
         this.carmaMessengerVehicleId = carmaMessengerVehicleId;
         this.sumoRoleName = sumoRoleName;
 
         this.messengerEmergencyState = messengerEmergencyState;
+        this.rxBridgeMessagePort = rxBridgeMessagePort;
     }
 
     public String getCarmaMessengerVehicleId() {
@@ -68,6 +70,13 @@ public class CarmaMessengerInstance extends CarmaInstance{
         this.messengerEmergencyState = messengerEmergencyState;
     }
 
+    public int getRxBridgeMessagePort(){
+        return rxBridgeMessagePort;
+    }
+
+    public void setRxBridgeMessagePort(int rxBridgeMessagePort){
+        this.rxBridgeMessagePort = rxBridgeMessagePort;
+    }
 
     /**
      * Sends the V2X message to the CARMA Platform communications interface configured at construction time.
@@ -98,4 +107,18 @@ public class CarmaMessengerInstance extends CarmaInstance{
         rxMsgsSocket.send(packet);
     }
 
+    /**
+     * Sends the V2X message to the CARMA Platform communications interface configured at construction time.
+     * @param data The binary data to transmit
+     * @throws IOException If there is an issue with the underlying socket object or methods
+     */
+    public void sendVehStatusMsgs(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+        
+        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxBridgeMessagePort);
+
+        rxMsgsSocket.send(packet);
+    }
 }

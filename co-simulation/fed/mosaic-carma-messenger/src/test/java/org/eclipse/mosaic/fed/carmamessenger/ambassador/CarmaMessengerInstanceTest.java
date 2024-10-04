@@ -59,7 +59,8 @@ public class CarmaMessengerInstanceTest {
             address,
             3456,
             7890,
-            "MockState"
+            "MockState",
+            5600
         );   
         FieldSetter.setField(instance, instance.getClass().getDeclaredField("rxMsgsSocket"), socket);
     }
@@ -72,6 +73,7 @@ public class CarmaMessengerInstanceTest {
         assertEquals(3456, instance.getV2xPort());
         assertEquals(7890, instance.getTimeSyncPort());
         assertEquals("MockState", instance.getMessengerEmergencyState());
+        assertEquals(5600, instance.getRxBridgeMessagePort());
 
         instance.setCarmaMessengerVehicleId("NewID");
         assertEquals("NewID", instance.getCarmaMessengerVehicleId());
@@ -85,7 +87,8 @@ public class CarmaMessengerInstanceTest {
         assertEquals(address, instance.getTargetAddress());
         instance.setMessengerEmergencyState("NewState");
         assertEquals("NewState", instance.getMessengerEmergencyState());
-
+        instance.setRxBridgeMessagePort(5700);
+        assertEquals(5700, instance.getRxBridgeMessagePort());
     }
 
     @Test
@@ -123,6 +126,24 @@ public class CarmaMessengerInstanceTest {
         // Verify parameter members
         assertArrayEquals(message_bytes, packet.getValue().getData());
         assertEquals(instance.getTimeSyncPort(), packet.getValue().getPort());
+        assertEquals(address, packet.getValue().getAddress());
+    }
+
+
+    @Test
+    public void testSendVehStatusMsg() throws IOException {
+        // Test SendV2xMsg method
+        String test_msg = "test message";
+        instance.sendVehStatusMsgs(test_msg.getBytes());
+        // ArgumentCaptor to capture parameters passed to mock on method calls
+        ArgumentCaptor<DatagramPacket> packet = ArgumentCaptor.forClass(DatagramPacket.class);
+        // Verify socket.send(DatagramPacket packet) is called and capture packet
+        // parameter
+        verify(socket, times(1)).send(packet.capture());
+
+        // Verify parameter members
+        assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
+        assertEquals(instance.getRxBridgeMessagePort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
     }
 }
