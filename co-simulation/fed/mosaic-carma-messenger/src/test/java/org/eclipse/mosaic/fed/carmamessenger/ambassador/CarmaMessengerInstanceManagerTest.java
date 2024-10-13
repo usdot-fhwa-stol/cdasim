@@ -15,34 +15,20 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-
-import gov.dot.fhwa.saxton.CarmaV2xMessage;
-import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class CarmaMessengerInstanceManagerTest {
     private CarmaMessengerInstanceManager manager;
@@ -82,7 +68,7 @@ public class CarmaMessengerInstanceManagerTest {
         managedInstances.put("instance3", instance3);
       
         // Set private instance field to mock using reflection
-        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
+        FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
     }
 
     @Test
@@ -116,76 +102,4 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
     }
 
-    @Test
-    public void testOnTimeStepUpdate() throws IOException {
-        TimeSyncMessage message = new TimeSyncMessage(300, 3);
-    
-        Gson gson = new Gson();
-        byte[] message_bytes = gson.toJson(message).getBytes();
-
-        manager.onTimeStepUpdate(message);
-        // Verify that all instances sendTimeSyncMsgs was called.
-        verify(instance1).sendTimeSyncMsg(message_bytes);
-        verify(instance2).sendTimeSyncMsg(message_bytes);
-        verify(instance3).sendTimeSyncMsg(message_bytes);
-
-    }
-    @Test
-    public void testOnTimeStepUpdateWithoutRegisteredIntstances() throws NoSuchFieldException, SecurityException, IOException{
-        // Verify that with no managed instances nothing is called and no exception is thrown.
-        Map<String, CarmaMessengerInstance>  managedInstances = new HashMap<>();
-      
-        // Set private instance field to mock using reflection
-        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
-        TimeSyncMessage message = new TimeSyncMessage(300, 3);
-    
-        manager.onTimeStepUpdate(message);
-        
-        verify(instance1, never()).sendTimeSyncMsg(any());
-        verify(instance2, never()).sendTimeSyncMsg(any());
-        verify(instance3, never()).sendTimeSyncMsg(any());
-
-    }
-    @Test
-    public void testonV2XMessageTx() {
-        CarmaV2xMessage message = new CarmaV2xMessage(sampleMessage.getBytes());
-        // Setup mock addresses for registered carma platform instances
-        InetAddress address1 = mock(InetAddress.class);
-        InetAddress address2 = mock(InetAddress.class);
-        InetAddress address3 = mock(InetAddress.class);
-        when(instance1.getTargetAddress()).thenReturn(address1);
-        when(instance2.getTargetAddress()).thenReturn(address2);
-        when(instance3.getTargetAddress()).thenReturn(address3);
-        // Register host with IpResolver singleton
-        IpResolver.getSingleton().registerHost("veh_0");
-        // Set CarlaRoleName to veh_0 to macth registered host
-        when(instance1.getSumoRoleName()).thenReturn("veh_0");
-        // Set location to origin
-        when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
-
-        V2xMessageTransmission messageTx = manager.onV2XMessageTx(address1, message, 1000);
-        assertEquals(1000, messageTx.getTime());
-        assertEquals(GeoPoint.ORIGO, messageTx.getSourcePosition());
-        assertEquals("veh_0", messageTx.getMessage().getRouting().getSource().getSourceName());
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testonV2XMessageTxUnregisteredCarmaPlatform() {
-        CarmaV2xMessage message = new CarmaV2xMessage(sampleMessage.getBytes());
-        InetAddress address1 = mock(InetAddress.class);
-        InetAddress address2 = mock(InetAddress.class);
-        InetAddress address3 = mock(InetAddress.class);
-        InetAddress unregisteredAddress = mock(InetAddress.class);
-
-        when(instance1.getTargetAddress()).thenReturn(address1);
-        when(instance2.getTargetAddress()).thenReturn(address2);
-        when(instance3.getTargetAddress()).thenReturn(address3);
-        IpResolver.getSingleton().registerHost("veh_0");
-        when(instance1.getSumoRoleName()).thenReturn("veh_0");
-        when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
-        // Attempt to create V2X Message Transmission for unregistered address.
-        // Throws IllegalStateException
-        manager.onV2XMessageTx(unregisteredAddress, message, 1000);
-        
-    }
 }

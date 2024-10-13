@@ -15,41 +15,19 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import org.eclipse.mosaic.fed.carma.ambassador.CarmaRegistrationMessage;
+import org.eclipse.mosaic.lib.util.CommonRegistrationMessage;
 
-public class CarmaMessengerRegistrationMessage extends CarmaRegistrationMessage{
-    private String carmaMessengerVehicleId;
-    private String sumoVehicleRole;
-    private String rxMessageIpAddress;
-    private int rxMessagePort;
-    private int rxTimeSyncPort;
+public class CarmaMessengerRegistrationMessage extends CommonRegistrationMessage{
+
     private String messengerEmergencyState;
     private int rxBridgeMessagePort;
 
     public CarmaMessengerRegistrationMessage(String carmaMessengerVehicleId, String sumoVehicleRole, String rxMessageIpAddress,
             int rxMessagePort, int rxTimeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
         super(carmaMessengerVehicleId, sumoVehicleRole, rxMessageIpAddress, rxMessagePort, rxTimeSyncPort);
-        this.carmaMessengerVehicleId = carmaMessengerVehicleId;
-        this.sumoVehicleRole = sumoVehicleRole;
 
         this.messengerEmergencyState = messengerEmergencyState;
         this.rxBridgeMessagePort = rxBridgeMessagePort;
-    }
-
-    public String getCarmaMessengerVehicleId() {
-        return carmaMessengerVehicleId;
-    }
-
-    public void setCarmaMessengerVehicleId(String carmaMessengerVehicleId) {
-        this.carmaMessengerVehicleId = carmaMessengerVehicleId;
-    }
-
-    public String getSumoVehicleRole() {
-        return sumoVehicleRole;
-    }
-
-    public void setSumoVehicleRole(String carlaVehicleRole) {
-        this.sumoVehicleRole = carlaVehicleRole;
     }
 
     public String getMessengerEmergencyState() {
@@ -70,8 +48,8 @@ public class CarmaMessengerRegistrationMessage extends CarmaRegistrationMessage{
 
     @Override
     public String toString() {
-        return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + carmaMessengerVehicleId + ", sumoVehicleRole=" + sumoVehicleRole
-                + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
-                + ", rxTimeSyncPort=" + rxTimeSyncPort + ", MessengerEmergencyState=" + messengerEmergencyState + ", rxBridgeMessagePort=" + rxBridgeMessagePort +"]";
+        return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + super.getVehicleId() + ", sumoVehicleRole=" + super.getVehicleRole()
+                + ", rxMessageIpAddress=" + super.getRxMessageIpAddress() + ", rxMessagePort=" + super.getRxMessagePort()
+                + ", rxTimeSyncPort=" + super.getRxTimeSyncPort() + ", MessengerEmergencyState=" + messengerEmergencyState + ", rxBridgeMessagePort=" + rxBridgeMessagePort +"]";
     }
 }

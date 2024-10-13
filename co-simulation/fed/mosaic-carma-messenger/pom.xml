@@ -98,6 +98,12 @@
           <version>2.3.2</version>
       </dependency>
       <dependency>
+          <groupId>org.eclipse.mosaic</groupId>
+          <artifactId>mosaic-utils</artifactId>   
+          <version>${mosaic.version}</version>
+          <scope>compile</scope>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.mosaic</groupId>
         <artifactId>mosaic-carma</artifactId>
         <version>22.1-SNAPSHOT</version>

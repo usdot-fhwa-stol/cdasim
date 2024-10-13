@@ -61,7 +61,28 @@
             <artifactId>johnzon-core</artifactId>
             <scope>compile</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-objects</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.dot.fhwa.saxton</groupId>
+            <artifactId>mosaic-carma-utils</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-application</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-objects</artifactId>
+            <version>${mosaic.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

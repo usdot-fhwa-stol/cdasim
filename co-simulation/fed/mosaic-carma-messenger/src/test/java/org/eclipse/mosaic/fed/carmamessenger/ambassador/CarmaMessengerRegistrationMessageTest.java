@@ -31,27 +31,14 @@ public class CarmaMessengerRegistrationMessageTest {
                 "MockState",
                 5600);
         // Test Getter
-        assertEquals("MockID", message.getCarmaMessengerVehicleId());
-        assertEquals("MockRole", message.getSumoVehicleRole());
-
-        assertEquals("127.0.0.1", message.getRxMessageIpAddress());
-        assertEquals(5678, message.getRxMessagePort());
-        assertEquals(1234, message.getRxTimeSyncPort());
-        message.setRxMessagePort(5555);
-        message.setRxTimeSyncPort(6666);
-        message.setCarmaMessengerVehicleId("SOMEID");
-        message.setSumoVehicleRole("SOMEROLL");
-        message.setRxMessageIpAddress("someIP");
-        message.setMessengerEmergencyState("NewState");
-        assertEquals("SOMEID", message.getCarmaMessengerVehicleId());
-        assertEquals("SOMEROLL", message.getSumoVehicleRole());
-
-        assertEquals("someIP", message.getRxMessageIpAddress());
-        assertEquals(5555, message.getRxMessagePort());
-        assertEquals(6666, message.getRxTimeSyncPort());
-        assertEquals("NewState", message.getMessengerEmergencyState());
+        assertEquals("MockState", message.getMessengerEmergencyState());
         assertEquals(5600, message.getRxBridgeMessagePort());
+        
+        message.setMessengerEmergencyState("NewState");
         message.setRxBridgeMessagePort(5700);
+  
+
+        assertEquals("NewState", message.getMessengerEmergencyState());
         assertEquals(5700, message.getRxBridgeMessagePort());
     }
 }

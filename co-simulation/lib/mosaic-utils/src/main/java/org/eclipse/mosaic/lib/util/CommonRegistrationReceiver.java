@@ -13,35 +13,43 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.fed.carmamessenger.ambassador;
+package org.eclipse.mosaic.lib.util;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
-import org.eclipse.mosaic.lib.util.CommonRegistrationReceiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiver<CarmaMessengerRegistrationMessage>{
-    
-    public CarmaMessengerRegistrationReceiver(Class<CarmaMessengerRegistrationMessage> type) {
-        super(type);
-        //TODO Auto-generated constructor stub
-    }
+public class CommonRegistrationReceiver<T extends CommonRegistrationMessage> implements Runnable{
 
-    private Queue<CarmaMessengerRegistrationMessage> rxQueue = new LinkedList<>();
+    public CommonRegistrationReceiver(java.lang.Class<T> type) {
+        this.type = type;
+    }
+    
+    private Queue<T> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1715;
+    private static final int listenPort = 1515;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private final Class<T> type;
 
-
+    public void init() {
+        try {
+            listenSocket = new DatagramSocket(listenPort);
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void run() {
@@ -58,14 +66,32 @@ public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiv
             String receivedPacket = new String(msg.getData(), 0, msg.getLength());
             log.debug("Registration JSON received:  {}", receivedPacket);
             Gson gson = new Gson();
-            CarmaMessengerRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaMessengerRegistrationMessage.class);
+            T parsedMessage = gson.fromJson(receivedPacket, type);
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                log.info("New CARMA messenger instance '{}' received with CARMA messenger Registration Receiver.", parsedMessage.getVehicleId());
+                log.info("New Common instance '{}' received with Common Registration Receiver.", parsedMessage.getVehicleId());
                 rxQueue.add(parsedMessage);
             }
        }
     }
 
+    public void stop() {
+        if (listenSocket != null) {
+            listenSocket.close();
+        }
+
+        running = false;
+    }
+
+    public List<T> getReceivedMessages() {
+        List<T> output = new ArrayList<>();
+
+        synchronized (rxQueue) {
+            output.addAll(rxQueue);
+            rxQueue.clear();
+        }
+        
+        return output;
+    }
 }
