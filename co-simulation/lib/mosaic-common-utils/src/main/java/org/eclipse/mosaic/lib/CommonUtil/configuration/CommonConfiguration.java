@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.eclipse.mosaic.lib.util.configuration;
+package org.eclipse.mosaic.lib.CommonUtil.configuration;
 
 import java.util.List;
 
