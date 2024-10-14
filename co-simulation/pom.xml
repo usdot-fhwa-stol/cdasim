@@ -51,6 +51,7 @@
         <module>rti/mosaic-starter</module>
 
         <module>lib/mosaic-communication</module>
+        <module>lib/mosaic-common-utils</module>
         <module>lib/mosaic-database</module>
         <module>lib/mosaic-docker</module>
         <module>lib/mosaic-geomath</module>

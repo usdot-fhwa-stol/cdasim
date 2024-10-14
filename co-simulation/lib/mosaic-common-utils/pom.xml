@@ -10,8 +10,8 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>mosaic-utils</artifactId>
-    <name>Eclipse MOSAIC Utilities</name>
+    <artifactId>mosaic-common-utils</artifactId>
+    <name>Common Utilities</name>
 
     <dependencies>
         <dependency>
@@ -61,7 +61,35 @@
             <artifactId>johnzon-core</artifactId>
             <scope>compile</scope>
         </dependency>
-
+        <dependency>
+            <groupId>gov.dot.fhwa.saxton</groupId>
+            <artifactId>mosaic-carma-utils</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-application</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-objects</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-objects</artifactId>
+            <version>${mosaic.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+            <dependency>
+                <groupId>org.eclipse.mosaic</groupId>
+                <artifactId>mosaic-utils</artifactId>
+                <version>${mosaic.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

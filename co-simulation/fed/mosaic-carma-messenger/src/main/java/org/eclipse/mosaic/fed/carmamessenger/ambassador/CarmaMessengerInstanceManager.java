@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.eclipse.mosaic.lib.util.CommonInstanceManager;
+import org.eclipse.mosaic.lib.CommonUtil.CommonInstanceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

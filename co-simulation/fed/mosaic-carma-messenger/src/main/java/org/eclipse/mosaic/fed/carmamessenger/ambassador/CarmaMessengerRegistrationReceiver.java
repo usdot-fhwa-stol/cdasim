@@ -21,7 +21,7 @@ import java.net.DatagramSocket;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.eclipse.mosaic.lib.util.CommonRegistrationReceiver;
+import org.eclipse.mosaic.lib.CommonUtil.CommonRegistrationReceiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
-import org.eclipse.mosaic.lib.util.CommonInstance;
+import org.eclipse.mosaic.lib.CommonUtil.CommonInstance;
 
 
 public class CarmaMessengerInstance extends CommonInstance{

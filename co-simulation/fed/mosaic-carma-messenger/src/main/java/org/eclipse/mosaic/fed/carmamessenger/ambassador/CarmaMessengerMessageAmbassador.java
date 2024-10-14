@@ -16,9 +16,10 @@
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
-import org.eclipse.mosaic.lib.util.CommonMessageAmbassador;
+import org.eclipse.mosaic.lib.CommonUtil.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 

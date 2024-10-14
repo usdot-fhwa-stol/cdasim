@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.lib.util;
+package org.eclipse.mosaic.lib.CommonUtil;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -137,7 +137,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         v2xRxBackgroundThread.start();
     }
 
-        @Override
+    @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
 
         if (time < currentSimulationTime) {
@@ -208,7 +208,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         commonInstanceManager.onVehicleUpdates(interaction);
     }
 
-    private V2xMessage lookupV2xMsgIdInBuffer(int id) {
+    protected V2xMessage lookupV2xMsgIdInBuffer(int id) {
         return SimulationKernel.SimulationKernel.getV2xMessageCache().getItem(id);
     }
 
