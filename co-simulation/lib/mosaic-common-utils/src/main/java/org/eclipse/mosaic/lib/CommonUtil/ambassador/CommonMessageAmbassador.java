@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.lib.CommonUtil;
+package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -71,16 +71,16 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends CommonRegistrationReceiver, T extends CommonRegistrationMessage> extends AbstractFederateAmbassador{
 
-    long currentSimulationTime;
+    protected long currentSimulationTime;
     CommonConfiguration commonConfiguration;
 
-    private R commonRegistrationReceiver;
+    protected R commonRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
-    private M commonInstanceManager = (M) new CommonInstanceManager();
-    private int timeSyncSeq = 0;
-    private final Class<T> messageClass;
+    protected M commonInstanceManager = (M) new CommonInstanceManager();
+    protected int timeSyncSeq = 0;
+    protected Class<T> messageClass;
 
     @Override
     public boolean isTimeRegulating() {

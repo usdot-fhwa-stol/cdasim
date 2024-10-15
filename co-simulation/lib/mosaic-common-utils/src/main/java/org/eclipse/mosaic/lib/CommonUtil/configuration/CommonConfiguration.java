@@ -18,7 +18,7 @@ import org.eclipse.mosaic.lib.util.gson.TimeFieldAdapter;
 
 import com.google.gson.annotations.JsonAdapter;
 
-public class CommonConfiguration {
+public class CommonConfiguration<V extends CommonVehicleConfiguration> {
     
     private static final long serialVersionUID = 1479294781446446539L;
 
@@ -32,7 +32,7 @@ public class CommonConfiguration {
     /**
      * Configruation for CARMA vehicles.
      */
-    public List<CommonVehicleConfiguration> Vehicles;
+    protected List<V> Vehicles;
 
     /**
      * ID of CARMA vehicle that sends external messages.

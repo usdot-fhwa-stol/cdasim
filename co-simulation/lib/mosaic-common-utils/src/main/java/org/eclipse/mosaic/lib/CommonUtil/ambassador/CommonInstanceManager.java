@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.lib.CommonUtil;
+package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -64,7 +64,7 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
         }
     }
 
-    private void newCommonInstance(String VehId, String RoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort) {
+    protected void newCommonInstance(String VehId, String RoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort) {
         CommonInstance tmp = new CommonInstance(VehId, RoleName, targetAddress, v2xPort, timeSyncPort);
         try {
             tmp.bind();

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.lib.CommonUtil;
+package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 public class CommonRegistrationMessage {
 
@@ -73,7 +73,7 @@ public class CommonRegistrationMessage {
 
     @Override
     public String toString() {
-    return "CarmaRegistrationMessage [carmaVehicleId=" + vehicleId + ", carlaVehicleRole=" + vehicleRole
+    return "CommonRegistrationMessage [VehicleId=" + vehicleId + ", VehicleRole=" + vehicleRole
             + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
             + ", rxTimeSyncPort=" + rxTimeSyncPort + "]";
     }

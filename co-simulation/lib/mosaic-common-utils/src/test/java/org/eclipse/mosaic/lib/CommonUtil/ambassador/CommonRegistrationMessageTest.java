@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.lib.CommonUtil;
+package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;

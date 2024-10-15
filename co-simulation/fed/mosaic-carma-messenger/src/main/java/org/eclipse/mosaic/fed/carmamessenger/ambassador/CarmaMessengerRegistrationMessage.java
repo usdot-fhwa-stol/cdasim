@@ -15,7 +15,7 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import org.eclipse.mosaic.lib.CommonUtil.CommonRegistrationMessage;
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 
 public class CarmaMessengerRegistrationMessage extends CommonRegistrationMessage{
 

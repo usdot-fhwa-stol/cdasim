@@ -67,4 +67,5 @@ public class CommonVehicleConfiguration {
      * The slope of vehicle in degrees
      */
     public double slope;
+
 }

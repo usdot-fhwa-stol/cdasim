@@ -89,7 +89,7 @@ public class CarmaInstanceManagerTest {
         managedInstances.put("instance3", instance3);
       
         // Set private instance field to mock using reflection
-        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
+        FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
     }
 
     @Test
@@ -139,7 +139,7 @@ public class CarmaInstanceManagerTest {
         Map<String, CarmaInstance>  managedInstances = new HashMap<>();
       
         // Set private instance field to mock using reflection
-        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
+        FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
         TimeSyncMessage message = new TimeSyncMessage(300, 3);
     
         manager.onTimeStepUpdate(message);
@@ -162,7 +162,7 @@ public class CarmaInstanceManagerTest {
         // Register host with IpResolver singleton
         IpResolver.getSingleton().registerHost("veh_0");
         // Set CarlaRoleName to veh_0 to macth registered host
-        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getRoleName()).thenReturn("veh_0");
         // Set location to origin
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
 
@@ -184,7 +184,7 @@ public class CarmaInstanceManagerTest {
         when(instance2.getTargetAddress()).thenReturn(address2);
         when(instance3.getTargetAddress()).thenReturn(address3);
         IpResolver.getSingleton().registerHost("veh_0");
-        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getRoleName()).thenReturn("veh_0");
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
         // Attempt to create V2X Message Transmission for unregistered address.
         // Throws IllegalStateException

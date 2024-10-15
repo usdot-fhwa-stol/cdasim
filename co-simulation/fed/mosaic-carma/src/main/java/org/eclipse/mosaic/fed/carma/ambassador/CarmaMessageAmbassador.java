@@ -58,16 +58,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for CARMA message
  * ambassador.
  */
-public class CarmaMessageAmbassador extends AbstractFederateAmbassador {
-
-    /**
-     * Simulation time.
-     */
-    long currentSimulationTime;
+public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanceManager, CarmaRegistrationReceiver, CarmaRegistrationMessage> {
 
     /**
      * CarmaMessageAmbassador configuration file.

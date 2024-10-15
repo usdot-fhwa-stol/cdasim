@@ -16,7 +16,7 @@
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
-import org.eclipse.mosaic.lib.CommonUtil.CommonMessageAmbassador;
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
@@ -24,23 +24,11 @@ import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage>{
-    /**
-     * Simulation time.
-     */
-    long currentSimulationTime;
 
     /**
      * CarmaMessageAmbassador configuration file.
      */
     CarmaConfiguration carmaMessengerConfiguration;
-
-    private CarmaMessengerRegistrationReceiver carmaMessengerRegistrationReceiver;
-    private Thread registrationRxBackgroundThread;
-    private CarmaV2xMessageReceiver v2xMessageReceiver;
-    private Thread v2xRxBackgroundThread;
-    private CarmaMessengerInstanceManager carmaMessengerInstanceManager = new CarmaMessengerInstanceManager();
-    private int timeSyncSeq = 0;
-
 
     /**
      * Create a new {@link CarmaMessengerMessageAmbassador} object.

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.eclipse.mosaic.lib.CommonUtil;
+package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -35,13 +35,13 @@ public class CommonRegistrationReceiver<T extends CommonRegistrationMessage> imp
         this.type = type;
     }
     
-    private Queue<T> rxQueue = new LinkedList<>();
+    protected Queue<T> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
     private static final int listenPort = 1515;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
-    private final Class<T> type;
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Class<T> type;
 
     public void init() {
         try {
