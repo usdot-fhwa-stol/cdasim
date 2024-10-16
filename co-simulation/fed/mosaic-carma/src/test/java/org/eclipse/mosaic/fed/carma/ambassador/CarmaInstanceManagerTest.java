@@ -15,20 +15,8 @@
  */
 package org.eclipse.mosaic.fed.carma.ambassador;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,12 +24,17 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
-import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
