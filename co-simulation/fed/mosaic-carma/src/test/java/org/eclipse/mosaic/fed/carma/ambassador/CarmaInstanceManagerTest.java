@@ -15,20 +15,8 @@
  */
 package org.eclipse.mosaic.fed.carma.ambassador;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,12 +24,17 @@ import org.eclipse.mosaic.interactions.communication.V2xMessageTransmission;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xContent;
-import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
-import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +82,7 @@ public class CarmaInstanceManagerTest {
         managedInstances.put("instance3", instance3);
       
         // Set private instance field to mock using reflection
-        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
+        FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
     }
 
     @Test
@@ -139,7 +132,7 @@ public class CarmaInstanceManagerTest {
         Map<String, CarmaInstance>  managedInstances = new HashMap<>();
       
         // Set private instance field to mock using reflection
-        FieldSetter.setField(manager, manager.getClass().getDeclaredField("managedInstances"), managedInstances);
+        FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
         TimeSyncMessage message = new TimeSyncMessage(300, 3);
     
         manager.onTimeStepUpdate(message);
@@ -162,7 +155,7 @@ public class CarmaInstanceManagerTest {
         // Register host with IpResolver singleton
         IpResolver.getSingleton().registerHost("veh_0");
         // Set CarlaRoleName to veh_0 to macth registered host
-        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getRoleName()).thenReturn("veh_0");
         // Set location to origin
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
 
@@ -184,7 +177,7 @@ public class CarmaInstanceManagerTest {
         when(instance2.getTargetAddress()).thenReturn(address2);
         when(instance3.getTargetAddress()).thenReturn(address3);
         IpResolver.getSingleton().registerHost("veh_0");
-        when(instance1.getCarlaRoleName()).thenReturn("veh_0");
+        when(instance1.getRoleName()).thenReturn("veh_0");
         when(instance1.getLocation()).thenReturn(GeoPoint.ORIGO);
         // Attempt to create V2X Message Transmission for unregistered address.
         // Throws IllegalStateException

@@ -51,6 +51,7 @@
         <module>rti/mosaic-starter</module>
 
         <module>lib/mosaic-communication</module>
+        <module>lib/mosaic-common-utils</module>
         <module>lib/mosaic-database</module>
         <module>lib/mosaic-docker</module>
         <module>lib/mosaic-geomath</module>
@@ -73,6 +74,7 @@
         <module>fed/mosaic-carma</module>
         <module>fed/mosaic-infrastructure</module>
         <module>fed/mosaic-carma-cloud</module>
+        <module>fed/mosaic-carma-messenger</module>
 
         <module>test/mosaic-integration-tests</module>
 
@@ -501,6 +503,7 @@
                             <exclude>**/ClientServerChannelProtos.java</exclude>
                             <exclude>fed/mosaic-carma/**</exclude>
                             <exclude>fed/mosaic-carla/**</exclude>
+                            <exclude>fed/mosaic-carma-messenger/**</exclude>
                         </excludes>
                         <useDefaultExcludes>true</useDefaultExcludes>
                         <encoding>${project.build.sourceEncoding}</encoding>
@@ -595,28 +598,28 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
-                <plugin>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.6</version>
-                    <configuration>
-                        <skip>${skip.coverage}</skip>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>prepare-agent</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>report</id>
-                            <phase>prepare-package</phase>
-                            <goals>
-                                <goal>report</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
+            <plugin>
+                   <groupId>org.jacoco</groupId>
+                   <artifactId>jacoco-maven-plugin</artifactId>
+                   <version>0.8.6</version>
+                   <configuration>
+                       <skip>${skip.coverage}</skip>
+                   </configuration>
+                   <executions>
+                       <execution>
+                           <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

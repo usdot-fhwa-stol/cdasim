@@ -13,14 +13,17 @@
 
 package org.eclipse.mosaic.fed.carma.configuration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 
 import org.eclipse.mosaic.lib.geo.MutableCartesianPoint;
 import org.eclipse.mosaic.lib.geo.MutableGeoPoint;
-import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
+
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 
 /**
  * Test for {@link CarmaConfiguration}.
@@ -44,20 +47,20 @@ public class CarmaConfigurationTest {
         // ASSERT
         assertNotNull(carmaConfiguration); // assert that configuration is created
         assertEquals(Long.valueOf(100L), carmaConfiguration.updateInterval);
-        assertEquals("0", carmaConfiguration.carmaVehicles.get(0).routeID);
-        assertEquals(1, carmaConfiguration.carmaVehicles.get(0).lane);
-        assertEquals(Double.valueOf(0.0D), carmaConfiguration.carmaVehicles.get(0).position, 0.001);
-        assertEquals(Double.valueOf(0.0D), carmaConfiguration.carmaVehicles.get(0).departSpeed, 0.001);
-        assertEquals("vehicle.chevrolet.impala", carmaConfiguration.carmaVehicles.get(0).vehicleType);
+        assertEquals("0", carmaConfiguration.Vehicles.get(0).routeID);
+        assertEquals(1, carmaConfiguration.Vehicles.get(0).lane);
+        assertEquals(Double.valueOf(0.0D), carmaConfiguration.Vehicles.get(0).position, 0.001);
+        assertEquals(Double.valueOf(0.0D), carmaConfiguration.Vehicles.get(0).departSpeed, 0.001);
+        assertEquals("vehicle.chevrolet.impala", carmaConfiguration.Vehicles.get(0).vehicleType);
         assertEquals("org.eclipse.mosaic.app.tutorial.VehicleCommunicationApp",
-                carmaConfiguration.carmaVehicles.get(0).applications.get(0));
+                carmaConfiguration.Vehicles.get(0).applications.get(0));
         assertEquals(new MutableGeoPoint(52.579272059028646, 13.467165499469328),
-                carmaConfiguration.carmaVehicles.get(0).geoPosition);
+                carmaConfiguration.Vehicles.get(0).geoPosition);
         assertEquals(new MutableCartesianPoint(501.62, 116.95, 0.0),
-                carmaConfiguration.carmaVehicles.get(0).projectedPosition);
-        assertEquals(Double.valueOf(24.204351784500364D), carmaConfiguration.carmaVehicles.get(0).heading);
-        assertEquals(Double.valueOf(0.0), carmaConfiguration.carmaVehicles.get(0).slope, 0.001);
-        assertEquals("carma_0", carmaConfiguration.senderCarmaVehicleId);
+                carmaConfiguration.Vehicles.get(0).projectedPosition);
+        assertEquals(Double.valueOf(24.204351784500364D), carmaConfiguration.Vehicles.get(0).heading);
+        assertEquals(Double.valueOf(0.0), carmaConfiguration.Vehicles.get(0).slope, 0.001);
+        assertEquals("carma_0", carmaConfiguration.senderVehicleId);
     }
 
     /**
@@ -70,7 +73,8 @@ public class CarmaConfigurationTest {
      *                                deserialization/instantiation.
      */
     private CarmaConfiguration getCarmaConfiguration(String filePath) throws InstantiationException {
-        return new ObjectInstantiation<>(CarmaConfiguration.class).read(getClass().getResourceAsStream(filePath));
+        Type type = new TypeToken<CarmaConfiguration>() {}.getType();
+        return new Gson().fromJson(new InputStreamReader(getClass().getResourceAsStream(filePath)), type); 
     }
 
 }

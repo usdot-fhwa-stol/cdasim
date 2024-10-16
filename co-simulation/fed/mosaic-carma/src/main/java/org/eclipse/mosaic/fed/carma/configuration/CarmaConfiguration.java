@@ -13,32 +13,13 @@
 
 package org.eclipse.mosaic.fed.carma.configuration;
 
-import org.eclipse.mosaic.lib.util.gson.TimeFieldAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import java.io.Serializable;
-import java.util.List;
+import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 
 /**
  * The CARMA Message Ambassador configuration class.
  */
-public class CarmaConfiguration implements Serializable {
+public class CarmaConfiguration extends CommonConfiguration<CarmaVehicleConfiguration> {
 
     private static final long serialVersionUID = 1479294781446446539L;
 
-    /**
-     * The time step that the CARMA message ambassador advances time. The default
-     * value is 1000 (1s). Unit: [ms].
-     */
-    @JsonAdapter(TimeFieldAdapter.LegacyMilliSeconds.class)
-    public Long updateInterval = 1000L;
-
-    /**
-     * Configruation for CARMA vehicles.
-     */
-    public List<CarmaVehicleConfiguration> carmaVehicles;
-
-    /**
-     * ID of CARMA vehicle that sends external messages.
-     */
-    public String senderCarmaVehicleId;
 }

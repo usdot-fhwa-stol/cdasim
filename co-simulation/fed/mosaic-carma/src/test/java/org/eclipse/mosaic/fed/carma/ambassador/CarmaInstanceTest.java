@@ -15,21 +15,20 @@
  */
 package org.eclipse.mosaic.fed.carma.ambassador;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 import org.eclipse.mosaic.lib.geo.GeoPoint;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import com.google.gson.Gson;
@@ -78,20 +77,20 @@ public class CarmaInstanceTest {
                 3456,
                 5667);
         // Set private instance field to mock using reflection
-        FieldSetter.setField(instance, instance.getClass().getDeclaredField("rxMsgsSocket"), socket);
+        FieldSetter.setField(instance, instance.getClass().getSuperclass().getDeclaredField("rxMsgsSocket"), socket);
 
     }
 
     @Test
     public void testGetterSetterConstructor() {
         // Test getters and constructor for setting and retrieving class members
-        assertEquals("SomeID", instance.getCarmaVehicleId());
+        assertEquals("SomeID", instance.getVehicleId());
         assertEquals( GeoPoint.ORIGO, instance.getLocation());
         assertEquals(3456, instance.getV2xPort());
         assertEquals(5667, instance.getTimeSyncPort());
         // Test Setter
-        instance.setCarmaVehicleId("DifferentID");
-        assertEquals("DifferentID", instance.getCarmaVehicleId());
+        instance.setVehicleId("DifferentID");
+        assertEquals("DifferentID", instance.getVehicleId());
         instance.setTimeSyncPort(4321);
         assertEquals(4321, instance.getTimeSyncPort());
         instance.setV2xPort(5678);
