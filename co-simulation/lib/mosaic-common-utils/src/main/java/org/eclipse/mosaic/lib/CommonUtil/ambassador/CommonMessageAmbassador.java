@@ -69,10 +69,10 @@ import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 
-public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends CommonRegistrationReceiver, T extends CommonRegistrationMessage> extends AbstractFederateAmbassador{
+public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends CommonRegistrationReceiver, T extends CommonRegistrationMessage, C extends  CommonConfiguration> extends AbstractFederateAmbassador{
 
     protected long currentSimulationTime;
-    CommonConfiguration commonConfiguration;
+    protected C commonConfiguration;
 
     protected R commonRegistrationReceiver;
     private Thread registrationRxBackgroundThread;
@@ -81,7 +81,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
     protected M commonInstanceManager = (M) new CommonInstanceManager();
     protected int timeSyncSeq = 0;
     protected Class<T> messageClass;
-
+    protected Class<C> configClass;
+    
     @Override
     public boolean isTimeRegulating() {
         return true;
@@ -92,12 +93,13 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         return true;
     }
 
-    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, Class<T> messageClass) {
+    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, Class<T> messageClass, Class<C> configClass) {
         super(ambassadorParameter);
         this.messageClass = messageClass;
+        this.configClass = configClass;
         try {
             // Read the CARMA message ambassador configuration file
-            commonConfiguration = new ObjectInstantiation<>(CommonConfiguration.class, log)
+            commonConfiguration = new ObjectInstantiation<>(configClass, log)
                     .readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);

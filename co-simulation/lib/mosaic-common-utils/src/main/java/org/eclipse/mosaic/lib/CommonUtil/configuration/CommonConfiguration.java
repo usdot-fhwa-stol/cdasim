@@ -32,7 +32,7 @@ public class CommonConfiguration<V extends CommonVehicleConfiguration> {
     /**
      * Configruation for CARMA vehicles.
      */
-    protected List<V> Vehicles;
+    public List<V> Vehicles;
 
     /**
      * ID of CARMA vehicle that sends external messages.

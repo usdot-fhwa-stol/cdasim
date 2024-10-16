@@ -15,20 +15,13 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
+import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-import org.eclipse.mosaic.fed.application.ambassador.SimulationKernel;
 
-import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
 
-public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage>{
-
-    /**
-     * CarmaMessageAmbassador configuration file.
-     */
-    CarmaConfiguration carmaMessengerConfiguration;
 
     /**
      * Create a new {@link CarmaMessengerMessageAmbassador} object.
@@ -37,20 +30,20 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
      *                            CarmaMessageAmbassador.
      */
     public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class);
+        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class);
 
         try {
             // Read the CARMA message ambassador configuration file
-            carmaMessengerConfiguration = new ObjectInstantiation<>(CarmaConfiguration.class, log)
+            commonConfiguration = new ObjectInstantiation<>(CommonConfiguration.class, log)
                     .readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
         }
 
-        log.info("The update interval of CARMA message ambassador is " + carmaMessengerConfiguration.updateInterval + " .");
+        log.info("The update interval of CARMA message ambassador is " + commonConfiguration.updateInterval + " .");
 
         // Check the CARMA update interval
-        if (carmaMessengerConfiguration.updateInterval <= 0) {
+        if (commonConfiguration.updateInterval <= 0) {
             throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
         }
         log.info("CARMA message ambassador is generated.");

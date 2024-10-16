@@ -13,63 +13,12 @@
 
 package org.eclipse.mosaic.fed.carma.configuration;
 
-import java.util.List;
-
-import org.eclipse.mosaic.lib.geo.GeoPoint;
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonVehicleConfiguration;
 
 /**
  * Define CARMA vehicle information
  */
-public class CarmaVehicleConfiguration {
+public class CarmaVehicleConfiguration extends CommonVehicleConfiguration {
 
-    /**
-     * The route ID on which the vehicle will be spawned.
-     */
-    public String routeID;
-
-    /**
-     * The lane on which the vehicle will be spawned.
-     */
-    public int lane;
-
-    /**
-     * Position within the route where the vehicle should be spawned.
-     */
-    public double position;
-
-    /**
-     * The speed at which the vehicle is supposed to depart.
-     */
-    public double departSpeed;
-
-    /**
-     * The vehicle type
-     */
-    public String vehicleType;
-
-    /**
-     * Specify the applications to be used for this vehicle.
-     */
-    public List<String> applications;
-
-    /**
-     * The geo position at which the vehicle is currently located.
-     */
-    public GeoPoint geoPosition;
-
-    /**
-     * The projected position at which currently the vehicle is located.
-     */
-    public CartesianPoint projectedPosition;
-
-    /**
-     * Vehicle heading in degrees
-     */
-    public Double heading;
-
-    /**
-     * The slope of vehicle in degrees
-     */
-    public double slope;
+    
 }

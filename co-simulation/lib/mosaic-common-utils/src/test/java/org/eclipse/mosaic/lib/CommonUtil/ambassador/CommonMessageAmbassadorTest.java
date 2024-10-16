@@ -18,6 +18,7 @@ package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.RtiAmbassador;
@@ -67,7 +68,7 @@ public class CommonMessageAmbassadorTest {
         when(handleMock.getId()).thenReturn("carma");
 
         ambassador = new CommonMessageAmbassador(
-                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")), CommonRegistrationMessage.class);
+                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")), CommonRegistrationMessage.class, CommonConfiguration.class);
 
         ambassador.setRtiAmbassador(rtiMock);
 
