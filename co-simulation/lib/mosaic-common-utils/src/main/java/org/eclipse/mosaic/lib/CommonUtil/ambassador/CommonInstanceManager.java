@@ -68,9 +68,9 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
         CommonInstance tmp = new CommonInstance(VehId, RoleName, targetAddress, v2xPort, timeSyncPort);
         try {
             tmp.bind();
-            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", RoleName);
+            log.info("New Common instance '{}' registered with CARMA Instance Manager.", RoleName);
         } catch (IOException e) {
-            log.error("Failed to bind CARMA instance with ID '{}' to its RX message socket: {}",
+            log.error("Failed to bind Common instance with ID '{}' to its RX message socket: {}",
             RoleName, e.getMessage());
             log.error("Stack trace:", e);
             throw new RuntimeException(e);
@@ -93,7 +93,7 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
         }
         // Unregistered instance attempting to send messages
         if (sender == null) {
-            throw new IllegalStateException("Unregistered CARMA Platform instance attempting to send messages via MOSAIC");
+            throw new IllegalStateException("Unregistered Common instance attempting to send messages via MOSAIC");
         }
         AdHocMessageRoutingBuilder messageRoutingBuilder = new AdHocMessageRoutingBuilder(
                 sender.getRoleName(), sender.getLocation()).viaChannel(AdHocChannel.CCH);
@@ -131,7 +131,7 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
             Gson gson = new Gson();
             byte[] bytes = gson.toJson(message).getBytes();
             for (T currentInstance : managedInstances.values()) {
-                log.debug("Sending CARMA Platform instance {} at {}:{} time sync message for time {}!" ,
+                log.debug("Sending Common instance {} at {}:{} time sync message for time {}!" ,
                     currentInstance.getVehicleId(), 
                     currentInstance.getTargetAddress(), 
                     currentInstance.getTimeSyncPort(), 

@@ -29,9 +29,6 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMessengerInstance, CarmaMessengerRegistrationMessage>{
 
-
-    // TODO: Verify actual port for CARMA Platform NS-3 adapter
-    
     private static final int BRIDGE_TARGET_PORT = 5500;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 

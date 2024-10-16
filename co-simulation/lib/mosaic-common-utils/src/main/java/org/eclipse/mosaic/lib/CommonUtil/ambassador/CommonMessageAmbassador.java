@@ -105,13 +105,13 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
             log.error("Configuration object could not be instantiated: ", e);
         }
 
-        log.info("The update interval of Common message ambassador is " + commonConfiguration.updateInterval + " .");
+        log.info("The update interval of "+ this.getClass().getSimpleName() + "is " + commonConfiguration.updateInterval + " .");
 
         // Check the CARMA update interval
         if (commonConfiguration.updateInterval <= 0) {
-            throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
+            throw new RuntimeException("Invalid update interval for " + this.getClass().getSimpleName() + ", should be >0.");
         }
-        log.info("Common message ambassador is generated.");
+        log.info( this.getClass().getSimpleName() + " is generated.");
     }
 
     @Override
@@ -147,7 +147,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
             // simulation time step
             return;
         }
-        log.info("Common message ambassador processing timestep to {}.", time);
+        log.info(this.getClass().getSimpleName()+ " processing timestep to {}.", time);
 
         try {
             List<T> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
