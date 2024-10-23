@@ -16,11 +16,12 @@
 
 package org.eclipse.mosaic.fed.carma.ambassador;
 
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 /**
  * JSON compatible message to be sent by CARMA Platform when it registers with
  * the carma-mosaic ambassador
  */
-public class CarmaRegistrationMessage {
+public class CarmaRegistrationMessage extends CommonRegistrationMessage{
     private String carmaVehicleId;
     private String carlaVehicleRole;
     private String rxMessageIpAddress;
@@ -29,50 +30,11 @@ public class CarmaRegistrationMessage {
 
     public CarmaRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
             int rxMessagePort, int rxTimeSyncPort) {
+                super(carmaVehicleId, carlaVehicleRole, rxMessageIpAddress, rxMessagePort, rxTimeSyncPort);
         this.carmaVehicleId = carmaVehicleId;
         this.carlaVehicleRole = carlaVehicleRole;
         this.rxMessageIpAddress = rxMessageIpAddress;
         this.rxMessagePort = rxMessagePort;
-        this.rxTimeSyncPort = rxTimeSyncPort;
-    }
-
-    public String getCarmaVehicleId() {
-        return carmaVehicleId;
-    }
-
-    public void setCarmaVehicleId(String carmaVehicleId) {
-        this.carmaVehicleId = carmaVehicleId;
-    }
-
-    public String getCarlaVehicleRole() {
-        return carlaVehicleRole;
-    }
-
-    public void setCarlaVehicleRole(String carlaVehicleRole) {
-        this.carlaVehicleRole = carlaVehicleRole;
-    }
-
-    public String getRxMessageIpAddress() {
-        return rxMessageIpAddress;
-    }
-
-    public void setRxMessageIpAddress(String rxMessageIpAddress) {
-        this.rxMessageIpAddress = rxMessageIpAddress;
-    }
-
-    public int getRxMessagePort() {
-        return rxMessagePort;
-    }
-
-    public void setRxMessagePort(int rxMessagePort) {
-        this.rxMessagePort = rxMessagePort;
-    }
-
-    public int getRxTimeSyncPort() {
-        return rxTimeSyncPort;
-    }
-
-    public void setRxTimeSyncPort(int rxTimeSyncPort) {
         this.rxTimeSyncPort = rxTimeSyncPort;
     }
 
