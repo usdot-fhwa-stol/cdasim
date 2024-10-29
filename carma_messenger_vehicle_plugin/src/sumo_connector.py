@@ -15,6 +15,7 @@
 import sys
 import os
 import logging
+import math
 
 if 'SUMO_HOME' in os.environ:
     tools_path = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -201,4 +202,72 @@ class SumoConnector:
         except Exception as e:
             logging.error(f"Failed to set vehicle signal for vehicle ID '{veh_id}': {e}")
             raise
+
+    def cal_distance(self, veh_id, target_location):
+        """
+        Calculates the distance between a certain location and a vehicle in SUMO
+        """
+        try:
+            veh_pos = self._traci.vehicle.getPosition(veh_id)
+            distance = math.sqrt((target_location[0] - veh_pos[0])**2 + (target_location[1] - veh_pos[1])**2)
+            return distance
+        except Exception as e:
+            logging.error(f"Failed to calculate vehicle distance for vehicle ID '{veh_id}': {e}")
+            raise
     
+    def stop_veh(self, veh_id):
+        """
+        stops vehicle at current place in SUMO
+        """
+        try:
+            current_veh_pos = traci.vehicle.getLanePosition(veh_id)
+            current_veh_edge = traci.vehicle.getRoadID(veh_id)
+            current_veh_lane = traci.vehicle.getLaneIndex(veh_id)
+
+            traci.vehicle.setStop(
+            vehID=veh_id,
+            edgeID=current_veh_edge,
+            pos=current_veh_pos,  
+            laneIndex=current_veh_lane,  
+            duration=5,  
+            flags=traci.constants.STOP_FLAG_PARKING
+            )
+        except Exception as e:
+            logging.error(f"Failed to stop vehicle for vehicle ID '{veh_id}': {e}")
+            raise
+    
+    def move_veh_lane(self, veh_id, target_lane):
+
+        try:
+            traci.vehicle.setLaneChangeMode(veh_id, 0b001001011)
+
+            while traci.vehicle.getLaneIndex(veh_id) != target_lane:
+                current_lane = traci.vehicle.getLaneIndex(veh_id)
+
+                if current_lane < target_lane:
+                    traci.vehicle.changeLane(veh_id, current_lane + 1, 5)
+                elif current_lane > target_lane:
+                    traci.vehicle.changeLane(veh_id, current_lane - 1, 5)
+
+        except Exception as e:
+            logging.error(f"Failed to change vehicle lane for vehicle ID '{veh_id}': {e}")
+            raise
+
+    def get_target_lane(self, veh_id, is_rightmost):
+
+        current_veh_edge = traci.vehicle.getRoadID(veh_id)
+        num_lanes = traci.edge.getLaneNumber(current_veh_edge)
+
+        if is_rightmost:
+            return num_lanes - 1
+        else:
+            return num_lanes - 2
+        
+    def set_parameter(self, veh_id, para_name, para_value):
+
+        try:
+            traci.vehicle.setParameter(veh_id, para_name, para_value)
+        
+        except Exception as e:
+            logging.error(f"Failed to set vehicle parameter for vehicle ID '{veh_id}': {e}")
+            raise
