@@ -18,6 +18,8 @@ package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstanceManager;
 import org.slf4j.Logger;
@@ -109,5 +111,17 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             throw new RuntimeException(e);
         }
         managedInstances.put(sumoRoleName, tmp);
+    }
+
+    public List<String> getVehicleIds(){
+
+        List<String> result = new ArrayList<>();
+
+        for(CarmaMessengerInstance name : managedInstances.values()){
+            result.add(name.getVehicleId());
+        }
+            
+        return result;
+        
     }
 }

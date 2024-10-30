@@ -15,9 +15,14 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
+import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
@@ -47,6 +52,23 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
             throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
         }
         log.info("CARMA message ambassador is generated.");
+    }
+
+    @Override
+    public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
+        List<String> temp = new ArrayList<>();
+        temp = commonInstanceManager.getVehicleIds();
+        String parameterName = "";
+        for(String id : temp){
+            try {
+                rti.triggerInteraction(new MsgerRequesetTrafficEvent(time, id, parameterName));
+            } catch (Exception e) {
+                log.error("error: " + e.getMessage());
+            } 
+        }
+
+
+        super.processTimeAdvanceGrant(time);
     }
 
 }
