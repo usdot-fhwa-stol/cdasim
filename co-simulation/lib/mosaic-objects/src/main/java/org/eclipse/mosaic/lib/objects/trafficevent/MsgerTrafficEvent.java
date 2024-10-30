@@ -61,7 +61,7 @@ public class MsgerTrafficEvent implements Serializable{
             return false;
         }
 
-        V2xReceiverInformation other = (V2xReceiverInformation) obj;
+        MsgerTrafficEvent other = (MsgerTrafficEvent) obj;
         return new EqualsBuilder()
                 .append(this.upTrack, other.upTrack)
                 .append(this.downTrack, other.downTrack)
