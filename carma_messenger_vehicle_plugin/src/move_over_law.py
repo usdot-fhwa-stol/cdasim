@@ -26,15 +26,16 @@ class MoveOverLaw:
         self._closure_downtrack = config.get('Settings', 'closure_downtrack')
         self._target_location = config.get('Settings', 'location')
         self._veh_id = config.get('Settings', 'vehicleID')
-        self._event_reason = 'Move Over Law'
-        self._event_type = 'CLOSED'
+        #self._event_reason = 'Move Over Law'
+        #self._event_type = 'CLOSED'
+        self._min_gap = config.get('Settings', 'min_gap')
+        self._advisory_speed_limit = config.get('Settings', 'advisory_speed_limit')
 
     def close_lane(self):
         #send lane closure message
-        SumoConnector.set_parameter(self._veh_id,'event_reason', self._event_reason)
-        SumoConnector.set_parameter(self._veh_id, 'event_type', self._event_type)
-        SumoConnector.set_parameter(self._veh_id, 'uptrack', self._closure_uptrack)
-        SumoConnector.set_parameter(self._veh_id, 'downtrack', self._closure_downtrack)
+        combined_string = self._closure_uptrack + ";" + self._closure_downtrack + ";" + self._min_gap + ";" + self._advisory_speed_limit
+        SumoConnector.set_parameter(self._veh_id, 'VehicleBroadcastTrafficEvent', combined_string)
+
 
     def park_messenger(self):
         target_lane = SumoConnector.get_target_lane(self._veh_id, True)

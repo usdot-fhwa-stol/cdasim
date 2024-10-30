@@ -55,7 +55,11 @@ public class CarmaMessengerInstanceTest{
             3456,
             7890,
             "MockState",
-            5600
+            5600,
+            500,
+            500,
+            0,
+            10
         ); 
         FieldSetter.setField(instance, instance.getClass().getSuperclass().getDeclaredField("rxMsgsSocket"), socket);
     }
@@ -68,6 +72,22 @@ public class CarmaMessengerInstanceTest{
         assertEquals("NewState", instance.getMessengerEmergencyState());
         instance.setRxBridgeMessagePort(5700);
         assertEquals(5700, instance.getRxBridgeMessagePort());
+
+        assertEquals(500, instance.getUptrackDistance());
+        assertEquals(500, instance.getDowntrackDistance());
+        assertEquals(0, instance.getMinGap());
+        assertEquals(10, instance.getAdivsorySpeed(), 0);
+
+        instance.setUptrackDistance(600);
+        instance.setDowntrackDistance(400);
+        instance.setMinGap(5);
+        instance.setAdvisorySpeed(20);
+
+        assertEquals(600, instance.getUptrackDistance());
+        assertEquals(400, instance.getDowntrackDistance());
+        assertEquals(5, instance.getMinGap());
+        assertEquals(20, instance.getAdivsorySpeed(),0);
+
     }
 
     @Test

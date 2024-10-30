@@ -26,11 +26,20 @@ public class CarmaMessengerInstance extends CommonInstance{
 
     private String messengerEmergencyState;
     private int rxBridgeMessagePort;
+    private float uptrackDistance;
+    private float downtrackDistance;
+    private float minGap;
+    private float advisorySpeed;
 
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
+
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort, int uptrackDistance, int downtrackDistance, int minGap, float advisorySpeed) {
         super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
         this.messengerEmergencyState = messengerEmergencyState;
         this.rxBridgeMessagePort = rxBridgeMessagePort;
+        this.uptrackDistance = uptrackDistance;
+        this.downtrackDistance = downtrackDistance;
+        this.minGap = minGap;
+        this.advisorySpeed = advisorySpeed;
     }
     /**
      * Carma Messenger Emergency state
@@ -50,6 +59,38 @@ public class CarmaMessengerInstance extends CommonInstance{
 
     public void setRxBridgeMessagePort(int rxBridgeMessagePort) {
         this.rxBridgeMessagePort = rxBridgeMessagePort;
+    }
+
+    public float getUptrackDistance(){
+        return uptrackDistance;
+    }
+
+    public void setUptrackDistance(float uptrackDistance){
+        this.uptrackDistance = uptrackDistance;
+    }
+
+    public float getDowntrackDistance(){
+        return downtrackDistance;
+    }
+
+    public void setDowntrackDistance(float downtrackDistance){
+        this.downtrackDistance = downtrackDistance;
+    }
+
+    public float getMinGap(){
+        return minGap;
+    }
+
+    public void setMinGap(float minGap){
+        this.minGap = minGap;
+    }
+
+    public float getAdivsorySpeed(){
+        return advisorySpeed;
+    }
+
+    public void setAdvisorySpeed(float advisorySpeed){
+        this.advisorySpeed = advisorySpeed;
     }
 
     public void sendVehStatusMsgs(byte[] data) throws IOException {

@@ -40,15 +40,17 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         super.setTargetPort(5600);
         if (!managedInstances.containsKey(registration.getVehicleRole())) {
             try {
-                newCarmaMessengerInstance(
-                    registration.getVehicleId(),
+                newCarmaMessengerInstance(registration.getVehicleId(),
                     registration.getVehicleRole(),
                     InetAddress.getByName(registration.getRxMessageIpAddress()),
                     registration.getRxMessagePort(),
                     registration.getRxTimeSyncPort(),
                     registration.getMessengerEmergencyState(),
-                    registration.getRxBridgeMessagePort()
-                );
+                    registration.getRxBridgeMessagePort(),
+                    0,
+                    0,
+                    0, 
+                    0);
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e);
             }
@@ -95,8 +97,8 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * @param v2xPort The port to which received simulated V2X messages should be sent
      * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState, rxBridgeMessagePort);
+    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort, int uptrackDistance, int downtrackDistance, int minGap, float advisorySpeed) {
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState, rxBridgeMessagePort, uptrackDistance, downtrackDistance, minGap, advisorySpeed);
         try {
             tmp.bind();
             log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
