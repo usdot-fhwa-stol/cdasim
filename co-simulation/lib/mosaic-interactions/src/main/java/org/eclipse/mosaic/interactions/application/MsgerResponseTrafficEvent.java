@@ -1,0 +1,34 @@
+package org.eclipse.mosaic.interactions.application;
+
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
+import org.eclipse.mosaic.rti.api.Interaction;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
+
+public final class MsgerResponseTrafficEvent extends Interaction{
+    
+    public final static String TYPE_ID = createTypeIdentifier(MsgerResponseTrafficEvent.class);
+    
+    private final MsgerTrafficEvent trafficEvent;
+    
+    public MsgerResponseTrafficEvent(final long time, final MsgerTrafficEvent trafficEvent){
+        super(time);
+        this.trafficEvent = trafficEvent;
+    }
+
+    public MsgerTrafficEvent getTrafficEvent(){
+        return this.trafficEvent;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .appendSuper(super.toString())
+                .append("upTrack", trafficEvent.getUpTrack())
+                .append("downTrack", trafficEvent.getDownTrack())
+                .append("minimumGap", trafficEvent.getMinimumGap())
+                .append("advisorySpeed", trafficEvent.getAdvisorySpeed())
+                .toString();
+    }
+}
