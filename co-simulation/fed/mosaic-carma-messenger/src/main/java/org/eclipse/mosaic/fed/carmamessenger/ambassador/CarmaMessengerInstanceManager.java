@@ -15,21 +15,10 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstanceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-
-import gov.dot.fhwa.saxton.TimeSyncMessage;
-
-public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMessengerInstance, CarmaMessengerRegistrationMessage>{
+public class CarmaMessengerInstanceManager {
 
     private static final int BRIDGE_TARGET_PORT = 5500;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -38,29 +27,25 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
      * @param registration The new instance's registration data
      */
-    public void onNewRegistration(CarmaMessengerRegistrationMessage registration) {
-        super.setTargetPort(5600);
-        if (!managedInstances.containsKey(registration.getVehicleRole())) {
-            try {
-                newCarmaMessengerInstance(registration.getVehicleId(),
-                    registration.getVehicleRole(),
-                    InetAddress.getByName(registration.getRxMessageIpAddress()),
-                    registration.getRxMessagePort(),
-                    registration.getRxTimeSyncPort(),
-                    registration.getMessengerEmergencyState(),
-                    registration.getRxBridgeMessagePort(),
-                    0,
-                    0,
-                    0, 
-                    0);
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            // log warning
-            log.warn("Received duplicate registration for vehicle " + registration.getVehicleRole());
-        }
-    }
+
+    // public void onNewRegistration(CommonRegistrationMessage registration) {
+    //     super.setTargetPort(5600);
+    //     if (!managedInstances.containsKey(registration.getVehicleRole())) {
+    //         try {
+    //             newCarmaMessengerInstance(registration.getVehicleId(),
+    //                 registration.getVehicleRole(),
+    //                 InetAddress.getByName(registration.getRxMessageIpAddress()),
+    //                 registration.getRxMessagePort(),
+    //                 registration.getRxTimeSyncPort()
+    //                 );
+    //         } catch (UnknownHostException e) {
+    //             throw new RuntimeException(e);
+    //         }
+    //     } else {
+    //         // log warning
+    //         log.warn("Received duplicate registration for vehicle " + registration.getVehicleRole());
+    //     }
+    // }
  
     /**
      * This function is used to send out encoded timestep update to all registered
@@ -70,25 +55,25 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      *                from the ambassador side
      * @throws IOException
      */
-    @Override
-    public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
-        if (managedInstances.size() == 0) {
-            log.debug("There are no registered instances");
-        }
-        else {
-            Gson gson = new Gson();
-            byte[] bytes = gson.toJson(message).getBytes();
-            for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
-                log.debug("Sending CARMA Messenger instance {} at {}:{} time sync message for time {}!" ,
-                    currentInstance.getVehicleId(), 
-                    currentInstance.getTargetAddress(), 
-                    currentInstance.getTimeSyncPort(),
-                    currentInstance.getMessengerEmergencyState(), 
-                    message.getTimestep());
-                currentInstance.sendTimeSyncMsg(bytes);
-            }
-        }
-    }
+    // @Override
+    // public void onTimeStepUpdate(TimeSyncMessage message) throws IOException {
+    //     if (managedInstances.size() == 0) {
+    //         log.debug("There are no registered instances");
+    //     }
+    //     else {
+    //         Gson gson = new Gson();
+    //         byte[] bytes = gson.toJson(message).getBytes();
+    //         for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
+    //             log.debug("Sending CARMA Messenger instance {} at {}:{} time sync message for time {}!" ,
+    //                 currentInstance.getVehicleId(), 
+    //                 currentInstance.getTargetAddress(), 
+    //                 currentInstance.getTimeSyncPort(),
+    //                 currentInstance.getMessengerEmergencyState(), 
+    //                 message.getTimestep());
+    //             currentInstance.sendTimeSyncMsg(bytes);
+    //         }
+    //     }
+    // }
 
 
     /**
@@ -99,29 +84,29 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * @param v2xPort The port to which received simulated V2X messages should be sent
      * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort, int uptrackDistance, int downtrackDistance, int minGap, float advisorySpeed) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState, rxBridgeMessagePort, uptrackDistance, downtrackDistance, minGap, advisorySpeed);
-        try {
-            tmp.bind();
-            log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
-        } catch (IOException e) {
-            log.error("Failed to bind CARMA Messenger instance with ID '{}' to its RX message socket: {}",
-            sumoRoleName, e.getMessage());
-            log.error("Stack trace:", e);
-            throw new RuntimeException(e);
-        }
-        managedInstances.put(sumoRoleName, tmp);
-    }
+    // private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort, int uptrackDistance, int downtrackDistance, int minGap, float advisorySpeed) {
+    //     CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, messengerEmergencyState, rxBridgeMessagePort, uptrackDistance, downtrackDistance, minGap, advisorySpeed);
+    //     try {
+    //         tmp.bind();
+    //         log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
+    //     } catch (IOException e) {
+    //         log.error("Failed to bind CARMA Messenger instance with ID '{}' to its RX message socket: {}",
+    //         sumoRoleName, e.getMessage());
+    //         log.error("Stack trace:", e);
+    //         throw new RuntimeException(e);
+    //     }
+    //     managedInstances.put(sumoRoleName, tmp);
+    // }
 
-    public List<String> getVehicleIds(){
+    // public List<String> getVehicleIds(){
 
-        List<String> result = new ArrayList<>();
+    //     List<String> result = new ArrayList<>();
 
-        for(CarmaMessengerInstance name : managedInstances.values()){
-            result.add(name.getVehicleId());
-        }
+    //     for(CarmaMessengerInstance name : managedInstances.values()){
+    //         result.add(name.getVehicleId());
+    //     }
             
-        return result;
+    //     return result;
         
-    }
+    // }
 }

@@ -15,6 +15,30 @@
 
 package org.eclipse.mosaic.fed.sumo.ambassador;
 
+import java.awt.Color;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.NotThreadSafe;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.INDUCTION_LOOP_DETECTOR_SUBSCRIPTION;
 import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.LANE_AREA_DETECTOR_SUBSCRIPTION;
 import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.LANE_PROPERTY_CHANGE;
@@ -30,7 +54,6 @@ import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.VEHICLE_ROUTE
 import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.VEHICLE_SLOWDOWN_REQ;
 import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.VEHICLE_SPEED_CHANGE_REQ;
 import static org.eclipse.mosaic.fed.sumo.ambassador.LogStatements.VEHICLE_STOP_REQ;
-
 import org.eclipse.mosaic.fed.sumo.config.CSumo;
 import org.eclipse.mosaic.fed.sumo.traci.SumoVersion;
 import org.eclipse.mosaic.fed.sumo.traci.TraciClient;
@@ -97,29 +120,6 @@ import org.eclipse.mosaic.rti.config.CLocalHost;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import java.awt.Color;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the traffic

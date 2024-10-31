@@ -15,23 +15,16 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-
-public class CarmaMessengerInstance{
+public class CarmaMessengerRegistrationBridgeMessage{
 
     private String sumoVehicleRole;
     private String rxIpAddress;
     private int rxTimeSyncPort;
     private int rxVehicleStatusPort;
     private int rxTrafficEventPort;
-    private DatagramSocket rxMsgsSocket = null;
 
-
-
-    public CarmaMessengerInstance(String sumoVehicleRole, String rxIpAddress, int rxTimeSyncPort, int rxVehicleStatusPort, int rxTrafficEventPort){
+    public CarmaMessengerRegistrationBridgeMessage(String sumoVehicleRole, String rxIpAddress, int rxTimeSyncPort, int rxVehicleStatusPort, int rxTrafficEventPort) {
+       
         this.sumoVehicleRole = sumoVehicleRole;
         this.rxIpAddress = rxIpAddress;
         this.rxTimeSyncPort = rxTimeSyncPort;
@@ -79,36 +72,9 @@ public class CarmaMessengerInstance{
         this.rxTrafficEventPort = rxTrafficEventPort;
     }
 
-    public void sendVehStatusMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-        
-        DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName(getRxMessageIpAddress()), rxVehicleStatusPort);
-        rxMsgsSocket.send(packet);
-    }
-    
-
-    public void sendTimeSyncMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-        
-        DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName(getRxMessageIpAddress()), rxTimeSyncPort);
-        rxMsgsSocket.send(packet);
-    }
-
-    public void sendTrafficEventMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-        
-        DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName(getRxMessageIpAddress()), rxTrafficEventPort);
-        rxMsgsSocket.send(packet);
-    }
-
-
-    public void bind() throws IOException {
-        rxMsgsSocket = new DatagramSocket();
+    @Override
+    public String toString() {
+        return "CarmaMessengerRegistrationBridgeMessage [sumoVehicleRole=" + sumoVehicleRole
+                + ", rxMessageIpAddress=" + rxIpAddress + ", rxTimeSyncPort=" + rxTimeSyncPort + ", VehicleStatusPort=" + rxVehicleStatusPort +", TrafficEventPort"+ rxTrafficEventPort +"]";
     }
 }

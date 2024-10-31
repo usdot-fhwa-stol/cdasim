@@ -21,22 +21,23 @@ import java.net.DatagramSocket;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationReceiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiver<CarmaMessengerRegistrationMessage>{
+public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiver<CommonRegistrationMessage>{
     
-    public CarmaMessengerRegistrationReceiver(Class<CarmaMessengerRegistrationMessage> type) {
+    public CarmaMessengerRegistrationReceiver(Class<CommonRegistrationMessage> type) {
         super(type);
         //TODO Auto-generated constructor stub
+        super.listenPort = 1234;
     }
 
-    private Queue<CarmaMessengerRegistrationMessage> rxQueue = new LinkedList<>();
+    private Queue<CommonRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1715;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -58,7 +59,7 @@ public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiv
             String receivedPacket = new String(msg.getData(), 0, msg.getLength());
             log.debug("Registration JSON received:  {}", receivedPacket);
             Gson gson = new Gson();
-            CarmaMessengerRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaMessengerRegistrationMessage.class);
+            CommonRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CommonRegistrationMessage.class);
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
