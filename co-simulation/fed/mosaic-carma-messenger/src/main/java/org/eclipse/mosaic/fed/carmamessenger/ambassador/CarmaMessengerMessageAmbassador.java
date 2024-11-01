@@ -19,16 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
-import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
-import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
-import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CommonRegistrationMessage, CommonConfiguration>{
+public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
 
 
     /**
@@ -38,7 +35,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
      *                            CarmaMessageAmbassador.
      */
     public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CommonRegistrationMessage.class, CommonConfiguration.class);
+        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class);
 
         try {
             // Read the CARMA message ambassador configuration file
@@ -64,7 +61,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         String parameterName = "";
         for(String id : temp){
             try {
-                rti.triggerInteraction(new MsgerRequesetTrafficEvent(time, id, parameterName));       
+                rti.triggerInteraction(new MsgerRequesetTrafficEvent(time, id, parameterName));
             } catch (Exception e) {
                 log.error("error: " + e.getMessage());
             } 
@@ -72,30 +69,6 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
 
 
         super.processTimeAdvanceGrant(time);
-    }
-
-    @Override
-    public void processInteraction(Interaction interaction) throws InternalFederateException {
-        String type = interaction.getTypeId();
-        long interactionTime = interaction.getTime();
-        log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-        if (interaction.getTypeId().equals(MsgerResponseTrafficEvent.TYPE_ID)) {
-            receiveMsgerResponseTrafficEventInteraction((MsgerResponseTrafficEvent) interaction);
-        }
-        else{
-            super.processInteraction(interaction);
-        }       
-    }
-
-
-    private void receiveMsgerResponseTrafficEventInteraction(MsgerResponseTrafficEvent interaction)
-    {    
-        float upTrack = interaction.getTrafficEvent().getUpTrack();
-        float downTrack = interaction.getTrafficEvent().getDownTrack();
-        float minGap = interaction.getTrafficEvent().getMinimumGap();
-        float advisorySpeed = interaction.getTrafficEvent().getAdvisorySpeed();
-
-        
     }
 
 }

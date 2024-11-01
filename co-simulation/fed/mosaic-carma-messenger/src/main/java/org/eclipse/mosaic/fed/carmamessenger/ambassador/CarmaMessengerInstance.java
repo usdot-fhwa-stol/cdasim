@@ -17,98 +17,88 @@ package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class CarmaMessengerInstance{
-
-    private String sumoVehicleRole;
-    private String rxIpAddress;
-    private int rxTimeSyncPort;
-    private int rxVehicleStatusPort;
-    private int rxTrafficEventPort;
-    private DatagramSocket rxMsgsSocket = null;
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
 
 
+public class CarmaMessengerInstance extends CommonInstance{
 
-    public CarmaMessengerInstance(String sumoVehicleRole, String rxIpAddress, int rxTimeSyncPort, int rxVehicleStatusPort, int rxTrafficEventPort){
-        this.sumoVehicleRole = sumoVehicleRole;
-        this.rxIpAddress = rxIpAddress;
-        this.rxTimeSyncPort = rxTimeSyncPort;
-        this.rxVehicleStatusPort = rxVehicleStatusPort;
-        this.rxTrafficEventPort = rxTrafficEventPort;
+    private String messengerEmergencyState;
+    private int rxBridgeMessagePort;
+    private float uptrackDistance;
+    private float downtrackDistance;
+    private float minGap;
+    private float advisorySpeed;
+
+
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort, int uptrackDistance, int downtrackDistance, int minGap, float advisorySpeed) {
+        super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
+        this.messengerEmergencyState = messengerEmergencyState;
+        this.rxBridgeMessagePort = rxBridgeMessagePort;
+        this.uptrackDistance = uptrackDistance;
+        this.downtrackDistance = downtrackDistance;
+        this.minGap = minGap;
+        this.advisorySpeed = advisorySpeed;
+    }
+    /**
+     * Carma Messenger Emergency state
+     */
+
+    public String getMessengerEmergencyState() {
+        return messengerEmergencyState;
     }
 
-    public String getVehicleRole(){
-        return sumoVehicleRole;
+    public void setMessengerEmergencyState(String messengerEmergencyState) {
+        this.messengerEmergencyState = messengerEmergencyState;
     }
 
-    public void setVehicleRole(String vehicleRole){
-        this.sumoVehicleRole = vehicleRole;
+    public int getRxBridgeMessagePort() {
+        return rxBridgeMessagePort;
     }
 
-    public String getRxMessageIpAddress(){
-        return rxIpAddress;
+    public void setRxBridgeMessagePort(int rxBridgeMessagePort) {
+        this.rxBridgeMessagePort = rxBridgeMessagePort;
     }
 
-    public void setRxMessageIpAddress(String rxIpAddress){
-        this.rxIpAddress = rxIpAddress;
+    public float getUptrackDistance(){
+        return uptrackDistance;
     }
 
-    public int getRxTimeSyncPort(){
-        return  rxTimeSyncPort;
+    public void setUptrackDistance(float uptrackDistance){
+        this.uptrackDistance = uptrackDistance;
     }
 
-    public void setRxTimeSyncPort(int rxTimeSyncPort){
-        this.rxTimeSyncPort = rxTimeSyncPort;
+    public float getDowntrackDistance(){
+        return downtrackDistance;
     }
 
-    public int getVehicleStatusPort(){
-        return rxVehicleStatusPort;
+    public void setDowntrackDistance(float downtrackDistance){
+        this.downtrackDistance = downtrackDistance;
     }
 
-    public void setVehicleStatusPort(int rxVehicleStatusPort){
-        this.rxVehicleStatusPort = rxVehicleStatusPort;
+    public float getMinGap(){
+        return minGap;
     }
 
-    public int getTrafficEventPort(){
-        return rxTrafficEventPort;
+    public void setMinGap(float minGap){
+        this.minGap = minGap;
     }
 
-    public void setTrafficEventPort(int rxTrafficEventPort){
-        this.rxTrafficEventPort = rxTrafficEventPort;
+    public float getAdivsorySpeed(){
+        return advisorySpeed;
+    }
+
+    public void setAdvisorySpeed(float advisorySpeed){
+        this.advisorySpeed = advisorySpeed;
     }
 
     public void sendVehStatusMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
+        if (super.rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
         
-        DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName(getRxMessageIpAddress()), rxVehicleStatusPort);
-        rxMsgsSocket.send(packet);
-    }
-    
-
-    public void sendTimeSyncMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-        
-        DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName(getRxMessageIpAddress()), rxTimeSyncPort);
-        rxMsgsSocket.send(packet);
-    }
-
-    public void sendTrafficEventMsgs(byte[] data) throws IOException {
-        if (rxMsgsSocket == null) {
-            throw new IllegalStateException("Attempted to send data before opening socket");
-        }
-        
-        DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName(getRxMessageIpAddress()), rxTrafficEventPort);
-        rxMsgsSocket.send(packet);
-    }
-
-
-    public void bind() throws IOException {
-        rxMsgsSocket = new DatagramSocket();
+        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxBridgeMessagePort);
+        super.rxMsgsSocket.send(packet);
     }
 }
