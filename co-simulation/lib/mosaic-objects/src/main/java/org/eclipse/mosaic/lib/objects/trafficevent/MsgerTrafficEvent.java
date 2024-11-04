@@ -7,7 +7,6 @@ import java.io.Serializable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.eclipse.mosaic.lib.objects.v2x.V2xReceiverInformation;
 
 public class MsgerTrafficEvent implements Serializable{
     
@@ -15,14 +14,20 @@ public class MsgerTrafficEvent implements Serializable{
     private float downTrack;
     private float minimumGap;
     private float advisorySpeed;
+    private String vehicleId;
 
-    public MsgerTrafficEvent(float upTrack, float downTrack, float minimumGap, float advisorySpeed){
+    public MsgerTrafficEvent(String vehicleId, float upTrack, float downTrack, float minimumGap, float advisorySpeed){
+        this.vehicleId = vehicleId;
         this.upTrack = upTrack;
         this.downTrack = downTrack;
         this.minimumGap = minimumGap;
         this.advisorySpeed = advisorySpeed;
     }
 
+    public String getVehicleId() {
+        return vehicleId;
+    }
+    
     public float getUpTrack(){
         return this.upTrack;
     }

@@ -184,7 +184,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
                     rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
                 }
                 else{
-                    MsgerTrafficEvent config = new MsgerTrafficEvent(floatParameters[0], floatParameters[1], floatParameters[2], floatParameters[3]);
+                    MsgerTrafficEvent config = new MsgerTrafficEvent(interaction.vehicleId(), floatParameters[0], floatParameters[1], floatParameters[2], floatParameters[3]);
                     rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), config));
                 }
             }
