@@ -25,21 +25,13 @@ import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
 public class CarmaMessengerInstance extends CommonInstance{
 
     private int rxBridgeMessagePort;
-    private float uptrackDistance;
-    private float downtrackDistance;
-    private float minGap;
-    private float advisorySpeed;
     private int rxVehicleStatusPort;
     private int rxTrafficEventPort;
 
 
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, float uptrackDistance, float downtrackDistance, float minGap, float advisorySpeed, int rxVehicleStatusPort, int rxTrafficEventPort) {
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, int rxVehicleStatusPort, int rxTrafficEventPort) {
         super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
         this.rxBridgeMessagePort = rxBridgeMessagePort;
-        this.uptrackDistance = uptrackDistance;
-        this.downtrackDistance = downtrackDistance;
-        this.minGap = minGap;
-        this.advisorySpeed = advisorySpeed;
         this.rxVehicleStatusPort = rxVehicleStatusPort;
         this.rxTrafficEventPort = rxTrafficEventPort;
     }
@@ -50,38 +42,6 @@ public class CarmaMessengerInstance extends CommonInstance{
 
     public void setRxBridgeMessagePort(int rxBridgeMessagePort) {
         this.rxBridgeMessagePort = rxBridgeMessagePort;
-    }
-
-    public float getUptrackDistance(){
-        return uptrackDistance;
-    }
-
-    public void setUptrackDistance(float uptrackDistance){
-        this.uptrackDistance = uptrackDistance;
-    }
-
-    public float getDowntrackDistance(){
-        return downtrackDistance;
-    }
-
-    public void setDowntrackDistance(float downtrackDistance){
-        this.downtrackDistance = downtrackDistance;
-    }
-
-    public float getMinGap(){
-        return minGap;
-    }
-
-    public void setMinGap(float minGap){
-        this.minGap = minGap;
-    }
-
-    public float getAdivsorySpeed(){
-        return advisorySpeed;
-    }
-
-    public void setAdvisorySpeed(float advisorySpeed){
-        this.advisorySpeed = advisorySpeed;
     }
 
     public int getRxVehicleStatusPort() {
@@ -105,6 +65,15 @@ public class CarmaMessengerInstance extends CommonInstance{
         }
         
         DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxBridgeMessagePort);
+        super.rxMsgsSocket.send(packet);
+    }
+
+    public void sendTrafficEventMsgs(byte[] data) throws IOException {
+        if (super.rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+        
+        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxTrafficEventPort);
         super.rxMsgsSocket.send(packet);
     }
 }

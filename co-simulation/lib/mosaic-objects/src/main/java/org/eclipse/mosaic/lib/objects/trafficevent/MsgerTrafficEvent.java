@@ -1,12 +1,11 @@
 package org.eclipse.mosaic.lib.objects.trafficevent;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
 import java.io.Serializable;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 public class MsgerTrafficEvent implements Serializable{
     
@@ -47,6 +46,7 @@ public class MsgerTrafficEvent implements Serializable{
     @Override
     public int hashCode() {
         return new HashCodeBuilder(7, 37)
+                .append(vehicleId)
                 .append(upTrack)
                 .append(downTrack)
                 .append(minimumGap)
@@ -68,6 +68,7 @@ public class MsgerTrafficEvent implements Serializable{
 
         MsgerTrafficEvent other = (MsgerTrafficEvent) obj;
         return new EqualsBuilder()
+                .append(this.vehicleId, other.vehicleId)
                 .append(this.upTrack, other.upTrack)
                 .append(this.downTrack, other.downTrack)
                 .append(this.minimumGap, other.minimumGap)
@@ -79,6 +80,7 @@ public class MsgerTrafficEvent implements Serializable{
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
+                .append("vehicleId", vehicleId)
                 .append("upTrack", upTrack)
                 .append("downTrack", downTrack)
                 .append("minimumGap", minimumGap)

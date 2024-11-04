@@ -54,39 +54,29 @@ public class CarmaMessengerInstanceTest{
             address,
             3456,
             7890,
-            "MockState",
-            5600,
-            500,
-            500,
-            0,
-            10
+            5600,         
+            1100,
+            1200
         ); 
         FieldSetter.setField(instance, instance.getClass().getSuperclass().getDeclaredField("rxMsgsSocket"), socket);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testGetterSetterConstructor() {
-        assertEquals("MockState", instance.getMessengerEmergencyState());
+        
         assertEquals(5600, instance.getRxBridgeMessagePort());
-        instance.setMessengerEmergencyState("NewState");
-        assertEquals("NewState", instance.getMessengerEmergencyState());
         instance.setRxBridgeMessagePort(5700);
         assertEquals(5700, instance.getRxBridgeMessagePort());
 
-        assertEquals(500, instance.getUptrackDistance());
-        assertEquals(500, instance.getDowntrackDistance());
-        assertEquals(0, instance.getMinGap());
-        assertEquals(10, instance.getAdivsorySpeed(), 0);
+        assertEquals(1100, instance.getRxVehicleStatusPort());
+        assertEquals(1200, instance.getRxTrafficEventPort());
 
-        instance.setUptrackDistance(600);
-        instance.setDowntrackDistance(400);
-        instance.setMinGap(5);
-        instance.setAdvisorySpeed(20);
+        instance.setRxVehicleStatusPort(2100);
+        instance.setRxTrafficEventPort(2200);
 
-        assertEquals(600, instance.getUptrackDistance());
-        assertEquals(400, instance.getDowntrackDistance());
-        assertEquals(5, instance.getMinGap());
-        assertEquals(20, instance.getAdivsorySpeed(),0);
+        assertEquals(2100, instance.getRxVehicleStatusPort());
+        assertEquals(2200, instance.getRxTrafficEventPort());
 
     }
 
@@ -106,4 +96,6 @@ public class CarmaMessengerInstanceTest{
         assertEquals(instance.getRxBridgeMessagePort(), packet.getValue().getPort());
         assertEquals(address, packet.getValue().getAddress());
     }
+
+    
 }

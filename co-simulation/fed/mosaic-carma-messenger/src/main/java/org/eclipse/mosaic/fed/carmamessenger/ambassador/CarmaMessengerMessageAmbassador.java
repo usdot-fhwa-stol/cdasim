@@ -15,13 +15,16 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
+import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
+import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
@@ -71,4 +74,26 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         super.processTimeAdvanceGrant(time);
     }
 
+    @Override
+    public void processInteraction(Interaction interaction) throws InternalFederateException {
+        String type = interaction.getTypeId();
+        long interactionTime = interaction.getTime();
+        log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
+        if (interaction.getTypeId().equals(MsgerResponseTrafficEvent.TYPE_ID)) {
+            receiveMsgerResponseTrafficEventInteraction((MsgerResponseTrafficEvent) interaction);
+        }
+        else{
+            super.processInteraction(interaction);
+        }       
+    }
+
+
+    private void receiveMsgerResponseTrafficEventInteraction(MsgerResponseTrafficEvent interaction)
+    {    
+        try {
+            this.commonInstanceManager.onDetectedTrafficEvents(interaction.getTrafficEvent());
+        } catch (IOException e) {    
+            log.error(e.getMessage());
+        }   
+    }
 }

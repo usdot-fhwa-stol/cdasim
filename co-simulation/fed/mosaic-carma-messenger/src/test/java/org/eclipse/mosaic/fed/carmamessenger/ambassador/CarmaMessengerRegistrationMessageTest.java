@@ -28,17 +28,11 @@ public class CarmaMessengerRegistrationMessageTest {
                 "127.0.0.1",
                 5678,
                 1234,
-                "MockState",
                 5600);
         // Test Getter
-        assertEquals("MockState", message.getMessengerEmergencyState());
-        assertEquals(5600, message.getRxBridgeMessagePort());
-        
-        message.setMessengerEmergencyState("NewState");
-        message.setRxBridgeMessagePort(5700);
-  
 
-        assertEquals("NewState", message.getMessengerEmergencyState());
+        assertEquals(5600, message.getRxBridgeMessagePort());
+        message.setRxBridgeMessagePort(5700);
         assertEquals(5700, message.getRxBridgeMessagePort());
     }
 }

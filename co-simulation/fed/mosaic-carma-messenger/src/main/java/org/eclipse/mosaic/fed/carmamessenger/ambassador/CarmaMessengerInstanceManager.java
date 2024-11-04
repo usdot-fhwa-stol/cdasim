@@ -18,10 +18,12 @@ package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstanceManager;
+import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
 
     private static final int BRIDGE_TARGET_PORT = 5500;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-    private Map<String, Object> registrationList;
+    private final Map<String, Object> registrationList = new HashMap<>();
 
     /**
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
@@ -53,7 +55,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             throw new IllegalArgumentException("Invalid registration type.");
         }
 
-        if (!registrationList.containsKey(vehicleRole)) {
+        if (registrationList == null || !registrationList.containsKey(vehicleRole)) {
             registrationList.put(vehicleRole, registration);
         } else {
             if (!managedInstances.containsKey(vehicleRole)) {
@@ -86,7 +88,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                     // TODO: update 0 values as needed
                     newCarmaMessengerInstance(
                         vehicleId, vehicleRole, rxMessageIp, rxMessagePort, 
-                        rxTimeSyncPort, rxBridgeMessagePort, 0, 0, 0, 0,
+                        rxTimeSyncPort, rxBridgeMessagePort,
                         rxVehicleStatusPort, rxTrafficEventPort
                     );
 
@@ -125,7 +127,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                     currentInstance.sendTimeSyncMsg(bytes);
                 }
             }
-    }
+        }
 
 
     /**
@@ -136,8 +138,8 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * @param v2xPort The port to which received simulated V2X messages should be sent
      * @param timeSyncPort The port to which to send time sync messages.
      */
-    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, float uptrackDistance, float downtrackDistance, float minGap, float advisorySpeed, int rxVehicleStatusPort, int rxTrafficEventPort) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, rxBridgeMessagePort, uptrackDistance, downtrackDistance, minGap, advisorySpeed, rxVehicleStatusPort, rxTrafficEventPort);
+    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, int rxVehicleStatusPort, int rxTrafficEventPort) {
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, rxBridgeMessagePort,rxVehicleStatusPort, rxTrafficEventPort);
         try {
             tmp.bind();
             log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
@@ -160,5 +162,21 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             
         return result;
         
+    }
+
+    public void onDetectedTrafficEvents(MsgerTrafficEvent message) throws IOException {
+        if (managedInstances.size() == 0) {
+            log.debug("There are no registered instances");
+        }
+        else {
+            Gson gson = new Gson();
+            byte[] bytes = gson.toJson(message).getBytes();
+            for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
+                if(currentInstance.getRoleName().equals(message.getVehicleId())){
+                    currentInstance.sendTrafficEventMsgs(bytes);
+                    log.debug(message.toString());
+                }
+            }
+        }
     }
 }
