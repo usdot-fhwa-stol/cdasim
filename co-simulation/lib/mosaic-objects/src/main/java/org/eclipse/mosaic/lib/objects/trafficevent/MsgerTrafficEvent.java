@@ -5,14 +5,30 @@ import java.io.Serializable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 public class MsgerTrafficEvent implements Serializable{
     
+    @Expose
+    @SerializedName("up_track")
     private float upTrack;
+    
+    @Expose
+    @SerializedName("down_track")
     private float downTrack;
+
+    @Expose
+    @SerializedName("minimum_gap")
     private float minimumGap;
+
+    @Expose
+    @SerializedName("advisory_speed")
     private float advisorySpeed;
+    
     private String vehicleId;
 
     public MsgerTrafficEvent(String vehicleId, float upTrack, float downTrack, float minimumGap, float advisorySpeed){
