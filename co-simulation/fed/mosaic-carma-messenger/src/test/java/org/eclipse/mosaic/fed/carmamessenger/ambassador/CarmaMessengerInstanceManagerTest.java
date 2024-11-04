@@ -73,6 +73,7 @@ public class CarmaMessengerInstanceManagerTest {
         FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
     }
 
+
     @Test
     public void testOnNewRegistration() {
         // Set up the registration object
@@ -101,8 +102,8 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(registration);
-        manager.onNewRegistration(bridgeRegistration);
+        manager.onMsgrNewRegistration(registration);
+        manager.onMsgrNewRegistration(bridgeRegistration);
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
@@ -138,8 +139,8 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(bridgeRegistration);
-        manager.onNewRegistration(registration);
+        manager.onMsgrNewRegistration(bridgeRegistration);
+        manager.onMsgrNewRegistration(registration);
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
@@ -150,7 +151,7 @@ public class CarmaMessengerInstanceManagerTest {
 
     @Test
     public void testOnDetectedTrafficEvents() throws IOException {
-        
+
         String infrastructureId = "instance4";
         int rxMessagePort = 1234;
         int timeSyncPort = 5678;
@@ -176,8 +177,8 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(bridgeRegistration);
-        manager.onNewRegistration(registration);
+        manager.onMsgrNewRegistration(bridgeRegistration);
+        manager.onMsgrNewRegistration(registration);
 
 
 

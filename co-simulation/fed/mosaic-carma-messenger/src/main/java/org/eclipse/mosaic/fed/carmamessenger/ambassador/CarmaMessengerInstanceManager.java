@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
@@ -41,7 +42,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
      * @param registration The new instance's registration data
      */
-    public void onNewRegistration(Object registration) {
+    public void onMsgrNewRegistration(Object registration) {
         super.setTargetPort(5600);
         // Check registration type and get vehicle role
         String vehicleRole = null;
@@ -169,12 +170,13 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             log.debug("There are no registered instances");
         }
         else {
-            Gson gson = new Gson();
+            Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
                 if(currentInstance.getRoleName().equals(message.getVehicleId())){
                     currentInstance.sendTrafficEventMsgs(bytes);
                     log.debug(message.toString());
+                    break;
                 }
             }
         }
