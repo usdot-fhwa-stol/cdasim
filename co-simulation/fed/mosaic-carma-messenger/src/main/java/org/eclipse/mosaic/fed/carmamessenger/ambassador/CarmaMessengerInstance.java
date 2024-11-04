@@ -24,33 +24,24 @@ import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
 
 public class CarmaMessengerInstance extends CommonInstance{
 
-    private String messengerEmergencyState;
     private int rxBridgeMessagePort;
     private float uptrackDistance;
     private float downtrackDistance;
     private float minGap;
     private float advisorySpeed;
+    private int rxVehicleStatusPort;
+    private int rxTrafficEventPort;
 
 
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort, int uptrackDistance, int downtrackDistance, int minGap, float advisorySpeed) {
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, float uptrackDistance, float downtrackDistance, float minGap, float advisorySpeed, int rxVehicleStatusPort, int rxTrafficEventPort) {
         super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
-        this.messengerEmergencyState = messengerEmergencyState;
         this.rxBridgeMessagePort = rxBridgeMessagePort;
         this.uptrackDistance = uptrackDistance;
         this.downtrackDistance = downtrackDistance;
         this.minGap = minGap;
         this.advisorySpeed = advisorySpeed;
-    }
-    /**
-     * Carma Messenger Emergency state
-     */
-
-    public String getMessengerEmergencyState() {
-        return messengerEmergencyState;
-    }
-
-    public void setMessengerEmergencyState(String messengerEmergencyState) {
-        this.messengerEmergencyState = messengerEmergencyState;
+        this.rxVehicleStatusPort = rxVehicleStatusPort;
+        this.rxTrafficEventPort = rxTrafficEventPort;
     }
 
     public int getRxBridgeMessagePort() {
@@ -91,6 +82,21 @@ public class CarmaMessengerInstance extends CommonInstance{
 
     public void setAdvisorySpeed(float advisorySpeed){
         this.advisorySpeed = advisorySpeed;
+    }
+
+    public int getRxVehicleStatusPort() {
+        return rxVehicleStatusPort;
+    }
+    public int getRxTrafficEventPort() {
+        return rxTrafficEventPort;
+    }
+
+    public void setRxVehicleStatusPort(int rxVehicleStatusPort) {
+        this.rxVehicleStatusPort = rxVehicleStatusPort;
+    }
+
+    public void setRxTrafficEventPort(int rxTrafficEventPort) {
+        this.rxTrafficEventPort = rxTrafficEventPort;
     }
 
     public void sendVehStatusMsgs(byte[] data) throws IOException {
