@@ -158,17 +158,17 @@ class SumoConnector:
         except Exception as e:
             logging.error("Failed to get simulation time: " + str(e))
             raise
-    
+
     def set_veh_type(self, veh_id, model):
         """
         Sets the vehicle type for a specified vehicle based on the given model.
         The vehicle type determines the car-following model to be used by the vehicle in the simulation.
         The vehicle type must be predefined in the SUMO .rou.xml configuration file of the CDASim scenario.
-        
+
         Parameters:
         - veh_id: The identifier for the vehicle whose type is to be set.
         - model: The vehicle type identifier, which must correspond to one of the vehicle types defined in the .rou.xml file.
-        
+
         Raises:
         - Exception: If there is an error in setting the vehicle type, such as if the vehicle ID does not exist or the model is not defined.
         """
@@ -180,11 +180,11 @@ class SumoConnector:
 
     def set_veh_signal(self, veh_id, signal):
         """
-        Sets the vehicle signals for a specified vehicle in the SUMO simulation. 
-        This function is used to control visual indicators like emergency lights on a vehicle. 
+        Sets the vehicle signals for a specified vehicle in the SUMO simulation.
+        This function is used to control visual indicators like emergency lights on a vehicle.
         The signal parameter is an integer that encodes the state of the vehicle’s signals according to the SUMO vehicle signaling documentation.
 
-        The function is particularly useful for integrations where external systems (such as MOSAIC) monitor these signals for various purposes, 
+        The function is particularly useful for integrations where external systems (such as MOSAIC) monitor these signals for various purposes,
         including activating functionalities like the Broadcast of Basic Safety Messages (BSM) in connected vehicle environments.
 
         See the SUMO documentation for detailed signal encoding: https://sumo.dlr.de/docs/TraCI/Vehicle_Signalling.html
@@ -203,18 +203,17 @@ class SumoConnector:
             logging.error(f"Failed to set vehicle signal for vehicle ID '{veh_id}': {e}")
             raise
 
-    def cal_distance(self, veh_id, target_location):
+    def cal_distance(self, pos_1, pos_2):
         """
         Calculates the distance between a certain location and a vehicle in SUMO
         """
         try:
-            veh_pos = self._traci.vehicle.getPosition(veh_id)
-            distance = math.sqrt((target_location[0] - veh_pos[0])**2 + (target_location[1] - veh_pos[1])**2)
+            distance = math.sqrt((pos_1[0] - pos_2[0])**2 + (pos_1[1] - pos_2[1])**2)
             return distance
         except Exception as e:
             logging.error(f"Failed to calculate vehicle distance for vehicle ID '{veh_id}': {e}")
             raise
-    
+
     def stop_veh(self, veh_id):
         """
         stops vehicle at current place in SUMO
@@ -227,15 +226,15 @@ class SumoConnector:
             traci.vehicle.setStop(
             vehID=veh_id,
             edgeID=current_veh_edge,
-            pos=current_veh_pos,  
-            laneIndex=current_veh_lane,  
-            duration=5,  
+            pos=current_veh_pos,
+            laneIndex=current_veh_lane,
+            duration=5,
             flags=traci.constants.STOP_FLAG_PARKING
             )
         except Exception as e:
             logging.error(f"Failed to stop vehicle for vehicle ID '{veh_id}': {e}")
             raise
-    
+
     def move_veh_lane(self, veh_id, target_lane):
 
         try:
@@ -262,12 +261,21 @@ class SumoConnector:
             return num_lanes - 1
         else:
             return num_lanes - 2
-        
+
     def set_parameter(self, veh_id, para_name, para_value):
 
         try:
             traci.vehicle.setParameter(veh_id, para_name, para_value)
-        
+
         except Exception as e:
             logging.error(f"Failed to set vehicle parameter for vehicle ID '{veh_id}': {e}")
+            raise
+
+    def get_veh_pos(self, veh_id):
+
+        try:
+            pos = traci.vehicle.getPosition(veh_id)
+
+        except Exception as e:
+            logging.error(f"Failed to get vehicle position for vehicle ID '{veh_id}': {e}")
             raise

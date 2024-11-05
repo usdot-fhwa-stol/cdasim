@@ -16,7 +16,8 @@ import argparse
 import logging
 from sumo_connector import SumoConnector
 from msger_veh_cfg import MsgerVehicleCfg
-from msger_veh_cfg import VehicleState 
+from msger_veh_cfg import VehicleState
+from move_over_law import MoveOverLaw
 
 def setup_logging(level):
     numeric_level = getattr(logging, level.upper(), None)
@@ -59,9 +60,10 @@ def run(args):
                         ### Remove
                         msger_veh_cfg.set_veh_state(msg_veh_id, VehicleState.FINISHED_AND_DESTROYED)
                         logging.info("Vehicle " + msg_veh_id + " finished route.")
-                    
+
                     ## TODO
-                    
+                    MoveOverLaw.move_over()
+
     except Exception as e:
         logging.error(f"An error occurred during simulation: {e}")
 

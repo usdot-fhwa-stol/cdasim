@@ -24,10 +24,8 @@ class MoveOverLaw:
         config.read('resources/move_over_law_cfg.ini')
         self._closure_uptrack = config.get('Settings', 'closure_uptrack')
         self._closure_downtrack = config.get('Settings', 'closure_downtrack')
-        self._target_location = config.get('Settings', 'location')
-        self._veh_id = config.get('Settings', 'vehicleID')
-        #self._event_reason = 'Move Over Law'
-        #self._event_type = 'CLOSED'
+        self._target_veh_id = config.get('Settings', 'target_id')
+        self._veh_id = config.get('Settings', 'vehicle_id')
         self._min_gap = config.get('Settings', 'min_gap')
         self._advisory_speed_limit = config.get('Settings', 'advisory_speed_limit')
 
@@ -48,16 +46,14 @@ class MoveOverLaw:
         target_lane = SumoConnector.get_target_lane(self._veh_id, False)
         SumoConnector.move_veh_lane(self._veh_id, target_lane)
         return
-    
+
     def move_over(self):
+        veh_pos = SumoConnector.get_veh_pos(self._veh_id)
+        target_pos = SumoConnector.get_veh_pos(self._target_veh_id)
+        distance = SumoConnector.cal_distance(veh_pos, target_pos)
 
-        while True:
-
-            distance = SumoConnector.cal_distance(self._veh_id, self._target_location)
-            
-            if distance < 10:
-                self.park_messenger()
-                break
-            elif distance < 600:        
-                self.get_closer()
-    
+        if distance < 10:
+            self.park_messenger()
+            self.close_lane()
+        elif distance < 600:
+            self.get_closer()
