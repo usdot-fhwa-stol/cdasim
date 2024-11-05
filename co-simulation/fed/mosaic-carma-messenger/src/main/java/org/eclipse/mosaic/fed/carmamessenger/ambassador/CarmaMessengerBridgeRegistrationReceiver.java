@@ -34,7 +34,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
 
     protected Queue<CarmaMessengerBridgeRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1515;
+    private static final int listenPort = 1716;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -87,7 +87,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
             output.addAll(rxQueue);
             rxQueue.clear();
         }
-        
+
         return output;
     }
 }
