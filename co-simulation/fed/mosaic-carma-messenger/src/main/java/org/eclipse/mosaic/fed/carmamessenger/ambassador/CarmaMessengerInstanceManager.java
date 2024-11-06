@@ -132,12 +132,23 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
 
 
     /**
-     * Helper function to configure a new CARMA Platform instance object upon registration
-     * @param carmaMessengerVehId The CARMA Platform vehicle ID (e.g. it's license plate number)
-     * @param sumoRoleName The Role Name associated with the CARMA Platform's ego vehicle in CARLA
-     * @param targetAddress The IP address to which received simulated V2X messages should be sent
-     * @param v2xPort The port to which received simulated V2X messages should be sent
-     * @param timeSyncPort The port to which to send time sync messages.
+     * Helper function to configure and register a new CARMA Messenger instance object.
+     *
+     * @param carmaMessengerVehId   The unique CARMA Messenger vehicle ID, typically the vehicle's identifier 
+     *                              or license plate number.
+     * @param sumoRoleName          The role name associated with the CARMA Messenger ego vehicle in SUMO, used
+     *                              to distinguish it within the simulation environment.
+     * @param targetAddress         The IP address where received simulated V2X (Vehicle-to-Everything) messages 
+     *                              will be forwarded.
+     * @param v2xPort               The port number designated for sending simulated V2X messages to the target address.
+     * @param timeSyncPort          The port number for sending time synchronization messages to keep the CARMA 
+     *                              Platform instance in sync with other components.
+     * @param rxBridgeMessagePort   The port used to receive bridge messages from external systems or 
+     *                              simulation environments.
+     * @param rxVehicleStatusPort   The port for receiving vehicle status updates, such as position and 
+     *                              movement data, from the CARMA Platform's ego vehicle.
+     * @param rxTrafficEventPort    The port designated for receiving traffic event information that 
+     *                              may impact the CARMA Platform's operation (e.g., road hazards or alerts).
      */
     private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, int rxVehicleStatusPort, int rxTrafficEventPort) {
         CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, rxBridgeMessagePort,rxVehicleStatusPort, rxTrafficEventPort, false, false);
@@ -160,9 +171,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         for(CarmaMessengerInstance name : managedInstances.values()){
             result.add(name.getVehicleId());
         }
-            
         return result;
-        
     }
 
     public void onDetectedTrafficEvents(MsgerTrafficEvent message) throws IOException {
