@@ -20,6 +20,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 
 public class CarmaMessengerInstance extends CommonInstance{
@@ -29,8 +30,9 @@ public class CarmaMessengerInstance extends CommonInstance{
     private int rxTrafficEventPort;
     private boolean siren_active;
     private boolean light_active;
-
-
+    private GeoPoint geo_location;
+    private GeoPoint prev_location;
+    
     public CarmaMessengerInstance(String carmaMessengerVehicleId, 
                                   String sumoRoleName, 
                                   InetAddress targetAddress, 
@@ -47,6 +49,8 @@ public class CarmaMessengerInstance extends CommonInstance{
         this.rxTrafficEventPort = rxTrafficEventPort;
         this.siren_active = siren_active;
         this.light_active = light_active;
+        this.geo_location = GeoPoint.ORIGO;
+        this.prev_location = GeoPoint.ORIGO;
     }
 
     public boolean getSirenActive(){
@@ -96,5 +100,21 @@ public class CarmaMessengerInstance extends CommonInstance{
         
         DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxTrafficEventPort);
         super.rxMsgsSocket.send(packet);
+    }
+
+    public GeoPoint getGeoLocation(){
+        return this.geo_location;
+    }
+
+    public void setGeoLocation(GeoPoint geo_location){
+        this.geo_location = geo_location;
+    }
+
+    public GeoPoint getPrevLocation(){
+        return this.prev_location;
+    }
+
+    public void setPrevLocation(GeoPoint prev_cartesian_location){
+        this.prev_location = prev_cartesian_location;
     }
 }

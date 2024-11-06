@@ -200,11 +200,22 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
     public void onVehicleUpdates(VehicleUpdates vui) {
         for (VehicleData veh : vui.getUpdated()) {
             if (managedInstances.containsKey(veh.getName())) {
+                
+                // Save previous cartesian point for the use of twist calculation
+                GeoPoint prev_cartesian_location = managedInstances.get(veh.getName()).getLocation();
+                managedInstances.get(veh.getName()).setPrevLocation(prev_cartesian_location);
+
+                // Save new cartesian point
+                managedInstances.get(veh.getName()).setLocation(veh.getPosition());
+
+                // Converting cartesian point to geo location
                 Proj4Projection proj = new Proj4Projection(veh.getPosition(), 0, 0, null);
                 MutableGeoPoint temp = new MutableGeoPoint();
                 MutableGeoPoint location = proj.cartesianToGeographic(veh.getProjectedPosition(), temp);
                 GeoPoint result = GeoPoint.latLon(location.getLatitude(), location.getLongitude());
-                managedInstances.get(veh.getName()).setLocation(result);
+
+                // Save converted geo location to the instance
+                managedInstances.get(veh.getName()).setGeoLocation(result);
             }
         }
     }

@@ -19,18 +19,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.mosaic.fed.carma.ambassador.CarmaInstance;
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
 
 
+    private long updateInterval = 0;
     /**
      * Create a new {@link CarmaMessengerMessageAmbassador} object.
      *
@@ -54,6 +58,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         if (commonConfiguration.updateInterval <= 0) {
             throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
         }
+        this.updateInterval = commonConfiguration.updateInterval;
         log.info("CARMA message ambassador is generated.");
     }
 
@@ -69,8 +74,28 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
                 log.error("error: " + e.getMessage());
             } 
         }
-
-
+        for (String key : commonInstanceManager.managedInstances.keySet()) {
+            System.out.println("Key: " + key);
+            CarmaMessengerInstance instance = commonInstanceManager.managedInstances.get(key);
+            
+            GeoPoint prev_location = instance.getPrevLocation();
+            GeoPoint curr_location = instance.getLocation();
+            float twist_x;
+            float twist_y;
+            float twist_z;
+            if (prev_location == GeoPoint.ORIGO)
+            {
+                twist_x = 0;
+                twist_y = 0;
+                twist_z = 0; 
+            }
+            else
+            {
+                twist_x = (float) (( curr_location.toCartesian().getX() - prev_location.toCartesian().getX()) / updateInterval);
+                twist_y = (float) (( curr_location.toCartesian().getY() - prev_location.toCartesian().getY()) / updateInterval);
+                twist_z = (float) (( curr_location.toCartesian().getZ() - prev_location.toCartesian().getZ()) / updateInterval);
+            }
+        }
         super.processTimeAdvanceGrant(time);
     }
 
