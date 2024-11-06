@@ -22,8 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstanceManager;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
+import org.eclipse.mosaic.lib.geo.MutableGeoPoint;
 import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
+import org.eclipse.mosaic.lib.transform.Proj4Projection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,6 +192,19 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                     log.debug(message.toString());
                     break;
                 }
+            }
+        }
+    }
+
+    @Override
+    public void onVehicleUpdates(VehicleUpdates vui) {
+        for (VehicleData veh : vui.getUpdated()) {
+            if (managedInstances.containsKey(veh.getName())) {
+                Proj4Projection proj = new Proj4Projection(veh.getPosition(), 0, 0, null);
+                MutableGeoPoint temp = new MutableGeoPoint();
+                MutableGeoPoint location = proj.cartesianToGeographic(veh.getProjectedPosition(), temp);
+                GeoPoint result = GeoPoint.latLon(location.getLatitude(), location.getLongitude());
+                managedInstances.get(veh.getName()).setLocation(result);
             }
         }
     }

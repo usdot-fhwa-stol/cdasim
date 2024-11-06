@@ -115,6 +115,12 @@
         <version>22.1-SNAPSHOT</version>
         <scope>compile</scope>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.mosaic</groupId>
+        <artifactId>mosaic-geomath</artifactId>
+        <version>${mosaic.version}</version>
+        <scope>compile</scope>
+      </dependency>
   </dependencies>
 
   <profiles>
