@@ -140,7 +140,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * @param timeSyncPort The port to which to send time sync messages.
      */
     private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, int rxVehicleStatusPort, int rxTrafficEventPort) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, rxBridgeMessagePort,rxVehicleStatusPort, rxTrafficEventPort);
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, rxBridgeMessagePort,rxVehicleStatusPort, rxTrafficEventPort, false, false);
         try {
             tmp.bind();
             log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);

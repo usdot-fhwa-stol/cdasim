@@ -27,13 +27,34 @@ public class CarmaMessengerInstance extends CommonInstance{
     private int rxBridgeMessagePort;
     private int rxVehicleStatusPort;
     private int rxTrafficEventPort;
+    private boolean siren_active;
+    private boolean light_active;
 
 
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, int rxVehicleStatusPort, int rxTrafficEventPort) {
+    public CarmaMessengerInstance(String carmaMessengerVehicleId, 
+                                  String sumoRoleName, 
+                                  InetAddress targetAddress, 
+                                  int v2xPort, 
+                                  int timeSyncPort, 
+                                  int rxBridgeMessagePort, 
+                                  int rxVehicleStatusPort, 
+                                  int rxTrafficEventPort, 
+                                  boolean siren_active, 
+                                  boolean light_active) {
         super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
         this.rxBridgeMessagePort = rxBridgeMessagePort;
         this.rxVehicleStatusPort = rxVehicleStatusPort;
         this.rxTrafficEventPort = rxTrafficEventPort;
+        this.siren_active = siren_active;
+        this.light_active = light_active;
+    }
+
+    public boolean getSirenActive(){
+        return siren_active;
+    }
+
+    public boolean getLightActive(){
+        return light_active;
     }
 
     public int getRxBridgeMessagePort() {
