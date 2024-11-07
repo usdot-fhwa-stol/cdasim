@@ -75,7 +75,11 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
                 log.error("error: " + e.getMessage());
             } 
         }
-        this.commonInstanceManager.vehicleStatusUpdate(this.updateInterval);
+        try {
+            this.commonInstanceManager.vehicleStatusUpdate(this.updateInterval);
+        } catch (IOException e) {
+            log.error("error: " + e.getMessage());
+        }
         super.processTimeAdvanceGrant(time);
     }
 
