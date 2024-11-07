@@ -22,6 +22,7 @@ import java.util.List;
 import org.eclipse.mosaic.fed.carma.ambassador.CarmaInstance;
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
+import org.eclipse.mosaic.lib.objects.vehicle.MsgerVehicleStatus;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
@@ -74,28 +75,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
                 log.error("error: " + e.getMessage());
             } 
         }
-        for (String key : commonInstanceManager.managedInstances.keySet()) {
-            System.out.println("Key: " + key);
-            CarmaMessengerInstance instance = commonInstanceManager.managedInstances.get(key);
-            
-            GeoPoint prev_location = instance.getPrevLocation();
-            GeoPoint curr_location = instance.getLocation();
-            float twist_x;
-            float twist_y;
-            float twist_z;
-            if (prev_location == GeoPoint.ORIGO)
-            {
-                twist_x = 0;
-                twist_y = 0;
-                twist_z = 0; 
-            }
-            else
-            {
-                twist_x = (float) (( curr_location.toCartesian().getX() - prev_location.toCartesian().getX()) / updateInterval);
-                twist_y = (float) (( curr_location.toCartesian().getY() - prev_location.toCartesian().getY()) / updateInterval);
-                twist_z = (float) (( curr_location.toCartesian().getZ() - prev_location.toCartesian().getZ()) / updateInterval);
-            }
-        }
+        this.commonInstanceManager.vehicleStatusUpdate(this.updateInterval);
         super.processTimeAdvanceGrant(time);
     }
 

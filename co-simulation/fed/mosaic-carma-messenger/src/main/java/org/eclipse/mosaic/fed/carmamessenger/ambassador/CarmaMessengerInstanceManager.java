@@ -27,6 +27,7 @@ import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstanceManager;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.geo.MutableGeoPoint;
 import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
+import org.eclipse.mosaic.lib.objects.vehicle.MsgerVehicleStatus;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
 import org.eclipse.mosaic.lib.transform.Proj4Projection;
 import org.slf4j.Logger;
@@ -177,6 +178,48 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             result.add(name.getVehicleId());
         }
         return result;
+    }
+
+    public void vehicleStatusUpdate(long updateInterval) throws IOException{
+        for (String key : managedInstances.keySet()) {
+            CarmaMessengerInstance instance = managedInstances.get(key);
+            
+            // Get location and status values directly
+            GeoPoint prev_location = instance.getPrevLocation();
+            GeoPoint curr_location = instance.getLocation();
+        
+            // Create the VehicleTwist object with calculated values
+            MsgerVehicleStatus.VehicleTwist twist;
+            if (prev_location == GeoPoint.ORIGO) {
+                // Initialize twist with zeros if it's the origin
+                twist = new MsgerVehicleStatus.VehicleTwist(0, 0, 0);
+            } else {
+                // Directly calculate and assign twist values
+                twist = new MsgerVehicleStatus.VehicleTwist(
+                    (float) ((curr_location.toCartesian().getX() - prev_location.toCartesian().getX()) / updateInterval),
+                    (float) ((curr_location.toCartesian().getY() - prev_location.toCartesian().getY()) / updateInterval),
+                    (float) ((curr_location.toCartesian().getZ() - prev_location.toCartesian().getZ()) / updateInterval)
+                );
+            }
+            
+            // Create VehiclePose with lat, lon, alt values
+            MsgerVehicleStatus.VehiclePose pose = new MsgerVehicleStatus.VehiclePose(
+                instance.getGeoLocation().getLatitude(),
+                instance.getGeoLocation().getLongitude(),
+                instance.getGeoLocation().getAltitude()
+            );
+        
+            // Create the MsgerVehicleStatus object
+            MsgerVehicleStatus status = new MsgerVehicleStatus(
+                pose,
+                twist,
+                instance.getSirenActive(),
+                instance.getLightActive()
+            );
+            Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+            byte[] bytes = gson.toJson(status).getBytes();
+            instance.sendVehStatusMsgs(bytes);
+        }
     }
 
     public void onDetectedTrafficEvents(MsgerTrafficEvent message) throws IOException {
