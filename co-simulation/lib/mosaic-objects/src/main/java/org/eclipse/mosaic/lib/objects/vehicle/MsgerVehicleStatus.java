@@ -16,41 +16,34 @@
 
 package org.eclipse.mosaic.lib.objects.vehicle;
 import java.io.Serializable;
-
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
-import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import java.io.Serializable;
 
 public class MsgerVehicleStatus implements Serializable {
     
     // Inner classes for vehicle_pose and vehicle_twist
     public static class VehiclePose implements Serializable {
-        private double x;
-        private double y;
-        private double z;
+        private double lat;
+        private double lon;
+        private double alt;
 
-        public VehiclePose(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+        public VehiclePose(double lat, double lon, double alt) {
+            this.lat = lat;
+            this.lon = lon;
+            this.alt = alt;
         }
 
         // Getters and setters
-        public double getX() { return x; }
-        public void setX(double x) { this.x = x; }
+        public double getLat() { return lat; }
+        public void setLat(double lat) { this.lat = lat; }
         
-        public double getY() { return y; }
-        public void setY(double y) { this.y = y; }
+        public double getLon() { return lon; }
+        public void setLon(double lon) { this.lon = lon; }
         
-        public double getZ() { return z; }
-        public void setZ(double z) { this.z = z; }
+        public double getAlt() { return alt; }
+        public void setAlt(double alt) { this.alt = alt; }
     }
 
     public static class VehicleTwist implements Serializable {
