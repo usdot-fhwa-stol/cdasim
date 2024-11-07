@@ -88,14 +88,14 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                     // Initialize parameters for new instance
                     String vehicleId = regMessage.getVehicleId();              
                     int rxMessagePort = regMessage.getRxMessagePort();                    
-                    int rxBridgeMessagePort = regMessage.getRxBridgeMessagePort();
+                    int rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
                     int rxVehicleStatusPort = bridgeMessage.getRxVehicleStatusPort();
                     int rxTrafficEventPort = bridgeMessage.getRxTrafficEventPort();
 
                     // TODO: update 0 values as needed
                     newCarmaMessengerInstance(
                         vehicleId, vehicleRole, rxMessageIp, rxMessagePort, 
-                        rxTimeSyncPort, rxBridgeMessagePort,
+                        rxTimeSyncPort, rxBridgeTimeSyncPort,
                         rxVehicleStatusPort, rxTrafficEventPort
                     );
 

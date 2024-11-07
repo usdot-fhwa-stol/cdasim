@@ -19,23 +19,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.mosaic.fed.carma.ambassador.CarmaInstance;
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
-import org.eclipse.mosaic.lib.objects.vehicle.MsgerVehicleStatus;
-import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
 
-
-    private long updateInterval = 0;
+    static CarmaMessengerInstanceManager instanceManager;
     /**
      * Create a new {@link CarmaMessengerMessageAmbassador} object.
      *
@@ -43,7 +38,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
      *                            CarmaMessageAmbassador.
      */
     public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class);
+        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class, instanceManager);
 
         try {
             // Read the CARMA message ambassador configuration file
@@ -59,14 +54,13 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         if (commonConfiguration.updateInterval <= 0) {
             throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
         }
-        this.updateInterval = commonConfiguration.updateInterval;
         log.info("CARMA message ambassador is generated.");
     }
 
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
         List<String> temp = new ArrayList<>();
-        temp = commonInstanceManager.getVehicleIds();
+        temp = this.commonInstanceManager.getVehicleIds();
         String parameterName = "";
         for(String id : temp){
             try {
@@ -75,11 +69,8 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
                 log.error("error: " + e.getMessage());
             } 
         }
-        try {
-            this.commonInstanceManager.vehicleStatusUpdate(this.updateInterval);
-        } catch (IOException e) {
-            log.error("error: " + e.getMessage());
-        }
+
+
         super.processTimeAdvanceGrant(time);
     }
 
@@ -105,4 +96,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
             log.error(e.getMessage());
         }   
     }
+
+    
+
 }

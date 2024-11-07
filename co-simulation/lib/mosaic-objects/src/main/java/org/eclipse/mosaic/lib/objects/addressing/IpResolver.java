@@ -15,18 +15,19 @@
 
 package org.eclipse.mosaic.lib.objects.addressing;
 
-import org.eclipse.mosaic.rti.config.CIpResolver;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
 import javax.annotation.Nonnull;
+
+import org.eclipse.mosaic.rti.config.CIpResolver;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 
 /**
  * Class providing a singleton for global IP address management.
@@ -47,6 +48,8 @@ public final class IpResolver {
         CARLA_VEHICLE("carla"),
 
         CARMA_VEHICLE("carma"),
+
+        MESSENGER_VEHICLE("msger"),
 
         SERVER("server");
 
@@ -126,6 +129,8 @@ public final class IpResolver {
 
             unitNetworks.put(UnitType.CARMA_VEHICLE,
                     (Inet4Address) Inet4Address.getByName(configuration.carmaVehicleNet));
+            
+            unitNetworks.put(UnitType.MESSENGER_VEHICLE, (Inet4Address) Inet4Address.getByName(configuration.msgerVehicleNet));
 
             unitNetworks.put(UnitType.ROAD_SIDE_UNIT, (Inet4Address) Inet4Address.getByName(configuration.rsuNet));
 

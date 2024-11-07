@@ -149,6 +149,11 @@
             <artifactId>mosaic-carma-cloud</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.mosaic</groupId>
+            <artifactId>mosaic-carma-messenger</artifactId>
+            <version>${mosaic.version}</version>
+        </dependency>
         <!-- Tutorial Applications -->
 
         <dependency>
@@ -176,6 +181,7 @@
             <artifactId>external-communication</artifactId>
             <version>${mosaic.version}</version>
         </dependency>
+
 
 
 

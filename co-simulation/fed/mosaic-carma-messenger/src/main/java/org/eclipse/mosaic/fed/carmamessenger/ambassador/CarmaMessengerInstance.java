@@ -25,7 +25,7 @@ import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 public class CarmaMessengerInstance extends CommonInstance{
 
-    private int rxBridgeMessagePort;
+    private int rxBridgeTimeSyncPort;
     private int rxVehicleStatusPort;
     private int rxTrafficEventPort;
     private boolean siren_active;
@@ -38,13 +38,13 @@ public class CarmaMessengerInstance extends CommonInstance{
                                   InetAddress targetAddress, 
                                   int v2xPort, 
                                   int timeSyncPort, 
-                                  int rxBridgeMessagePort, 
+                                  int rxBridgeTimeSyncPort, 
                                   int rxVehicleStatusPort, 
                                   int rxTrafficEventPort, 
                                   boolean siren_active, 
                                   boolean light_active) {
         super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
-        this.rxBridgeMessagePort = rxBridgeMessagePort;
+        this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
         this.rxVehicleStatusPort = rxVehicleStatusPort;
         this.rxTrafficEventPort = rxTrafficEventPort;
         this.siren_active = siren_active;
@@ -62,11 +62,11 @@ public class CarmaMessengerInstance extends CommonInstance{
     }
 
     public int getRxBridgeMessagePort() {
-        return rxBridgeMessagePort;
+        return rxBridgeTimeSyncPort;
     }
 
-    public void setRxBridgeMessagePort(int rxBridgeMessagePort) {
-        this.rxBridgeMessagePort = rxBridgeMessagePort;
+    public void setRxBridgeMessagePort(int rxBridgeTimeSyncPort) {
+        this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
     }
 
     public int getRxVehicleStatusPort() {
@@ -89,7 +89,7 @@ public class CarmaMessengerInstance extends CommonInstance{
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
         
-        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxBridgeMessagePort);
+        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxVehicleStatusPort);
         super.rxMsgsSocket.send(packet);
     }
 

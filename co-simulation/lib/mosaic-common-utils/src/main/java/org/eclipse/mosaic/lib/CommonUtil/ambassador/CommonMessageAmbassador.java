@@ -78,7 +78,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
     private Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
-    protected M commonInstanceManager = (M) new CommonInstanceManager();
+    protected M commonInstanceManager;
     protected int timeSyncSeq = 0;
     protected Class<T> messageClass;
     protected Class<C> configClass;
@@ -93,10 +93,11 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         return true;
     }
 
-    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, Class<T> messageClass, Class<C> configClass) {
+    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, Class<T> messageClass, Class<C> configClass, M instanceManager) {
         super(ambassadorParameter);
         this.messageClass = messageClass;
         this.configClass = configClass;
+        this.commonInstanceManager = instanceManager;
         try {
             // Read the CARMA message ambassador configuration file
             commonConfiguration = new ObjectInstantiation<>(configClass, log)

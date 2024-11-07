@@ -1,4 +1,7 @@
 <configuration>
+	<traci_server>
+      	<num-clients value="2" />
+    </traci_server>
 	<input>
 		<net-file value="tiergarten.net.xml" />
 	</input>

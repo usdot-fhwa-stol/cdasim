@@ -56,7 +56,10 @@ public class CarmaMessengerInstanceTest{
             7890,
             5600,         
             1100,
-            1200
+            1200,
+            false,
+            false
+
         ); 
         FieldSetter.setField(instance, instance.getClass().getSuperclass().getDeclaredField("rxMsgsSocket"), socket);
     }

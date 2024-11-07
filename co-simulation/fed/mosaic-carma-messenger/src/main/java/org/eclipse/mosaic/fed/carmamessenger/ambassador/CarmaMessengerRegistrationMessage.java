@@ -20,28 +20,17 @@ import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 public class CarmaMessengerRegistrationMessage extends CommonRegistrationMessage{
 
 
-    private int rxBridgeMessagePort;
 
     public CarmaMessengerRegistrationMessage(String carmaMessengerVehicleId, String sumoVehicleRole, String rxMessageIpAddress,
             int rxMessagePort, int rxTimeSyncPort, int rxBridgeMessagePort) {
         super(carmaMessengerVehicleId, sumoVehicleRole, rxMessageIpAddress, rxMessagePort, rxTimeSyncPort);
-
-        this.rxBridgeMessagePort = rxBridgeMessagePort;
     }
 
-
-    public int getRxBridgeMessagePort(){
-        return rxBridgeMessagePort;
-    }
-
-    public void setRxBridgeMessagePort(int rxBridgeMessagePort){
-        this.rxBridgeMessagePort = rxBridgeMessagePort;
-    }
 
     @Override
     public String toString() {
         return "CarmaMessengerRegistrationMessage [carmaMessengerVehicleId=" + super.getVehicleId() + ", sumoVehicleRole=" + super.getVehicleRole()
                 + ", rxMessageIpAddress=" + super.getRxMessageIpAddress() + ", rxMessagePort=" + super.getRxMessagePort()
-                + ", rxTimeSyncPort=" + super.getRxTimeSyncPort() + ", rxBridgeMessagePort=" + rxBridgeMessagePort +"]";
+                + ", rxTimeSyncPort=" + super.getRxTimeSyncPort() +"]";
     }
 }

@@ -15,7 +15,6 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
-import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 public class CarmaMessengerRegistrationMessageTest {
@@ -30,9 +29,5 @@ public class CarmaMessengerRegistrationMessageTest {
                 1234,
                 5600);
         // Test Getter
-
-        assertEquals(5600, message.getRxBridgeMessagePort());
-        message.setRxBridgeMessagePort(5700);
-        assertEquals(5700, message.getRxBridgeMessagePort());
     }
 }
