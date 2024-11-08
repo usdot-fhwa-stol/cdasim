@@ -31,6 +31,8 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
 
     private static CarmaMessengerInstanceManager instanceManager;
+    private CarmaMessengerBridgeRegistrationReceiver bridgeReceiver;
+    private Thread BridgeRegistrationRxBackgroundThread;
 
     public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
         // Use the static instanceManager if no specific one is provided
@@ -64,6 +66,15 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
     }
 
     @Override
+    public void initialize(long startTime, long endTime) throws InternalFederateException{
+        super.initialize(startTime, endTime);
+        bridgeReceiver = new CarmaMessengerBridgeRegistrationReceiver();
+        bridgeReceiver.init();
+        BridgeRegistrationRxBackgroundThread = new Thread(bridgeReceiver);
+        BridgeRegistrationRxBackgroundThread.start();
+    }
+
+    @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
         List<String> temp = new ArrayList<>();
         temp = this.commonInstanceManager.getVehicleIds();
@@ -75,8 +86,15 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
                 log.error("error: " + e.getMessage());
             } 
         }
-
-
+        try{
+            List<CarmaMessengerBridgeRegistrationMessage> newBridgeRegistrations = bridgeReceiver.getReceivedMessages();
+                for (CarmaMessengerBridgeRegistrationMessage reg : newBridgeRegistrations) {
+                    commonInstanceManager.onMsgrNewRegistration(reg);
+                    super.onDsrcRegistrationRequest(reg.getVehicleRole());
+                }
+        }catch(Exception e){
+            log.error("error: " + e.getMessage());
+        }
         super.processTimeAdvanceGrant(time);
     }
 

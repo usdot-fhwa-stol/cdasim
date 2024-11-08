@@ -241,7 +241,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         }
     }
 
-    private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
+    protected void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
         ExternalVehicleRegistration tempRegistration = new ExternalVehicleRegistration(
                 currentSimulationTime,
                 vehicleId,
