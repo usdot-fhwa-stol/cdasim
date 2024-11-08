@@ -42,6 +42,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
+            log.info("Messenger Bridge Registration Receiver has been initialized");
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -49,6 +50,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
 
     @Override
     public void run() {
+        log.info("Messenger Bridge Registration Receiver Starts running");
         byte[] buf = new byte[UDP_MTU];
         while (running) {
             DatagramPacket msg = new DatagramPacket(buf, buf.length);
