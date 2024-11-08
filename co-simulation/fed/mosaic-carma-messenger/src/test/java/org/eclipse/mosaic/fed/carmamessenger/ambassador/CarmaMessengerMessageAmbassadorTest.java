@@ -48,6 +48,8 @@ public class CarmaMessengerMessageAmbassadorTest {
 
     private CarmaMessengerMessageAmbassador ambassador;
 
+    private CarmaMessengerInstanceManager instanceManager;
+
     @Before
     public void setup() throws IOException {
 
@@ -66,7 +68,7 @@ public class CarmaMessengerMessageAmbassadorTest {
         when(handleMock.getId()).thenReturn("carma");
 
         ambassador = new CarmaMessengerMessageAmbassador(
-                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")));
+                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")), instanceManager);
 
         ambassador.setRtiAmbassador(rtiMock);
 

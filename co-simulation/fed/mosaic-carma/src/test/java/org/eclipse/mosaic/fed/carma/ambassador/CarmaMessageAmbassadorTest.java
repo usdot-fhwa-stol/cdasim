@@ -12,12 +12,8 @@
  */
 package org.eclipse.mosaic.fed.carma.ambassador;
 
-import org.junit.Test;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
@@ -25,14 +21,16 @@ import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
 import org.eclipse.mosaic.rti.config.CLocalHost;
-
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.io.IOException;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link CarmaMessageAmbassador}.
@@ -50,6 +48,8 @@ public class CarmaMessageAmbassadorTest {
     private RtiAmbassador rtiMock;
 
     private CarmaMessageAmbassador ambassador;
+
+    private CarmaInstanceManager instanceManager;
 
     @Before
     public void setup() throws IOException {
@@ -69,7 +69,7 @@ public class CarmaMessageAmbassadorTest {
         when(handleMock.getId()).thenReturn("carma");
 
         ambassador = new CarmaMessageAmbassador(
-                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")));
+                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")), instanceManager);
 
         ambassador.setRtiAmbassador(rtiMock);
 

@@ -35,7 +35,7 @@ public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanc
     private Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
-    private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
+    private CarmaInstanceManager carmaInstanceManager;
     private int timeSyncSeq = 0;
 
 
@@ -45,8 +45,8 @@ public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanc
      * @param ambassadorParameter includes parameters for the
      *                            CarmaMessageAmbassador.
      */
-    public CarmaMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CarmaRegistrationMessage.class, CarmaConfiguration.class);
+    public CarmaMessageAmbassador(AmbassadorParameter ambassadorParameter, CarmaInstanceManager carmaInstanceManager) {
+        super(ambassadorParameter, carmaInstanceManager, CarmaRegistrationMessage.class, CarmaConfiguration.class);
 
         try {
             // Read the CARMA message ambassador configuration file

@@ -30,16 +30,22 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
 
-    static CarmaMessengerInstanceManager instanceManager;
+    private static CarmaMessengerInstanceManager instanceManager;
+
+    public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
+        // Use the static instanceManager if no specific one is provided
+        this(ambassadorParameter, getInstanceManager());
+    }
+
     /**
      * Create a new {@link CarmaMessengerMessageAmbassador} object.
      *
      * @param ambassadorParameter includes parameters for the
      *                            CarmaMessageAmbassador.
      */
-    public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class, instanceManager);
-
+    public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter, CarmaMessengerInstanceManager instanceManager) {
+        super(ambassadorParameter, instanceManager, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class);
+        CarmaMessengerMessageAmbassador.instanceManager = instanceManager;
         try {
             // Read the CARMA message ambassador configuration file
             commonConfiguration = new ObjectInstantiation<>(CommonConfiguration.class, log)
@@ -97,6 +103,13 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         }   
     }
 
-    
-
+    public static CarmaMessengerInstanceManager getInstanceManager() {
+        // Check if the instance manager is already initialized
+        if (instanceManager == null) {
+            // Initialize the instance manager if it's not yet created
+            instanceManager = new CarmaMessengerInstanceManager();
+        }
+        return instanceManager;
+    }
+  
 }

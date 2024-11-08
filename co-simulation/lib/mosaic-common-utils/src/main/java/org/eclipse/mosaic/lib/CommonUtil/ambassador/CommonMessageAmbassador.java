@@ -93,7 +93,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         return true;
     }
 
-    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, Class<T> messageClass, Class<C> configClass, M instanceManager) {
+    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, M instanceManager, Class<T> messageClass, Class<C> configClass) {
         super(ambassadorParameter);
         this.messageClass = messageClass;
         this.configClass = configClass;
@@ -208,6 +208,12 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
     }
 
     private synchronized void receiveVehicleUpdateInteraction(VehicleUpdates interaction) {
+        
+        if (commonInstanceManager == null) {
+            log.error("commonInstanceManager is not initialized. Cannot process vehicle updates.");
+            return; 
+        }
+
         commonInstanceManager.onVehicleUpdates(interaction);
     }
 

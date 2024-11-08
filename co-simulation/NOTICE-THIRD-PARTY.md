@@ -333,6 +333,22 @@ org.leadpony.justify (1.1.0)
  * Source: https://github.com/leadpony/justify
 
 
+Proj4J (1.3.0)
+
+ * License: Apache License, Version 2.0
+ * Maven artifact: `org.locationtech.proj4j:proj4j:1.3.0`
+ * Project: https://github.com/locationtech/proj4j
+ * Source: https://github.com/locationtech/proj4j
+
+
+Proj4J EPSG (1.3.0)
+
+ * License: Apache License, Version 2.0, EPSG database distribution license
+ * Maven artifact: `org.locationtech.proj4j:proj4j-epsg:1.3.0`
+ * Project: https://github.com/locationtech/proj4j
+ * Source: https://github.com/locationtech/proj4j
+
+
 Protocol Buffers [Core] (3.8.0)
 
  * License: 3-Clause BSD License

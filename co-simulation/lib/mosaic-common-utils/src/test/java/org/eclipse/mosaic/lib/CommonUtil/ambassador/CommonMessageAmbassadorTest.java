@@ -50,6 +50,8 @@ public class CommonMessageAmbassadorTest {
 
     private CommonMessageAmbassador ambassador;
 
+    private CommonInstanceManager instanceManager;
+
     @Before
     public void setup() throws IOException {
 
@@ -68,7 +70,7 @@ public class CommonMessageAmbassadorTest {
         when(handleMock.getId()).thenReturn("carma");
 
         ambassador = new CommonMessageAmbassador(
-                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")), CommonRegistrationMessage.class, CommonConfiguration.class);
+                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")),instanceManager, CommonRegistrationMessage.class, CommonConfiguration.class);
 
         ambassador.setRtiAmbassador(rtiMock);
 
