@@ -117,4 +117,12 @@ public class CarmaMessengerInstance extends CommonInstance{
     public void setPrevLocation(GeoPoint prev_cartesian_location){
         this.prev_location = prev_cartesian_location;
     }
+
+    @Override
+    public String toString() {
+        return "CarmaMessengerInstance [rxBridgeTimeSyncPort=" + rxBridgeTimeSyncPort + ", rxVehicleStatusPort="
+                + rxVehicleStatusPort + ", rxTrafficEventPort=" + rxTrafficEventPort + ", siren_active=" + siren_active
+                + ", light_active=" + light_active + ", geo_location=" + geo_location + ", prev_location="
+                + prev_location + ", RoleName=" + getRoleName() + "]";
+    }
 }

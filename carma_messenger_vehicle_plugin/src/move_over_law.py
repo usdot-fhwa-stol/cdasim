@@ -18,17 +18,18 @@ import configparser
 
 class MoveOverLaw:
 
-    def __init__(self, sumo_connector):
+    def __init__(self, sumo_connector, veh_id):
 
         config = configparser.ConfigParser()
         config.read('resources/move_over_law_cfg.ini')
         self._closure_uptrack = config.get('Settings', 'closure_uptrack')
         self._closure_downtrack = config.get('Settings', 'closure_downtrack')
         self._target_veh_id = config.get('Settings', 'target_id')
-        self._veh_id = config.get('Settings', 'vehicle_id')
+        self._veh_id = veh_id
         self._min_gap = config.get('Settings', 'min_gap')
         self._advisory_speed_limit = config.get('Settings', 'advisory_speed_limit')
         self.sumo_connector = sumo_connector
+        self.sumo_connector.create_stop_veh(self._target_veh_id, "21487144_0", 10)
 
     def close_lane(self):
         #send lane closure message

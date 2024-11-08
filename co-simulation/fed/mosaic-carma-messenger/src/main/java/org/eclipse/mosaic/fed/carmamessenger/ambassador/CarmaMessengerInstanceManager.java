@@ -54,8 +54,10 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         String vehicleRole = null;
         if (registration instanceof CarmaMessengerRegistrationMessage) {
             vehicleRole = ((CarmaMessengerRegistrationMessage) registration).getVehicleRole();
+            log.info("Recieve ns3 registration message of role " + vehicleRole);
         } else if (registration instanceof CarmaMessengerBridgeRegistrationMessage) {
             vehicleRole = ((CarmaMessengerBridgeRegistrationMessage) registration).getVehicleRole();
+            log.info("Recieve bridge registration message of role " + vehicleRole);
         }
 
         if (vehicleRole == null) {
@@ -92,7 +94,6 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                     int rxVehicleStatusPort = bridgeMessage.getRxVehicleStatusPort();
                     int rxTrafficEventPort = bridgeMessage.getRxTrafficEventPort();
 
-                    // TODO: update 0 values as needed
                     newCarmaMessengerInstance(
                         vehicleId, vehicleRole, rxMessageIp, rxMessagePort, 
                         rxTimeSyncPort, rxBridgeTimeSyncPort,
@@ -161,6 +162,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         try {
             tmp.bind();
             log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);
+            log.info(tmp.toString());
         } catch (IOException e) {
             log.error("Failed to bind CARMA Messenger instance with ID '{}' to its RX message socket: {}",
             sumoRoleName, e.getMessage());

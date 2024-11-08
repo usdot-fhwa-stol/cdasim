@@ -59,7 +59,7 @@ def run(args):
                         msger_veh_cfg.set_veh_state(msg_veh_id, VehicleState.CREATED_AND_DRIVING)
 
                         if msger_veh_cfg.get_veh_cfm(msg_veh_id) == "MoveOverLaw":
-                            move_over_law_veh_dict[msg_veh_id] = MoveOverLaw(sumo_connector)
+                            move_over_law_veh_dict[msg_veh_id] = MoveOverLaw(sumo_connector, msg_veh_id)
                         ## TODO Init Freight ERV Vehicle
 
                     elif msg_veh_id not in sumo_veh_ids and msger_veh_cfg.get_veh_state(msg_veh_id) == VehicleState.CREATED_AND_DRIVING:
