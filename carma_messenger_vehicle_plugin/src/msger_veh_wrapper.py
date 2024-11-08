@@ -39,6 +39,7 @@ def run(args):
         msger_veh_cfg = MsgerVehicleCfg(args.msger_veh_cfg_path, log_level=args.log_level)
         sumo_connector = SumoConnector(args.traci_ip, args.traci_port, args.traci_order_num, log_level=args.log_level)
         msg_veh_ids = msger_veh_cfg.get_veh_ids()
+        move_over_law_veh_dict = None
         with sumo_connector.traci_handler():
             while True:
                 sumo_connector.tick()
@@ -56,13 +57,18 @@ def run(args):
                         sumo_connector.set_veh_lcm(msg_veh_id, msger_veh_cfg.get_veh_lcm(msg_veh_id))
                         sumo_connector.set_veh_type(msg_veh_id, msger_veh_cfg.get_veh_cfm(msg_veh_id))
                         msger_veh_cfg.set_veh_state(msg_veh_id, VehicleState.CREATED_AND_DRIVING)
+
+                        if msger_veh_cfg.get_veh_cfm(msg_veh_id) == "MoveOverLaw":
+                            move_over_law_veh_dict[msg_veh_id] = MoveOverLaw(sumo_connector)
+                        ## TODO Init Freight ERV Vehicle
                     elif msg_veh_id not in sumo_veh_ids and msger_veh_cfg.get_veh_state(msg_veh_id) == VehicleState.CREATED_AND_DRIVING:
                         ### Remove
                         msger_veh_cfg.set_veh_state(msg_veh_id, VehicleState.FINISHED_AND_DESTROYED)
+                        # move_over_law_veh =
                         logging.info("Vehicle " + msg_veh_id + " finished route.")
 
-                    ## TODO
-                    MoveOverLaw.move_over()
+                    if msg_veh_id in move_over_law_veh_dict:
+                        move_over_law_veh_dict[msg_veh_id].move_over()
 
     except Exception as e:
         logging.error(f"An error occurred during simulation: {e}")
