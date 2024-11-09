@@ -54,10 +54,10 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         String vehicleRole = null;
         if (registration instanceof CarmaMessengerRegistrationMessage) {
             vehicleRole = ((CarmaMessengerRegistrationMessage) registration).getVehicleRole();
-            log.info("Recieve ns3 registration message of role " + vehicleRole);
+            log.info("Receive ns3 registration message of role " + vehicleRole);
         } else if (registration instanceof CarmaMessengerBridgeRegistrationMessage) {
             vehicleRole = ((CarmaMessengerBridgeRegistrationMessage) registration).getVehicleRole();
-            log.info("Recieve bridge registration message of role " + vehicleRole);
+            log.info("Receive bridge registration message of role " + vehicleRole);
         }
 
         if (vehicleRole == null) {
