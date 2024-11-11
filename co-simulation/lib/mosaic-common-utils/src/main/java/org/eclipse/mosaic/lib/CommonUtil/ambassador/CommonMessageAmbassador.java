@@ -69,13 +69,16 @@ import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 
-public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends CommonRegistrationReceiver, T extends CommonRegistrationMessage, C extends  CommonConfiguration> extends AbstractFederateAmbassador{
+public class CommonMessageAmbassador<M extends CommonInstanceManager, 
+                                     R extends CommonRegistrationReceiver, 
+                                     T extends CommonRegistrationMessage, 
+                                     C extends CommonConfiguration> extends AbstractFederateAmbassador{
 
     protected long currentSimulationTime;
     protected C commonConfiguration;
 
     protected R commonRegistrationReceiver;
-    private Thread registrationRxBackgroundThread;
+    protected Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
     protected M commonInstanceManager;
@@ -127,17 +130,37 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
             throw new InternalFederateException(e);
         }
 
-        // Initialize listener socket and thread for Common Registration messages
-        commonRegistrationReceiver = (R) new CommonRegistrationReceiver(messageClass);
+        // Separate initialization calls for each receiver
+        initRegistrationReceiver();
+        initV2xMessageReceiver();
+    }
+
+    protected void initRegistrationReceiver() {
+        // Generic initialization for `commonRegistrationReceiver`
+        commonRegistrationReceiver = (R) new CommonRegistrationReceiver<>(messageClass);
         commonRegistrationReceiver.init();
         registrationRxBackgroundThread = new Thread(commonRegistrationReceiver);
         registrationRxBackgroundThread.start();
+    }
 
-        // Initialize listener socket and thread for Common NS-3 Adapter messages
+    protected void initV2xMessageReceiver() {
         v2xMessageReceiver = new CarmaV2xMessageReceiver();
         v2xMessageReceiver.init();
         v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
         v2xRxBackgroundThread.start();
+    }
+
+
+    protected void processMessageNewRegistrations() {
+        List<T> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
+        for (T reg : newRegistrations) {
+            try {
+                commonInstanceManager.onNewRegistration(reg);
+                onDsrcRegistrationRequest(reg.getVehicleRole());
+            } catch (UnknownHostException e) {
+                log.error("Failed to process registration request for vehicle role: " + reg.getVehicleRole(), e);
+            }
+        }
     }
 
     @Override
@@ -151,11 +174,9 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         log.info(this.getClass().getSimpleName()+ " processing timestep to {}.", time);
 
         try {
-            List<T> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
-            for (T reg : newRegistrations) {
-                commonInstanceManager.onNewRegistration(reg);
-                onDsrcRegistrationRequest(reg.getVehicleRole());
-            }
+
+            processMessageNewRegistrations();
+            
             // Set current simulation time to most recent time update
             currentSimulationTime = time;
             if (currentSimulationTime == 0) {

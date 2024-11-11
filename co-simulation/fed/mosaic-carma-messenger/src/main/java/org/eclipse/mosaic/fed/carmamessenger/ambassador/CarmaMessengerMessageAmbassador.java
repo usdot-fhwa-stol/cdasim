@@ -16,19 +16,24 @@
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
+import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
+public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, 
+                                                                             CarmaMessengerRegistrationReceiver, 
+                                                                             CarmaMessengerRegistrationMessage, 
+                                                                             CommonConfiguration>{
 
     private static CarmaMessengerInstanceManager instanceManager;
     private CarmaMessengerBridgeRegistrationReceiver bridgeReceiver;
@@ -73,6 +78,43 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         BridgeRegistrationRxBackgroundThread = new Thread(bridgeReceiver);
         BridgeRegistrationRxBackgroundThread.start();
     }
+    
+    @Override
+    protected void initRegistrationReceiver() {
+        
+        log.info("Init RegistrationReceiver in MessengerMessageAmbassador");
+        commonRegistrationReceiver = new CarmaMessengerRegistrationReceiver(messageClass);
+        commonRegistrationReceiver.init();
+        registrationRxBackgroundThread = new Thread(commonRegistrationReceiver);
+        registrationRxBackgroundThread.start();
+    }
+    
+    @Override
+    protected void processMessageNewRegistrations() {
+        log.info("Retrieve Message Registration data from queue");
+        List<CarmaMessengerRegistrationMessage> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
+        for (CarmaMessengerRegistrationMessage reg : newRegistrations) {
+            log.info("Got one new registration message, start to process ...");
+            try {
+                commonInstanceManager.onMsgerNewRegistration(reg); // Assuming this method accepts `CarmaMessengerRegistrationMessage`
+                onDsrcRegistrationRequest(reg.getVehicleRole());
+            } catch (UnknownHostException e) {
+                log.error("Failed to process registration request for vehicle role: " + reg.getVehicleRole(), e);
+            }
+        }
+    }
+    
+
+    protected void processMessengerBridgeRegistrations() {
+        try {
+            List<CarmaMessengerBridgeRegistrationMessage> newBridgeRegistrations = bridgeReceiver.getReceivedMessages();
+            for (CarmaMessengerBridgeRegistrationMessage reg : newBridgeRegistrations) {
+                commonInstanceManager.onMsgerNewRegistration(reg);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process bridge registration request for vehicle role: " + e.getMessage(), e);
+        }
+    }    
 
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
@@ -86,15 +128,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
                 log.error("error: " + e.getMessage());
             } 
         }
-        try{
-            List<CarmaMessengerBridgeRegistrationMessage> newBridgeRegistrations = bridgeReceiver.getReceivedMessages();
-                for (CarmaMessengerBridgeRegistrationMessage reg : newBridgeRegistrations) {
-                    commonInstanceManager.onMsgrNewRegistration(reg);
-                    super.onDsrcRegistrationRequest(reg.getVehicleRole());
-                }
-        }catch(Exception e){
-            log.error("error: " + e.getMessage());
-        }
+        processMessengerBridgeRegistrations();
         super.processTimeAdvanceGrant(time);
     }
 

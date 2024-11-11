@@ -18,6 +18,7 @@ package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -27,25 +28,32 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiver<CarmaMessengerRegistrationMessage>{
+public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiver<CarmaMessengerRegistrationMessage> {
     
     public CarmaMessengerRegistrationReceiver(Class<CarmaMessengerRegistrationMessage> type) {
         super(type);
-        //TODO Auto-generated constructor stub
     }
 
-    private Queue<CarmaMessengerRegistrationMessage> rxQueue = new LinkedList<>();
     private DatagramSocket listenSocket = null;
-    private static final int listenPort = 1715;
+    private static final int msgerListenPort = 1715;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-
+    @Override
+    public void init() {
+        try {
+            listenSocket = new DatagramSocket(msgerListenPort);  // Use custom port
+            log.info("Listening on custom port: {}", msgerListenPort);
+        } catch (SocketException e) {
+            throw new RuntimeException("Failed to initialize CarmaMessengerRegistrationReceiver on custom port", e);
+        }
+    }
 
     @Override
     public void run() {
         byte[] buf = new byte[UDP_MTU];
+        log.info("Start Running Message Registration Receiver");
         while (running) {
             DatagramPacket msg = new DatagramPacket(buf, buf.length);
             try {
@@ -67,5 +75,4 @@ public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiv
             }
        }
     }
-
 }
