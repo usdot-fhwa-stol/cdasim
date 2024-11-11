@@ -280,10 +280,9 @@ class SumoConnector:
             logging.error(f"Failed to get vehicle position for vehicle ID '{veh_id}': {e}")
             raise
     
-    def create_stop_veh(self, veh_id, edge, start_pos):
+    def create_stop_veh(self, veh_id, end_pos, stop_route):
         try:
-            traci.vehicle.add(vehID = veh_id, routeID="", typeID="car", depart=0)
-            traci.vehicle.moveTo(veh_id, edge, pos=start_pos)
+            traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos)
             traci.vehicle.setSpeed(veh_id, 0)
         except Exception as e:
             logging.error(f"Failed to create stopped vehicle for vehicle ID '{veh_id}': {e}")

@@ -36,6 +36,7 @@ def run(args):
     """
     setup_logging(args.log_level)
     try:
+        logging.info("Enter run")
         msger_veh_cfg = MsgerVehicleCfg(args.msger_veh_cfg_path, log_level=args.log_level)
         sumo_connector = SumoConnector(args.traci_ip, args.traci_port, args.traci_order_num, log_level=args.log_level)
         msg_veh_ids = msger_veh_cfg.get_veh_ids()
@@ -45,7 +46,6 @@ def run(args):
                 sumo_connector.tick()
                 sumo_veh_ids = sumo_connector.get_veh_ids()
                 for msg_veh_id in msg_veh_ids:
-
                     if msg_veh_id not in sumo_veh_ids and \
                        msger_veh_cfg.get_veh_state(msg_veh_id) == VehicleState.NOT_CREATED and \
                        msger_veh_cfg.get_veh_departure_time(msg_veh_id) <= sumo_connector.get_sim_time():
@@ -69,6 +69,7 @@ def run(args):
                         logging.info("Vehicle " + msg_veh_id + " finished route.")
 
                     if msg_veh_id in move_over_law_veh_dict:
+                        logging.info("Start Move Over Law")
                         move_over_law_veh_dict[msg_veh_id].move_over()
 
     except Exception as e:

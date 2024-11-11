@@ -28,8 +28,10 @@ class MoveOverLaw:
         self._veh_id = veh_id
         self._min_gap = config.get('Settings', 'min_gap')
         self._advisory_speed_limit = config.get('Settings', 'advisory_speed_limit')
+        self._stop_route = config.get('Settings', 'stop_route')
+        self._stop_pos = config.get('Settings', 'stop_pos')
         self.sumo_connector = sumo_connector
-        self.sumo_connector.create_stop_veh(self._target_veh_id, "21487144_0", 10)
+        self.sumo_connector.create_stop_veh(self._target_veh_id, self._stop_pos, self._stop_route)
 
     def close_lane(self):
         #send lane closure message
@@ -50,12 +52,14 @@ class MoveOverLaw:
         return
 
     def move_over(self):
-        veh_pos = self.sumo_connector.get_veh_pos(self._veh_id)
-        target_pos = self.sumo_connector.get_veh_pos(self._target_veh_id)
-        distance = self.sumo_connector.cal_distance(veh_pos, target_pos)
+        if len(self.sumo_connector.get_veh_ids()) >=2:
+            veh_pos = self.sumo_connector.get_veh_pos(self._veh_id)
+            target_pos = self.sumo_connector.get_veh_pos(self._target_veh_id)
+            distance = self.sumo_connector.cal_distance(veh_pos, target_pos)
+            print("Distance: " + str(distance))
 
-        if distance < 10:
-            self.park_messenger()
-            self.close_lane()
-        elif distance < 600:
-            self.get_closer()
+            if distance < 10:
+                self.park_messenger()
+                self.close_lane()
+            elif distance < 600:
+                self.get_closer()

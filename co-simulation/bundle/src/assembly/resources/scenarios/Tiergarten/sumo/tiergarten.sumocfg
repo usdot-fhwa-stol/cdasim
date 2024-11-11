@@ -1,12 +1,17 @@
-<configuration>
-	<traci_server>
-      		<num-clients value="2" />
-   	</traci_server>
-	<input>
-		<net-file value="tiergarten.net.xml" />
-	</input>
-	<time>
-		<begin value="0" />
-		<end value="10000" />
-	</time>
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+    <traci_server>
+        <remote-port value="2010"/> 
+        <num-clients value="1"/>    
+    </traci_server>
+    
+    <input>
+        <net-file value="tiergarten.net.xml"/>
+        <route-files value="tiergarten.rou.xml"/>
+    </input>
+
+    <time>
+        <begin value="0"/>
+        <end value="10000"/>
+    </time>
 </configuration>
