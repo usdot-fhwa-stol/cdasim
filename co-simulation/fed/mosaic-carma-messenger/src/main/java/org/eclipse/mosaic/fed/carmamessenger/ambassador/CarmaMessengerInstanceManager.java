@@ -48,7 +48,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
      * @param registration The new instance's registration data
      */
-    public void onMsgrNewRegistration(Object registration) {
+    public void onMsgerNewRegistration(Object registration) {
         super.setTargetPort(5600);
         // Check registration type and get vehicle role
         String vehicleRole = null;
