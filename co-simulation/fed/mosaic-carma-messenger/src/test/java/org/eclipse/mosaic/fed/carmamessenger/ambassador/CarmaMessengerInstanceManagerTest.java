@@ -102,8 +102,8 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onMsgrNewRegistration(registration);
-        manager.onMsgrNewRegistration(bridgeRegistration);
+        manager.onMsgerNewRegistration(registration);
+        manager.onMsgerNewRegistration(bridgeRegistration);
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
@@ -139,8 +139,8 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onMsgrNewRegistration(bridgeRegistration);
-        manager.onMsgrNewRegistration(registration);
+        manager.onMsgerNewRegistration(bridgeRegistration);
+        manager.onMsgerNewRegistration(registration);
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
@@ -177,8 +177,8 @@ public class CarmaMessengerInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onMsgrNewRegistration(bridgeRegistration);
-        manager.onMsgrNewRegistration(registration);
+        manager.onMsgerNewRegistration(bridgeRegistration);
+        manager.onMsgerNewRegistration(registration);
 
 
 
