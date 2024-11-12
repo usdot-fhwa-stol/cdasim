@@ -28,6 +28,7 @@ public class CarmaMessengerInstance extends CommonInstance{
     private int rxBridgeTimeSyncPort;
     private int rxVehicleStatusPort;
     private int rxTrafficEventPort;
+    private InetAddress bridgInetAddress;
     private boolean siren_active;
     private boolean light_active;
     private GeoPoint geo_location;
@@ -35,7 +36,8 @@ public class CarmaMessengerInstance extends CommonInstance{
     
     public CarmaMessengerInstance(String carmaMessengerVehicleId, 
                                   String sumoRoleName, 
-                                  InetAddress targetAddress, 
+                                  InetAddress v2xAddress,
+                                  InetAddress bridgeAddress, 
                                   int v2xPort, 
                                   int timeSyncPort, 
                                   int rxBridgeTimeSyncPort, 
@@ -43,7 +45,8 @@ public class CarmaMessengerInstance extends CommonInstance{
                                   int rxTrafficEventPort, 
                                   boolean siren_active, 
                                   boolean light_active) {
-        super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
+        super(carmaMessengerVehicleId, sumoRoleName, v2xAddress, v2xPort, timeSyncPort);
+        this.bridgInetAddress = bridgeAddress;
         this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
         this.rxVehicleStatusPort = rxVehicleStatusPort;
         this.rxTrafficEventPort = rxTrafficEventPort;
@@ -61,11 +64,11 @@ public class CarmaMessengerInstance extends CommonInstance{
         return light_active;
     }
 
-    public int getRxBridgeMessagePort() {
+    public int getRxBridgeTimeSyncPort() {
         return rxBridgeTimeSyncPort;
     }
 
-    public void setRxBridgeMessagePort(int rxBridgeTimeSyncPort) {
+    public void setRxBridgeTimeSyncPort(int rxBridgeTimeSyncPort) {
         this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
     }
 
@@ -116,6 +119,17 @@ public class CarmaMessengerInstance extends CommonInstance{
 
     public void setPrevLocation(GeoPoint prev_cartesian_location){
         this.prev_location = prev_cartesian_location;
+    }
+
+    @Override
+    public void sendTimeSyncMsg(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, this.bridgInetAddress, this.rxBridgeTimeSyncPort);
+        rxMsgsSocket.send(packet);
+        super.sendTimeSyncMsg(data);
     }
 
     @Override

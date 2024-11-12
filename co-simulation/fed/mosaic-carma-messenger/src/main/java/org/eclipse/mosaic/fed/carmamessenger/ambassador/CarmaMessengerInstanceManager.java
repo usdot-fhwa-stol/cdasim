@@ -72,32 +72,43 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                     // Determine necessary values for creating a new instance
                     CarmaMessengerRegistrationMessage regMessage = null;
                     CarmaMessengerBridgeRegistrationMessage bridgeMessage = null;
-                    InetAddress rxMessageIp = null;
-                    int rxTimeSyncPort = 0;
+                    InetAddress rxV2xAddress = null;
+                    InetAddress rxBridgeAddress = null;
+                    int rxV2xTimeSyncPort = 0;
+                    int rxBridgeTimeSyncPort = 0;
 
                     if (registration instanceof CarmaMessengerRegistrationMessage) {
                         regMessage = (CarmaMessengerRegistrationMessage) registration;
                         bridgeMessage = (CarmaMessengerBridgeRegistrationMessage) registrationList.get(vehicleRole);
-                        rxMessageIp = InetAddress.getByName(regMessage.getRxMessageIpAddress());
-                        rxTimeSyncPort = regMessage.getRxTimeSyncPort();
+                        rxV2xAddress = InetAddress.getByName(regMessage.getRxMessageIpAddress());
+                        rxBridgeAddress = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
+                        rxV2xTimeSyncPort = regMessage.getRxTimeSyncPort();
+                        rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
+                        
                     } else if (registration instanceof CarmaMessengerBridgeRegistrationMessage) {
                         bridgeMessage = (CarmaMessengerBridgeRegistrationMessage) registration;
                         regMessage = (CarmaMessengerRegistrationMessage) registrationList.get(vehicleRole);
-                        rxMessageIp = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
-                        rxTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
+                        rxV2xAddress = InetAddress.getByName(regMessage.getRxMessageIpAddress());
+                        rxBridgeAddress = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
+                        rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
+                        rxV2xTimeSyncPort = regMessage.getRxMessagePort();
                     }
 
                     // Initialize parameters for new instance
-                    String vehicleId = regMessage.getVehicleId();              
-                    int rxMessagePort = regMessage.getRxMessagePort();                    
-                    int rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
+                    String vehicleId = regMessage.getVehicleId();
+                    int rxMessagePort = regMessage.getRxMessagePort();
                     int rxVehicleStatusPort = bridgeMessage.getRxVehicleStatusPort();
                     int rxTrafficEventPort = bridgeMessage.getRxTrafficEventPort();
 
-                    newCarmaMessengerInstance(
-                        vehicleId, vehicleRole, rxMessageIp, rxMessagePort, 
-                        rxTimeSyncPort, rxBridgeTimeSyncPort,
-                        rxVehicleStatusPort, rxTrafficEventPort
+                    newCarmaMessengerInstance(vehicleId, 
+                                              vehicleRole, 
+                                              rxV2xAddress, 
+                                              rxBridgeAddress,
+                                              rxMessagePort,
+                                              rxV2xTimeSyncPort,
+                                              rxBridgeTimeSyncPort,
+                                              rxVehicleStatusPort,
+                                              rxTrafficEventPort
                     );
 
                 } catch (Exception e) {
@@ -137,28 +148,26 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             }
         }
 
-
-    /**
-     * Helper function to configure and register a new CARMA Messenger instance object.
-     *
-     * @param carmaMessengerVehId   The unique CARMA Messenger vehicle ID, typically the vehicle's identifier 
-     *                              or license plate number.
-     * @param sumoRoleName          The role name associated with the CARMA Messenger ego vehicle in SUMO, used
-     *                              to distinguish it within the simulation environment.
-     * @param targetAddress         The IP address where received simulated V2X (Vehicle-to-Everything) messages 
-     *                              will be forwarded.
-     * @param v2xPort               The port number designated for sending simulated V2X messages to the target address.
-     * @param timeSyncPort          The port number for sending time synchronization messages to keep the CARMA 
-     *                              Platform instance in sync with other components.
-     * @param rxBridgeMessagePort   The port used to receive bridge messages from external systems or 
-     *                              simulation environments.
-     * @param rxVehicleStatusPort   The port for receiving vehicle status updates, such as position and 
-     *                              movement data, from the CARMA Platform's ego vehicle.
-     * @param rxTrafficEventPort    The port designated for receiving traffic event information that 
-     *                              may impact the CARMA Platform's operation (e.g., road hazards or alerts).
-     */
-    private void newCarmaMessengerInstance(String carmaMessengerVehId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, int rxBridgeMessagePort, int rxVehicleStatusPort, int rxTrafficEventPort) {
-        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, sumoRoleName, targetAddress, v2xPort, timeSyncPort, rxBridgeMessagePort,rxVehicleStatusPort, rxTrafficEventPort, false, false);
+    private void newCarmaMessengerInstance(String carmaMessengerVehId, 
+                                           String sumoRoleName, 
+                                           InetAddress v2xAddress,
+                                           InetAddress bridgeAddress, 
+                                           int rxV2xMsgPort, 
+                                           int rxV2xTimeSyncPort, 
+                                           int rxBridgeTimeSyncPort, 
+                                           int rxVehicleStatusPort, 
+                                           int rxTrafficEventPort) {
+        CarmaMessengerInstance tmp = new CarmaMessengerInstance(carmaMessengerVehId, 
+                                                                sumoRoleName, 
+                                                                v2xAddress, 
+                                                                bridgeAddress, 
+                                                                rxV2xMsgPort, 
+                                                                rxV2xTimeSyncPort, 
+                                                                rxBridgeTimeSyncPort,
+                                                                rxVehicleStatusPort, 
+                                                                rxTrafficEventPort, 
+                                                                false, 
+                                                                false);
         try {
             tmp.bind();
             log.info("New CARMA Messenger instance '{}' registered with CARMA Instance Manager.", sumoRoleName);

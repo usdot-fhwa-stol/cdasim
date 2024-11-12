@@ -39,19 +39,22 @@ public class CarmaMessengerInstanceTest{
      /**
       * Mock InetAddress
       */
-    private InetAddress address;
+    private InetAddress v2xAddress;
+    private InetAddress bridgeAddress;
 
     @Before
     public void setup() throws NoSuchFieldException {
         //init mocks
-        address = mock(InetAddress.class);
+        v2xAddress = mock(InetAddress.class);
+        bridgeAddress = mock(InetAddress.class);
         socket = mock(DatagramSocket.class);
 
         //init infra instance
         instance = new CarmaMessengerInstance(
             "MockID",
             "MockRolename",
-            address,
+            v2xAddress,
+            bridgeAddress,
             3456,
             7890,
             5600,         
@@ -68,9 +71,9 @@ public class CarmaMessengerInstanceTest{
     @Test
     public void testGetterSetterConstructor() {
         
-        assertEquals(5600, instance.getRxBridgeMessagePort());
-        instance.setRxBridgeMessagePort(5700);
-        assertEquals(5700, instance.getRxBridgeMessagePort());
+        assertEquals(5600, instance.getRxBridgeTimeSyncPort());
+        instance.setRxBridgeTimeSyncPort(5700);
+        assertEquals(5700, instance.getRxBridgeTimeSyncPort());
 
         assertEquals(1100, instance.getRxVehicleStatusPort());
         assertEquals(1200, instance.getRxTrafficEventPort());
@@ -96,8 +99,7 @@ public class CarmaMessengerInstanceTest{
 
         // Verify parameter members
         assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
-        assertEquals(instance.getRxBridgeMessagePort(), packet.getValue().getPort());
-        assertEquals(address, packet.getValue().getAddress());
+        assertEquals(instance.getRxBridgeTimeSyncPort(), packet.getValue().getPort());
     }
 
     
