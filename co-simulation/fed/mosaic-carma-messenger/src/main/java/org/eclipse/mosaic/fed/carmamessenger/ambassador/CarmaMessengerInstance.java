@@ -33,17 +33,17 @@ public class CarmaMessengerInstance extends CommonInstance{
     private boolean light_active;
     private GeoPoint geo_location;
     private GeoPoint prev_location;
-    
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, 
-                                  String sumoRoleName, 
+
+    public CarmaMessengerInstance(String carmaMessengerVehicleId,
+                                  String sumoRoleName,
                                   InetAddress v2xAddress,
-                                  InetAddress bridgeAddress, 
-                                  int v2xPort, 
-                                  int timeSyncPort, 
-                                  int rxBridgeTimeSyncPort, 
-                                  int rxVehicleStatusPort, 
-                                  int rxTrafficEventPort, 
-                                  boolean siren_active, 
+                                  InetAddress bridgeAddress,
+                                  int v2xPort,
+                                  int timeSyncPort,
+                                  int rxBridgeTimeSyncPort,
+                                  int rxVehicleStatusPort,
+                                  int rxTrafficEventPort,
+                                  boolean siren_active,
                                   boolean light_active) {
         super(carmaMessengerVehicleId, sumoRoleName, v2xAddress, v2xPort, timeSyncPort);
         this.bridgeInetAddress = bridgeAddress;
@@ -94,7 +94,7 @@ public class CarmaMessengerInstance extends CommonInstance{
         if (super.rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
-        
+
         DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxVehicleStatusPort);
         super.rxMsgsSocket.send(packet);
     }
@@ -103,7 +103,7 @@ public class CarmaMessengerInstance extends CommonInstance{
         if (super.rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
-        
+
         DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxTrafficEventPort);
         super.rxMsgsSocket.send(packet);
     }
@@ -130,7 +130,7 @@ public class CarmaMessengerInstance extends CommonInstance{
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
 
-        DatagramPacket packet = new DatagramPacket(data, data.length, this.bridgInetAddress, this.rxBridgeTimeSyncPort);
+        DatagramPacket packet = new DatagramPacket(data, data.length, this.bridgeInetAddress, this.rxBridgeTimeSyncPort);
         rxMsgsSocket.send(packet);
         super.sendTimeSyncMsg(data);
     }

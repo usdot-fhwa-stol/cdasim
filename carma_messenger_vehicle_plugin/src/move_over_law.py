@@ -43,7 +43,6 @@ class MoveOverLaw:
     def park_messenger(self):
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
         target_lane_index = int(target_lane.split('_')[-1])
-        print(target_lane_index)
         self.sumo_connector.move_veh_lane(self._veh_id, target_lane_index)
         self.sumo_connector.stop_veh(self._veh_id)
         return
@@ -59,7 +58,6 @@ class MoveOverLaw:
         if len(self.sumo_connector.get_veh_ids()) >=2:
 
             if self.first_time_two_vehicles:
-                print(self.sumo_connector.get_veh_lane(self._veh_id))
                 self.sumo_connector.set_veh_lane(self._veh_id, 1)
                 self.first_time_two_vehicles = False
 
