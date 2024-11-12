@@ -40,14 +40,12 @@ class MoveOverLaw:
         combined_string = self._closure_uptrack + ";" + self._closure_downtrack + ";" + self._min_gap + ";" + self._advisory_speed_limit
         self.sumo_connector.set_parameter(self._veh_id, 'VehicleBroadcastTrafficEvent', combined_string)
 
-
     def park_messenger(self):
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
         target_lane_index = int(target_lane.split('_')[-1])
         print(target_lane_index)
         self.sumo_connector.move_veh_lane(self._veh_id, target_lane_index)
         self.sumo_connector.stop_veh(self._veh_id)
-        self.close_lane()
         return
 
     def get_closer(self):
