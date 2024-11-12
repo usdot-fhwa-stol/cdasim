@@ -69,7 +69,6 @@ def run(args):
                         logging.info("Vehicle " + msg_veh_id + " finished route.")
 
                     if msg_veh_id in move_over_law_veh_dict:
-                        logging.info("Start Move Over Law")
                         move_over_law_veh_dict[msg_veh_id].move_over()
 
     except Exception as e:

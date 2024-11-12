@@ -5,8 +5,8 @@
             "id": "msger_1",
             "route": [  "4397063_21487174_26873453",
                         "4397063_26873453_26873454"],
-            "speed": 15,
-            "departureTime": 0,
+            "speed": 10,
+            "departureTime": 5,
             "lcm" : 0,
             "cfm" : "MoveOverLaw"
         }

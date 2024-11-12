@@ -219,18 +219,8 @@ class SumoConnector:
         stops vehicle at current place in SUMO
         """
         try:
-            current_veh_pos = traci.vehicle.getLanePosition(veh_id)
-            current_veh_edge = traci.vehicle.getRoadID(veh_id)
-            current_veh_lane = traci.vehicle.getLaneIndex(veh_id)
+            traci.vehicle.setSpeed(veh_id, 0)
 
-            traci.vehicle.setStop(
-            vehID=veh_id,
-            edgeID=current_veh_edge,
-            pos=current_veh_pos,
-            laneIndex=current_veh_lane,
-            duration=5,
-            flags=traci.constants.STOP_FLAG_PARKING
-            )
         except Exception as e:
             logging.error(f"Failed to stop vehicle for vehicle ID '{veh_id}': {e}")
             raise
@@ -238,29 +228,13 @@ class SumoConnector:
     def move_veh_lane(self, veh_id, target_lane):
 
         try:
-            traci.vehicle.setLaneChangeMode(veh_id, 0b001001011)
-
-            while traci.vehicle.getLaneIndex(veh_id) != target_lane:
-                current_lane = traci.vehicle.getLaneIndex(veh_id)
-
-                if current_lane < target_lane:
-                    traci.vehicle.changeLane(veh_id, current_lane + 1, 5)
-                elif current_lane > target_lane:
-                    traci.vehicle.changeLane(veh_id, current_lane - 1, 5)
+            current_lane = traci.vehicle.getLaneIndex(veh_id)
+            if current_lane != target_lane:
+                traci.vehicle.changeLane(veh_id, target_lane, 0)
 
         except Exception as e:
             logging.error(f"Failed to change vehicle lane for vehicle ID '{veh_id}': {e}")
             raise
-
-    def get_target_lane(self, veh_id, is_rightmost):
-
-        current_veh_edge = traci.vehicle.getRoadID(veh_id)
-        num_lanes = traci.edge.getLaneNumber(current_veh_edge)
-
-        if is_rightmost:
-            return num_lanes - 1
-        else:
-            return num_lanes - 2
 
     def set_parameter(self, veh_id, para_name, para_value):
 
@@ -279,7 +253,7 @@ class SumoConnector:
         except Exception as e:
             logging.error(f"Failed to get vehicle position for vehicle ID '{veh_id}': {e}")
             raise
-    
+
     def create_stop_veh(self, veh_id, end_pos, stop_route):
         try:
             traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos)
@@ -287,3 +261,15 @@ class SumoConnector:
         except Exception as e:
             logging.error(f"Failed to create stopped vehicle for vehicle ID '{veh_id}': {e}")
             raise
+
+    def set_veh_lane(self, veh_id, lane_index):
+        try:
+            traci.vehicle.changeLane(veh_id, lane_index, 0)
+            traci.vehicle.setLaneChangeMode(veh_id, 0)
+        except Exception as e:
+            logging.error(f"Failed to set vehicle to desired lane for vehicle ID '{veh_id}': {e}")
+            raise
+
+    def get_veh_lane(self, veh_id):
+
+        return traci.vehicle.getLaneID(veh_id)
