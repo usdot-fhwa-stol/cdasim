@@ -28,7 +28,7 @@ public class CarmaMessengerInstance extends CommonInstance{
     private int rxBridgeTimeSyncPort;
     private int rxVehicleStatusPort;
     private int rxTrafficEventPort;
-    private InetAddress bridgInetAddress;
+    private InetAddress bridgeInetAddress;
     private boolean siren_active;
     private boolean light_active;
     private GeoPoint geo_location;
@@ -46,7 +46,7 @@ public class CarmaMessengerInstance extends CommonInstance{
                                   boolean siren_active, 
                                   boolean light_active) {
         super(carmaMessengerVehicleId, sumoRoleName, v2xAddress, v2xPort, timeSyncPort);
-        this.bridgInetAddress = bridgeAddress;
+        this.bridgeInetAddress = bridgeAddress;
         this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
         this.rxVehicleStatusPort = rxVehicleStatusPort;
         this.rxTrafficEventPort = rxTrafficEventPort;
@@ -56,6 +56,9 @@ public class CarmaMessengerInstance extends CommonInstance{
         this.prev_location = GeoPoint.ORIGO;
     }
 
+    public InetAddress getBridgeAddress() {
+        return bridgeInetAddress;
+    }
     public boolean getSirenActive(){
         return siren_active;
     }
