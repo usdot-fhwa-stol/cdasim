@@ -138,10 +138,12 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                 Gson gson = new Gson();
                 byte[] bytes = gson.toJson(message).getBytes();
                 for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
-                    log.debug("Sending CARMA Messenger instance {} at {}:{} time sync message for time {}!" ,
+                    log.debug("Sending CARMA Messenger adapter & bridge {} at {}:{} & {}:{} time sync message for time {}!" ,
                         currentInstance.getVehicleId(), 
                         currentInstance.getTargetAddress(), 
                         currentInstance.getTimeSyncPort(),
+                        currentInstance.getBridgeAddress(), 
+                        currentInstance.getRxBridgeTimeSyncPort(), 
                         message.getTimestep());
                     currentInstance.sendTimeSyncMsg(bytes);
                 }
