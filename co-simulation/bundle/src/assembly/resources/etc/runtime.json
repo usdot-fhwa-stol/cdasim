@@ -246,7 +246,9 @@
                 "LaneAreaDetectorSubscription",
                 "TrafficLightSubscription",
                 "CarlaTraciRequest",
-                "SimulationStep"
+                "SimulationStep",
+                "MsgrRequesetTrafficEvent",
+                "MsgrResponseTrafficEvent"
             ],
             "javaClasspathEntries": []
         },

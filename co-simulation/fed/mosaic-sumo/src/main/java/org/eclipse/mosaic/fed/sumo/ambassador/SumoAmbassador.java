@@ -166,6 +166,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
     }
 
     private void receiveInteraction(MsgerRequesetTrafficEvent interaction) {
+        log.debug("Receive interaction type MsgerRequesetTrafficEvent, from vehicle id:{}", interaction.vehicleId());
         VehicleGetParameter veh = new VehicleGetParameter();
         String temp  = "";
         try {

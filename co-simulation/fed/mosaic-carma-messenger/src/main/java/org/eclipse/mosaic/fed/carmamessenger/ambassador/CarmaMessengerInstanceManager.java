@@ -199,13 +199,16 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             
             // Get location and status values directly
             GeoPoint prev_location = instance.getPrevLocation();
+            log.info("Previous location: {}", prev_location);
             GeoPoint curr_location = instance.getLocation();
+            log.info("Current location: {}", curr_location);
         
             // Create the VehicleTwist object with calculated values
             MsgerVehicleStatus.VehicleTwist twist;
             if (prev_location == GeoPoint.ORIGO) {
                 // Initialize twist with zeros if it's the origin
                 twist = new MsgerVehicleStatus.VehicleTwist(0, 0, 0);
+                prev_location = curr_location;
             } else {
                 // Directly calculate and assign twist values
                 twist = new MsgerVehicleStatus.VehicleTwist(

@@ -2,7 +2,7 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
     <traci_server>
         <remote-port value="2010"/> 
-        <num-clients value="1"/>    
+        <num-clients value="2"/>    
     </traci_server>
     
     <input>

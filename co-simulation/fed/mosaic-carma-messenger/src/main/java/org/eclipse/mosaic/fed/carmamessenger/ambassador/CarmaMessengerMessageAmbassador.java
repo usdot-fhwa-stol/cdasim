@@ -23,7 +23,6 @@ import java.util.List;
 import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
-import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.Interaction;
@@ -120,15 +119,23 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
         List<String> temp = new ArrayList<>();
         temp = this.commonInstanceManager.getVehicleIds();
-        String parameterName = "";
+        int size = temp.size();
+        log.info("The number of carma messenger vehicles: {} at {}", size, time);
+        String parameterName = "VehicleBroadcastTrafficEvent";
         for(String id : temp){
             try {
+                log.debug("Current Id: {} Current time: {} Current Parameter name: {}", id, time, parameterName);
                 rti.triggerInteraction(new MsgerRequesetTrafficEvent(time, id, parameterName));
             } catch (Exception e) {
                 log.error("error: " + e.getMessage());
             } 
         }
         processMessengerBridgeRegistrations();
+        try {
+            this.commonInstanceManager.vehicleStatusUpdate(endTime);
+        } catch (IOException e) {
+            log.error("error: " + e.getMessage());
+        }
         super.processTimeAdvanceGrant(time);
     }
 
