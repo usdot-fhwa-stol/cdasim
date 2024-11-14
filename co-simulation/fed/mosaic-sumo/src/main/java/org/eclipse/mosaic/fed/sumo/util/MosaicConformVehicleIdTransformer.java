@@ -17,11 +17,11 @@ package org.eclipse.mosaic.fed.sumo.util;
 
 import org.eclipse.mosaic.lib.util.NameGenerator;
 import org.eclipse.mosaic.lib.util.objects.IdTransformer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Several components of Eclipse MOSAIC expect the identifier of the vehicles to
@@ -65,6 +65,12 @@ public class MosaicConformVehicleIdTransformer implements IdTransformer<String, 
     public String fromExternalId(String sumoVehicleId) {
         // do not change Carla vehicle ID
         if (sumoVehicleId.startsWith("carma")) {
+            sumoToMosaicVehicleIdMap.put(sumoVehicleId, sumoVehicleId);
+            log.info("Assigned vehicle id {}", sumoVehicleId);
+            return sumoVehicleId;
+        }
+
+        if (sumoVehicleId.startsWith("msger")) {
             sumoToMosaicVehicleIdMap.put(sumoVehicleId, sumoVehicleId);
             log.info("Assigned vehicle id {}", sumoVehicleId);
             return sumoVehicleId;

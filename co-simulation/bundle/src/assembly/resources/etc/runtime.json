@@ -302,10 +302,7 @@
             "subscriptions": [
                 "V2xMessageReception",
                 "VehicleUpdates",
-                "MsgerRequestTrafficEvent",
-                "MsgerResponseTrafficEvent",
-                "MsgerVehicleStatus",
-                "MsgerTrafficEvent"
+                "MsgerResponseTrafficEvent"
             ],
             "javaClasspathEntries": []
         }

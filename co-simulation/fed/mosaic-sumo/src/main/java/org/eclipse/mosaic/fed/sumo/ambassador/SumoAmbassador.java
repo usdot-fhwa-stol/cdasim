@@ -165,11 +165,14 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         }
     }
 
-    private void receiveInteraction(MsgerRequestTrafficEvent interaction) {
-        log.debug("Receive interaction type MsgerRequestTrafficEvent, from vehicle id:{}", interaction.vehicleId());
+    private void receiveInteraction(MsgerRequestTrafficEvent interaction) throws InternalFederateException {
+        
         VehicleGetParameter veh = new VehicleGetParameter();
         String temp  = "";
+        List<String> currentVehicles = traci.getSimulationControl().getDepartedVehicles();
+        log.debug("currentVehicles list: {}", currentVehicles.toString());
         try {
+            if(!currentVehicles.contains(interaction.vehicleId())){return;}
             temp = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
         
             if (temp.equals("")) {
@@ -323,8 +326,10 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         if (time < 0) {
             return;
         }
+        log.debug("traci getDepartedVehicles list: {}", traci.getSimulationControl().getDepartedVehicles().toString());
         // first check if there were new vehicles added via SUMO
         propagateSumoVehiclesToRti();
+        log.debug("After add vehicle to vehiclesAddedViaRouteFile: {}", vehiclesAddedViaRouteFile.toString());
         // now add all vehicles, that were received from RTI
         addNotYetAddedVehicles(time);
         // now subscribe to all relevant vehicles
@@ -339,7 +344,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             if (vehiclesAddedViaRti.contains(vehicleId)) { // only handle route file vehicles here
                 continue;
             }
-            vehiclesAddedViaRouteFile.add(vehicleId);
+            vehiclesAddedViaRouteFile.add(vehicleId);          
             vehicleTypeId = traci.getVehicleControl().getVehicleTypeId(vehicleId);
             try {
                 rti.triggerInteraction(new ScenarioVehicleRegistration(this.nextTimeStep, vehicleId, vehicleTypeId));

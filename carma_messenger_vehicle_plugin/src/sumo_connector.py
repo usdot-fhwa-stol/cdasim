@@ -211,7 +211,7 @@ class SumoConnector:
             distance = math.sqrt((pos_1[0] - pos_2[0])**2 + (pos_1[1] - pos_2[1])**2)
             return distance
         except Exception as e:
-            logging.error(f"Failed to calculate vehicle distance for vehicle ID '{veh_id}': {e}")
+            logging.error(f"Failed to calculate vehicle distance ")
             raise
 
     def stop_veh(self, veh_id):

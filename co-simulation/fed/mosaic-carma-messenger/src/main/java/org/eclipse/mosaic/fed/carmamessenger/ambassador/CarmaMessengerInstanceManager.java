@@ -42,7 +42,8 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
 
     private static final int BRIDGE_TARGET_PORT = 5500;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-    private final Map<String, Object> registrationList = new HashMap<>();
+    private final Map<String, CarmaMessengerRegistrationMessage> ns3RegistrationList = new HashMap<>();
+    private final Map<String, CarmaMessengerBridgeRegistrationMessage> bridgeRegistrationList = new HashMap<>();
 
     /**
      * Callback to invoked when a new CARMA Platform instance registers with the mosaic-carma ambassador for the first time
@@ -55,71 +56,89 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         if (registration instanceof CarmaMessengerRegistrationMessage) {
             vehicleRole = ((CarmaMessengerRegistrationMessage) registration).getVehicleRole();
             log.info("Receive ns3 registration message of role " + vehicleRole);
+            if(ns3RegistrationList.containsKey(vehicleRole)){
+                log.error("Duplicate ns3 registration for vehicle {}", vehicleRole);
+                return;
+            }else{
+                ns3RegistrationList.put(vehicleRole, (CarmaMessengerRegistrationMessage)registration);
+                log.debug("Added new ns3 registration for vehicle {}", vehicleRole);
+            }
+            if(bridgeRegistrationList.containsKey(vehicleRole)){
+                log.debug("Found bridge registration of vehicle {}, making a carma messenger instance now", vehicleRole);
+            }else{
+                log.debug("Can't find bridge registration for vehicle {}, waiting for bridge registration", vehicleRole);
+                return;
+            }           
         } else if (registration instanceof CarmaMessengerBridgeRegistrationMessage) {
             vehicleRole = ((CarmaMessengerBridgeRegistrationMessage) registration).getVehicleRole();
             log.info("Receive bridge registration message of role " + vehicleRole);
-        }
-
-        if (vehicleRole == null) {
-            throw new IllegalArgumentException("Invalid registration type.");
-        }
-
-        if (registrationList == null || !registrationList.containsKey(vehicleRole)) {
-            registrationList.put(vehicleRole, registration);
-        } else {
-            if (!managedInstances.containsKey(vehicleRole)) {
-                try {
-                    // Determine necessary values for creating a new instance
-                    CarmaMessengerRegistrationMessage regMessage = null;
-                    CarmaMessengerBridgeRegistrationMessage bridgeMessage = null;
-                    InetAddress rxV2xAddress = null;
-                    InetAddress rxBridgeAddress = null;
-                    int rxV2xTimeSyncPort = 0;
-                    int rxBridgeTimeSyncPort = 0;
-
-                    if (registration instanceof CarmaMessengerRegistrationMessage) {
-                        regMessage = (CarmaMessengerRegistrationMessage) registration;
-                        bridgeMessage = (CarmaMessengerBridgeRegistrationMessage) registrationList.get(vehicleRole);
-                        rxV2xAddress = InetAddress.getByName(regMessage.getRxMessageIpAddress());
-                        rxBridgeAddress = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
-                        rxV2xTimeSyncPort = regMessage.getRxTimeSyncPort();
-                        rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
-                        
-                    } else if (registration instanceof CarmaMessengerBridgeRegistrationMessage) {
-                        bridgeMessage = (CarmaMessengerBridgeRegistrationMessage) registration;
-                        regMessage = (CarmaMessengerRegistrationMessage) registrationList.get(vehicleRole);
-                        rxV2xAddress = InetAddress.getByName(regMessage.getRxMessageIpAddress());
-                        rxBridgeAddress = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
-                        rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
-                        rxV2xTimeSyncPort = regMessage.getRxMessagePort();
-                    }
-
-                    // Initialize parameters for new instance
-                    String vehicleId = regMessage.getVehicleId();
-                    int rxMessagePort = regMessage.getRxMessagePort();
-                    int rxVehicleStatusPort = bridgeMessage.getRxVehicleStatusPort();
-                    int rxTrafficEventPort = bridgeMessage.getRxTrafficEventPort();
-
-                    newCarmaMessengerInstance(vehicleId, 
-                                              vehicleRole, 
-                                              rxV2xAddress, 
-                                              rxBridgeAddress,
-                                              rxMessagePort,
-                                              rxV2xTimeSyncPort,
-                                              rxBridgeTimeSyncPort,
-                                              rxVehicleStatusPort,
-                                              rxTrafficEventPort
-                    );
-
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to create CarmaMessenger instance", e);
-                }
-            } else {
-                log.warn("Received duplicate registration for vehicle " + vehicleRole);
+            if(bridgeRegistrationList.containsKey(vehicleRole)){
+                log.error("Duplicate bridge registration for vehicle {}", vehicleRole);
+                return;
+            }else{
+                bridgeRegistrationList.put(vehicleRole, (CarmaMessengerBridgeRegistrationMessage)registration);
+                log.debug("Added new bridge registration for vehicle {}", vehicleRole);
+            }
+            if(ns3RegistrationList.containsKey(vehicleRole)){
+                log.debug("Found ns3 registration of vehicle {}, making a carma messenger instance now", vehicleRole);
+            }else{
+                log.debug("Can't find ns3 registration for vehicle {}, waiting for ns3 registration", vehicleRole);
+                return;
             }
         }
+       
 
+        if (!managedInstances.containsKey(vehicleRole)) {
+            try {
+                // Determine necessary values for creating a new instance
+                CarmaMessengerRegistrationMessage regMessage = null;
+                CarmaMessengerBridgeRegistrationMessage bridgeMessage = null;
+                InetAddress rxV2xAddress = null;
+                InetAddress rxBridgeAddress = null;
+                int rxV2xTimeSyncPort = 0;
+                int rxBridgeTimeSyncPort = 0;
+
+                if (registration instanceof CarmaMessengerRegistrationMessage) {
+                    regMessage = (CarmaMessengerRegistrationMessage) registration;
+                    bridgeMessage = bridgeRegistrationList.get(vehicleRole);
+                    rxV2xAddress = InetAddress.getByName(regMessage.getRxMessageIpAddress());
+                    rxBridgeAddress = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
+                    rxV2xTimeSyncPort = regMessage.getRxTimeSyncPort();
+                    rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
+                        
+                } else if (registration instanceof CarmaMessengerBridgeRegistrationMessage) {
+                    bridgeMessage = (CarmaMessengerBridgeRegistrationMessage) registration;
+                    regMessage = ns3RegistrationList.get(vehicleRole);
+                    rxV2xAddress = InetAddress.getByName(regMessage.getRxMessageIpAddress());
+                    rxBridgeAddress = InetAddress.getByName(bridgeMessage.getRxMessageIpAddress());
+                    rxBridgeTimeSyncPort = bridgeMessage.getRxTimeSyncPort();
+                    rxV2xTimeSyncPort = regMessage.getRxMessagePort();
+                }
+
+                    // Initialize parameters for new instance
+                String vehicleId = regMessage.getVehicleId();
+                int rxMessagePort = regMessage.getRxMessagePort();
+                int rxVehicleStatusPort = bridgeMessage.getRxVehicleStatusPort();
+                int rxTrafficEventPort = bridgeMessage.getRxTrafficEventPort();
+
+                newCarmaMessengerInstance(vehicleId, 
+                                          vehicleRole, 
+                                          rxV2xAddress, 
+                                          rxBridgeAddress,
+                                          rxMessagePort,
+                                          rxV2xTimeSyncPort,
+                                          rxBridgeTimeSyncPort,
+                                          rxVehicleStatusPort,
+                                          rxTrafficEventPort
+                );
+
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to create CarmaMessenger instance", e);
+            }
+        } else {
+            log.warn("Received duplicate registration for vehicle " + vehicleRole);
         }
+    } 
     
         /**
          * This function is used to send out encoded timestep update to all registered
@@ -243,6 +262,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             log.debug("There are no registered instances");
         }
         else {
+            log.debug("Enter onDetectedTrafficEvents");
             Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
@@ -259,7 +279,9 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
     public void onVehicleUpdates(VehicleUpdates vui) {
         for (VehicleData veh : vui.getUpdated()) {
             if (managedInstances.containsKey(veh.getName())) {
-                
+                if(veh.getPosition()== null){
+                    return;
+                }
                 // Save previous cartesian point for the use of twist calculation
                 GeoPoint prev_cartesian_location = managedInstances.get(veh.getName()).getLocation();
                 managedInstances.get(veh.getName()).setPrevLocation(prev_cartesian_location);
