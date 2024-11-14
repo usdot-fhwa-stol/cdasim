@@ -20,7 +20,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
+import org.eclipse.mosaic.interactions.application.MsgerRequestTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
@@ -125,7 +125,7 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         for(String id : temp){
             try {
                 log.debug("Current Id: {} Current time: {} Current Parameter name: {}", id, time, parameterName);
-                rti.triggerInteraction(new MsgerRequesetTrafficEvent(time, id, parameterName));
+                rti.triggerInteraction(new MsgerRequestTrafficEvent(time, id, parameterName));
             } catch (Exception e) {
                 log.error("error: " + e.getMessage());
             } 

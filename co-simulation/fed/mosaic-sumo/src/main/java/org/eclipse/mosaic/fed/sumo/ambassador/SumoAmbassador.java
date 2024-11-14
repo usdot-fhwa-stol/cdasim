@@ -31,7 +31,7 @@ import org.eclipse.mosaic.fed.sumo.util.SumoVehicleClassMapping;
 import org.eclipse.mosaic.fed.sumo.util.SumoVehicleTypesWriter;
 import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
 import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
-import org.eclipse.mosaic.interactions.application.MsgerRequesetTrafficEvent;
+import org.eclipse.mosaic.interactions.application.MsgerRequestTrafficEvent;
 import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.interactions.application.SimulationStep;
 import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
@@ -133,8 +133,8 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             this.receiveInteraction((CarlaTraciRequest) interaction);
         } else if (interaction.getTypeId().equals(SimulationStep.TYPE_ID)) {
             this.receiveInteraction((SimulationStep) interaction);
-        } else if (interaction.getTypeId().equals(MsgerRequesetTrafficEvent.TYPE_ID)){
-            this.receiveInteraction((MsgerRequesetTrafficEvent)interaction);
+        } else if (interaction.getTypeId().equals(MsgerRequestTrafficEvent.TYPE_ID)){
+            this.receiveInteraction((MsgerRequestTrafficEvent)interaction);
         } else {
             // ... everything else is saved for later
             super.processInteraction(interaction);
@@ -165,8 +165,8 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         }
     }
 
-    private void receiveInteraction(MsgerRequesetTrafficEvent interaction) {
-        log.debug("Receive interaction type MsgerRequesetTrafficEvent, from vehicle id:{}", interaction.vehicleId());
+    private void receiveInteraction(MsgerRequestTrafficEvent interaction) {
+        log.debug("Receive interaction type MsgerRequestTrafficEvent, from vehicle id:{}", interaction.vehicleId());
         VehicleGetParameter veh = new VehicleGetParameter();
         String temp  = "";
         try {

@@ -24,7 +24,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public final class MsgerRequesetTrafficEvent extends Interaction{
+public final class MsgerRequestTrafficEvent extends Interaction{
     
     private static final long serialVersionUID = 1L;
     private String vehicleId;
@@ -32,9 +32,9 @@ public final class MsgerRequesetTrafficEvent extends Interaction{
     /**
      * String identifying the type of this interaction.
      */
-    public final static String TYPE_ID = createTypeIdentifier(MsgerRequesetTrafficEvent.class);
+    public final static String TYPE_ID = createTypeIdentifier(MsgerRequestTrafficEvent.class);
     
-    public MsgerRequesetTrafficEvent(long time, String vehicleId, String parameterName){
+    public MsgerRequestTrafficEvent(long time, String vehicleId, String parameterName){
         super(time);
     }
 
@@ -66,7 +66,7 @@ public final class MsgerRequesetTrafficEvent extends Interaction{
             return false;
         }
 
-        MsgerRequesetTrafficEvent other = (MsgerRequesetTrafficEvent) obj;
+        MsgerRequestTrafficEvent other = (MsgerRequestTrafficEvent) obj;
         return new EqualsBuilder()
                 .append(this.vehicleId, other.vehicleId)
                 .append(this.parameterName, other.parameterName)
