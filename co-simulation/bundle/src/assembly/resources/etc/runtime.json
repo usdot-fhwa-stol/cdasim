@@ -247,8 +247,8 @@
                 "TrafficLightSubscription",
                 "CarlaTraciRequest",
                 "SimulationStep",
-                "MsgrRequesetTrafficEvent",
-                "MsgrResponseTrafficEvent"
+                "MsgerRequestTrafficEvent",
+                "MsgerResponseTrafficEvent"
             ],
             "javaClasspathEntries": []
         },
@@ -302,9 +302,9 @@
             "subscriptions": [
                 "V2xMessageReception",
                 "VehicleUpdates",
-                "MsgrRequesetTrafficEvent",
-                "MsgrResponseTrafficEvent",
-                "MsgrVehicleStatus",
+                "MsgerRequestTrafficEvent",
+                "MsgerResponseTrafficEvent",
+                "MsgerVehicleStatus",
                 "MsgerTrafficEvent"
             ],
             "javaClasspathEntries": []
