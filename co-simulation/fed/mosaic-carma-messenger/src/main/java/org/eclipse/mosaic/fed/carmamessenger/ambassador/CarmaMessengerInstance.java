@@ -108,14 +108,6 @@ public class CarmaMessengerInstance extends CommonInstance{
         super.rxMsgsSocket.send(packet);
     }
 
-    public GeoPoint getGeoLocation(){
-        return this.geo_location;
-    }
-
-    public void setGeoLocation(GeoPoint geo_location){
-        this.geo_location = geo_location;
-    }
-
     public GeoPoint getPrevLocation(){
         return this.prev_location;
     }

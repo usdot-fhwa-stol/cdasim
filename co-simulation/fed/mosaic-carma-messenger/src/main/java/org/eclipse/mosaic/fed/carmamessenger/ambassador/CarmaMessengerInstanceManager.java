@@ -218,7 +218,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             
             // Get location and status values directly
             GeoPoint prev_location = instance.getPrevLocation();
-            log.info("Previous location: {}", prev_location);
+            log.info("Previous location: {}", prev_location.toCartesian().toString());
             GeoPoint curr_location = instance.getLocation();
             log.info("Current location: {}", curr_location);
         
@@ -282,21 +282,12 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                 if(veh.getPosition()== null){
                     return;
                 }
-                // Save previous cartesian point for the use of twist calculation
+                // Save previous Geolocation for the use of twist calculation
                 GeoPoint prev_cartesian_location = managedInstances.get(veh.getName()).getLocation();
                 managedInstances.get(veh.getName()).setPrevLocation(prev_cartesian_location);
-
-                // Save new cartesian point
+                
+                // Save current Geolocation
                 managedInstances.get(veh.getName()).setLocation(veh.getPosition());
-
-                // Converting cartesian point to geo location
-                Proj4Projection proj = new Proj4Projection(veh.getPosition(), 0, 0, null);
-                MutableGeoPoint temp = new MutableGeoPoint();
-                MutableGeoPoint location = proj.cartesianToGeographic(veh.getProjectedPosition(), temp);
-                GeoPoint result = GeoPoint.latLon(location.getLatitude(), location.getLongitude());
-
-                // Save converted geo location to the instance
-                managedInstances.get(veh.getName()).setGeoLocation(result);
             }
         }
     }
