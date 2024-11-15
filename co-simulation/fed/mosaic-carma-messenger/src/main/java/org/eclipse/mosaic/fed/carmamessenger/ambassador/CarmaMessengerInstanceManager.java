@@ -282,8 +282,13 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
                 }
                 // Save previous Geolocation for the use of twist calculation
                 GeoPoint prev_cartesian_location = managedInstances.get(veh.getName()).getLocation();
-                managedInstances.get(veh.getName()).setPrevLocation(prev_cartesian_location);
-                
+
+                // If prev_cartesian_location == GeoPoint.ORIGO, the system just started, set previous geolocation same with current geolocation
+                if (prev_cartesian_location == GeoPoint.ORIGO)
+                    managedInstances.get(veh.getName()).setPrevLocation(veh.getPosition());
+                else
+                    managedInstances.get(veh.getName()).setPrevLocation(prev_cartesian_location);
+
                 // Save current Geolocation
                 managedInstances.get(veh.getName()).setLocation(veh.getPosition());
             }
