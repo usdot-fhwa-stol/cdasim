@@ -211,7 +211,8 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
     }
 
     public void vehicleStatusUpdate(long updateInterval) throws IOException{
-        for (String key : managedInstances.keySet()) {
+        long updateIntervalSecond = updateInterval / 1000000000L;
+        for (String key : managedInstances.keySet()) {           
             CarmaMessengerInstance instance = managedInstances.get(key);
             
             // Get location and status values directly
@@ -229,9 +230,9 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             } else {
                 // Directly calculate and assign twist values
                 twist = new MsgerVehicleStatus.VehicleTwist(
-                    (float) ((curr_location.toCartesian().getX() - prev_location.toCartesian().getX()) / updateInterval),
-                    (float) ((curr_location.toCartesian().getY() - prev_location.toCartesian().getY()) / updateInterval),
-                    (float) ((curr_location.toCartesian().getZ() - prev_location.toCartesian().getZ()) / updateInterval)
+                    (float) ((curr_location.toCartesian().getX() - prev_location.toCartesian().getX()) / updateIntervalSecond),
+                    (float) ((curr_location.toCartesian().getY() - prev_location.toCartesian().getY()) / updateIntervalSecond),
+                    (float) ((curr_location.toCartesian().getZ() - prev_location.toCartesian().getZ()) / updateIntervalSecond)
                 );
             }
             
@@ -243,13 +244,17 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             );
         
             // Create the MsgerVehicleStatus object
+
             MsgerVehicleStatus status = new MsgerVehicleStatus(
                 pose,
                 twist,
                 instance.getSirenActive(),
                 instance.getLightActive()
             );
-            Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+            log.debug(status.toString());
+         
+            Gson gson = new Gson();
+            log.debug("Gson content: {}",gson.toJson(status));
             byte[] bytes = gson.toJson(status).getBytes();
             instance.sendVehStatusMsgs(bytes);
         }
@@ -263,9 +268,10 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
+                log.debug("Instance Role name: {}, message vehicle id: {}", currentInstance.getRoleName(), message.getVehicleId());
                 if(currentInstance.getRoleName().equals(message.getVehicleId())){
                     currentInstance.sendTrafficEventMsgs(bytes);
-                    log.debug(message.toString());
+                    log.debug("onDetectedTrafficEvents sent successfully to bridge: {}",message.toString());
                     break;
                 }
             }

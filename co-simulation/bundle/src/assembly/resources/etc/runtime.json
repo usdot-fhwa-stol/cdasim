@@ -247,8 +247,7 @@
                 "TrafficLightSubscription",
                 "CarlaTraciRequest",
                 "SimulationStep",
-                "MsgerRequestTrafficEvent",
-                "MsgerResponseTrafficEvent"
+                "MsgerRequestTrafficEvent"
             ],
             "javaClasspathEntries": []
         },

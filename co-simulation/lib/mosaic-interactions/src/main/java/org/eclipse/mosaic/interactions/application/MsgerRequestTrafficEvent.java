@@ -16,13 +16,11 @@
 
 package org.eclipse.mosaic.interactions.application;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
-import org.eclipse.mosaic.rti.api.Interaction;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+import org.eclipse.mosaic.rti.api.Interaction;
 
 public final class MsgerRequestTrafficEvent extends Interaction{
     
@@ -36,6 +34,8 @@ public final class MsgerRequestTrafficEvent extends Interaction{
     
     public MsgerRequestTrafficEvent(long time, String vehicleId, String parameterName){
         super(time);
+        this.vehicleId = vehicleId;
+        this.parameterName = parameterName;
     }
 
     public String vehicleId(){
@@ -78,7 +78,7 @@ public final class MsgerRequestTrafficEvent extends Interaction{
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
                 .append("vehicleId", vehicleId)
-                .append("upTrack", parameterName)
+                .append("Parameter", parameterName)
                 .toString();
     }
 

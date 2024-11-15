@@ -16,9 +16,8 @@
 
 package org.eclipse.mosaic.lib.objects.vehicle;
 import java.io.Serializable;
-import com.google.gson.annotations.SerializedName;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+import com.google.gson.annotations.SerializedName;
 
 
 public class MsgerVehicleStatus implements Serializable {
@@ -44,6 +43,11 @@ public class MsgerVehicleStatus implements Serializable {
         
         public double getAlt() { return alt; }
         public void setAlt(double alt) { this.alt = alt; }
+
+        @Override
+        public String toString() {
+            return "VehiclePose [lat=" + lat + ", lon=" + lon + ", alt=" + alt + "]";
+        }
     }
 
     public static class VehicleTwist implements Serializable {
@@ -66,6 +70,11 @@ public class MsgerVehicleStatus implements Serializable {
         
         public float getZ() { return z; }
         public void setZ(float z) { this.z = z; }
+
+        @Override
+        public String toString() {
+            return "VehicleTwist [x=" + x + ", y=" + y + ", z=" + z + "]";
+        }
     }
 
     // Fields for vehicle status
@@ -102,4 +111,11 @@ public class MsgerVehicleStatus implements Serializable {
 
     public boolean isLightActive() { return lightActive; }
     public void setLightActive(boolean lightActive) { this.lightActive = lightActive; }
+
+    @Override
+    public String toString() {
+        return "MsgerVehicleStatus [vehiclePose=" + vehiclePose.toString() + ", vehicleTwist=" + vehicleTwist.toString() + ", sirenActive="
+                + sirenActive + ", lightActive=" + lightActive + "]";
+    }
+
 }

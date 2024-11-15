@@ -169,14 +169,17 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         
         VehicleGetParameter veh = new VehicleGetParameter();
         String temp  = "";
-        List<String> currentVehicles = traci.getSimulationControl().getDepartedVehicles();
-        log.debug("currentVehicles list: {}", currentVehicles.toString());
+        Set<String> vehicleData = traci.getSimulationControl().getKnownVehicles();
+        //List<String> addedData = traci.getSimulationControl().simulateUntil(interaction.getTime()).getVehicleUpdates().getAdded().stream().map(UnitData::getName).collect(Collectors.toList());
+        log.debug("Vehicles list: {}", vehicleData.toString());
         try {
-            if(!currentVehicles.contains(interaction.vehicleId())){return;}
+            log.debug("Vehicle info: {}", interaction.toString());
+            if(!vehicleData.contains(interaction.vehicleId())){return;}
             temp = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
         
             if (temp.equals("")) {
                 //no traffic event set up yet
+                log.debug("Vehicle not generated");
                 rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
             } else{
                 String[] parameters = temp.split(";");
@@ -185,10 +188,12 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
                     floatParameters[i] = Float.parseFloat(parameters[i]);
                 }
                 if (parameters.length != 4){
+                    log.error("Received payload error");
                     rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
                 }
                 else{
                     MsgerTrafficEvent config = new MsgerTrafficEvent(interaction.vehicleId(), floatParameters[0], floatParameters[1], floatParameters[2], floatParameters[3]);
+                    log.debug("Response traffic event generated: {}",config.toString());
                     rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), config));
                 }
             }

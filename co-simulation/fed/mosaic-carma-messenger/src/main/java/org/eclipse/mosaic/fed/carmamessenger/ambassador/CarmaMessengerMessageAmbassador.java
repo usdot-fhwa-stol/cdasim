@@ -156,6 +156,10 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
     private void receiveMsgerResponseTrafficEventInteraction(MsgerResponseTrafficEvent interaction)
     {    
         try {
+            if(interaction.getTrafficEvent() == null){
+                log.debug("Receive null traffic event");
+                return;
+            }
             this.commonInstanceManager.onDetectedTrafficEvents(interaction.getTrafficEvent());
         } catch (IOException e) {    
             log.error(e.getMessage());
