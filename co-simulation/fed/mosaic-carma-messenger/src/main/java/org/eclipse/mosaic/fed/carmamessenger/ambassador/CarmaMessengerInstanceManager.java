@@ -260,7 +260,6 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             log.debug("There are no registered instances");
         }
         else {
-            log.debug("Enter onDetectedTrafficEvents");
             Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
             byte[] bytes = gson.toJson(message).getBytes();
             for (CarmaMessengerInstance currentInstance : managedInstances.values()) {
