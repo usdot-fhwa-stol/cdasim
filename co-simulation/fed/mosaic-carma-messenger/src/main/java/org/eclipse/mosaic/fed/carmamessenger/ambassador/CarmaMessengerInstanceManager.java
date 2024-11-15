@@ -25,11 +25,9 @@ import java.util.Map;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstanceManager;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
-import org.eclipse.mosaic.lib.geo.MutableGeoPoint;
 import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
 import org.eclipse.mosaic.lib.objects.vehicle.MsgerVehicleStatus;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
-import org.eclipse.mosaic.lib.transform.Proj4Projection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -220,7 +218,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             GeoPoint prev_location = instance.getPrevLocation();
             log.info("Previous location: {}", prev_location.toCartesian().toString());
             GeoPoint curr_location = instance.getLocation();
-            log.info("Current location: {}", curr_location);
+            log.info("Current location: {}", curr_location.toCartesian().toString());
         
             // Create the VehicleTwist object with calculated values
             MsgerVehicleStatus.VehicleTwist twist;
@@ -239,9 +237,9 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             
             // Create VehiclePose with lat, lon, alt values
             MsgerVehicleStatus.VehiclePose pose = new MsgerVehicleStatus.VehiclePose(
-                instance.getGeoLocation().getLatitude(),
-                instance.getGeoLocation().getLongitude(),
-                instance.getGeoLocation().getAltitude()
+                instance.getLocation().getLatitude(),
+                instance.getLocation().getLongitude(),
+                instance.getLocation().getAltitude()
             );
         
             // Create the MsgerVehicleStatus object
