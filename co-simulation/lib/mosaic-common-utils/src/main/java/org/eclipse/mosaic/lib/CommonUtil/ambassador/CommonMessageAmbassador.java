@@ -166,11 +166,11 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
 
-        if (time < currentSimulationTime) {
-            // process time advance only if time is equal or greater than the next
-            // simulation time step
-            return;
-        }
+        // if (time < currentSimulationTime) {
+        //     // process time advance only if time is equal or greater than the next
+        //     // simulation time step
+        //     return;
+        // }
         log.info(this.getClass().getSimpleName()+ " processing timestep to {}.", time);
 
         try {

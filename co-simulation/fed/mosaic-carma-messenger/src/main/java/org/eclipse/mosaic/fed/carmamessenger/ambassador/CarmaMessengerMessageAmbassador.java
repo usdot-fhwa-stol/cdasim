@@ -117,6 +117,11 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
 
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
+        if (time < currentSimulationTime) {
+            // process time advance only if time is equal or greater than the next
+            // simulation time step
+            return;
+        }
         List<String> temp = new ArrayList<>();
         temp = this.commonInstanceManager.getVehicleIds();
         int size = temp.size();
