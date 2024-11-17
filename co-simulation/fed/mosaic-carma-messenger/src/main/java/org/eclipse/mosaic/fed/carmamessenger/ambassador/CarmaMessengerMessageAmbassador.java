@@ -122,12 +122,12 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
             // simulation time step
             return;
         }
-        List<String> temp = new ArrayList<>();
-        temp = this.commonInstanceManager.getVehicleIds();
-        int size = temp.size();
-        log.info("The number of carma messenger vehicles: {} at {}", size, time);
+        List<String> vehIdList = new ArrayList<>();
+        vehIdList = this.commonInstanceManager.getVehicleIds();
+        int size = vehIdList.size();
+        log.debug("The number of carma messenger vehicles: {} at {}", size, time);
         String parameterName = "VehicleBroadcastTrafficEvent";
-        for(String id : temp){
+        for(String id : vehIdList){
             try {
                 log.debug("Current Id: {} Current time: {} Current Parameter name: {}", id, time, parameterName);
                 rti.triggerInteraction(new MsgerRequestTrafficEvent(time, id, parameterName));

@@ -32,6 +32,7 @@ import org.eclipse.mosaic.fed.sumo.util.SumoVehicleTypesWriter;
 import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
 import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
 import org.eclipse.mosaic.interactions.application.MsgerRequestTrafficEvent;
+import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.interactions.application.SimulationStep;
 import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
@@ -43,6 +44,7 @@ import org.eclipse.mosaic.interactions.vehicle.VehicleRouteRegistration;
 import org.eclipse.mosaic.lib.enums.VehicleClass;
 import org.eclipse.mosaic.lib.math.MathUtils;
 import org.eclipse.mosaic.lib.objects.mapping.VehicleMapping;
+import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleRoute;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleType;
 import org.eclipse.mosaic.rti.api.FederateAmbassador;
@@ -165,16 +167,11 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
 
     private void receiveInteraction(MsgerRequestTrafficEvent interaction) throws InternalFederateException {
         
-        log.debug("Begin stack trace");
-        for(StackTraceElement e : Thread.currentThread().getStackTrace()){
-            log.debug(e.toString());
-        }
-        log.debug("Interaction id: {}", interaction.getId());
         VehicleGetParameter veh = new VehicleGetParameter();
         String temp  = "";
         Set<String> vehicleData = traci.getSimulationControl().getKnownVehicles();
         log.debug("Vehicles list: {}", vehicleData.toString());
-        /*try {
+        try {
             log.debug("Vehicle info: {}", interaction.toString());
             if(!vehicleData.contains(interaction.vehicleId())){return;}
             temp = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
@@ -201,7 +198,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             }
         } catch (Exception e) {
             log.error("Unexpected error: " + e.getMessage());
-        }*/
+        }
     }
         
 
