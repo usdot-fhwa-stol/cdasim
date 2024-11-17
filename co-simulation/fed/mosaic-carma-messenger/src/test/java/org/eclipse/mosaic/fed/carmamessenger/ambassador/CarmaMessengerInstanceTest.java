@@ -62,7 +62,6 @@ public class CarmaMessengerInstanceTest{
             1200,
             false,
             false
-
         ); 
         FieldSetter.setField(instance, instance.getClass().getSuperclass().getDeclaredField("rxMsgsSocket"), socket);
     }
@@ -99,7 +98,7 @@ public class CarmaMessengerInstanceTest{
 
         // Verify parameter members
         assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
-        assertEquals(instance.getRxBridgeTimeSyncPort(), packet.getValue().getPort());
+        assertEquals(instance.getRxVehicleStatusPort(), packet.getValue().getPort());
     }
 
     
