@@ -79,8 +79,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
 
     protected R commonRegistrationReceiver;
     protected Thread registrationRxBackgroundThread;
-    private CarmaV2xMessageReceiver v2xMessageReceiver;
-    private Thread v2xRxBackgroundThread;
+    protected CarmaV2xMessageReceiver v2xMessageReceiver;
+    protected Thread v2xRxBackgroundThread;
     protected M commonInstanceManager;
     protected int timeSyncSeq = 0;
     protected Class<T> messageClass;

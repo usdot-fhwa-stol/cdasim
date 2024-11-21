@@ -29,6 +29,8 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
+
 public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, 
                                                                              CarmaMessengerRegistrationReceiver, 
                                                                              CarmaMessengerRegistrationMessage, 
@@ -114,6 +116,14 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
             log.error("Failed to process bridge registration request for vehicle role: " + e.getMessage(), e);
         }
     }    
+
+    @Override
+        protected void initV2xMessageReceiver() {
+        v2xMessageReceiver = new CarmaV2xMessageReceiver(3601);
+        v2xMessageReceiver.init();
+        v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
+        v2xRxBackgroundThread.start();
+    }
 
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
