@@ -18,12 +18,15 @@ from sumo_connector import SumoConnector
 from msger_veh_cfg import MsgerVehicleCfg
 from msger_veh_cfg import VehicleState
 from move_over_law import MoveOverLaw
+from datetime import datetime
 
 def setup_logging(level):
     numeric_level = getattr(logging, level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % level)
-    logging.basicConfig(level=numeric_level, format='%(asctime)s - %(levelname)s - %(message)s')
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_filename = f"../logs/log_{current_time}.log"
+    logging.basicConfig(level=numeric_level, format='%(asctime)s - %(levelname)s - %(message)s', filename=log_filename)
 
 def run(args):
     """
