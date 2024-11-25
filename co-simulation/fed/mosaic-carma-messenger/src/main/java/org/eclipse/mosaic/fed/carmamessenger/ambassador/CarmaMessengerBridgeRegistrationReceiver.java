@@ -42,7 +42,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
-            log.info("Messenger Bridge Registration Receiver has been initialized");
+            log.info("Listening on custom port: {}", listenPort);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -62,7 +62,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
 
             // parse message
             String receivedPacket = new String(msg.getData(), 0, msg.getLength());
-            log.debug("Registration JSON received:  {}", receivedPacket);
+            log.debug("Registration JSON received: {}", receivedPacket);
             Gson gson = new Gson();
             CarmaMessengerBridgeRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaMessengerBridgeRegistrationMessage.class);
 
