@@ -35,7 +35,7 @@ public class CarmaMessengerRegistrationReceiver extends CommonRegistrationReceiv
     }
 
     private DatagramSocket listenSocket = null;
-    private static final int msgerListenPort = 1715;
+    private static final int msgerListenPort = 3100;
     private boolean running = true;
     private static final int UDP_MTU = 1535;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
