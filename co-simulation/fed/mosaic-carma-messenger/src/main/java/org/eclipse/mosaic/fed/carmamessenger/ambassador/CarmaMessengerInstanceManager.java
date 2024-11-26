@@ -205,7 +205,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
         List<String> result = new ArrayList<>();
 
         for(CarmaMessengerInstance name : managedInstances.values()){
-            result.add(name.getVehicleId());
+            result.add(name.getRoleName());
         }
         return result;
     }

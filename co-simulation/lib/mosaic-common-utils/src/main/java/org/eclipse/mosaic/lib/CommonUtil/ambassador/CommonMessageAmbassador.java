@@ -263,6 +263,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
     }
 
     protected void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
+        log.info("Adding DSRC on vehicle ID: {}", vehicleId);
         ExternalVehicleRegistration tempRegistration = new ExternalVehicleRegistration(
                 currentSimulationTime,
                 vehicleId,
