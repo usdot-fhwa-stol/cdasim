@@ -58,7 +58,7 @@ class MoveOverLaw:
         if len(self.sumo_connector.get_veh_ids()) >=2:
 
             if self.first_time_two_vehicles:
-                self.sumo_connector.set_veh_lane(self._veh_id, 1)
+                self.sumo_connector.set_veh_lane(self._veh_id, self._start_lane)
                 self.first_time_two_vehicles = False
 
             veh_pos = self.sumo_connector.get_veh_pos(self._veh_id)
@@ -69,5 +69,5 @@ class MoveOverLaw:
             if distance < 30:
                 self.park_messenger()
                 self.close_lane()
-            elif distance < 600:
+            elif distance < 250:
                 self.get_closer()

@@ -228,9 +228,10 @@ class SumoConnector:
     def move_veh_lane(self, veh_id, target_lane):
 
         try:
+            traci.vehicle.setLaneChangeMode(veh_id, 681)
             current_lane = traci.vehicle.getLaneIndex(veh_id)
             if current_lane != target_lane:
-                traci.vehicle.changeLane(veh_id, target_lane, 0)
+                traci.vehicle.changeLane(veh_id, target_lane, 10)
 
         except Exception as e:
             logging.error(f"Failed to change vehicle lane for vehicle ID '{veh_id}': {e}")
@@ -262,9 +263,9 @@ class SumoConnector:
             logging.error(f"Failed to create stopped vehicle for vehicle ID '{veh_id}': {e}")
             raise
 
-    def set_veh_lane(self, veh_id, lane_index):
+    def set_veh_lane(self, veh_id, lane):
         try:
-            traci.vehicle.changeLane(veh_id, lane_index, 0)
+            traci.vehicle.moveTo(veh_id, lane, 0)
             traci.vehicle.setLaneChangeMode(veh_id, 0)
         except Exception as e:
             logging.error(f"Failed to set vehicle to desired lane for vehicle ID '{veh_id}': {e}")
@@ -273,3 +274,15 @@ class SumoConnector:
     def get_veh_lane(self, veh_id):
 
         return traci.vehicle.getLaneID(veh_id)
+    
+    def get_leftmost_lane(self, veh_id):
+        try:
+            current_lane_id = traci.vehicle.getLaneID(veh_id)
+            edge_id = current_lane_id.rsplit("_", 1)[0]
+            num_lanes = traci.edge.getLaneNumber(edge_id)
+            leftmost_lane_index = num_lanes -1
+
+            return leftmost_lane_index
+        except Exception as e:
+            logging.error(f"Failed to get leftmost lane of vehicle location for vehicle ID '{veh_id}': {e}")
+            raise

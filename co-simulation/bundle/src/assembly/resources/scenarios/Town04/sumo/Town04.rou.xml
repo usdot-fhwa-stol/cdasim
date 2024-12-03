@@ -6,6 +6,7 @@
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     <!-- Routes -->
     <route id="r_0" edges="11 10 17"/>
+    <route id="stop1" edges="-43"/>
     <!--This is for keeping the simulation alive-->
     <vehicle id="v_3" type="vehicle.carlamotors.carlacola" depart="999.00" route="r_0"/>
 </routes>

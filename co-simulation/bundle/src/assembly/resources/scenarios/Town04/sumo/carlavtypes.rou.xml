@@ -28,4 +28,6 @@
   <vType id="vehicle.yamaha.yzf" length="2.1907684803009033" width="0.7662330269813538" height="1.6345058679580688" vClass="motorcycle"/>
   <vType id="vehicle.nissan.patrol" length="4.519999980926514" width="1.9199999570846558" height="1.8871309757232666" vClass="passenger"/>
   <vType id="vehicle.nissan.micra" length="3.6688475608825684" width="1.8561522960662842" height="1.5232137441635132" vClass="passenger"/>
+  <vType id="MoveOverLaw" carFollowModel="IDM"/>
+  <vType id="car" carFollowModel="IDM" lcStrategic="-1" lcCooperative="-1" lcSpeedGain="0"  lcKeepRight="0"/>
 </routes>
