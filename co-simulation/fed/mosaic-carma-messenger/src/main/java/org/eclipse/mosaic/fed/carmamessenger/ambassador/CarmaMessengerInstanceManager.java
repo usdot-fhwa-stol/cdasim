@@ -71,7 +71,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             vehicleRole = ((CarmaMessengerBridgeRegistrationMessage) registration).getVehicleRole();
             log.info("Receive bridge registration message of role " + vehicleRole);
             if(bridgeRegistrationList.containsKey(vehicleRole)){
-                log.error("Duplicate bridge registration for vehicle {}", vehicleRole);
+                log.warn("Duplicate bridge registration for vehicle {}", vehicleRole);
                 return;
             }else{
                 bridgeRegistrationList.put(vehicleRole, (CarmaMessengerBridgeRegistrationMessage)registration);
