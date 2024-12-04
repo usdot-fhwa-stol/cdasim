@@ -7,6 +7,7 @@
         <net-file value="Town04.net.xml"/>
         <route-files value="Town04.rou.xml"/>
         <additional-files value="detector.xml"/>
+        <gui-settings-file value="gui.settings.xml"/>
     </input>
     <gui_only>
         <tracker-interval value="0.1"/>

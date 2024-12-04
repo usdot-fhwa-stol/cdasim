@@ -34,6 +34,7 @@ class MoveOverLaw:
         self.sumo_connector = sumo_connector
         self.sumo_connector.create_stop_veh(self._target_veh_id, self._stop_pos, self._stop_route)
         self.first_time_two_vehicles = True
+        self.is_get_closer = False
 
     def close_lane(self):
         #send lane closure message
@@ -64,10 +65,10 @@ class MoveOverLaw:
             veh_pos = self.sumo_connector.get_veh_pos(self._veh_id)
             target_pos = self.sumo_connector.get_veh_pos(self._target_veh_id)
             distance = self.sumo_connector.cal_distance(veh_pos, target_pos)
-            print("Distance: " + str(distance))
 
             if distance < 30:
                 self.park_messenger()
                 self.close_lane()
-            elif distance < 250:
+            elif distance < 250 and not self.is_get_closer:
+                self.is_get_closer = True
                 self.get_closer()

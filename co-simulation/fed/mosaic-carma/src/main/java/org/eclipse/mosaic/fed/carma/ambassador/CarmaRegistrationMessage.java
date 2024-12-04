@@ -22,27 +22,11 @@ import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonRegistrationMessage;
  * the carma-mosaic ambassador
  */
 public class CarmaRegistrationMessage extends CommonRegistrationMessage{
-    private String carmaVehicleId;
-    private String carlaVehicleRole;
-    private String rxMessageIpAddress;
-    private int rxMessagePort;
-    private int rxTimeSyncPort;
+
 
     public CarmaRegistrationMessage(String carmaVehicleId, String carlaVehicleRole, String rxMessageIpAddress,
             int rxMessagePort, int rxTimeSyncPort) {
                 super(carmaVehicleId, carlaVehicleRole, rxMessageIpAddress, rxMessagePort, rxTimeSyncPort);
-        this.carmaVehicleId = carmaVehicleId;
-        this.carlaVehicleRole = carlaVehicleRole;
-        this.rxMessageIpAddress = rxMessageIpAddress;
-        this.rxMessagePort = rxMessagePort;
-        this.rxTimeSyncPort = rxTimeSyncPort;
-    }
-
-    @Override
-    public String toString() {
-        return "CarmaRegistrationMessage [carmaVehicleId=" + carmaVehicleId + ", carlaVehicleRole=" + carlaVehicleRole
-                + ", rxMessageIpAddress=" + rxMessageIpAddress + ", rxMessagePort=" + rxMessagePort
-                + ", rxTimeSyncPort=" + rxTimeSyncPort + "]";
     }
 
 }

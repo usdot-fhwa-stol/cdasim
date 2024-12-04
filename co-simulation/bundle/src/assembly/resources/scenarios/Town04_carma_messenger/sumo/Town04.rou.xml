@@ -4,8 +4,11 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="MoveOverLaw" carFollowModel="IDM"/>
+    <vType id="car" carFollowModel="IDM" lcStrategic="-1" lcCooperative="-1" lcSpeedGain="0"  lcKeepRight="0"/>
     <!-- Routes -->
     <route id="r_0" edges="-7 -8 -9 -10 -11 -12 -13 -14 -36 -37 -38 -39 33 47 44 39 38 37 36 35"/>
+    <route id="stop1" edges="-43"/>
     <!-- Vehicles, persons and containers (sorted by depart) -->
     <vehicle id="v_0" depart="999.00" route="r_0"/>
 </routes>

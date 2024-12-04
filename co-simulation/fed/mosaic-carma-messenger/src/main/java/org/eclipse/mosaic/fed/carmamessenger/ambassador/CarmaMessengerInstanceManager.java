@@ -55,7 +55,7 @@ public class CarmaMessengerInstanceManager extends CommonInstanceManager<CarmaMe
             vehicleRole = ((CarmaMessengerRegistrationMessage) registration).getVehicleRole();
             log.info("Receive ns3 registration message of role " + vehicleRole);
             if(ns3RegistrationList.containsKey(vehicleRole)){
-                log.error("Duplicate ns3 registration for vehicle {}", vehicleRole);
+                log.warn("Duplicate ns3 registration for vehicle {}", vehicleRole);
                 return;
             }else{
                 ns3RegistrationList.put(vehicleRole, (CarmaMessengerRegistrationMessage)registration);

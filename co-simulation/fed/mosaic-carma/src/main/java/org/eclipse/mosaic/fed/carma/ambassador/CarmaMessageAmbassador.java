@@ -36,34 +36,35 @@ public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanc
     private Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
-    private CarmaInstanceManager carmaInstanceManager;
+    private static CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
     private int timeSyncSeq = 0;
-
-
+        
+    
+    
     /**
      * Create a new {@link CarmaMessageAmbassador} object.
      *
      * @param ambassadorParameter includes parameters for the
      *                            CarmaMessageAmbassador.
      */
-    public CarmaMessageAmbassador(AmbassadorParameter ambassadorParameter, CarmaInstanceManager carmaInstanceManager) {
+    public CarmaMessageAmbassador(AmbassadorParameter ambassadorParameter) {
         super(ambassadorParameter, carmaInstanceManager, CarmaRegistrationMessage.class, CarmaConfiguration.class);
 
         try {
-            // Read the CARMA message ambassador configuration file
+        // Read the CARMA message ambassador configuration file
             carmaConfiguration = new ObjectInstantiation<>(CarmaConfiguration.class, log)
                     .readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
         }
 
-        log.info("The update interval of CARMA message ambassador is " + carmaConfiguration.updateInterval + " .");
+    log.info("The update interval of CARMA message ambassador is " + carmaConfiguration.updateInterval + " .");
 
-        // Check the CARMA update interval
-        if (carmaConfiguration.updateInterval <= 0) {
-            throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
-        }
-        log.info("CARMA message ambassador is generated.");
+    // Check the CARMA update interval
+    if (carmaConfiguration.updateInterval <= 0) {
+        throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
+    }
+    log.info("CARMA message ambassador is generated.");
     }
 
     @Override

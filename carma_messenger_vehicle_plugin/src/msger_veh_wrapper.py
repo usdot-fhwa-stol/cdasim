@@ -81,7 +81,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script to manage messenger vehicles in a SUMO simulation.')
     parser.add_argument('--traci-ip', default="localhost", help='IP address for Traci to connect to SUMO.')
     parser.add_argument('--traci-port', default=2010, help='Port number for Traci to connect to SUMO.')
-    parser.add_argument('--traci-order-num', default=2, help='Traci connection order number for SUMO multi-client setup.')
+    parser.add_argument('--traci-order-num', default=3, help='Traci connection order number for SUMO multi-client setup.')
     parser.add_argument('--msger-veh-cfg-path', default="resources/msger_veh_cfg.json", help='Path to the messenger vehicle configuration JSON file.')
     parser.add_argument('--log-level', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help='Set the logging level')

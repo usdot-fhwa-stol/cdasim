@@ -209,6 +209,7 @@ class SumoConnector:
         """
         try:
             distance = math.sqrt((pos_1[0] - pos_2[0])**2 + (pos_1[1] - pos_2[1])**2)
+            logging.debug("Distance to target: " + str(distance))
             return distance
         except Exception as e:
             logging.error(f"Failed to calculate vehicle distance ")
