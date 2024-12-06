@@ -16,6 +16,7 @@ import sys
 import os
 import logging
 import math
+import time
 
 if 'SUMO_HOME' in os.environ:
     tools_path = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -221,6 +222,14 @@ class SumoConnector:
         """
         try:
             traci.vehicle.setSpeed(veh_id, 0)
+            traci.vehicle.setStop(
+            vehID=veh_id,               # Vehicle ID
+            edgeID=traci.vehicle.getRoadID(veh_id),              # Edge ID where the vehicle stops
+            pos=280,                  # Position (meters) on the edge
+            laneIndex=0,               # Lane index (e.g., 0 for the first lane)
+            duration=10000,             # Duration (in seconds) the vehicle stays stopped
+            flags=0                    # Flags (optional, can be left as 0)
+        )
 
         except Exception as e:
             logging.error(f"Failed to stop vehicle for vehicle ID '{veh_id}': {e}")
@@ -260,6 +269,14 @@ class SumoConnector:
         try:
             traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos)
             traci.vehicle.setSpeed(veh_id, 0)
+            traci.vehicle.setStop(
+            vehID=veh_id,               # Vehicle ID
+            edgeID=int(traci.vehicle.getRoute(veh_id)[0]),              # Edge ID where the vehicle stops
+            pos=end_pos,                  # Position (meters) on the edge
+            laneIndex=0,               # Lane index (e.g., 0 for the first lane)
+            duration=10000,             # Duration (in seconds) the vehicle stays stopped
+            flags=0                    # Flags (optional, can be left as 0)
+        )
         except Exception as e:
             logging.error(f"Failed to create stopped vehicle for vehicle ID '{veh_id}': {e}")
             raise
