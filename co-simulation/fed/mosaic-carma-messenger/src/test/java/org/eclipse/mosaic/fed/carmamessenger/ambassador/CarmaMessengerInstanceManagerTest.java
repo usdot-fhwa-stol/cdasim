@@ -15,11 +15,13 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.mosaic.lib.junit.IpResolverRule;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
+import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
@@ -66,10 +68,11 @@ public class CarmaMessengerInstanceManagerTest {
         managedInstances.put("instance1", instance1);
         managedInstances.put("instance2", instance2);
         managedInstances.put("instance3", instance3);
-      
+
         // Set private instance field to mock using reflection
         FieldSetter.setField(manager, manager.getClass().getSuperclass().getDeclaredField("managedInstances"), managedInstances);
     }
+
 
     @Test
     public void testOnNewRegistration() {
@@ -78,8 +81,9 @@ public class CarmaMessengerInstanceManagerTest {
         int rxMessagePort = 1234;
         int timeSyncPort = 5678;
         String ipAddressString = "127.0.0.1";
-        String emergencyState = "MockState";
         int rxBridgeMessagePort = 5600;
+        int rxVehicleStatusPort = 1100;
+        int rxTrafficEventPort = 1200;
       
         // Mock the behavior of the registration object
         CarmaMessengerRegistrationMessage registration = new CarmaMessengerRegistrationMessage(
@@ -88,18 +92,100 @@ public class CarmaMessengerInstanceManagerTest {
                                                                             ipAddressString, 
                                                                             rxMessagePort, 
                                                                             timeSyncPort,
-                                                                            emergencyState,
                                                                             rxBridgeMessagePort);
+        CarmaMessengerBridgeRegistrationMessage bridgeRegistration = new CarmaMessengerBridgeRegistrationMessage(infrastructureId, 
+                                                                                                                ipAddressString, 
+                                                                                                                timeSyncPort, 
+                                                                                                                rxVehicleStatusPort, 
+                                                                                                                rxTrafficEventPort);
         // Ensure checkIfRegistered returns false for infrastructure ID before registering 
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(registration);
+        manager.onMsgerNewRegistration(registration);
+        manager.onMsgerNewRegistration(bridgeRegistration);
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
         // Ensure checkIfRegistered returns false for other Ids
         assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
+    }
+
+    @Test
+    public void testOnNewRegistrationBridge()
+    {
+        String infrastructureId = "infrastructure-123";
+        int rxMessagePort = 1234;
+        int timeSyncPort = 5678;
+        String ipAddressString = "127.0.0.1";
+        int rxBridgeMessagePort = 5600;
+        int rxVehicleStatusPort = 1100;
+        int rxTrafficEventPort = 1200;
+      
+        // Mock the behavior of the registration object
+        CarmaMessengerRegistrationMessage registration = new CarmaMessengerRegistrationMessage(
+                                                                            infrastructureId, 
+                                                                            infrastructureId,
+                                                                            ipAddressString, 
+                                                                            rxMessagePort, 
+                                                                            timeSyncPort,
+                                                                            rxBridgeMessagePort);
+        CarmaMessengerBridgeRegistrationMessage bridgeRegistration = new CarmaMessengerBridgeRegistrationMessage(infrastructureId, 
+                                                                                                                ipAddressString, 
+                                                                                                                timeSyncPort, 
+                                                                                                                rxVehicleStatusPort, 
+                                                                                                                rxTrafficEventPort);
+        // Ensure checkIfRegistered returns false for infrastructure ID before registering 
+        assertFalse( manager.checkIfRegistered(infrastructureId) );
+
+        // Call the onNewRegistration method with the mocked registration object
+        manager.onMsgerNewRegistration(bridgeRegistration);
+        manager.onMsgerNewRegistration(registration);
+
+        // Verify that the infrastructure instance was added to the manager
+        assertTrue( manager.checkIfRegistered(infrastructureId) );
+        // Ensure checkIfRegistered returns false for other Ids
+        assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
+
+    }
+
+    @Test
+    public void testOnDetectedTrafficEvents() throws IOException {
+
+        String infrastructureId = "instance4";
+        int rxMessagePort = 1234;
+        int timeSyncPort = 5678;
+        String ipAddressString = "127.0.0.1";
+        int rxBridgeMessagePort = 5600;
+        int rxVehicleStatusPort = 1100;
+        int rxTrafficEventPort = 1200;
+      
+        // Mock the behavior of the registration object
+        CarmaMessengerRegistrationMessage registration = new CarmaMessengerRegistrationMessage(
+                                                                            infrastructureId, 
+                                                                            infrastructureId,
+                                                                            ipAddressString, 
+                                                                            rxMessagePort, 
+                                                                            timeSyncPort,
+                                                                            rxBridgeMessagePort);
+        CarmaMessengerBridgeRegistrationMessage bridgeRegistration = new CarmaMessengerBridgeRegistrationMessage(infrastructureId, 
+                                                                                                                ipAddressString, 
+                                                                                                                timeSyncPort, 
+                                                                                                                rxVehicleStatusPort, 
+                                                                                                                rxTrafficEventPort);
+        // Ensure checkIfRegistered returns false for infrastructure ID before registering 
+        assertFalse( manager.checkIfRegistered(infrastructureId) );
+
+        // Call the onNewRegistration method with the mocked registration object
+        manager.onMsgerNewRegistration(bridgeRegistration);
+        manager.onMsgerNewRegistration(registration);
+
+
+
+        MsgerTrafficEvent mockEvent = new MsgerTrafficEvent("instance4", 500, 500, 0, 10);
+        // Act
+        manager.onDetectedTrafficEvents(mockEvent);
+
     }
 
 }

@@ -69,16 +69,19 @@ import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 
-public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends CommonRegistrationReceiver, T extends CommonRegistrationMessage, C extends  CommonConfiguration> extends AbstractFederateAmbassador{
+public class CommonMessageAmbassador<M extends CommonInstanceManager, 
+                                     R extends CommonRegistrationReceiver, 
+                                     T extends CommonRegistrationMessage, 
+                                     C extends CommonConfiguration> extends AbstractFederateAmbassador{
 
     protected long currentSimulationTime;
     protected C commonConfiguration;
 
     protected R commonRegistrationReceiver;
-    private Thread registrationRxBackgroundThread;
-    private CarmaV2xMessageReceiver v2xMessageReceiver;
-    private Thread v2xRxBackgroundThread;
-    protected M commonInstanceManager = (M) new CommonInstanceManager();
+    protected Thread registrationRxBackgroundThread;
+    protected CarmaV2xMessageReceiver v2xMessageReceiver;
+    protected Thread v2xRxBackgroundThread;
+    protected M commonInstanceManager;
     protected int timeSyncSeq = 0;
     protected Class<T> messageClass;
     protected Class<C> configClass;
@@ -93,10 +96,11 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         return true;
     }
 
-    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, Class<T> messageClass, Class<C> configClass) {
+    public CommonMessageAmbassador(AmbassadorParameter ambassadorParameter, M instanceManager, Class<T> messageClass, Class<C> configClass) {
         super(ambassadorParameter);
         this.messageClass = messageClass;
         this.configClass = configClass;
+        this.commonInstanceManager = instanceManager;
         try {
             // Read the CARMA message ambassador configuration file
             commonConfiguration = new ObjectInstantiation<>(configClass, log)
@@ -126,35 +130,53 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
             throw new InternalFederateException(e);
         }
 
-        // Initialize listener socket and thread for Common Registration messages
-        commonRegistrationReceiver = (R) new CommonRegistrationReceiver(messageClass);
+        // Separate initialization calls for each receiver
+        initRegistrationReceiver();
+        initV2xMessageReceiver();
+    }
+
+    protected void initRegistrationReceiver() {
+        // Generic initialization for `commonRegistrationReceiver`
+        commonRegistrationReceiver = (R) new CommonRegistrationReceiver<>(messageClass);
         commonRegistrationReceiver.init();
         registrationRxBackgroundThread = new Thread(commonRegistrationReceiver);
         registrationRxBackgroundThread.start();
+    }
 
-        // Initialize listener socket and thread for Common NS-3 Adapter messages
+    protected void initV2xMessageReceiver() {
         v2xMessageReceiver = new CarmaV2xMessageReceiver();
         v2xMessageReceiver.init();
         v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
         v2xRxBackgroundThread.start();
     }
 
+
+    protected void processMessageNewRegistrations() {
+        List<T> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
+        for (T reg : newRegistrations) {
+            try {
+                commonInstanceManager.onNewRegistration(reg);
+                onDsrcRegistrationRequest(reg.getVehicleRole());
+            } catch (UnknownHostException e) {
+                log.error("Failed to process registration request for vehicle role: " + reg.getVehicleRole(), e);
+            }
+        }
+    }
+
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
 
-        if (time < currentSimulationTime) {
-            // process time advance only if time is equal or greater than the next
-            // simulation time step
-            return;
-        }
+        // if (time < currentSimulationTime) {
+        //     // process time advance only if time is equal or greater than the next
+        //     // simulation time step
+        //     return;
+        // }
         log.info(this.getClass().getSimpleName()+ " processing timestep to {}.", time);
 
         try {
-            List<T> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
-            for (T reg : newRegistrations) {
-                commonInstanceManager.onNewRegistration(reg);
-                onDsrcRegistrationRequest(reg.getVehicleRole());
-            }
+
+            processMessageNewRegistrations();
+            
             // Set current simulation time to most recent time update
             currentSimulationTime = time;
             if (currentSimulationTime == 0) {
@@ -207,6 +229,12 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
     }
 
     private synchronized void receiveVehicleUpdateInteraction(VehicleUpdates interaction) {
+        
+        if (commonInstanceManager == null) {
+            log.error("commonInstanceManager is not initialized. Cannot process vehicle updates.");
+            return; 
+        }
+
         commonInstanceManager.onVehicleUpdates(interaction);
     }
 
@@ -234,7 +262,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager, R extends 
         }
     }
 
-    private void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
+    protected void onDsrcRegistrationRequest(String vehicleId) throws UnknownHostException {
+        log.info("Adding DSRC on vehicle ID: {}", vehicleId);
         ExternalVehicleRegistration tempRegistration = new ExternalVehicleRegistration(
                 currentSimulationTime,
                 vehicleId,

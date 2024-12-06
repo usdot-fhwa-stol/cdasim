@@ -15,13 +15,35 @@
  */
 package org.eclipse.mosaic.fed.carmamessenger.ambassador;
 
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.mosaic.interactions.application.MsgerRequestTrafficEvent;
+import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
+import org.eclipse.mosaic.rti.api.Interaction;
+import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
-public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, CarmaMessengerRegistrationReceiver, CarmaMessengerRegistrationMessage, CommonConfiguration>{
+import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
 
+public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<CarmaMessengerInstanceManager, 
+                                                                             CarmaMessengerRegistrationReceiver, 
+                                                                             CarmaMessengerRegistrationMessage, 
+                                                                             CommonConfiguration>{
+
+    private static CarmaMessengerInstanceManager instanceManager;
+    private CarmaMessengerBridgeRegistrationReceiver bridgeReceiver;
+    private Thread BridgeRegistrationRxBackgroundThread;
+
+    public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
+        // Use the static instanceManager if no specific one is provided
+        this(ambassadorParameter, getInstanceManager());
+    }
 
     /**
      * Create a new {@link CarmaMessengerMessageAmbassador} object.
@@ -29,9 +51,9 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
      * @param ambassadorParameter includes parameters for the
      *                            CarmaMessageAmbassador.
      */
-    public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class);
-
+    public CarmaMessengerMessageAmbassador(AmbassadorParameter ambassadorParameter, CarmaMessengerInstanceManager instanceManager) {
+        super(ambassadorParameter, instanceManager, CarmaMessengerRegistrationMessage.class, CommonConfiguration.class);
+        CarmaMessengerMessageAmbassador.instanceManager = instanceManager;
         try {
             // Read the CARMA message ambassador configuration file
             commonConfiguration = new ObjectInstantiation<>(CommonConfiguration.class, log)
@@ -49,4 +71,123 @@ public class CarmaMessengerMessageAmbassador extends CommonMessageAmbassador<Car
         log.info("CARMA message ambassador is generated.");
     }
 
+    @Override
+    public void initialize(long startTime, long endTime) throws InternalFederateException{
+        super.initialize(startTime, endTime);
+        bridgeReceiver = new CarmaMessengerBridgeRegistrationReceiver();
+        bridgeReceiver.init();
+        BridgeRegistrationRxBackgroundThread = new Thread(bridgeReceiver);
+        BridgeRegistrationRxBackgroundThread.start();
+    }
+    
+    @Override
+    protected void initRegistrationReceiver() {
+        
+        log.info("Init RegistrationReceiver in MessengerMessageAmbassador");
+        commonRegistrationReceiver = new CarmaMessengerRegistrationReceiver(messageClass);
+        commonRegistrationReceiver.init();
+        registrationRxBackgroundThread = new Thread(commonRegistrationReceiver);
+        registrationRxBackgroundThread.start();
+    }
+    
+    @Override
+    protected void processMessageNewRegistrations() {
+        log.info("Retrieve Message Registration data from queue");
+        List<CarmaMessengerRegistrationMessage> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
+        for (CarmaMessengerRegistrationMessage reg : newRegistrations) {
+            log.info("Got one new registration message, start to process ...");
+            try {
+                commonInstanceManager.onMsgerNewRegistration(reg); // Assuming this method accepts `CarmaMessengerRegistrationMessage`
+                onDsrcRegistrationRequest(reg.getVehicleRole());
+            } catch (UnknownHostException e) {
+                log.error("Failed to process registration request for vehicle role: " + reg.getVehicleRole(), e);
+            }
+        }
+    }
+    
+
+    protected void processMessengerBridgeRegistrations() {
+        try {
+            List<CarmaMessengerBridgeRegistrationMessage> newBridgeRegistrations = bridgeReceiver.getReceivedMessages();
+            for (CarmaMessengerBridgeRegistrationMessage reg : newBridgeRegistrations) {
+                commonInstanceManager.onMsgerNewRegistration(reg);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process bridge registration request for vehicle role: " + e.getMessage(), e);
+        }
+    }    
+
+    @Override
+        protected void initV2xMessageReceiver() {
+        v2xMessageReceiver = new CarmaV2xMessageReceiver(3601);
+        v2xMessageReceiver.init();
+        v2xRxBackgroundThread = new Thread(v2xMessageReceiver);
+        v2xRxBackgroundThread.start();
+    }
+
+    @Override
+    public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
+        if (time < currentSimulationTime) {
+            // process time advance only if time is equal or greater than the next
+            // simulation time step
+            return;
+        }
+        List<String> vehIdList = new ArrayList<>();
+        vehIdList = this.commonInstanceManager.getVehicleIds();
+        int size = vehIdList.size();
+        log.debug("The number of carma messenger vehicles: {} at {}", size, time);
+        String parameterName = "VehicleBroadcastTrafficEvent";
+        for(String id : vehIdList){
+            try {
+                log.debug("Current Id: {} Current time: {} Current Parameter name: {}", id, time, parameterName);
+                rti.triggerInteraction(new MsgerRequestTrafficEvent(time, id, parameterName));
+            } catch (Exception e) {
+                log.error("error: " + e.getMessage());
+            } 
+        }
+        processMessengerBridgeRegistrations();
+        try {
+            this.commonInstanceManager.vehicleStatusUpdate(endTime);
+        } catch (IOException e) {
+            log.error("error: " + e.getMessage());
+        }
+        super.processTimeAdvanceGrant(time);
+    }
+
+    @Override
+    public void processInteraction(Interaction interaction) throws InternalFederateException {
+        String type = interaction.getTypeId();
+        long interactionTime = interaction.getTime();
+        log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
+        if (interaction.getTypeId().equals(MsgerResponseTrafficEvent.TYPE_ID)) {
+            receiveMsgerResponseTrafficEventInteraction((MsgerResponseTrafficEvent) interaction);
+        }
+        else{
+            super.processInteraction(interaction);
+        }       
+    }
+
+
+    private void receiveMsgerResponseTrafficEventInteraction(MsgerResponseTrafficEvent interaction)
+    {    
+        try {
+            if(interaction.getTrafficEvent() == null){
+                log.debug("Receive null traffic event");
+                return;
+            }
+            this.commonInstanceManager.onDetectedTrafficEvents(interaction.getTrafficEvent());
+        } catch (IOException e) {    
+            log.error(e.getMessage());
+        }   
+    }
+
+    public static CarmaMessengerInstanceManager getInstanceManager() {
+        // Check if the instance manager is already initialized
+        if (instanceManager == null) {
+            // Initialize the instance manager if it's not yet created
+            instanceManager = new CarmaMessengerInstanceManager();
+        }
+        return instanceManager;
+    }
+  
 }

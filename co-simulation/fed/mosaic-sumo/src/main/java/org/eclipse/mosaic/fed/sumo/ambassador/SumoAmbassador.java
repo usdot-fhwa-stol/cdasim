@@ -15,8 +15,26 @@
 
 package org.eclipse.mosaic.fed.sumo.ambassador;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.mosaic.fed.sumo.traci.commands.VehicleGetParameter;
 import org.eclipse.mosaic.fed.sumo.util.SumoVehicleClassMapping;
 import org.eclipse.mosaic.fed.sumo.util.SumoVehicleTypesWriter;
+import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
+import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
+import org.eclipse.mosaic.interactions.application.MsgerRequestTrafficEvent;
+import org.eclipse.mosaic.interactions.application.MsgerResponseTrafficEvent;
+import org.eclipse.mosaic.interactions.application.SimulationStep;
+import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioVehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleRoutesInitialization;
@@ -26,6 +44,7 @@ import org.eclipse.mosaic.interactions.vehicle.VehicleRouteRegistration;
 import org.eclipse.mosaic.lib.enums.VehicleClass;
 import org.eclipse.mosaic.lib.math.MathUtils;
 import org.eclipse.mosaic.lib.objects.mapping.VehicleMapping;
+import org.eclipse.mosaic.lib.objects.trafficevent.MsgerTrafficEvent;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleRoute;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleType;
 import org.eclipse.mosaic.rti.api.FederateAmbassador;
@@ -33,24 +52,6 @@ import org.eclipse.mosaic.rti.api.IllegalValueException;
 import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
-
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import org.eclipse.mosaic.interactions.application.CarlaTraciRequest;
-import org.eclipse.mosaic.interactions.application.CarlaTraciResponse;
-import org.eclipse.mosaic.interactions.application.SimulationStep;
-import org.eclipse.mosaic.interactions.application.SimulationStepResponse;
-
-import java.util.Arrays;
 
 /**
  * Implementation of a {@link AbstractSumoAmbassador} for the traffic simulator
@@ -132,6 +133,8 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             this.receiveInteraction((CarlaTraciRequest) interaction);
         } else if (interaction.getTypeId().equals(SimulationStep.TYPE_ID)) {
             this.receiveInteraction((SimulationStep) interaction);
+        } else if (interaction.getTypeId().equals(MsgerRequestTrafficEvent.TYPE_ID)){
+            this.receiveInteraction((MsgerRequestTrafficEvent)interaction);
         } else {
             // ... everything else is saved for later
             super.processInteraction(interaction);
@@ -161,6 +164,42 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             super.processInteractionAdvanced(interaction, time);
         }
     }
+
+    private void receiveInteraction(MsgerRequestTrafficEvent interaction) throws InternalFederateException {
+        
+        VehicleGetParameter veh = new VehicleGetParameter();
+        String trafficEvent  = "";
+        Set<String> vehicleData = traci.getSimulationControl().getKnownVehicles();
+        log.debug("Vehicles list: {}", vehicleData.toString());
+        try {
+            log.debug("Vehicle info: {}", interaction.toString());
+            if(!vehicleData.contains(interaction.vehicleId())){return;}
+            trafficEvent = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
+        
+            if (trafficEvent.equals("")) {
+                log.debug("No traffic event found");
+                rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
+            } else{
+                String[] parameters = trafficEvent.split(";");
+                float[] floatParameters = new float[parameters.length];
+                for (int i =0; i< parameters.length; i++){
+                    floatParameters[i] = Float.parseFloat(parameters[i]);
+                }
+                if (parameters.length != 4){
+                    log.error("Received payload error");
+                    rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
+                }
+                else{
+                    MsgerTrafficEvent config = new MsgerTrafficEvent(interaction.vehicleId(), floatParameters[0], floatParameters[1], floatParameters[2], floatParameters[3]);
+                    log.debug("Response traffic event generated: {}",config.toString());
+                    rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), config));
+                }
+            }
+        } catch (Exception e) {
+            log.error("Unexpected error: " + e.getMessage());
+        }
+    }
+        
 
     /**
      * Handles the {@link VehicleRegistration}-registration and adds the vehicle to
@@ -290,8 +329,10 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         if (time < 0) {
             return;
         }
+        log.debug("traci getDepartedVehicles list: {}", traci.getSimulationControl().getDepartedVehicles().toString());
         // first check if there were new vehicles added via SUMO
         propagateSumoVehiclesToRti();
+        log.debug("After add vehicle to vehiclesAddedViaRouteFile: {}", vehiclesAddedViaRouteFile.toString());
         // now add all vehicles, that were received from RTI
         addNotYetAddedVehicles(time);
         // now subscribe to all relevant vehicles
@@ -306,7 +347,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             if (vehiclesAddedViaRti.contains(vehicleId)) { // only handle route file vehicles here
                 continue;
             }
-            vehiclesAddedViaRouteFile.add(vehicleId);
+            vehiclesAddedViaRouteFile.add(vehicleId);          
             vehicleTypeId = traci.getVehicleControl().getVehicleTypeId(vehicleId);
             try {
                 rti.triggerInteraction(new ScenarioVehicleRegistration(this.nextTimeStep, vehicleId, vehicleTypeId));

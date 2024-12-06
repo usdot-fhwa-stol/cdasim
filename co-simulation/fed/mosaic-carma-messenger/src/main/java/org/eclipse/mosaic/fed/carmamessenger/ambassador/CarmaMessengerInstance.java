@@ -20,44 +20,118 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonInstance;
+import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 
 public class CarmaMessengerInstance extends CommonInstance{
 
-    private String messengerEmergencyState;
-    private int rxBridgeMessagePort;
+    private int rxBridgeTimeSyncPort;
+    private int rxVehicleStatusPort;
+    private int rxTrafficEventPort;
+    private InetAddress bridgeInetAddress;
+    private boolean siren_active;
+    private boolean light_active;
+    private GeoPoint geo_location;
+    private GeoPoint prev_location;
 
-    public CarmaMessengerInstance(String carmaMessengerVehicleId, String sumoRoleName, InetAddress targetAddress, int v2xPort, int timeSyncPort, String messengerEmergencyState, int rxBridgeMessagePort) {
-        super(carmaMessengerVehicleId, sumoRoleName, targetAddress, v2xPort, timeSyncPort);
-        this.messengerEmergencyState = messengerEmergencyState;
-        this.rxBridgeMessagePort = rxBridgeMessagePort;
+    public CarmaMessengerInstance(String carmaMessengerVehicleId,
+                                  String sumoRoleName,
+                                  InetAddress v2xAddress,
+                                  InetAddress bridgeAddress,
+                                  int v2xPort,
+                                  int timeSyncPort,
+                                  int rxBridgeTimeSyncPort,
+                                  int rxVehicleStatusPort,
+                                  int rxTrafficEventPort,
+                                  boolean siren_active,
+                                  boolean light_active) {
+        super(carmaMessengerVehicleId, sumoRoleName, v2xAddress, v2xPort, timeSyncPort);
+        this.bridgeInetAddress = bridgeAddress;
+        this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
+        this.rxVehicleStatusPort = rxVehicleStatusPort;
+        this.rxTrafficEventPort = rxTrafficEventPort;
+        this.siren_active = siren_active;
+        this.light_active = light_active;
+        this.geo_location = GeoPoint.ORIGO;
+        this.prev_location = GeoPoint.ORIGO;
     }
-    /**
-     * Carma Messenger Emergency state
-     */
 
-    public String getMessengerEmergencyState() {
-        return messengerEmergencyState;
+    public InetAddress getBridgeAddress() {
+        return bridgeInetAddress;
+    }
+    public boolean getSirenActive(){
+        return siren_active;
     }
 
-    public void setMessengerEmergencyState(String messengerEmergencyState) {
-        this.messengerEmergencyState = messengerEmergencyState;
+    public boolean getLightActive(){
+        return light_active;
     }
 
-    public int getRxBridgeMessagePort() {
-        return rxBridgeMessagePort;
+    public int getRxBridgeTimeSyncPort() {
+        return rxBridgeTimeSyncPort;
     }
 
-    public void setRxBridgeMessagePort(int rxBridgeMessagePort) {
-        this.rxBridgeMessagePort = rxBridgeMessagePort;
+    public void setRxBridgeTimeSyncPort(int rxBridgeTimeSyncPort) {
+        this.rxBridgeTimeSyncPort = rxBridgeTimeSyncPort;
+    }
+
+    public int getRxVehicleStatusPort() {
+        return rxVehicleStatusPort;
+    }
+    public int getRxTrafficEventPort() {
+        return rxTrafficEventPort;
+    }
+
+    public void setRxVehicleStatusPort(int rxVehicleStatusPort) {
+        this.rxVehicleStatusPort = rxVehicleStatusPort;
+    }
+
+    public void setRxTrafficEventPort(int rxTrafficEventPort) {
+        this.rxTrafficEventPort = rxTrafficEventPort;
     }
 
     public void sendVehStatusMsgs(byte[] data) throws IOException {
         if (super.rxMsgsSocket == null) {
             throw new IllegalStateException("Attempted to send data before opening socket");
         }
-        
-        DatagramPacket packet = new DatagramPacket(data, data.length, super.getTargetAddress(), rxBridgeMessagePort);
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, this.bridgeInetAddress, rxVehicleStatusPort);
         super.rxMsgsSocket.send(packet);
+    }
+
+    public void sendTrafficEventMsgs(byte[] data) throws IOException {
+        if (super.rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, this.bridgeInetAddress, rxTrafficEventPort);
+        super.rxMsgsSocket.send(packet);
+    }
+
+    public GeoPoint getPrevLocation(){
+        return this.prev_location;
+    }
+
+    public void setPrevLocation(GeoPoint prev_cartesian_location){
+        this.prev_location = prev_cartesian_location;
+    }
+
+    @Override
+    public void sendTimeSyncMsg(byte[] data) throws IOException {
+        if (rxMsgsSocket == null) {
+            throw new IllegalStateException("Attempted to send data before opening socket");
+        }
+
+        DatagramPacket packet = new DatagramPacket(data, data.length, this.bridgeInetAddress, this.rxBridgeTimeSyncPort);
+        rxMsgsSocket.send(packet);
+        super.sendTimeSyncMsg(data);
+    }
+
+    @Override
+    public String toString() {
+        return "CarmaMessengerInstance [rxBridgeTimeSyncPort=" + rxBridgeTimeSyncPort + ", rxVehicleStatusPort="
+                + rxVehicleStatusPort + ", rxTrafficEventPort=" + rxTrafficEventPort + ", siren_active=" + siren_active
+                + ", light_active=" + light_active + ", geo_location=" + geo_location + ", prev_location="
+                + prev_location + ", RoleName=" + getRoleName() + "]";
     }
 }

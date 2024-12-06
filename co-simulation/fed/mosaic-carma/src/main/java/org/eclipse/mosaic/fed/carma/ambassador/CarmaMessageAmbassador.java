@@ -17,6 +17,7 @@ import org.eclipse.mosaic.fed.carma.configuration.CarmaConfiguration;
 import org.eclipse.mosaic.lib.CommonUtil.ambassador.CommonMessageAmbassador;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
+import org.eclipse.mosaic.rti.api.InternalFederateException;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import gov.dot.fhwa.saxton.CarmaV2xMessageReceiver;
@@ -35,7 +36,7 @@ public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanc
     private Thread registrationRxBackgroundThread;
     private CarmaV2xMessageReceiver v2xMessageReceiver;
     private Thread v2xRxBackgroundThread;
-    private CarmaInstanceManager carmaInstanceManager = new CarmaInstanceManager();
+    private CarmaInstanceManager carmaInstanceManager;
     private int timeSyncSeq = 0;
 
 
@@ -45,8 +46,8 @@ public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanc
      * @param ambassadorParameter includes parameters for the
      *                            CarmaMessageAmbassador.
      */
-    public CarmaMessageAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter, CarmaRegistrationMessage.class, CarmaConfiguration.class);
+    public CarmaMessageAmbassador(AmbassadorParameter ambassadorParameter, CarmaInstanceManager carmaInstanceManager) {
+        super(ambassadorParameter, carmaInstanceManager, CarmaRegistrationMessage.class, CarmaConfiguration.class);
 
         try {
             // Read the CARMA message ambassador configuration file
@@ -63,5 +64,15 @@ public class CarmaMessageAmbassador extends CommonMessageAmbassador<CarmaInstanc
             throw new RuntimeException("Invalid update interval for CARMA message ambassador, should be >0.");
         }
         log.info("CARMA message ambassador is generated.");
+    }
+
+    @Override
+    public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
+        if (time < currentSimulationTime) {
+            // process time advance only if time is equal or greater than the next
+            // simulation time step
+            return;
+        }
+        super.processTimeAdvanceGrant(time);
     }
 }

@@ -48,6 +48,8 @@ public class CarmaMessengerMessageAmbassadorTest {
 
     private CarmaMessengerMessageAmbassador ambassador;
 
+    private CarmaMessengerInstanceManager instanceManager;
+
     @Before
     public void setup() throws IOException {
 

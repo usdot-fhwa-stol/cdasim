@@ -246,7 +246,8 @@
                 "LaneAreaDetectorSubscription",
                 "TrafficLightSubscription",
                 "CarlaTraciRequest",
-                "SimulationStep"
+                "SimulationStep",
+                "MsgerRequestTrafficEvent"
             ],
             "javaClasspathEntries": []
         },
@@ -285,6 +286,22 @@
                 "VehicleUpdates",
                 "VehicleRoutesInitialization",
                 "VehicleTypesInitialization"
+            ],
+            "javaClasspathEntries": []
+        },
+        {
+            "id": "carma-messenger",
+            "classname": "org.eclipse.mosaic.fed.carmamessenger.ambassador.CarmaMessengerMessageAmbassador",
+            "configuration": "carma-messenger_config.json",
+            "priority": 50,
+            "host": "local",
+            "port": 0,
+            "deploy": false,
+            "start": false,
+            "subscriptions": [
+                "V2xMessageReception",
+                "VehicleUpdates",
+                "MsgerResponseTrafficEvent"
             ],
             "javaClasspathEntries": []
         }

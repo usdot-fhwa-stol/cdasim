@@ -32,6 +32,8 @@
         "omnetpp": false,
         "output": true,
         "sumo": true,
-        "infrastructure": true
+        "infrastructure": true,
+        "carma-messenger": true
     }
+
 }

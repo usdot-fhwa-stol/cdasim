@@ -39,35 +39,50 @@ public class CarmaMessengerInstanceTest{
      /**
       * Mock InetAddress
       */
-    private InetAddress address;
+    private InetAddress v2xAddress;
+    private InetAddress bridgeAddress;
 
     @Before
     public void setup() throws NoSuchFieldException {
         //init mocks
-        address = mock(InetAddress.class);
+        v2xAddress = mock(InetAddress.class);
+        bridgeAddress = mock(InetAddress.class);
         socket = mock(DatagramSocket.class);
 
         //init infra instance
         instance = new CarmaMessengerInstance(
             "MockID",
             "MockRolename",
-            address,
+            v2xAddress,
+            bridgeAddress,
             3456,
             7890,
-            "MockState",
-            5600
+            5600,         
+            1100,
+            1200,
+            false,
+            false
         ); 
         FieldSetter.setField(instance, instance.getClass().getSuperclass().getDeclaredField("rxMsgsSocket"), socket);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testGetterSetterConstructor() {
-        assertEquals("MockState", instance.getMessengerEmergencyState());
-        assertEquals(5600, instance.getRxBridgeMessagePort());
-        instance.setMessengerEmergencyState("NewState");
-        assertEquals("NewState", instance.getMessengerEmergencyState());
-        instance.setRxBridgeMessagePort(5700);
-        assertEquals(5700, instance.getRxBridgeMessagePort());
+        
+        assertEquals(5600, instance.getRxBridgeTimeSyncPort());
+        instance.setRxBridgeTimeSyncPort(5700);
+        assertEquals(5700, instance.getRxBridgeTimeSyncPort());
+
+        assertEquals(1100, instance.getRxVehicleStatusPort());
+        assertEquals(1200, instance.getRxTrafficEventPort());
+
+        instance.setRxVehicleStatusPort(2100);
+        instance.setRxTrafficEventPort(2200);
+
+        assertEquals(2100, instance.getRxVehicleStatusPort());
+        assertEquals(2200, instance.getRxTrafficEventPort());
+
     }
 
     @Test
@@ -83,7 +98,8 @@ public class CarmaMessengerInstanceTest{
 
         // Verify parameter members
         assertArrayEquals(test_msg.getBytes(), packet.getValue().getData());
-        assertEquals(instance.getRxBridgeMessagePort(), packet.getValue().getPort());
-        assertEquals(address, packet.getValue().getAddress());
+        assertEquals(instance.getRxVehicleStatusPort(), packet.getValue().getPort());
     }
+
+    
 }

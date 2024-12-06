@@ -152,6 +152,7 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
     public void onVehicleUpdates(VehicleUpdates vui) {
         for (VehicleData veh : vui.getUpdated()) {
             if (managedInstances.containsKey(veh.getName())) {
+                log.debug("On vehicle update: Vehicle lat {} lon {}", veh.getPosition().getLatitude(), veh.getPosition().getLongitude());
                 managedInstances.get(veh.getName()).setLocation(veh.getPosition());
             }
         }
