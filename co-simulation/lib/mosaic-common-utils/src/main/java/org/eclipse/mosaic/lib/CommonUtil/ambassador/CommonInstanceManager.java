@@ -40,7 +40,7 @@ import gov.dot.fhwa.saxton.TimeSyncMessage;
 
 
 public class CommonInstanceManager<T extends CommonInstance, R extends CommonRegistrationMessage> {
-    public  Map<String, T> managedInstances = new HashMap<>();
+    protected  Map<String, T> managedInstances = new HashMap<>();
 
     private int TARGET_PORT = 5374;
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
