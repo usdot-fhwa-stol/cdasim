@@ -168,20 +168,19 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
     private void receiveInteraction(MsgerRequestTrafficEvent interaction) throws InternalFederateException {
         
         VehicleGetParameter veh = new VehicleGetParameter();
-        String temp  = "";
+        String trafficEvent  = "";
         Set<String> vehicleData = traci.getSimulationControl().getKnownVehicles();
         log.debug("Vehicles list: {}", vehicleData.toString());
         try {
             log.debug("Vehicle info: {}", interaction.toString());
             if(!vehicleData.contains(interaction.vehicleId())){return;}
-            temp = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
+            trafficEvent = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
         
-            if (temp.equals("")) {
-                //no traffic event set up yet
-                log.debug("Vehicle not generated");
+            if (trafficEvent.equals("")) {
+                log.debug("Vehicle traffic event not generated");
                 rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
             } else{
-                String[] parameters = temp.split(";");
+                String[] parameters = trafficEvent.split(";");
                 float[] floatParameters = new float[parameters.length];
                 for (int i =0; i< parameters.length; i++){
                     floatParameters[i] = Float.parseFloat(parameters[i]);
