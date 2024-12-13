@@ -226,7 +226,7 @@ class SumoConnector:
             vehID=veh_id,               # Vehicle ID
             edgeID=traci.vehicle.getRoadID(veh_id),              # Edge ID where the vehicle stops
             pos=280,                  # Position (meters) on the edge
-            laneIndex=1,               # Lane index (e.g., 0 for the first lane)
+            laneIndex=2,               # Lane index (e.g., 0 for the first lane)
             duration=10000,             # Duration (in seconds) the vehicle stays stopped
             flags=0                    # Flags (optional, can be left as 0)
         )
@@ -267,7 +267,7 @@ class SumoConnector:
 
     def create_stop_veh(self, veh_id, end_pos, stop_route):
         try:
-            traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos, departLane='1')
+            traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos, departLane='2')
             traci.vehicle.setSpeed(veh_id, 0)
         except Exception as e:
             logging.error(f"Failed to create stopped vehicle for vehicle ID '{veh_id}': {e}")
