@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+    <traci_server>
+      <remote-port value="2010"/> 
+      <num-clients value="1" />
+    </traci_server>
+    <input>
+        <net-file value="Town05.net.xml"/>
+        <route-files value="carlavtypes.rou.xml,Town05.rou.xml"/>
+    </input>
+    <gui_only>
+        <tracker-interval value="0.1"/>
+    </gui_only>
+    <time>
+        <step-length value="0.1"/>
+    </time>
+</configuration>

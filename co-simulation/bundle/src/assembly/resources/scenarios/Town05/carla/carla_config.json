@@ -1,0 +1,8 @@
+{
+    "updateInterval": 100,
+    "carlaUE4Path": "/opt/carla/",
+    "bridgePath": "/opt/carma-simulation/scenarios/Town05/carla; bridge.sh",
+    "carlaConnectionPort": 8913,
+    "carlaCDASimAdapterUrl":"http://172.2.0.5:8000/RPC2"
+
+}
