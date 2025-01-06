@@ -216,7 +216,7 @@ class SumoConnector:
             logging.error(f"Failed to calculate vehicle distance ")
             raise
 
-    def stop_veh(self, veh_id):
+    def stop_veh(self, veh_id, stop_lane, stop_dist):
         """
         stops vehicle at current place in SUMO
         """
@@ -226,8 +226,8 @@ class SumoConnector:
             vehID=veh_id,               # Vehicle ID
             edgeID=traci.vehicle.getRoadID(veh_id),              # Edge ID where the vehicle stops
             pos=70,                  # Position (meters) on the edge
-            laneIndex=2,               # Lane index (e.g., 0 for the first lane)
-            duration=10000,             # Duration (in seconds) the vehicle stays stopped
+            laneIndex=stop_lane,               # Lane index (e.g., 0 for the first lane)
+            duration=stop_dist,             # Duration (in seconds) the vehicle stays stopped
             flags=0                    # Flags (optional, can be left as 0)
         )
 

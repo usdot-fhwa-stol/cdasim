@@ -31,6 +31,8 @@ class MoveOverLaw:
         self._stop_route = config.get('Settings', 'stop_route')
         self._stop_pos = config.get('Settings', 'stop_pos')
         self._start_lane = config.get('Settings', 'start_lane')
+        self._stop_lane = config.get('Settings', 'stop_lane')
+        self._stop_dist_msger = config.get('Settings', 'stop_dist_msger')
         self.sumo_connector = sumo_connector
         self.sumo_connector.create_stop_veh(self._target_veh_id, self._stop_pos, self._stop_route)
         self.first_time_two_vehicles = True
@@ -46,7 +48,7 @@ class MoveOverLaw:
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
         target_lane_index = int(target_lane.split('_')[-1])
         self.sumo_connector.move_veh_lane(self._veh_id, target_lane_index)
-        self.sumo_connector.stop_veh(self._veh_id)
+        self.sumo_connector.stop_veh(self._veh_id, self._stop_lane, self._stop_dist_msger)
         self.is_stopped = True
         return
 
