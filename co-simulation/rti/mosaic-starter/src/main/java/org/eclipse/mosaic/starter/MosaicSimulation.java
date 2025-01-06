@@ -213,7 +213,9 @@ public class MosaicSimulation {
 
     private void initializeSingletons(CScenario scenarioConfiguration) {
         GeoProjection.initialize(createTransformation(scenarioConfiguration));
-        GeoProjection.getInstance().setGeoCalculator(new UtmGeoCalculator());
+        if (scenarioConfiguration.simulation.georeference == null){
+            GeoProjection.getInstance().setGeoCalculator(new UtmGeoCalculator());
+        }
         IpResolver.setSingleton(createIpResolver(scenarioConfiguration));
         NameGenerator.reset();
     }

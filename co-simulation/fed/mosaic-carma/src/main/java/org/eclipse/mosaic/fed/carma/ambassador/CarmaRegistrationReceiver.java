@@ -56,7 +56,7 @@ public class CarmaRegistrationReceiver extends CommonRegistrationReceiver<CarmaR
 
             // parse message
             String receivedPacket = new String(msg.getData(), 0, msg.getLength());
-            log.debug("Registration JSON received:  {}", receivedPacket);
+            log.info("Registration JSON received:  {}", receivedPacket);
             Gson gson = new Gson();
             CarmaRegistrationMessage parsedMessage = gson.fromJson(receivedPacket, CarmaRegistrationMessage.class);
 

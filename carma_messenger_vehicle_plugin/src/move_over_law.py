@@ -31,9 +31,13 @@ class MoveOverLaw:
         self._stop_route = config.get('Settings', 'stop_route')
         self._stop_pos = config.get('Settings', 'stop_pos')
         self._start_lane = config.get('Settings', 'start_lane')
+        self._stop_lane = config.get('Settings', 'stop_lane')
+        self._stop_dist_msger = config.get('Settings', 'stop_dist_msger')
         self.sumo_connector = sumo_connector
         self.sumo_connector.create_stop_veh(self._target_veh_id, self._stop_pos, self._stop_route)
         self.first_time_two_vehicles = True
+        self.is_get_closer = False
+        self.is_stopped = False
 
     def close_lane(self):
         #send lane closure message
@@ -44,7 +48,8 @@ class MoveOverLaw:
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
         target_lane_index = int(target_lane.split('_')[-1])
         self.sumo_connector.move_veh_lane(self._veh_id, target_lane_index)
-        self.sumo_connector.stop_veh(self._veh_id)
+        self.sumo_connector.stop_veh(self._veh_id, self._stop_lane, self._stop_dist_msger)
+        self.is_stopped = True
         return
 
     def get_closer(self):
@@ -64,10 +69,10 @@ class MoveOverLaw:
             veh_pos = self.sumo_connector.get_veh_pos(self._veh_id)
             target_pos = self.sumo_connector.get_veh_pos(self._target_veh_id)
             distance = self.sumo_connector.cal_distance(veh_pos, target_pos)
-            print("Distance: " + str(distance))
 
-            if distance < 30:
+            if distance < 30 and not self.is_stopped:
                 self.park_messenger()
                 self.close_lane()
-            elif distance < 250:
+            elif distance < 250 and not self.is_get_closer:
+                self.is_get_closer = True
                 self.get_closer()

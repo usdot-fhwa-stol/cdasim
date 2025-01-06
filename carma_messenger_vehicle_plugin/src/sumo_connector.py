@@ -16,6 +16,7 @@ import sys
 import os
 import logging
 import math
+import time
 
 if 'SUMO_HOME' in os.environ:
     tools_path = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -209,17 +210,26 @@ class SumoConnector:
         """
         try:
             distance = math.sqrt((pos_1[0] - pos_2[0])**2 + (pos_1[1] - pos_2[1])**2)
+            logging.debug("Distance to target: " + str(distance))
             return distance
         except Exception as e:
             logging.error(f"Failed to calculate vehicle distance ")
             raise
 
-    def stop_veh(self, veh_id):
+    def stop_veh(self, veh_id, stop_lane, stop_dist):
         """
         stops vehicle at current place in SUMO
         """
         try:
             traci.vehicle.setSpeed(veh_id, 0)
+            traci.vehicle.setStop(
+            vehID=veh_id,               # Vehicle ID
+            edgeID=traci.vehicle.getRoadID(veh_id),              # Edge ID where the vehicle stops
+            pos=70,                  # Position (meters) on the edge
+            laneIndex=stop_lane,               # Lane index (e.g., 0 for the first lane)
+            duration=stop_dist,             # Duration (in seconds) the vehicle stays stopped
+            flags=0                    # Flags (optional, can be left as 0)
+        )
 
         except Exception as e:
             logging.error(f"Failed to stop vehicle for vehicle ID '{veh_id}': {e}")
@@ -257,7 +267,7 @@ class SumoConnector:
 
     def create_stop_veh(self, veh_id, end_pos, stop_route):
         try:
-            traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos)
+            traci.vehicle.add(vehID = veh_id, routeID=stop_route, typeID="car", depart=0, departPos=end_pos, departLane='2')
             traci.vehicle.setSpeed(veh_id, 0)
         except Exception as e:
             logging.error(f"Failed to create stopped vehicle for vehicle ID '{veh_id}': {e}")

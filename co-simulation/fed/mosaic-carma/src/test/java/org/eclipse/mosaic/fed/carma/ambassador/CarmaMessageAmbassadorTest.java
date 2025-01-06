@@ -69,7 +69,7 @@ public class CarmaMessageAmbassadorTest {
         when(handleMock.getId()).thenReturn("carma");
 
         ambassador = new CarmaMessageAmbassador(
-                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")), instanceManager);
+                new AmbassadorParameter("carma", testFileRule.get("carma_config.json")));
 
         ambassador.setRtiAmbassador(rtiMock);
 
