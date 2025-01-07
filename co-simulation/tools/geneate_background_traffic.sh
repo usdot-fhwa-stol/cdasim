@@ -1,24 +1,48 @@
 #!/bin/bash
 #This script will generate random traffic to be used in Sumo-carla co simulation for a any Sumo Network File given the simulation duration, number of vehicles and a random number seed
 # This script requires  installation of Sumo tools randomTrips.py and Python
-echo "Sumo Network Files in this directoryi:"
-ls *.net.xml
-# Prompt for user inputs
-echo 
-echo "Enter the Sumo Network File Name:"
-read net_file
 
-echo "Output File Name:"
-read out_file
+#Usage:
+# 1. Run with arguments:
+#    ./generate_background_traffic.sh <network_file> <output_file> <duration> <num_vehicles> <random_seed>
+#    Example: ./generate_traffic.sh network.net.xml routes.rou.xml 600 50 42
+# 2. Or run interactively by omitting arguments:
+#    ./generate_traffic.sh
 
-echo "Enter Duration of the Simulation:"
-read sim_duration
+# Checking for missing arguments 
+if [ "$#" -lt 5 ]; then
+    echo "Missing arguments. You need to provide:"
+    echo "1. SUMO Network File Name"
+    echo "2. Output File Name"
+    echo "3. Duration of the Simulation"
+    echo "4. Number of Vehicles"
+    echo "5. Random Number Seed"
+    echo
 
-echo "How many vehicles you want to instantiate?:"
-read veh_number
+    # Prompting for missing inputs
+    echo "Enter the SUMO Network File Name:"
+    read net_file
 
-echo "Enter Random Number Seed (Different Seed will genrate different traffic):"
-read seed
+    echo "Enter the Output File Name:"
+    read out_file
+
+    echo "Enter Duration of the Simulation:"
+    read sim_duration
+
+    echo "Enter the Number of Vehicles:"
+    read veh_number
+
+    echo "Enter Random Number Seed (Different Seed will generate different traffic):"
+    read seed
+else
+    # Assigning inputs from command-line arguments
+    net_file=$1
+    out_file=$2
+    sim_duration=$3
+    veh_number=$4
+    seed=$5
+fi
+
 
 # Calculate the rate of vehicle generation
 rate=$(echo "$sim_duration / $veh_number" | bc -l)
