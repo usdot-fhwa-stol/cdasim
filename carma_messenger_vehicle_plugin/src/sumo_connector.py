@@ -297,5 +297,4 @@ class SumoConnector:
             logging.error(f"Failed to get leftmost lane of vehicle location for vehicle ID '{veh_id}': {e}")
             raise
     def get_sim_time(self):
-
         return traci.simulation.getTime()

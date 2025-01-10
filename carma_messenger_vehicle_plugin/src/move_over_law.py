@@ -40,7 +40,7 @@ class MoveOverLaw:
         self.is_get_closer = False
         self.is_stopped = False
 
-    def setup_logging(level):
+    def setup_logging(self, level):
         numeric_level = getattr(logging, level.upper(), None)
         if not isinstance(numeric_level, int):
             raise ValueError('Invalid log level: %s' % level)
@@ -52,7 +52,7 @@ class MoveOverLaw:
         #send lane closure message
         combined_string = self._closure_uptrack + ";" + self._closure_downtrack + ";" + self._min_gap + ";" + self._advisory_speed_limit
         self.sumo_connector.set_parameter(self._veh_id, 'VehicleBroadcastTrafficEvent', combined_string)
-        logging.info(self.sumo_connector.get_sim_time() + " Mobility message " + combined_string + " sent")
+        logging.info(str(self.sumo_connector.get_sim_time()) + " Mobility message " + combined_string + " sent")
 
     def park_messenger(self):
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
