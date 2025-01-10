@@ -13,13 +13,14 @@
  #   the License.
 
 from sumo_connector import SumoConnector
-
+from datetime import datetime
 import configparser
+import logging
 
 class MoveOverLaw:
 
     def __init__(self, sumo_connector, veh_id):
-
+        self.setup_logging('INFO')
         config = configparser.ConfigParser()
         config.read('resources/move_over_law_cfg.ini')
         self._closure_uptrack = config.get('Settings', 'closure_uptrack')
@@ -39,10 +40,19 @@ class MoveOverLaw:
         self.is_get_closer = False
         self.is_stopped = False
 
+    def setup_logging(level):
+        numeric_level = getattr(logging, level.upper(), None)
+        if not isinstance(numeric_level, int):
+            raise ValueError('Invalid log level: %s' % level)
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_filename = f"../logs/log_moveoverlaw_{current_time}.log"
+        logging.basicConfig(level=numeric_level, format='%(asctime)s - %(levelname)s - %(message)s', filename=log_filename)
+
     def close_lane(self):
         #send lane closure message
         combined_string = self._closure_uptrack + ";" + self._closure_downtrack + ";" + self._min_gap + ";" + self._advisory_speed_limit
         self.sumo_connector.set_parameter(self._veh_id, 'VehicleBroadcastTrafficEvent', combined_string)
+        logging.info(self.sumo_connector.get_sim_time() + " Mobility message " + combined_string + " sent")
 
     def park_messenger(self):
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)

@@ -47,7 +47,7 @@ class MsgerVehicleCfg:
         - 'departureTime': int, the simulation time at which the vehicle starts.
         - 'lcm': int, an integer representing the lane change mode using SUMO's encoding.
         - 'cfm': str, the car following model that determines how the vehicle follows other vehicles.
-        
+
         Parameters:
         - cfg_path: The file path to the JSON configuration file containing messenger vehicle data.
         type: str
@@ -92,7 +92,7 @@ class MsgerVehicleCfg:
         - list of str: The route associated with the vehicle.
         """
         return self._msger_veh_dict[veh_id]["route"]
-    
+
     def get_veh_speed(self, veh_id):
         """
         Retrieves the speed setting for a specified vehicle ID.
@@ -105,7 +105,7 @@ class MsgerVehicleCfg:
         - float: The speed of the vehicle.
         """
         return self._msger_veh_dict[veh_id]["speed"]
-    
+
     def get_veh_ids(self):
         """
         Retrieves a list of all vehicle IDs managed by this configuration.
@@ -114,7 +114,7 @@ class MsgerVehicleCfg:
         - list of str: A list of vehicle IDs.
         """
         return list(self._msger_veh_dict.keys())
-    
+
     def get_veh_departure_time(self, veh_id):
         """
         Retrieves the departure time for a specified vehicle ID.
@@ -127,7 +127,7 @@ class MsgerVehicleCfg:
         - int: The departure time of the vehicle.
         """
         return self._msger_veh_dict[veh_id]["departureTime"]
-    
+
     def get_veh_lcm(self, veh_id):
         """
         Retrieves the lane change mode setting for a specified vehicle ID.
@@ -140,7 +140,7 @@ class MsgerVehicleCfg:
         - int: The lane change mode of the vehicle.
         """
         return self._msger_veh_dict[veh_id]["lcm"]
-    
+
     def get_veh_cfm(self, veh_id):
         """
         Retrieves the car-following model setting for a specified vehicle ID.
@@ -153,7 +153,7 @@ class MsgerVehicleCfg:
         - str: The car-following model of the vehicle.
         """
         return self._msger_veh_dict[veh_id]["cfm"]
-    
+
     def set_veh_state(self, veh_id, state):
         """
         Sets the state of a specified vehicle ID.
@@ -168,7 +168,7 @@ class MsgerVehicleCfg:
             logging.info("Set vehicle " + str(veh_id) + " state to " + state.name)
         else:
             logging.warning(f"Attempted to set state for a non-existent vehicle ID: {veh_id}")
-    
+
     def get_veh_state(self, veh_id):
         """
         Retrieves the state of a specified vehicle ID.
