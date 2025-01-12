@@ -166,7 +166,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
     }
 
     private void receiveInteraction(MsgerRequestTrafficEvent interaction) throws InternalFederateException {
-        
+
         VehicleGetParameter veh = new VehicleGetParameter();
         String trafficEvent  = "";
         Set<String> vehicleData = traci.getSimulationControl().getKnownVehicles();
@@ -175,7 +175,6 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             log.debug("Vehicle info: {}", interaction.toString());
             if(!vehicleData.contains(interaction.vehicleId())){return;}
             trafficEvent = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
-        
             if (trafficEvent.equals("")) {
                 log.debug("No traffic event found");
                 rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
@@ -199,7 +198,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             log.error("Unexpected error: " + e.getMessage());
         }
     }
-        
+
 
     /**
      * Handles the {@link VehicleRegistration}-registration and adds the vehicle to
@@ -347,7 +346,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             if (vehiclesAddedViaRti.contains(vehicleId)) { // only handle route file vehicles here
                 continue;
             }
-            vehiclesAddedViaRouteFile.add(vehicleId);          
+            vehiclesAddedViaRouteFile.add(vehicleId);
             vehicleTypeId = traci.getVehicleControl().getVehicleTypeId(vehicleId);
             try {
                 rti.triggerInteraction(new ScenarioVehicleRegistration(this.nextTimeStep, vehicleId, vehicleTypeId));
