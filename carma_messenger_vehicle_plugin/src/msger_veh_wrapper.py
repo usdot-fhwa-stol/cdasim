@@ -14,6 +14,7 @@
 
 import argparse
 import logging
+import os
 from sumo_connector import SumoConnector
 from msger_veh_cfg import MsgerVehicleCfg
 from msger_veh_cfg import VehicleState
