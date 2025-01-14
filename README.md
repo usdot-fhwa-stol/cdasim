@@ -24,6 +24,6 @@ By contributing to the Federal Highway Administration (FHWA) Connected Automated
 Some of the packages within this repo contain different licensing restrictions. Consult the README in each package for details.  
 
 ## Contact
-Please click on the CARMA logo below to visit the Federal Highway Adminstration(FHWA) CARMA website.
+Please click on the CARMA logo below to visit the Federal Highway Adminstration(FHWA) CARMA website. For more information, contact CAVSupportServices@dot.gov.
 
 [![CARMA Image](https://raw.githubusercontent.com/usdot-fhwa-stol/carma-platform/develop/docs/image/CARMA_icon.png)](https://highways.dot.gov/research/research-programs/operations/CARMA)
