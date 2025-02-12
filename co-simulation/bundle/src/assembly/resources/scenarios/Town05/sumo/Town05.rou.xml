@@ -29,7 +29,7 @@
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     <vType id="passenger" vClass="passenger"/>
-    <vehicle id="1" type="vehicle.seat.leon" depart="999.00">
+    <vehicle id="0" type="vehicle.seat.leon" depart="999.00">
         <route edges="-46.0.00 -47.0.00 0.0.00 39.0.00 -32.0.00"/>
     </vehicle>
 </routes>
