@@ -28,4 +28,5 @@ public class CIpResolver {
     public String tmcNet = "15.0.0.0";
     public String carmaVehicleNet = "16.0.0.0";
     public String carlaVehicleNet = "17.0.0.0";
+    public String msgerVehicleNet = "18.0.0.0";
 }

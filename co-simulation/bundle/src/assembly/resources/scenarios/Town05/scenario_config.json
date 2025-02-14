@@ -1,0 +1,42 @@
+{
+    "simulation": {
+        "id": "Town05",
+        "duration": "600s",
+        "randomSeed": 212323853,
+        "projection": {
+            "centerCoordinates": {
+                "latitude": 0,
+                "longitude": 0
+            },
+            "cartesianOffset": {
+                "x": 270.80,
+                "y": 200.32
+            }
+        },
+        "network": {
+            "netMask": "255.255.0.0",
+            "vehicleNet": "10.1.0.0",
+            "rsuNet": "10.2.0.0",
+            "tlNet": "10.3.0.0",
+            "csNet": "10.4.0.0",
+            "serverNet": "10.5.0.0",
+            "tmcNet": "10.6.0.0"
+        },
+        "georeference":"+proj=tmerc +lat_0=0 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+    },
+    "federates": {
+        "application": true,
+        "cell": false,
+        "environment": false,
+        "sns": false,
+        "ns3": true,
+        "omnetpp": false,
+        "output": false,
+        "sumo": true,
+        "carla": true,
+        "carma": true,
+        "infrastructure": true,
+        "carma-cloud": false
+
+    }
+}

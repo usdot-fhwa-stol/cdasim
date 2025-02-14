@@ -54,6 +54,12 @@
             <version>${mosaic.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.mosaic</groupId>
+                    <artifactId>mosaic-application</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

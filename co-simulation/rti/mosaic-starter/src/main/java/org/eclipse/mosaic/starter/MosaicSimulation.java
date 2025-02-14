@@ -15,10 +15,12 @@
 
 package org.eclipse.mosaic.starter;
 
+import org.eclipse.mosaic.lib.geo.MutableGeoPoint;
 import org.eclipse.mosaic.lib.geo.UtmPoint;
 import org.eclipse.mosaic.lib.geo.UtmZone;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.transform.GeoProjection;
+import org.eclipse.mosaic.lib.transform.Proj4Projection;
 import org.eclipse.mosaic.lib.transform.UtmGeoCalculator;
 import org.eclipse.mosaic.lib.transform.Wgs84Projection;
 import org.eclipse.mosaic.lib.util.NameGenerator;
@@ -211,7 +213,9 @@ public class MosaicSimulation {
 
     private void initializeSingletons(CScenario scenarioConfiguration) {
         GeoProjection.initialize(createTransformation(scenarioConfiguration));
-        GeoProjection.getInstance().setGeoCalculator(new UtmGeoCalculator());
+        if (scenarioConfiguration.simulation.georeference == null){
+            GeoProjection.getInstance().setGeoCalculator(new UtmGeoCalculator());
+        }
         IpResolver.setSingleton(createIpResolver(scenarioConfiguration));
         NameGenerator.reset();
     }
@@ -254,6 +258,13 @@ public class MosaicSimulation {
                     "Invalid Wgs84UtmTransform configuration: no center coordinates given");
             Validate.notNull(projectionConfig.cartesianOffset,
                     "Invalid Wgs84UtmTransform configuration: no cartesian offset given");
+
+            // Check if georeference is specified
+            if (scenarioConfiguration.simulation.georeference != null)
+            {
+                MutableGeoPoint origin = new MutableGeoPoint(projectionConfig.centerCoordinates.getLongitude(), projectionConfig.centerCoordinates.getLongitude(), projectionConfig.centerCoordinates.getAltitude());
+                return new Proj4Projection(origin, projectionConfig.cartesianOffset.getX(), projectionConfig.cartesianOffset.getY(), scenarioConfiguration.simulation.georeference);
+            }
 
             UtmPoint origin = UtmPoint.eastNorth(
                     UtmZone.from(projectionConfig.centerCoordinates),

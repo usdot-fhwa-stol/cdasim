@@ -82,6 +82,9 @@ public class CScenario {
          */
         @SerializedName("network")
         public CIpResolver networkConfig = new CIpResolver();
+
+        @Nullable
+        public String georeference;
     }
 
 }

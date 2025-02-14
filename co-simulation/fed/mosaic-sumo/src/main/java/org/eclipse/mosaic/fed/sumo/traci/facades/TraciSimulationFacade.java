@@ -15,6 +15,15 @@
 
 package org.eclipse.mosaic.fed.sumo.traci.facades;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.eclipse.mosaic.fed.sumo.config.CSumo;
 import org.eclipse.mosaic.fed.sumo.traci.TraciCommandException;
 import org.eclipse.mosaic.fed.sumo.traci.TraciConnection;
@@ -64,18 +73,8 @@ import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
 import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.InternalFederateException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class TraciSimulationFacade {
 
@@ -883,5 +882,9 @@ public class TraciSimulationFacade {
         } catch (TraciCommandException e) {
             log.warn("Could not remove vehicle {}", vehicleId);
         }
+    }
+
+    public Set<String> getKnownVehicles() {
+        return knownVehicles;
     }
 }
