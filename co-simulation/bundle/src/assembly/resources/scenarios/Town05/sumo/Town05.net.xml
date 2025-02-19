@@ -1448,22 +1448,68 @@
     </edge>
 
     <tlLogic id="421" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGGgrrrrGGGgrrrr"/>
+        <phase duration="42" state="ggggrrrrggggrrrr"/>
         <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
-        <phase duration="42" state="rrrrGGGgrrrrGGGg"/>
+        <phase duration="42" state="rrrrggggrrrrgggg"/>
         <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+        <param key="linkSignalID:0" value="2386"/>
+        <param key="linkSignalID:1" value="2386"/>
+        <param key="linkSignalID:2" value="2386"/>
+        <param key="linkSignalID:3" value="2386"/>
+        <param key="linkSignalID:4" value="2387"/>
+        <param key="linkSignalID:5" value="2387"/>
+        <param key="linkSignalID:6" value="2387"/>
+        <param key="linkSignalID:7" value="2387"/>
+        <param key="linkSignalID:8" value="2388"/>
+        <param key="linkSignalID:9" value="2388"/>
+        <param key="linkSignalID:10" value="2388"/>
+        <param key="linkSignalID:11" value="2388"/>
+        <param key="linkSignalID:12" value="2385"/>
+        <param key="linkSignalID:13" value="2385"/>
+        <param key="linkSignalID:14" value="2385"/>
+        <param key="linkSignalID:15" value="2385"/>
     </tlLogic>
     <tlLogic id="685" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGGgrrrGGGgrrr"/>
+        <phase duration="42" state="ggggrrrggggrrr"/>
         <phase duration="3"  state="yyyyrrryyyyrrr"/>
-        <phase duration="42" state="rrrrGGgrrrrGGg"/>
+        <phase duration="42" state="rrrrgggrrrrggg"/>
         <phase duration="3"  state="rrrryyyrrrryyy"/>
+        <param key="linkSignalID:0" value="2408"/>
+        <param key="linkSignalID:1" value="2408"/>
+        <param key="linkSignalID:2" value="2408"/>
+        <param key="linkSignalID:3" value="2408"/>
+        <param key="linkSignalID:4" value="2407"/>
+        <param key="linkSignalID:5" value="2407"/>
+        <param key="linkSignalID:6" value="2407"/>
+        <param key="linkSignalID:7" value="2406"/>
+        <param key="linkSignalID:8" value="2406"/>
+        <param key="linkSignalID:9" value="2406"/>
+        <param key="linkSignalID:10" value="2406"/>
+        <param key="linkSignalID:11" value="2405"/>
+        <param key="linkSignalID:12" value="2405"/>
+        <param key="linkSignalID:13" value="2405"/>
     </tlLogic>
     <tlLogic id="965" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGGgrrrrGGGgrrrr"/>
+        <phase duration="42" state="ggggrrrrggggrrrr"/>
         <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
-        <phase duration="42" state="rrrrGGGgrrrrGGGg"/>
+        <phase duration="42" state="rrrrggggrrrrgggg"/>
         <phase duration="3"  state="rrrryyyyrrrryyyy"/>
+        <param key="linkSignalID:0" value="2402"/>
+        <param key="linkSignalID:1" value="2402"/>
+        <param key="linkSignalID:2" value="2402"/>
+        <param key="linkSignalID:3" value="2402"/>
+        <param key="linkSignalID:4" value="2401"/>
+        <param key="linkSignalID:5" value="2401"/>
+        <param key="linkSignalID:6" value="2401"/>
+        <param key="linkSignalID:7" value="2401"/>
+        <param key="linkSignalID:8" value="2404"/>
+        <param key="linkSignalID:9" value="2404"/>
+        <param key="linkSignalID:10" value="2404"/>
+        <param key="linkSignalID:11" value="2404"/>
+        <param key="linkSignalID:12" value="2403"/>
+        <param key="linkSignalID:13" value="2403"/>
+        <param key="linkSignalID:14" value="2403"/>
+        <param key="linkSignalID:15" value="2403"/>
     </tlLogic>
 
     <junction id="1050" type="priority" x="145.57" y="57.29" z="0.03" incLanes="-41.0.00_0 -41.0.00_1 -41.0.00_2 -41.0.00_3 -41.0.00_4 42.0.00_0 42.0.00_1 42.0.00_2 42.0.00_3 42.0.00_4 51.0.00_0 51.0.00_1 51.0.00_2 51.0.00_3 51.0.00_4" intLanes=":1050_0_0 :1050_1_0 :1050_1_1 :1050_3_0 :1050_3_1 :1050_8_0 :1050_6_0 :1050_7_0" shape="161.68,62.99,0.03 161.58,40.73,0.03 129.31,40.89,0.03 129.41,63.15,0.03 130.25,63.31,0.03 130.54,63.52,0.03 130.74,63.81,0.03 130.86,64.18,0.03 130.90,64.64,0.03 160.16,64.90,0.03 160.34,63.85,0.03 160.55,63.47,0.03 160.84,63.21,0.03 161.22,63.05,0.03">
