@@ -1469,11 +1469,27 @@
         <param key="linkSignalID:14" value="2385"/>
         <param key="linkSignalID:15" value="2385"/>
     </tlLogic>
-    <tlLogic id="685" type="static" programID="0" offset="0">
-        <phase duration="42" state="ggggrrrggggrrr"/>
-        <phase duration="3"  state="yyyyrrryyyyrrr"/>
-        <phase duration="42" state="rrrrgggrrrrggg"/>
-        <phase duration="3"  state="rrrryyyrrrryyy"/>
+    <tlLogic id="509" type="static" programID="0" offset="0">
+        <phase duration="90" state="gggggggggggggggg"/>
+        <param key="linkSignalID:0" value="2392"/>
+        <param key="linkSignalID:1" value="2392"/>
+        <param key="linkSignalID:2" value="2392"/>
+        <param key="linkSignalID:3" value="2392"/>
+        <param key="linkSignalID:4" value="2391"/>
+        <param key="linkSignalID:5" value="2391"/>
+        <param key="linkSignalID:6" value="2391"/>
+        <param key="linkSignalID:7" value="2391"/>
+        <param key="linkSignalID:8" value="2389"/>
+        <param key="linkSignalID:9" value="2389"/>
+        <param key="linkSignalID:10" value="2389"/>
+        <param key="linkSignalID:11" value="2389"/>
+        <param key="linkSignalID:12" value="2390"/>
+        <param key="linkSignalID:13" value="2390"/>
+        <param key="linkSignalID:14" value="2390"/>
+        <param key="linkSignalID:15" value="2390"/>
+    </tlLogic>
+    <tlLogic id="829" type="static" programID="0" offset="0">
+        <phase duration="90" state="gggggggggggggggg"/>
         <param key="linkSignalID:0" value="2408"/>
         <param key="linkSignalID:1" value="2408"/>
         <param key="linkSignalID:2" value="2408"/>
@@ -1481,14 +1497,17 @@
         <param key="linkSignalID:4" value="2407"/>
         <param key="linkSignalID:5" value="2407"/>
         <param key="linkSignalID:6" value="2407"/>
-        <param key="linkSignalID:7" value="2406"/>
+        <param key="linkSignalID:7" value="2407"/>
         <param key="linkSignalID:8" value="2406"/>
         <param key="linkSignalID:9" value="2406"/>
         <param key="linkSignalID:10" value="2406"/>
-        <param key="linkSignalID:11" value="2405"/>
+        <param key="linkSignalID:11" value="2406"/>
         <param key="linkSignalID:12" value="2405"/>
         <param key="linkSignalID:13" value="2405"/>
+        <param key="linkSignalID:14" value="2405"/>
+        <param key="linkSignalID:15" value="2405"/>
     </tlLogic>
+
     <tlLogic id="965" type="static" programID="0" offset="0">
         <phase duration="42" state="ggggrrrrggggrrrr"/>
         <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
