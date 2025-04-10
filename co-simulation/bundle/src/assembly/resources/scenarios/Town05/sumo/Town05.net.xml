@@ -1435,9 +1435,6 @@
 
     <tlLogic id="421" type="static" programID="0" offset="0">
         <phase duration="42" state="ggggrrrrggggrrrr"/>
-        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
-        <phase duration="42" state="rrrrggggrrrrgggg"/>
-        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
         <param key="linkSignalID:0" value="2386"/>
         <param key="linkSignalID:1" value="2386"/>
         <param key="linkSignalID:10" value="2388"/>
@@ -1456,7 +1453,7 @@
         <param key="linkSignalID:9" value="2388"/>
     </tlLogic>
     <tlLogic id="509" type="static" programID="0" offset="0">
-        <phase duration="90" state="gggggggggggggggg"/>
+        <phase duration="90" state="ggggrrrrggggrrrr"/>
         <param key="linkSignalID:0" value="2392"/>
         <param key="linkSignalID:1" value="2392"/>
         <param key="linkSignalID:2" value="2392"/>
@@ -1475,7 +1472,10 @@
         <param key="linkSignalID:15" value="2390"/>
     </tlLogic>
     <tlLogic id="829" type="static" programID="0" offset="0">
-        <phase duration="90" state="gggggggggggggggg"/>
+        <phase duration="42" state="ggggrrrrggggrrrr"/>
+        <phase duration="3"  state="yyyyrrrryyyyrrrr"/>
+        <phase duration="42" state="rrrrggggrrrrgggg"/>
+        <phase duration="3"  state="rrrryyyyrrrryyyy"/>
         <param key="linkSignalID:0" value="2408"/>
         <param key="linkSignalID:1" value="2408"/>
         <param key="linkSignalID:2" value="2408"/>
