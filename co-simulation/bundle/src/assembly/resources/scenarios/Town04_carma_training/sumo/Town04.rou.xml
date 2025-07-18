@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2023-05-23 13:36:19 by Eclipse SUMO netedit Version 1.16.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="MoveOverLaw" carFollowModel="IDM"/>
+    <vType id="car" carFollowModel="IDM" lcStrategic="-1" lcCooperative="-1" lcSpeedGain="0"  lcKeepRight="0"/>
+    <!-- Routes -->
+    <route id="r_0" edges="-7 -8 -9 -10 -11 -12 -13 -14 -36 -37 -38 -39 33 47 44 39 38 37 36 35"/>
+    <route id="stop1" edges="-43"/>
+    <route id="outside_traffic" edges="-50 -43 -36 -37 -38"/>
+    <!-- Vehicles, persons and containers (sorted by depart) -->
+    <vehicle id="v_1" depart="0.00" route="outside_traffic"/>
+    <vehicle id="v_2" depart="2.00" route="outside_traffic"/>
+    <vehicle id="v_3" depart="4.00" route="outside_traffic"/>
+    <vehicle id="v_4" depart="6.00" route="outside_traffic"/>
+    <vehicle id="v_5" depart="8.00" route="outside_traffic"/>
+    <vehicle id="v_6" depart="10.00" route="outside_traffic"/>
+    <vehicle id="v_7" depart="12.00" route="outside_traffic"/>
+    <vehicle id="v_8" depart="14.00" route="outside_traffic"/>
+    <vehicle id="v_9" depart="16.00" route="outside_traffic"/>
+    <vehicle id="v_10" depart="18.00" route="outside_traffic"/>
+    <vehicle id="v_11" depart="20.00" route="outside_traffic"/>
+    <vehicle id="v_12" depart="22.00" route="outside_traffic"/>
+    <vehicle id="v_13" depart="24.00" route="outside_traffic"/>
+    <vehicle id="v_14" depart="26.00" route="outside_traffic"/>
+    <vehicle id="v_15" depart="28.00" route="outside_traffic"/>
+    <vehicle id="v_16" depart="30.00" route="outside_traffic"/>
+    <vehicle id="v_17" depart="32.00" route="outside_traffic"/>
+    <vehicle id="v_18" depart="34.00" route="outside_traffic"/>
+    <vehicle id="v_19" depart="36.00" route="outside_traffic"/>
+    <vehicle id="v_20" depart="38.00" route="outside_traffic"/>
+    <vehicle id="v_21" depart="40.00" route="outside_traffic"/>
+    <vehicle id="v_22" depart="42.00" route="outside_traffic"/>
+    <vehicle id="v_23" depart="44.00" route="outside_traffic"/>
+    <vehicle id="v_24" depart="46.00" route="outside_traffic"/>
+    <vehicle id="v_25" depart="48.00" route="outside_traffic"/>
+    <vehicle id="v_26" depart="50.00" route="outside_traffic"/>
+    <vehicle id="v_27" depart="52.00" route="outside_traffic"/>
+    <vehicle id="v_28" depart="54.00" route="outside_traffic"/>
+    <vehicle id="v_29" depart="56.00" route="outside_traffic"/>
+    <vehicle id="v_30" depart="58.00" route="outside_traffic"/>
+    <vehicle id="v_31" depart="60.00" route="outside_traffic"/>
+    <vehicle id="v_0" depart="999.00" route="r_0"/>
+</routes>
