@@ -2,8 +2,6 @@
 
 This is a graphical user interface (GUI) built with PySide6 for managing CDA (Cooperative Driving Automation) simulations. It allows users to browse a `cdasim-config` repository folder, select valid configurations, set up map and route files, pull Docker images, build and set configurations, and start/stop simulations. The GUI includes logging, toolbar buttons for quick access to log directories, and robust error handling.
 
-![Alt text](docs/GUI.png)
-
 ## Features
 - Browse and select a `cdasim-config` repo folder.
 - Automatically detect and list valid configs in a dropdown (based on presence of required files/folders like `docker-compose.yml`, `build-image.sh`, `cdasim_config/start_simulation`, etc.).
@@ -12,9 +10,6 @@ This is a graphical user interface (GUI) built with PySide6 for managing CDA (Co
 - Build images and set configurations using `build-image.sh` and `carma config set`.
 - Start and stop simulations using scripts in the selected config.
 - View logs in the GUI and open log directories (`/opt/carma/logs` and `/opt/carma-simulation/logs`) via toolbar buttons.
-- Colored logging for errors (red) and warnings (orange).
-- Handles non-zero exit codes from commands like `carma config set` gracefully.
-- Isolates potentially crashing operations (e.g., stop simulation) in separate processes to prevent GUI crashes.
 
 ## Dependencies
 ### Python Packages
@@ -24,7 +19,7 @@ This is a graphical user interface (GUI) built with PySide6 for managing CDA (Co
 
 Install all Python dependencies:
 ```bash
-pip install PySide6 PyYAML
+python3 -m pip install PySide6 PyYAML
 ```
 
 ### System Dependencies (for Qt on Linux)
@@ -33,10 +28,6 @@ Qt requires certain system libraries to run properly, especially the `xcb` platf
 sudo apt update
 sudo apt install libxcb-cursor0 libxcb-xinerama0 libxcb-xinput0 libxkbcommon-x11-0 libfontconfig1 libxrender1 libxi6 libx11-xcb1 libsm6 libxext6 libgl1-mesa-glx xdg-utils
 ```
-
-For other distributions:
-- Fedora/Red Hat: `sudo dnf install libxcb libxcb-devel xcb-util-cursor libXinerama libxkbcommon-x11 fontconfig libXrender libXi libXext mesa-libGL xdg-utils`
-- Ensure `xdg-open` is installed for opening log directories.
 
 ### Other Requirements
 - Docker and Docker Compose: For pulling images and managing containers.
@@ -48,18 +39,18 @@ For other distributions:
 1. Clone or download this repository/script.
 2. Install Python dependencies:
    ```bash
-   pip install PySide6 PyYAML
+   python3 -m pip install PySide6 PyYAML
    ```
-3. Install system dependencies as above.
-4. Ensure Docker is installed and running, and your user has permissions (add to `docker` group if needed: `sudo usermod -aG docker $USER` and log out/in).
+3. Ensure Docker is installed and running, and your user has permissions (add to `docker` group if needed: `sudo usermod -aG docker $USER` and log out/in).
+
+![Alt text](docs/GUI.png)
 
 ## Usage
 1. Run the script:
    ```bash
    python3 gui_qt.py
    ```
-   - If you encounter Qt platform plugin errors (e.g., "xcb"), verify system dependencies and environment variables like `DISPLAY`.
-
+  
 2. **Browse Repo Folder**:
    - Click "Browse Repo Folder" in the toolbar to select the `cdasim-config` repository folder.
    - Valid configs will be listed in the "Select Config" dropdown.
