@@ -2,6 +2,8 @@
 
 This is a graphical user interface (GUI) built with PySide6 for managing CDA (Cooperative Driving Automation) simulations. It allows users to browse a `cdasim-config` repository folder, select valid configurations, set up map and route files, pull Docker images, build and set configurations, and start/stop simulations. The GUI includes logging, toolbar buttons for quick access to log directories, and robust error handling.
 
+![Alt text](docs/GUI.png)
+
 ## Features
 - Browse and select a `cdasim-config` repo folder.
 - Automatically detect and list valid configs in a dropdown (based on presence of required files/folders like `docker-compose.yml`, `build-image.sh`, `cdasim_config/start_simulation`, etc.).
