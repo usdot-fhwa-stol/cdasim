@@ -43,7 +43,6 @@ sudo apt install libxcb-cursor0 libxcb-xinerama0 libxcb-xinput0 libxkbcommon-x11
    ```
 3. Ensure Docker is installed and running, and your user has permissions (add to `docker` group if needed: `sudo usermod -aG docker $USER` and log out/in).
 
-![Alt text](docs/GUI.png)
 
 ## Usage
 1. Run the script:
@@ -71,5 +70,8 @@ sudo apt install libxcb-cursor0 libxcb-xinerama0 libxcb-xinput0 libxkbcommon-x11
 
 6. **View Logs**:
    - Click "Open CARMA Logs" or "Open CARMA-Simulation Logs" in the toolbar to open the respective directories in your file explorer.
+
+
+![Alt text](docs/GUI.png)
 
 </readme>
