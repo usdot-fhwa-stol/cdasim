@@ -290,7 +290,6 @@ class CDASimGUI(QMainWindow):
             
             if matched_file:
                 if matched_file != dest_map:
-                    # Backup current if it exists (we know it's different or missing)
                     if os.path.exists(dest_map):
                         now = datetime.now().strftime("%m%d%Y%H%M%S")
                         backup = os.path.join(dest_maps_dir, f"vector_map_{now}.osm.backup")
