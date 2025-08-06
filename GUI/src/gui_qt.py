@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from multiprocessing import Process, Queue
 from PySide6.QtCore import QTimer
+import filecmp
 
 class FileSelectDialog(QDialog):
     def __init__(self, title, files, parent=None):
@@ -47,10 +48,10 @@ class FileSelectDialog(QDialog):
     def get_selected(self):
         return self.combo.currentText() if self.result() == QDialog.Accepted else None
 
-class SimulatorGUI(QMainWindow):
+class CDASimGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CDA Simulator GUI")
+        self.setWindowTitle("CDASim GUI")
         self.setMinimumSize(600, 400)
         
         self.repo_folder = None
@@ -260,6 +261,59 @@ class SimulatorGUI(QMainWindow):
             self.log_message(f"Error reading docker-compose.yml: {e}", "error")
             return None
 
+    def handle_map_files(self, map_folder, selected_map):
+        """
+        Handle OSM map file comparison and copying to /opt/carma/maps.
+        Returns True if successful, False otherwise.
+        """
+        try:
+            dest_maps_dir = "/opt/carma/maps"
+            os.makedirs(dest_maps_dir, exist_ok=True)
+            dest_map = os.path.join(dest_maps_dir, "vector_map.osm")
+            selected_map_path = os.path.join(map_folder, selected_map)
+            
+            matched_file = None
+            
+            # Check if current map matches
+            if os.path.exists(dest_map) and filecmp.cmp(selected_map_path, dest_map, shallow=False):
+                matched_file = dest_map
+                self.log_message("Current map already matches the selected one; no changes needed.")
+            
+            # If not, check backups for a match
+            if not matched_file:
+                for filename in os.listdir(dest_maps_dir):
+                    if filename.endswith(".osm.backup"):
+                        backup_path = os.path.join(dest_maps_dir, filename)
+                        if filecmp.cmp(selected_map_path, backup_path, shallow=False):
+                            matched_file = backup_path
+                            break
+            
+            if matched_file:
+                if matched_file != dest_map:
+                    # Backup current if it exists (we know it's different or missing)
+                    if os.path.exists(dest_map):
+                        now = datetime.now().strftime("%m%d%Y%H%M%S")
+                        backup = os.path.join(dest_maps_dir, f"vector_map_{now}.osm.backup")
+                        os.rename(dest_map, backup)
+                        self.log_message(f"Backed up existing map to {backup}")
+                    # Rename matched backup to current
+                    os.rename(matched_file, dest_map)
+                    self.log_message(f"Reused matching backup and renamed it to {dest_map}")
+            else:
+                # No match: Backup current if exists, then copy new
+                if os.path.exists(dest_map):
+                    now = datetime.now().strftime("%m%d%Y%H%M%S")
+                    backup = os.path.join(dest_maps_dir, f"vector_map_{now}.osm.backup")
+                    os.rename(dest_map, backup)
+                    self.log_message(f"Backed up existing map to {backup}")
+                shutil.copy(selected_map_path, dest_map)
+                self.log_message(f"Copied new map file to {dest_map}")
+            
+            return True
+        except Exception as e:
+            self.log_message(f"Error handling map files: {e}", "error")
+            return False
+
     def setup_files(self):
         map_folder = os.path.join(self.config_folder, "MAP")
         map_files = [f for f in os.listdir(map_folder) if os.path.isfile(os.path.join(map_folder, f))]
@@ -284,21 +338,11 @@ class SimulatorGUI(QMainWindow):
         if not os.path.isfile(selected_route_path):
             self.log_message(f"Error: Route file {selected_route_file} not found in {route_folder}.", "error")
             return False
-        
+    
         try:
-            # Copy map
-            dest_maps_dir = "/opt/carma/maps"
-            os.makedirs(dest_maps_dir, exist_ok=True)
-            dest_map = os.path.join(dest_maps_dir, "vector_map.osm")
-            if os.path.exists(dest_map):
-                now = datetime.now().strftime("%m%d%Y%H%M%S")
-                backup = os.path.join(dest_maps_dir, f"vector_map_{now}.osm.backup")
-                os.rename(dest_map, backup)
-                self.log_message(f"Backed up existing map to {backup}")
-            
-            selected_map_path = os.path.join(map_folder, selected_map)
-            shutil.copy(selected_map_path, dest_map)
-            self.log_message(f"Copied map file to {dest_map}")
+            # Handle map files
+            if not self.handle_map_files(map_folder, selected_map):
+                return False
             
             # Copy route
             dest_routes_dir = "/opt/carma/routes"
@@ -307,8 +351,9 @@ class SimulatorGUI(QMainWindow):
             shutil.copy(selected_route_path, dest_route)
             self.log_message(f"Copied route file to {dest_route}")
         except Exception as e:
-            self.log_message(f"Error copying files: {e}", "error")
+            self.log_message(f"Error copying route file: {e}", "error")
             return False
+        
         return True
 
     def pull_images(self):
@@ -453,6 +498,6 @@ class SimulatorGUI(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = SimulatorGUI()
+    window = CDASimGUI()
     window.show()
     sys.exit(app.exec())
