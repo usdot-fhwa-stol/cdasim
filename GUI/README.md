@@ -69,7 +69,7 @@ sudo apt install libxcb-cursor0 libxcb-xinerama0 libxcb-xinput0 libxkbcommon-x11
    - Handles errors gracefully without crashing the GUI.
 
 6. **View Logs**:
-   - Click "Open CARMA Logs" or "Open CARMA-Simulation Logs" in the toolbar to open the respective directories in your file explorer.
+   - Click "Open CARMA Logs" or "Open CDASim Logs" in the toolbar to open the respective directories in your file explorer.
 
 
 ![Alt text](docs/GUI.png)

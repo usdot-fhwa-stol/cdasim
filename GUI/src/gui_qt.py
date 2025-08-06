@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from multiprocessing import Process, Queue
+from PySide6.QtCore import QTimer
 
 class FileSelectDialog(QDialog):
     def __init__(self, title, files, parent=None):
@@ -92,7 +93,7 @@ class SimulatorGUI(QMainWindow):
         self.toolbar.addWidget(self.carma_logs_button)
         
         # Open CARMA-Simulation Logs button
-        self.carma_sim_logs_button = QPushButton("Open CARMA-Simulation Logs")
+        self.carma_sim_logs_button = QPushButton("Open CDASim Logs")
         self.carma_sim_logs_button.clicked.connect(lambda: self.open_logs("/opt/carma-simulation/logs"))
         self.toolbar.addWidget(self.carma_sim_logs_button)
         
@@ -154,7 +155,6 @@ class SimulatorGUI(QMainWindow):
         self.after(100, self.process_log_queue)  # Check queue periodically
 
     def after(self, ms, func):
-        from PySide6.QtCore import QTimer
         QTimer.singleShot(ms, func)
 
     def open_logs(self, path):
