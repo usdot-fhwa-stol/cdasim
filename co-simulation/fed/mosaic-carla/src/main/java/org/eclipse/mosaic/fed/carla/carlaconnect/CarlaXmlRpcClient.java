@@ -16,10 +16,9 @@
 package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
@@ -32,565 +31,851 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 /**
- * Enhanced XML-RPC client for CARLA-MOSAIC integration.
+ * Comprehensive XML-RPC Client for CARLA Server Integration
  * 
- * This class provides comprehensive communication with the CARLA XML-RPC server,
- * including actor management, traffic light control, and sensor management.
- * It replaces the TraCI-based bridge with a more suitable XML-RPC architecture.
+ * This client implements all XML-RPC methods available in the CARLA XML-RPC server,
+ * providing robust error handling, retry logic, and comprehensive actor management
+ * for MOSAIC co-simulation integration.
  */
-public class CarlaXmlRpcClient{
+public class CarlaXmlRpcClient {
 
-    // Sensor-related methods
+    private static final Logger log = LoggerFactory.getLogger(CarlaXmlRpcClient.class);
+    
+    // XML-RPC method names
+    private static final String CONNECT = "connect";
+    private static final String DISCONNECT = "disconnect";
+    private static final String IS_CONNECTED = "is_connected";
+    
+    // Simulation control
+    private static final String ADVANCE_SIMULATION = "advance_simulation";
+    private static final String STEP_SIMULATION = "step_simulation";
+    private static final String GET_SIMULATION_TIME = "get_simulation_time";
+    
+    // Actor discovery and management
+    private static final String GET_ACTIVE_ACTOR_IDS = "get_active_actor_ids";
+    private static final String GET_ACTOR_BASIC_INFO = "get_actor_basic_info";
+    private static final String GET_ACTOR_TRANSFORM = "get_actor_transform";
+    private static final String GET_ACTOR_VELOCITY = "get_actor_velocity";
+    private static final String GET_ACTOR_ACCELERATION = "get_actor_acceleration";
+    private static final String GET_ACTOR_ANGULAR_VELOCITY = "get_actor_angular_velocity";
+    private static final String GET_ACTOR_BOUNDING_BOX = "get_actor_bounding_box";
+    private static final String GET_VEHICLE_LIGHT_STATE = "get_vehicle_light_state";
+    private static final String SET_ACTOR_STATE_PROPERTIES = "set_actor_state_properties";
+    
+    // Actor lifecycle
+    private static final String SPAWN_ACTOR = "spawn_actor";
+    private static final String DESTROY_ACTOR = "destroy_actor";
+    private static final String UPDATE_ACTOR_TRANSFORM = "update_actor_transform";
+    private static final String UPDATE_ACTOR_VELOCITY = "update_actor_velocity";
+    private static final String GET_ALL_ACTORS = "get_all_actors";
+    
+    // Traffic lights
+    private static final String GET_TRAFFIC_LIGHT_STATE = "get_traffic_light_state";
+    private static final String GET_ALL_TRAFFIC_LIGHT_STATES = "get_all_traffic_light_states";
+    private static final String SET_TRAFFIC_LIGHT_STATE = "set_traffic_light_state";
+    private static final String SET_TRAFFIC_LIGHT_TIMER = "set_traffic_light_timer";
+    
+    // Sensors
     private static final String CREATE_SENSOR = "create_sensor";
     private static final String DESTROY_SENSOR = "destroy_sensor";
     private static final String GET_SENSOR_DATA = "get_sensor_data";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
-    // Connection methods
-    private static final String CONNECT = "connect";
-    private static final String DISCONNECT = "disconnect";
-    private static final String IS_CONNECTED = "is_connected";
-    
-    // Simulation control methods
-    private static final String START_SIMULATION = "start_simulation";
-    private static final String STOP_SIMULATION = "stop_simulation";
-    private static final String STEP_SIMULATION = "step_simulation";
-    private static final String GET_SIMULATION_TIME = "get_simulation_time";
-    
-    // Actor management methods
-    private static final String SPAWN_ACTOR = "spawn_actor";
-    private static final String DESTROY_ACTOR = "destroy_actor";
-    private static final String UPDATE_ACTOR_TRANSFORM = "update_actor_transform";
-    private static final String UPDATE_ACTOR_VELOCITY = "update_actor_velocity";
-    private static final String GET_ACTOR_TRANSFORM = "get_actor_transform";
-    private static final String GET_ACTOR_VELOCITY = "get_actor_velocity";
-    private static final String GET_ALL_ACTORS = "get_all_actors";
-    
-    // Traffic light management methods
-    private static final String GET_TRAFFIC_LIGHTS = "get_traffic_lights";
-    private static final String SET_TRAFFIC_LIGHT_STATE = "set_traffic_light_state";
-    private static final String GET_TRAFFIC_LIGHT_STATE = "get_traffic_light_state";
-    private static final String SET_TRAFFIC_LIGHT_TIMER = "set_traffic_light_timer";
-    
-    // Map and world information methods
+    // Maps
     private static final String GET_MAP_NAME = "get_map_name";
     private static final String GET_AVAILABLE_MAPS = "get_available_maps";
     private static final String LOAD_MAP = "load_map";
 
+    // Configuration
+    private static final int DEFAULT_RETRY_ATTEMPTS = 3;
+    private static final long DEFAULT_RETRY_DELAY_MS = 1000;
+    private static final int DEFAULT_REPLY_TIMEOUT_MS = 10000;
+    private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 15000;
+
     private XmlRpcClient client;
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private final URL serverUrl;
+    private final AtomicInteger requestCounter = new AtomicInteger(0);
     private final Gson gson = new Gson();
+    
+    // Connection state
+    private volatile boolean isConnected = false;
+    private final Object connectionLock = new Object();
 
     /**
-     * Constructor for the CARLA XML-RPC client.
-     * 
+     * Constructor for CARLA XML-RPC Client
      * @param xmlRpcServerUrl URL of the CARLA XML-RPC server
      */
     public CarlaXmlRpcClient(URL xmlRpcServerUrl) {
-        XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();   
-        config.setServerURL(xmlRpcServerUrl);
-        // Set reply and connection timeout (both in ms)
-        config.setReplyTimeout(6000);
-        config.setConnectionTimeout(10000);
-        client = new XmlRpcClient();
-        client.setConfig(config);
+        this.serverUrl = xmlRpcServerUrl;
+        initializeClient();
     }
 
     /**
-     * Connect to the CARLA XML-RPC server with retry logic.
-     * 
-     * @param retryAttempts Number of connection attempts
-     * @throws XmlRpcException if connection fails
-     * @throws InterruptedException if interrupted during retry
+     * Initialize the XML-RPC client with configuration
      */
-    public void connect(int retryAttempts) throws XmlRpcException, InterruptedException{
-        boolean connected = false;
-        int currentAttempt = 1;
-        while( !connected && retryAttempts >= currentAttempt ) {
+    private void initializeClient() {
+        XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();   
+        config.setServerURL(serverUrl);
+        config.setReplyTimeout(DEFAULT_REPLY_TIMEOUT_MS);
+        config.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT_MS);
+        config.setEnabledForExtensions(true);
+        
+        client = new XmlRpcClient();
+        client.setConfig(config);
+        
+        log.info("CARLA XML-RPC client initialized for server: {}", serverUrl);
+    }
+
+    /**
+     * Connect to the CARLA XML-RPC server with retry logic
+     * @param retryAttempts Number of retry attempts
+     * @throws XmlRpcException if connection fails after all retries
+     * @throws InterruptedException if interrupted during retry delays
+     */
+    public void connect(int retryAttempts) throws XmlRpcException, InterruptedException {
+        synchronized (connectionLock) {
+            if (isConnected) {
+                log.debug("Already connected to CARLA server");
+                return;
+            }
+            
+            boolean connected = false;
+            int currentAttempt = 1;
+            
+            while (!connected && retryAttempts >= currentAttempt) {
+                try {
+                    log.info("Attempting to connect to CARLA XML-RPC server (attempt {}/{})", currentAttempt, retryAttempts);
+                    Object[] params = new Object[]{};
+                    Object result = executeWithRetry(CONNECT, params, DEFAULT_RETRY_ATTEMPTS);
+                    
+                    if (result instanceof Boolean && (Boolean) result) {
+                        connected = true;
+                        isConnected = true;
+                        log.info("Successfully connected to CARLA XML-RPC server");
+                    } else {
+                        log.warn("Connection attempt {} returned unexpected result: {}", currentAttempt, result);
+                    }
+                } catch (XmlRpcException e) {
+                    log.error("Connection attempt {} failed: {}", currentAttempt, e.getMessage());
+                    if (currentAttempt < retryAttempts) {
+                        Thread.sleep(DEFAULT_RETRY_DELAY_MS);
+                    }
+                    currentAttempt++;
+                }
+            }
+            
+            if (!connected) {
+                throw new XmlRpcException("Failed to connect to CARLA XML-RPC server after " + retryAttempts + " attempts");
+            }
+        }
+    }
+
+    /**
+     * Disconnect from the CARLA XML-RPC server
+     * @return true if disconnected successfully
+     */
+    public boolean disconnect() {
+        synchronized (connectionLock) {
+            if (!isConnected) {
+                log.debug("Already disconnected from CARLA server");
+                return true;
+            }
+            
             try {
-                log.info("Attempting to connect to CARLA XML-RPC server ... ");
                 Object[] params = new Object[]{};
-                client.execute(CONNECT, params);
-                connected = true;
+                Object result = executeWithRetry(DISCONNECT, params, DEFAULT_RETRY_ATTEMPTS);
+                
+                if (result instanceof Boolean && (Boolean) result) {
+                    isConnected = false;
+                    log.info("Successfully disconnected from CARLA XML-RPC server");
+                    return true;
+                } else {
+                    log.warn("Disconnect returned unexpected result: {}", result);
+                    return false;
+                }
+            } catch (Exception e) {
+                log.error("Error during disconnect: {}", e.getMessage());
+                isConnected = false; // Force disconnect state
+                return false;
             }
-            catch(XmlRpcException e) {
-                log.error("Connection attempt {} to connect to CARLA XML-RPC server failed!", currentAttempt, e);
-                // Sleep for 1 second between attempts
-                Thread.sleep(1000);
-                currentAttempt++;
-            }
-        } 
-        if (!connected) {
-            throw new XmlRpcException("Failed to connect to XML RPC Server with config " + client.getConfig() + " !");
         }
-        log.info("Connected successfully to CARLA XML-RPC server!");    
     }
-    
+
     /**
-     * Disconnect from the CARLA XML-RPC server.
-     * 
-     * @return true if disconnection successful, false otherwise
-     * @throws XmlRpcException if disconnection fails
+     * Check if connected to the CARLA server
+     * @return true if connected
      */
-    public boolean disconnect() throws XmlRpcException {
+    public boolean isConnected() {
         try {
             Object[] params = new Object[]{};
-            Boolean result = (Boolean) client.execute(DISCONNECT, params);
-            log.info("Disconnected from CARLA XML-RPC server");
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error disconnecting from CARLA XML-RPC server", e);
+            Object result = executeWithRetry(IS_CONNECTED, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.debug("Connection check failed: {}", e.getMessage());
             return false;
         }
     }
-    
+
     /**
-     * Check if connected to the CARLA XML-RPC server.
-     * 
-     * @return true if connected, false otherwise
-     * @throws XmlRpcException if check fails
+     * Advance the CARLA simulation by one tick
+     * @return true if successful
      */
-    public boolean isConnected() throws XmlRpcException {
+    public boolean advanceSimulation() {
         try {
             Object[] params = new Object[]{};
-            Boolean result = (Boolean) client.execute(IS_CONNECTED, params);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error checking connection status", e);
+            Object result = executeWithRetry(ADVANCE_SIMULATION, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to advance simulation: {}", e.getMessage());
             return false;
         }
     }
-    
+
     /**
-     * Start the simulation.
-     * 
-     * @return true if successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean startSimulation() throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{};
-            Boolean result = (Boolean) client.execute(START_SIMULATION, params);
-            log.info("Simulation started");
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error starting simulation", e);
-            return false;
-        }
-    }
-    
-    /**
-     * Stop the simulation.
-     * 
-     * @return true if successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean stopSimulation() throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{};
-            Boolean result = (Boolean) client.execute(STOP_SIMULATION, params);
-            log.info("Simulation stopped");
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error stopping simulation", e);
-            return false;
-        }
-    }
-    
-    /**
-     * Step the simulation by the given time.
-     * 
+     * Step the CARLA simulation (backward compatibility)
      * @param deltaTime Time step in seconds
-     * @return true if successful, false otherwise
-     * @throws XmlRpcException if operation fails
+     * @return true if successful
      */
-    public boolean stepSimulation(double deltaTime) throws XmlRpcException {
+    public boolean stepSimulation(double deltaTime) {
         try {
             Object[] params = new Object[]{deltaTime};
-            Boolean result = (Boolean) client.execute(STEP_SIMULATION, params);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error stepping simulation", e);
+            Object result = executeWithRetry(STEP_SIMULATION, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to step simulation: {}", e.getMessage());
             return false;
         }
     }
-    
+
     /**
-     * Get current simulation time.
-     * 
-     * @return current simulation time in seconds
-     * @throws XmlRpcException if operation fails
+     * Get current simulation time
+     * @return simulation time in seconds
      */
-    public double getSimulationTime() throws XmlRpcException {
+    public double getSimulationTime() {
         try {
             Object[] params = new Object[]{};
-            Double result = (Double) client.execute(GET_SIMULATION_TIME, params);
-            return result != null ? result : 0.0;
-        } catch (XmlRpcException e) {
-            log.error("Error getting simulation time", e);
+            Object result = executeWithRetry(GET_SIMULATION_TIME, params, DEFAULT_RETRY_ATTEMPTS);
+            if (result instanceof Number) {
+                return ((Number) result).doubleValue();
+            }
+            return 0.0;
+        } catch (Exception e) {
+            log.error("Failed to get simulation time: {}", e.getMessage());
             return 0.0;
         }
     }
-    
+
     /**
-     * Spawn an actor in CARLA.
-     * 
-     * @param actorType Type of actor (e.g., 'vehicle.tesla.model3')
-     * @param actorId Unique identifier for the actor
-     * @param location [x, y, z] coordinates
-     * @param rotation [pitch, yaw, roll] in degrees
-     * @param attributes Additional attributes for the actor
-     * @return true if spawn successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean spawnActor(String actorType, String actorId, 
-                             List<Double> location, List<Double> rotation,
-                             Map<String, Object> attributes) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{actorType, actorId, location, rotation, attributes};
-            Boolean result = (Boolean) client.execute(SPAWN_ACTOR, params);
-            log.info("Spawned actor {} of type {}", actorId, actorType);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error spawning actor {}", actorId, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Destroy an actor.
-     * 
-     * @param actorId Unique identifier for the actor
-     * @return true if destroy successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean destroyActor(String actorId) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{actorId};
-            Boolean result = (Boolean) client.execute(DESTROY_ACTOR, params);
-            log.info("Destroyed actor {}", actorId);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error destroying actor {}", actorId, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Update actor transform.
-     * 
-     * @param actorId Unique identifier for the actor
-     * @param location [x, y, z] coordinates
-     * @param rotation [pitch, yaw, roll] in degrees
-     * @return true if update successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean updateActorTransform(String actorId, List<Double> location, List<Double> rotation) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{actorId, location, rotation};
-            Boolean result = (Boolean) client.execute(UPDATE_ACTOR_TRANSFORM, params);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error updating transform for actor {}", actorId, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Update actor velocity.
-     * 
-     * @param actorId Unique identifier for the actor
-     * @param velocity [x, y, z] velocity components
-     * @return true if update successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean updateActorVelocity(String actorId, List<Double> velocity) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{actorId, velocity};
-            Boolean result = (Boolean) client.execute(UPDATE_ACTOR_VELOCITY, params);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error updating velocity for actor {}", actorId, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Get actor transform.
-     * 
-     * @param actorId Unique identifier for the actor
-     * @return Map containing 'location' and 'rotation' lists, or null if not found
-     * @throws XmlRpcException if operation fails
+     * Get active actor IDs with optional filter pattern
+     * @param filterPattern Filter pattern (e.g., "vehicle.*")
+     * @return List of actor IDs
      */
     @SuppressWarnings("unchecked")
-    public Map<String, List<Double>> getActorTransform(String actorId) throws XmlRpcException {
+    public List<Integer> getActiveActorIds(String filterPattern) {
         try {
-            Object[] params = new Object[]{actorId};
-            Object result = client.execute(GET_ACTOR_TRANSFORM, params);
-            if (result instanceof Map) {
-                return (Map<String, List<Double>>) result;
-            }
-            return null;
-        } catch (XmlRpcException e) {
-            log.error("Error getting transform for actor {}", actorId, e);
-            return null;
-        }
-    }
-    
-    /**
-     * Get actor velocity.
-     * 
-     * @param actorId Unique identifier for the actor
-     * @return [x, y, z] velocity components, or null if not found
-     * @throws XmlRpcException if operation fails
-     */
-    @SuppressWarnings("unchecked")
-    public List<Double> getActorVelocity(String actorId) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{actorId};
-            Object result = client.execute(GET_ACTOR_VELOCITY, params);
+            Object[] params = new Object[]{filterPattern != null ? filterPattern : "vehicle.*"};
+            Object result = executeWithRetry(GET_ACTIVE_ACTOR_IDS, params, DEFAULT_RETRY_ATTEMPTS);
+            
             if (result instanceof List) {
-                return (List<Double>) result;
+                List<Integer> actorIds = new ArrayList<>();
+                for (Object item : (List<?>) result) {
+                    if (item instanceof Number) {
+                        actorIds.add(((Number) item).intValue());
+                    }
+                }
+                return actorIds;
+            }
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("Failed to get active actor IDs: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get basic information about an actor
+     * @param actorKey Actor ID or name
+     * @return Actor basic info as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getActorBasicInfo(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_ACTOR_BASIC_INFO, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
             }
             return null;
-        } catch (XmlRpcException e) {
-            log.error("Error getting velocity for actor {}", actorId, e);
+        } catch (Exception e) {
+            log.error("Failed to get actor basic info for {}: {}", actorKey, e.getMessage());
             return null;
         }
     }
-    
+
     /**
-     * Get information about all actors.
-     * 
-     * @return Map mapping actor IDs to actor information
-     * @throws XmlRpcException if operation fails
+     * Get actor transform (position and rotation)
+     * @param actorKey Actor ID or name
+     * @return Transform data as Map, or null if failed
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Map<String, Object>> getAllActors() throws XmlRpcException {
+    public Map<String, Object> getActorTransform(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_ACTOR_TRANSFORM, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to get actor transform for {}: {}", actorKey, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get actor velocity
+     * @param actorKey Actor ID or name
+     * @return Velocity data as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getActorVelocity(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_ACTOR_VELOCITY, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to get actor velocity for {}: {}", actorKey, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get actor acceleration
+     * @param actorKey Actor ID or name
+     * @return Acceleration data as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getActorAcceleration(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_ACTOR_ACCELERATION, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to get actor acceleration for {}: {}", actorKey, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get actor angular velocity
+     * @param actorKey Actor ID or name
+     * @return Angular velocity data as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getActorAngularVelocity(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_ACTOR_ANGULAR_VELOCITY, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to get actor angular velocity for {}: {}", actorKey, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get actor bounding box
+     * @param actorKey Actor ID or name
+     * @return Bounding box data as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getActorBoundingBox(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_ACTOR_BOUNDING_BOX, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to get actor bounding box for {}: {}", actorKey, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get vehicle light state
+     * @param actorKey Actor ID or name
+     * @return Light state data as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getVehicleLightState(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(GET_VEHICLE_LIGHT_STATE, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to get vehicle light state for {}: {}", actorKey, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Set actor state properties (transform, velocity, etc.)
+     * @param actorKey Actor ID or name
+     * @param properties Properties to set
+     * @return true if successful
+     */
+    public boolean setActorStateProperties(Object actorKey, Map<String, Object> properties) {
+        try {
+            Object[] params = new Object[]{actorKey, properties};
+            Object result = executeWithRetry(SET_ACTOR_STATE_PROPERTIES, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to set actor state properties for {}: {}", actorKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Spawn an actor in CARLA
+     * @param actorType Type of actor to spawn
+     * @param actorId Unique ID for the actor
+     * @param location Location [x, y, z]
+     * @param rotation Rotation [pitch, yaw, roll]
+     * @param attributes Additional attributes
+     * @return true if successful
+     */
+    public boolean spawnActor(String actorType, String actorId, List<Double> location, 
+                             List<Double> rotation, Map<String, Object> attributes) {
+        try {
+            Object[] params = new Object[]{actorType, actorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
+            Object result = executeWithRetry(SPAWN_ACTOR, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to spawn actor {} of type {}: {}", actorId, actorType, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Destroy an actor
+     * @param actorKey Actor ID or name
+     * @return true if successful
+     */
+    public boolean destroyActor(Object actorKey) {
+        try {
+            Object[] params = new Object[]{actorKey};
+            Object result = executeWithRetry(DESTROY_ACTOR, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to destroy actor {}: {}", actorKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update actor transform
+     * @param actorKey Actor ID or name
+     * @param location New location [x, y, z]
+     * @param rotation New rotation [pitch, yaw, roll]
+     * @return true if successful
+     */
+    public boolean updateActorTransform(Object actorKey, List<Double> location, List<Double> rotation) {
+        try {
+            Object[] params = new Object[]{actorKey, location, rotation};
+            Object result = executeWithRetry(UPDATE_ACTOR_TRANSFORM, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to update actor transform for {}: {}", actorKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update actor velocity
+     * @param actorKey Actor ID or name
+     * @param velocity New velocity [x, y, z]
+     * @return true if successful
+     */
+    public boolean updateActorVelocity(Object actorKey, List<Double> velocity) {
+        try {
+            Object[] params = new Object[]{actorKey, velocity};
+            Object result = executeWithRetry(UPDATE_ACTOR_VELOCITY, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to update actor velocity for {}: {}", actorKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get all actors with their basic information
+     * @return Map of actor ID to actor information
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Map<String, Object>> getAllActors() {
         try {
             Object[] params = new Object[]{};
-            Object result = client.execute(GET_ALL_ACTORS, params);
+            Object result = executeWithRetry(GET_ALL_ACTORS, params, DEFAULT_RETRY_ATTEMPTS);
+            
             if (result instanceof Map) {
                 return (Map<String, Map<String, Object>>) result;
             }
             return new HashMap<>();
-        } catch (XmlRpcException e) {
-            log.error("Error getting all actors", e);
+        } catch (Exception e) {
+            log.error("Failed to get all actors: {}", e.getMessage());
             return new HashMap<>();
         }
     }
-    
+
     /**
-     * Get all traffic light IDs.
-     * 
-     * @return List of traffic light IDs
-     * @throws XmlRpcException if operation fails
+     * Get traffic light state
+     * @param trafficLightId Traffic light ID
+     * @return Traffic light state data as Map, or null if failed
      */
     @SuppressWarnings("unchecked")
-    public List<String> getTrafficLights() throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{};
-            Object result = client.execute(GET_TRAFFIC_LIGHTS, params);
-            if (result instanceof List) {
-                return (List<String>) result;
-            }
-            return Arrays.asList();
-        } catch (XmlRpcException e) {
-            log.error("Error getting traffic lights", e);
-            return Arrays.asList();
-        }
-    }
-    
-    /**
-     * Set traffic light state.
-     * 
-     * @param trafficLightId Traffic light ID
-     * @param state Traffic light state ('Red', 'Yellow', 'Green')
-     * @return true if successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean setTrafficLightState(String trafficLightId, String state) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{trafficLightId, state};
-            Boolean result = (Boolean) client.execute(SET_TRAFFIC_LIGHT_STATE, params);
-            log.info("Set traffic light {} to {}", trafficLightId, state);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error setting traffic light state for {}", trafficLightId, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Get traffic light state.
-     * 
-     * @param trafficLightId Traffic light ID
-     * @return Traffic light state as string, or null if not found
-     * @throws XmlRpcException if operation fails
-     */
-    public String getTrafficLightState(String trafficLightId) throws XmlRpcException {
+    public Map<String, Object> getTrafficLightState(Object trafficLightId) {
         try {
             Object[] params = new Object[]{trafficLightId};
-            Object result = client.execute(GET_TRAFFIC_LIGHT_STATE, params);
-            if (result instanceof String) {
-                return (String) result;
+            Object result = executeWithRetry(GET_TRAFFIC_LIGHT_STATE, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
             }
             return null;
-        } catch (XmlRpcException e) {
-            log.error("Error getting traffic light state for {}", trafficLightId, e);
+        } catch (Exception e) {
+            log.error("Failed to get traffic light state for {}: {}", trafficLightId, e.getMessage());
             return null;
         }
     }
-    
+
     /**
-     * Set traffic light timer.
-     * 
-     * @param trafficLightId Traffic light ID
-     * @param time Time in seconds
-     * @return true if successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean setTrafficLightTimer(String trafficLightId, double time) throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{trafficLightId, time};
-            Boolean result = (Boolean) client.execute(SET_TRAFFIC_LIGHT_TIMER, params);
-            log.info("Set traffic light {} timer to {}s", trafficLightId, time);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error setting traffic light timer for {}", trafficLightId, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Get current map name.
-     * 
-     * @return Current map name
-     * @throws XmlRpcException if operation fails
-     */
-    public String getMapName() throws XmlRpcException {
-        try {
-            Object[] params = new Object[]{};
-            Object result = client.execute(GET_MAP_NAME, params);
-            if (result instanceof String) {
-                return (String) result;
-            }
-            return "";
-        } catch (XmlRpcException e) {
-            log.error("Error getting map name", e);
-            return "";
-        }
-    }
-    
-    /**
-     * Get list of available maps.
-     * 
-     * @return List of available map names
-     * @throws XmlRpcException if operation fails
+     * Get all traffic light states
+     * @return List of traffic light state data
      */
     @SuppressWarnings("unchecked")
-    public List<String> getAvailableMaps() throws XmlRpcException {
+    public List<Map<String, Object>> getAllTrafficLightStates() {
         try {
             Object[] params = new Object[]{};
-            Object result = client.execute(GET_AVAILABLE_MAPS, params);
+            Object result = executeWithRetry(GET_ALL_TRAFFIC_LIGHT_STATES, params, DEFAULT_RETRY_ATTEMPTS);
+            
             if (result instanceof List) {
-                return (List<String>) result;
+                List<Map<String, Object>> states = new ArrayList<>();
+                for (Object item : (List<?>) result) {
+                    if (item instanceof Map) {
+                        states.add((Map<String, Object>) item);
+                    }
+                }
+                return states;
             }
-            return Arrays.asList();
-        } catch (XmlRpcException e) {
-            log.error("Error getting available maps", e);
-            return Arrays.asList();
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("Failed to get all traffic light states: {}", e.getMessage());
+            return new ArrayList<>();
         }
     }
-    
+
     /**
-     * Load a map.
-     * 
-     * @param mapName Name of the map to load
-     * @return true if successful, false otherwise
-     * @throws XmlRpcException if operation fails
+     * Set traffic light state
+     * @param trafficLightId Traffic light ID
+     * @param state New state ("Red", "Yellow", "Green")
+     * @return true if successful
      */
-    public boolean loadMap(String mapName) throws XmlRpcException {
+    public boolean setTrafficLightState(Object trafficLightId, String state) {
         try {
-            Object[] params = new Object[]{mapName};
-            Boolean result = (Boolean) client.execute(LOAD_MAP, params);
-            log.info("Loaded map: {}", mapName);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error loading map {}", mapName, e);
+            Object[] params = new Object[]{trafficLightId, state};
+            Object result = executeWithRetry(SET_TRAFFIC_LIGHT_STATE, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to set traffic light state for {} to {}: {}", trafficLightId, state, e.getMessage());
             return false;
         }
     }
 
     /**
-     * Calls CARLA XML-RPC server create_sensor method and logs sensor ID of created sensor.
-     * @param registration DetectorRegistration interaction used to create sensor.
-     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     * Set traffic light timer
+     * @param trafficLightId Traffic light ID
+     * @param timeSeconds Time in seconds
+     * @return true if successful
      */
-    public void createSensor(DetectorRegistration registration) throws XmlRpcException{
-        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
-        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
-        Object[] params = new Object[]{registration.getDetector().getSensorId(), registration.getInfrastructureId(), location, orientation, new HashMap<String, Object>()};
-        Boolean result = (Boolean) client.execute(CREATE_SENSOR, params);
-        if (result != null && result) {
-            log.info("Created sensor {} at infrastructure {}", registration.getDetector().getSensorId(), registration.getInfrastructureId());
-        } else {
-            log.error("Failed to create sensor {} at infrastructure {}", registration.getDetector().getSensorId(), registration.getInfrastructureId());
-        }
-    }
-    
-    /**
-     * Destroy a sensor.
-     * 
-     * @param sensorId Unique sensor ID
-     * @return true if destroy successful, false otherwise
-     * @throws XmlRpcException if operation fails
-     */
-    public boolean destroySensor(String sensorId) throws XmlRpcException {
+    public boolean setTrafficLightTimer(Object trafficLightId, double timeSeconds) {
         try {
-            Object[] params = new Object[]{sensorId};
-            Boolean result = (Boolean) client.execute(DESTROY_SENSOR, params);
-            log.info("Destroyed sensor {}", sensorId);
-            return result != null && result;
-        } catch (XmlRpcException e) {
-            log.error("Error destroying sensor {}", sensorId, e);
+            Object[] params = new Object[]{trafficLightId, timeSeconds};
+            Object result = executeWithRetry(SET_TRAFFIC_LIGHT_TIMER, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to set traffic light timer for {} to {}s: {}", trafficLightId, timeSeconds, e.getMessage());
             return false;
         }
     }
-    
+
     /**
-     * Get sensor data.
-     * 
-     * @param sensorId Unique sensor ID
-     * @return Sensor data as string, or null if not found
-     * @throws XmlRpcException if operation fails
+     * Create a sensor
+     * @param sensorType Type of sensor
+     * @param sensorId Unique ID for the sensor
+     * @param location Location [x, y, z]
+     * @param rotation Rotation [pitch, yaw, roll]
+     * @param attributes Additional attributes
+     * @return true if successful
      */
-    public String getSensorData(String sensorId) throws XmlRpcException {
+    public boolean createSensor(String sensorType, String sensorId, List<Double> location, 
+                               List<Double> rotation, Map<String, Object> attributes) {
         try {
-            Object[] params = new Object[]{sensorId};
-            Object result = client.execute(GET_SENSOR_DATA, params);
-            if (result instanceof String) {
-                return (String) result;
+            Object[] params = new Object[]{sensorType, sensorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
+            Object result = executeWithRetry(CREATE_SENSOR, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to create sensor {} of type {}: {}", sensorId, sensorType, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Create sensor from DetectorRegistration (backward compatibility)
+     * @param registration DetectorRegistration interaction
+     * @throws XmlRpcException if creation fails
+     */
+    public void createSensor(DetectorRegistration registration) throws XmlRpcException {
+        List<Double> location = Arrays.asList(
+            registration.getDetector().getLocation().getX(),
+            registration.getDetector().getLocation().getY(),
+            registration.getDetector().getLocation().getZ()
+        );
+        List<Double> orientation = Arrays.asList(
+            registration.getDetector().getOrientation().getPitch(),
+            registration.getDetector().getOrientation().getRoll(),
+            registration.getDetector().getOrientation().getYaw()
+        );
+        
+        if (createSensor("sensor.camera.rgb", registration.getDetector().getSensorId(), location, orientation, null)) {
+            log.info("Created sensor: {}", registration.getDetector().getSensorId());
+        } else {
+            throw new XmlRpcException("Failed to create sensor: " + registration.getDetector().getSensorId());
+        }
+    }
+
+    /**
+     * Destroy a sensor
+     * @param sensorKey Sensor ID or name
+     * @return true if successful
+     */
+    public boolean destroySensor(Object sensorKey) {
+        try {
+            Object[] params = new Object[]{sensorKey};
+            Object result = executeWithRetry(DESTROY_SENSOR, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to destroy sensor {}: {}", sensorKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get sensor data
+     * @param sensorKey Sensor ID or name
+     * @return Sensor data as Map, or null if failed
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getSensorData(Object sensorKey) {
+        try {
+            Object[] params = new Object[]{sensorKey};
+            Object result = executeWithRetry(GET_SENSOR_DATA, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
             }
             return null;
-        } catch (XmlRpcException e) {
-            log.error("Error getting sensor data for {}", sensorId, e);
+        } catch (Exception e) {
+            log.error("Failed to get sensor data for {}: {}", sensorKey, e.getMessage());
             return null;
         }
     }
-    
+
     /**
-     * Calls CARLA XML-RPC server get_detected_objects method and returns an array of DetectedObject.
-     * @param infrastructureId String infrastructure ID of sensor to get detections from.
-     * @param sensorId String sensor ID of sensor to get detections from
-     * @return DetectedObject[] from given sensor.
-     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     * Get detected objects from sensor (backward compatibility)
+     * @param infrastructureId Infrastructure ID
+     * @param sensorId Sensor ID
+     * @return Array of detected objects
+     * @throws XmlRpcException if retrieval fails
      */
-    public DetectedObject[] getDetectedObjects(String infrastructureId ,String sensorId) throws XmlRpcException{
-        Object[] params = new Object[]{infrastructureId, sensorId};
-        Object result = client.execute(GET_DETECTED_OBJECTS, params);
-        log.debug("Detections from infrastructure {} sensor {} : {}", infrastructureId, sensorId, result);
-        String jsonResult = (String)result;
-        return gson.fromJson(jsonResult,DetectedObject[].class);
+    public DetectedObject[] getDetectedObjects(String infrastructureId, String sensorId) throws XmlRpcException {
+        try {
+            Object[] params = new Object[]{infrastructureId, sensorId};
+            Object result = executeWithRetry(GET_DETECTED_OBJECTS, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof String) {
+                String jsonResult = (String) result;
+                return gson.fromJson(jsonResult, DetectedObject[].class);
+            }
+            return new DetectedObject[0];
+        } catch (Exception e) {
+            log.error("Failed to get detected objects from sensor {}: {}", sensorId, e.getMessage());
+            throw new XmlRpcException("Failed to get detected objects", e);
+        }
+    }
+
+    /**
+     * Get current map name
+     * @return Map name, or empty string if failed
+     */
+    public String getMapName() {
+        try {
+            Object[] params = new Object[]{};
+            Object result = executeWithRetry(GET_MAP_NAME, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof String) {
+                return (String) result;
+            }
+            return "";
+        } catch (Exception e) {
+            log.error("Failed to get map name: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Get available maps
+     * @return List of available map names
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getAvailableMaps() {
+        try {
+            Object[] params = new Object[]{};
+            Object result = executeWithRetry(GET_AVAILABLE_MAPS, params, DEFAULT_RETRY_ATTEMPTS);
+            
+            if (result instanceof List) {
+                List<String> maps = new ArrayList<>();
+                for (Object item : (List<?>) result) {
+                    if (item instanceof String) {
+                        maps.add((String) item);
+                    }
+                }
+                return maps;
+            }
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("Failed to get available maps: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Load a map
+     * @param mapName Name of the map to load
+     * @return true if successful
+     */
+    public boolean loadMap(String mapName) {
+        try {
+            Object[] params = new Object[]{mapName};
+            Object result = executeWithRetry(LOAD_MAP, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to load map {}: {}", mapName, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Execute XML-RPC call with retry logic
+     * @param methodName Name of the XML-RPC method
+     * @param params Method parameters
+     * @param maxRetries Maximum number of retry attempts
+     * @return Method result
+     * @throws XmlRpcException if all retries fail
+     */
+    private Object executeWithRetry(String methodName, Object[] params, int maxRetries) throws XmlRpcException {
+        int attempt = 0;
+        Exception lastException = null;
+        
+        while (attempt < maxRetries) {
+            try {
+                int requestId = requestCounter.incrementAndGet();
+                log.debug("Executing XML-RPC call {} (request #{})", methodName, requestId);
+                
+                Object result = client.execute(methodName, params);
+                
+                log.debug("XML-RPC call {} completed successfully (request #{})", methodName, requestId);
+                return result;
+                
+            } catch (XmlRpcException e) {
+                lastException = e;
+                attempt++;
+                
+                if (attempt < maxRetries) {
+                    log.warn("XML-RPC call {} failed (attempt {}/{}): {}", methodName, attempt, maxRetries, e.getMessage());
+                    try {
+                        Thread.sleep(DEFAULT_RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new XmlRpcException("Interrupted during retry", ie);
+                    }
+                } else {
+                    log.error("XML-RPC call {} failed after {} attempts", methodName, maxRetries);
+                }
+            }
+        }
+        
+        throw new XmlRpcException("Failed after " + maxRetries + " attempts", lastException);
+    }
+
+    /**
+     * Start CARLA simulation (backward compatibility)
+     * @return true if successful
+     */
+    public boolean startSimulation() {
+        // In the unified design, simulation is controlled by advance_simulation()
+        return isConnected();
+    }
+
+    /**
+     * Stop CARLA simulation (backward compatibility)
+     * @return true if successful
+     */
+    public boolean stopSimulation() {
+        // In the unified design, simulation is controlled by advance_simulation()
+        return true;
+    }
+
+    /**
+     * Get traffic lights (backward compatibility)
+     * @return List of traffic light IDs
+     */
+    public List<String> getTrafficLights() {
+        try {
+            List<Map<String, Object>> states = getAllTrafficLightStates();
+            List<String> trafficLightIds = new ArrayList<>();
+            
+            for (Map<String, Object> state : states) {
+                Object id = state.get("id");
+                if (id != null) {
+                    trafficLightIds.add(id.toString());
+                }
+            }
+            
+            return trafficLightIds;
+        } catch (Exception e) {
+            log.error("Failed to get traffic lights: {}", e.getMessage());
+            return new ArrayList<>();
+        }
     }
 }

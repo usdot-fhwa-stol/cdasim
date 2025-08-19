@@ -195,20 +195,41 @@ public class CarlaFederate implements FederateStarter {
         try {
             currentTime = time / 1000.0; // Convert to seconds
             
-            // Step CARLA simulation
             if (isRunning && isConnected) {
-                if (carlaClient.stepSimulation(timeStep)) {
-                    // Process sensor data
-                    processSensorData();
-                    
-                    // Update vehicle states from CARLA
-                    updateVehicleStates();
-                    
-                    // Update traffic light states from CARLA
-                    updateTrafficLightStates();
-                } else {
-                    log.error("Failed to step CARLA simulation");
+                // Tick-Loop Integration (MOSAIC's perspective) as per requirements:
+                
+                // 1. Discover Actors (As Needed)
+                List<Integer> activeActorIds = carlaClient.getActiveActorIds("vehicle.*");
+                log.debug("Discovered {} active vehicle actors in CARLA", activeActorIds.size());
+                
+                // 2. Update CARLA Actors (Optional) - for actors from other simulators (e.g., SUMO)
+                updateCarlaActorsFromExternalData();
+                
+                // 3. Step CARLA - Call advance_simulation() to progress CARLA's simulation state
+                if (!carlaClient.advanceSimulation()) {
+                    log.error("Failed to advance CARLA simulation");
+                    return;
                 }
+                
+                // 4. Retrieve Needed CARLA State - for each actor of interest
+                for (Integer actorId : activeActorIds) {
+                    // Get specific actor data as required by MOSAIC logic
+                    Map<String, Object> transform = carlaClient.getActorTransform(actorId);
+                    Map<String, Object> velocity = carlaClient.getActorVelocity(actorId);
+                    Map<String, Object> acceleration = carlaClient.getActorAcceleration(actorId);
+                    
+                    if (transform != null) {
+                        // Process actor data and create MOSAIC interactions as needed
+                        processActorData(actorId, transform, velocity, acceleration);
+                    }
+                }
+                
+                // 5. Retrieve traffic light states
+                List<Map<String, Object>> trafficLightStates = carlaClient.getAllTrafficLightStates();
+                processTrafficLightStates(trafficLightStates);
+                
+                // 6. Process sensor data
+                processSensorData();
             }
             
             // Request next time advance
@@ -312,36 +333,41 @@ public class CarlaFederate implements FederateStarter {
                 return;
             }
             
-            // Update vehicle transform
-            List<Double> location = Arrays.asList(
-                vehicleData.getPosition().getX(),
-                vehicleData.getPosition().getY(),
-                vehicleData.getPosition().getZ()
-            );
+            // Create properties map for set_actor_state_properties
+            Map<String, Object> properties = new HashMap<>();
             
-            List<Double> rotation = Arrays.asList(
-                vehicleData.getHeading().getPitch(),
-                vehicleData.getHeading().getYaw(),
-                vehicleData.getHeading().getRoll()
-            );
+            // Set transform
+            Map<String, Object> transform = new HashMap<>();
+            Map<String, Object> location = new HashMap<>();
+            location.put("x", vehicleData.getPosition().getX());
+            location.put("y", vehicleData.getPosition().getY());
+            location.put("z", vehicleData.getPosition().getZ());
+            transform.put("location", location);
             
-            if (carlaClient.updateActorTransform(actorId, location, rotation)) {
-                // Update velocity if available
-                if (vehicleData.getSpeed() != null) {
-                    List<Double> velocity = Arrays.asList(
-                        vehicleData.getSpeed().getX(),
-                        vehicleData.getSpeed().getY(),
-                        vehicleData.getSpeed().getZ()
-                    );
-                    carlaClient.updateActorVelocity(actorId, velocity);
-                }
-                
+            Map<String, Object> rotation = new HashMap<>();
+            rotation.put("pitch", vehicleData.getHeading().getPitch());
+            rotation.put("yaw", vehicleData.getHeading().getYaw());
+            rotation.put("roll", vehicleData.getHeading().getRoll());
+            transform.put("rotation", rotation);
+            
+            properties.put("transform", transform);
+            
+            // Set velocity if available
+            if (vehicleData.getSpeed() != null) {
+                Map<String, Object> targetVelocity = new HashMap<>();
+                targetVelocity.put("x", vehicleData.getSpeed().getX());
+                targetVelocity.put("y", vehicleData.getSpeed().getY());
+                targetVelocity.put("z", vehicleData.getSpeed().getZ());
+                properties.put("target_velocity", targetVelocity);
+            }
+            
+            // Use set_actor_state_properties for comprehensive state update
+            if (carlaClient.setActorStateProperties(actorId, properties)) {
                 // Update local state
                 registeredVehicles.put(vehicleId, vehicleData);
-                
-                log.debug("Updated vehicle {} transform", vehicleId);
+                log.debug("Updated vehicle {} state using set_actor_state_properties", vehicleId);
             } else {
-                log.error("Failed to update vehicle {} transform", vehicleId);
+                log.error("Failed to update vehicle {} state", vehicleId);
             }
             
         } catch (Exception e) {
@@ -382,13 +408,17 @@ public class CarlaFederate implements FederateStarter {
             // Find corresponding CARLA traffic light
             String actorId = trafficLightActorIds.get(trafficLightId);
             if (actorId == null) {
-                // Try to find by ID in CARLA
-                List<String> carlaTrafficLights = carlaClient.getTrafficLights();
-                for (String carlaId : carlaTrafficLights) {
-                    if (carlaId.contains(trafficLightId) || trafficLightId.contains(carlaId)) {
-                        actorId = carlaId;
-                        trafficLightActorIds.put(trafficLightId, actorId);
-                        break;
+                // Try to find by ID in CARLA using the new method
+                List<Map<String, Object>> carlaTrafficLights = carlaClient.getAllTrafficLightStates();
+                for (Map<String, Object> tlState : carlaTrafficLights) {
+                    Object id = tlState.get("id");
+                    if (id != null) {
+                        String carlaId = id.toString();
+                        if (carlaId.contains(trafficLightId) || trafficLightId.contains(carlaId)) {
+                            actorId = carlaId;
+                            trafficLightActorIds.put(trafficLightId, actorId);
+                            break;
+                        }
                     }
                 }
             }
@@ -447,25 +477,42 @@ public class CarlaFederate implements FederateStarter {
     }
 
     /**
-     * Update vehicle states from CARLA.
+     * Update vehicle states from CARLA using granular getter methods.
      */
     private void updateVehicleStates() {
         try {
-            Map<String, Map<String, Object>> allActors = carlaClient.getAllActors();
+            // Get active vehicle actors
+            List<Integer> activeActorIds = carlaClient.getActiveActorIds("vehicle.*");
             
-            for (Map.Entry<String, Map<String, Object>> entry : allActors.entrySet()) {
-                String actorId = entry.getKey();
-                Map<String, Object> actorInfo = entry.getValue();
-                
-                String vehicleId = actorVehicleIds.get(actorId);
+            for (Integer actorId : activeActorIds) {
+                String vehicleId = actorVehicleIds.get(actorId.toString());
                 if (vehicleId != null) {
-                    // Update vehicle state from CARLA
-                    @SuppressWarnings("unchecked")
-                    Map<String, List<Double>> transform = (Map<String, List<Double>>) actorInfo.get("transform");
+                    // Use granular getter methods as specified in requirements
+                    Map<String, Object> transform = carlaClient.getActorTransform(actorId);
+                    Map<String, Object> velocity = carlaClient.getActorVelocity(actorId);
+                    Map<String, Object> acceleration = carlaClient.getActorAcceleration(actorId);
+                    Map<String, Object> angularVelocity = carlaClient.getActorAngularVelocity(actorId);
+                    Map<String, Object> boundingBox = carlaClient.getActorBoundingBox(actorId);
+                    Map<String, Object> lightState = carlaClient.getVehicleLightState(actorId);
+                    
+                    // Process the retrieved data
                     if (transform != null) {
-                        // Create vehicle update interaction
-                        // Note: This would require creating a VehicleData object from the transform
-                        log.debug("Updated vehicle {} state from CARLA", vehicleId);
+                        log.debug("Retrieved transform for vehicle {}: {}", vehicleId, transform);
+                    }
+                    if (velocity != null) {
+                        log.debug("Retrieved velocity for vehicle {}: {}", vehicleId, velocity);
+                    }
+                    if (acceleration != null) {
+                        log.debug("Retrieved acceleration for vehicle {}: {}", vehicleId, acceleration);
+                    }
+                    if (angularVelocity != null) {
+                        log.debug("Retrieved angular velocity for vehicle {}: {}", vehicleId, angularVelocity);
+                    }
+                    if (boundingBox != null) {
+                        log.debug("Retrieved bounding box for vehicle {}: {}", vehicleId, boundingBox);
+                    }
+                    if (lightState != null) {
+                        log.debug("Retrieved light state for vehicle {}: {}", vehicleId, lightState);
                     }
                 }
             }
@@ -475,34 +522,164 @@ public class CarlaFederate implements FederateStarter {
     }
 
     /**
-     * Update traffic light states from CARLA.
+     * Update CARLA actors from external data (e.g., SUMO vehicles).
      */
-    private void updateTrafficLightStates() {
+    private void updateCarlaActorsFromExternalData() {
         try {
-            List<String> trafficLights = carlaClient.getTrafficLights();
+            // This method would handle synchronization of actor states from other simulators
+            // For example, if SUMO vehicles need to be synchronized into CARLA
             
-            for (String actorId : trafficLights) {
-                String state = carlaClient.getTrafficLightState(actorId);
-                if (state != null) {
-                    // Find corresponding MOSAIC traffic light
-                    for (Map.Entry<String, String> entry : trafficLightActorIds.entrySet()) {
-                        if (entry.getValue().equals(actorId)) {
-                            String trafficLightId = entry.getKey();
-                            TrafficLightState mosaicState = convertFromCarlaTrafficLightState(state);
-                            
-                            if (mosaicState != registeredTrafficLights.get(trafficLightId)) {
-                                // Create and send traffic light update interaction
-                                TrafficLightUpdate update = new TrafficLightUpdate(currentTime * 1000, trafficLightId, mosaicState);
-                                rtiAmbassador.triggerInteraction(update);
-                                
-                                registeredTrafficLights.put(trafficLightId, mosaicState);
-                                log.debug("Updated traffic light {} state from CARLA: {}", trafficLightId, mosaicState);
-                            }
-                            break;
-                        }
+            // Example: Update vehicles that were spawned by other federates
+            for (Map.Entry<String, VehicleData> entry : registeredVehicles.entrySet()) {
+                String vehicleId = entry.getKey();
+                VehicleData vehicleData = entry.getValue();
+                String actorId = vehicleActorIds.get(vehicleId);
+                
+                if (actorId != null) {
+                    // Create properties map for set_actor_state_properties
+                    Map<String, Object> properties = new HashMap<>();
+                    
+                    // Set transform
+                    Map<String, Object> transform = new HashMap<>();
+                    Map<String, Object> location = new HashMap<>();
+                    location.put("x", vehicleData.getPosition().getX());
+                    location.put("y", vehicleData.getPosition().getY());
+                    location.put("z", vehicleData.getPosition().getZ());
+                    transform.put("location", location);
+                    
+                    Map<String, Object> rotation = new HashMap<>();
+                    rotation.put("pitch", vehicleData.getHeading().getPitch());
+                    rotation.put("yaw", vehicleData.getHeading().getYaw());
+                    rotation.put("roll", vehicleData.getHeading().getRoll());
+                    transform.put("rotation", rotation);
+                    
+                    properties.put("transform", transform);
+                    
+                    // Set velocity if available
+                    if (vehicleData.getSpeed() != null) {
+                        Map<String, Object> targetVelocity = new HashMap<>();
+                        targetVelocity.put("x", vehicleData.getSpeed().getX());
+                        targetVelocity.put("y", vehicleData.getSpeed().getY());
+                        targetVelocity.put("z", vehicleData.getSpeed().getZ());
+                        properties.put("target_velocity", targetVelocity);
+                    }
+                    
+                    // Call set_actor_state_properties to synchronize state
+                    if (carlaClient.setActorStateProperties(actorId, properties)) {
+                        log.debug("Synchronized vehicle {} state to CARLA", vehicleId);
+                    } else {
+                        log.warn("Failed to synchronize vehicle {} state to CARLA", vehicleId);
                     }
                 }
             }
+        } catch (Exception e) {
+            log.error("Error updating CARLA actors from external data", e);
+        }
+    }
+
+    /**
+     * Process actor data from CARLA and create MOSAIC interactions.
+     */
+    private void processActorData(Integer actorId, Map<String, Object> transform, 
+                                 Map<String, Object> velocity, Map<String, Object> acceleration) {
+        try {
+            // Find corresponding MOSAIC vehicle ID
+            String vehicleId = actorVehicleIds.get(actorId.toString());
+            if (vehicleId == null) {
+                // This might be a new actor spawned by CARLA
+                log.debug("Found new CARLA actor {} without MOSAIC mapping", actorId);
+                return;
+            }
+            
+            // Update local vehicle data
+            VehicleData vehicleData = registeredVehicles.get(vehicleId);
+            if (vehicleData != null) {
+                // Update position from transform
+                if (transform != null) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> location = (Map<String, Object>) transform.get("location");
+                    if (location != null) {
+                        // Note: This would require creating a new VehicleData object with updated position
+                        // For now, we'll just log the update
+                        log.debug("Actor {} position updated: x={}, y={}, z={}", 
+                                actorId, location.get("x"), location.get("y"), location.get("z"));
+                    }
+                }
+                
+                // Update velocity
+                if (velocity != null) {
+                    log.debug("Actor {} velocity: x={}, y={}, z={}", 
+                            actorId, velocity.get("x"), velocity.get("y"), velocity.get("z"));
+                }
+                
+                // Update acceleration
+                if (acceleration != null) {
+                    log.debug("Actor {} acceleration: x={}, y={}, z={}", 
+                            actorId, acceleration.get("x"), acceleration.get("y"), acceleration.get("z"));
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error processing actor data for actor {}: {}", actorId, e.getMessage());
+        }
+    }
+
+    /**
+     * Process traffic light states from CARLA.
+     */
+    private void processTrafficLightStates(List<Map<String, Object>> trafficLightStates) {
+        try {
+            for (Map<String, Object> state : trafficLightStates) {
+                Object id = state.get("id");
+                Object stateValue = state.get("state");
+                
+                if (id != null && stateValue != null) {
+                    String trafficLightId = id.toString();
+                    int stateInt = ((Number) stateValue).intValue();
+                    
+                    // Convert CARLA traffic light state to MOSAIC state
+                    TrafficLightState mosaicState = convertFromCarlaTrafficLightStateInt(stateInt);
+                    
+                    // Find corresponding MOSAIC traffic light
+                    String mosaicTrafficLightId = null;
+                    for (Map.Entry<String, String> entry : trafficLightActorIds.entrySet()) {
+                        if (entry.getValue().equals(trafficLightId)) {
+                            mosaicTrafficLightId = entry.getKey();
+                            break;
+                        }
+                    }
+                    
+                    if (mosaicTrafficLightId == null) {
+                        // This might be a new traffic light discovered in CARLA
+                        mosaicTrafficLightId = "carla_tl_" + trafficLightId;
+                        trafficLightActorIds.put(mosaicTrafficLightId, trafficLightId);
+                        registeredTrafficLights.put(mosaicTrafficLightId, TrafficLightState.UNKNOWN);
+                    }
+                    
+                    // Check if state has changed
+                    TrafficLightState currentState = registeredTrafficLights.get(mosaicTrafficLightId);
+                    if (currentState != mosaicState) {
+                        // Create and send traffic light update interaction
+                        TrafficLightUpdate update = new TrafficLightUpdate(currentTime * 1000, mosaicTrafficLightId, mosaicState);
+                        rtiAmbassador.triggerInteraction(update);
+                        
+                        registeredTrafficLights.put(mosaicTrafficLightId, mosaicState);
+                        log.debug("Updated traffic light {} state from CARLA: {} -> {}", 
+                                mosaicTrafficLightId, currentState, mosaicState);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error processing traffic light states", e);
+        }
+    }
+
+    /**
+     * Update traffic light states from CARLA (legacy method for backward compatibility).
+     */
+    private void updateTrafficLightStates() {
+        try {
+            List<Map<String, Object>> trafficLightStates = carlaClient.getAllTrafficLightStates();
+            processTrafficLightStates(trafficLightStates);
         } catch (Exception e) {
             log.error("Error updating traffic light states", e);
         }
@@ -568,6 +745,24 @@ public class CarlaFederate implements FederateStarter {
                 return TrafficLightState.YELLOW;
             case "green":
                 return TrafficLightState.GREEN;
+            default:
+                return TrafficLightState.UNKNOWN;
+        }
+    }
+
+    /**
+     * Convert CARLA traffic light state integer to MOSAIC state.
+     */
+    private TrafficLightState convertFromCarlaTrafficLightStateInt(int state) {
+        switch (state) {
+            case 0: // Red
+                return TrafficLightState.RED;
+            case 1: // Yellow
+                return TrafficLightState.YELLOW;
+            case 2: // Green
+                return TrafficLightState.GREEN;
+            case 3: // Off
+            case 4: // Unknown
             default:
                 return TrafficLightState.UNKNOWN;
         }
