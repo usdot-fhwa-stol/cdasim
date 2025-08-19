@@ -1,12 +1,16 @@
+
 #!/usr/bin/env python3
 """
-CARLA XML-RPC Server for MOSAIC Integration
+CARLA XML-RPC Server for MOSAIC Integration (Unified XML-RPC per redesign spec)
 
-This module implements an XML-RPC server that provides a dedicated interface
-for MOSAIC to control CARLA actors (vehicles, pedestrians) and traffic lights.
-It replaces the TraCI-based bridge with a more suitable XML-RPC architecture.
+This server exposes granular, XML-RPC-safe methods for:
+- Actor data (vehicles, pedestrians): transforms, velocities, accelerations, bounding boxes, etc.
+- Traffic signal states (single and bulk).
+- Sensor frames (raw bytes + metadata) with xmlrpc.client.Binary.
+- Simulation control with world.tick() via advance_simulation().
 
-Copyright (c) 2024 CARLA-MOSAIC Integration Team
+It aligns with the "Proposed Redesign of the CARLA-MOSAIC Bridge Using Unified XML-RPC"
+specification (UGA MSC Lab, 2025-06-03), Sections 4–6.
 """
 
 import argparse
@@ -14,12 +18,12 @@ import logging
 import sys
 import os
 import json
-import math
 import threading
+from typing import Dict, List, Optional, Tuple, Any, Union
+from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
+from xmlrpc.client import Binary
+import glob
 import time
-from typing import Dict, List, Optional, Tuple, Any
-from xmlrpc.server import SimpleXMLRPCServer
-from xmlrpc.server import SimpleXMLRPCRequestHandler
 
 # Add CARLA Python API to path
 try:
@@ -32,509 +36,489 @@ except IndexError:
     sys.exit(1)
 
 import carla
-import glob
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("CarlaXMLRPCServer")
+
+ActorKey = Union[int, str]
+SensorKey = Union[int, str]
 
 
 class CarlaXMLRPCServer:
-    """
-    XML-RPC Server for CARLA-MOSAIC integration.
-    
-    Provides endpoints for:
-    - Actor management (spawn, update, destroy)
-    - Traffic light control
-    - Simulation control
-    - Sensor management
-    """
-    
-    def __init__(self, host: str = 'localhost', port: int = 8090, 
+    def __init__(self, host: str = 'localhost', port: int = 8090,
                  carla_host: str = 'localhost', carla_port: int = 2000):
-        """
-        Initialize the CARLA XML-RPC server.
-        
-        Args:
-            host: Host address for the XML-RPC server
-            port: Port for the XML-RPC server
-            carla_host: CARLA server host
-            carla_port: CARLA server port
-        """
         self.host = host
         self.port = port
         self.carla_host = carla_host
         self.carla_port = carla_port
-        
-        # CARLA client and world
-        self.client = None
-        self.world = None
-        
-        # Actor tracking
+
+        self.client: Optional[carla.Client] = None
+        self.world: Optional[carla.World] = None
+
         self.actors: Dict[str, carla.Actor] = {}
         self.actor_types: Dict[str, str] = {}
         self.actor_blueprints: Dict[str, carla.ActorBlueprint] = {}
-        
-        # Traffic light tracking
-        self.traffic_lights: Dict[str, carla.TrafficLight] = {}
-        
-        # Sensor tracking
+
         self.sensors: Dict[str, carla.Sensor] = {}
         self.sensor_data: Dict[str, Any] = {}
-        
-        # Simulation state
-        self.simulation_running = False
-        self.simulation_time = 0.0
-        
-        # Threading
+        self.sensor_blueprints: Dict[str, carla.ActorBlueprint] = {}
+
         self.lock = threading.RLock()
-        
-        # Initialize XML-RPC server
-        self.server = SimpleXMLRPCServer((host, port), 
-                                        requestHandler=SimpleXMLRPCRequestHandler,
-                                        allow_none=True)
+
+        self.server = SimpleXMLRPCServer(
+            (host, port),
+            requestHandler=SimpleXMLRPCRequestHandler,
+            allow_none=True, logRequests=False
+        )
         self._register_methods()
-        
+        logger.info("XML-RPC methods registered")
+
+    # ---------- Registration ----------
     def _register_methods(self):
-        """Register all XML-RPC methods."""
-        # Connection methods
+        # Connection
         self.server.register_function(self.connect, 'connect')
         self.server.register_function(self.disconnect, 'disconnect')
         self.server.register_function(self.is_connected, 'is_connected')
-        
+
         # Simulation control
-        self.server.register_function(self.start_simulation, 'start_simulation')
-        self.server.register_function(self.stop_simulation, 'stop_simulation')
-        self.server.register_function(self.step_simulation, 'step_simulation')
+        self.server.register_function(self.advance_simulation, 'advance_simulation')
+        self.server.register_function(self.step_simulation, 'step_simulation')  # backward compat
         self.server.register_function(self.get_simulation_time, 'get_simulation_time')
-        
-        # Actor management
+
+        # Actor discovery & getters
+        self.server.register_function(self.get_active_actor_ids, 'get_active_actor_ids')
+        self.server.register_function(self.get_actor_basic_info, 'get_actor_basic_info')
+        self.server.register_function(self.get_actor_transform, 'get_actor_transform')
+        self.server.register_function(self.get_actor_velocity, 'get_actor_velocity')
+        self.server.register_function(self.get_actor_acceleration, 'get_actor_acceleration')
+        self.server.register_function(self.get_actor_angular_velocity, 'get_actor_angular_velocity')
+        self.server.register_function(self.get_actor_bounding_box, 'get_actor_bounding_box')
+        self.server.register_function(self.get_vehicle_light_state, 'get_vehicle_light_state')
+
+        # Writable
+        self.server.register_function(self.set_actor_state_properties, 'set_actor_state_properties')
+
+        # Lifecycle / utility
         self.server.register_function(self.spawn_actor, 'spawn_actor')
         self.server.register_function(self.destroy_actor, 'destroy_actor')
         self.server.register_function(self.update_actor_transform, 'update_actor_transform')
         self.server.register_function(self.update_actor_velocity, 'update_actor_velocity')
-        self.server.register_function(self.get_actor_transform, 'get_actor_transform')
-        self.server.register_function(self.get_actor_velocity, 'get_actor_velocity')
         self.server.register_function(self.get_all_actors, 'get_all_actors')
-        
-        # Traffic light management
-        self.server.register_function(self.get_traffic_lights, 'get_traffic_lights')
-        self.server.register_function(self.set_traffic_light_state, 'set_traffic_light_state')
+
+        # Traffic lights
         self.server.register_function(self.get_traffic_light_state, 'get_traffic_light_state')
+        self.server.register_function(self.get_all_traffic_light_states, 'get_all_traffic_light_states')
+        self.server.register_function(self.set_traffic_light_state, 'set_traffic_light_state')
         self.server.register_function(self.set_traffic_light_timer, 'set_traffic_light_timer')
-        
-        # Sensor management
+
+        # Sensors
         self.server.register_function(self.create_sensor, 'create_sensor')
         self.server.register_function(self.destroy_sensor, 'destroy_sensor')
         self.server.register_function(self.get_sensor_data, 'get_sensor_data')
-        
-        # Map and world information
+        self.server.register_function(self.get_detected_objects, 'get_detected_objects')
+
+        # Maps
         self.server.register_function(self.get_map_name, 'get_map_name')
         self.server.register_function(self.get_available_maps, 'get_available_maps')
         self.server.register_function(self.load_map, 'load_map')
-        
-        logger.info("XML-RPC methods registered successfully")
-    
+
+    # ---------- Utilities ----------
+    def _sim_timestamp(self) -> float:
+        try:
+            if self.world is None:
+                return 0.0
+            snap = self.world.get_snapshot()
+            if snap is None:
+                return 0.0
+            return float(snap.timestamp.elapsed_seconds)
+        except Exception:
+            return 0.0
+
+    def _resolve_actor(self, actor_key: ActorKey) -> Optional[carla.Actor]:
+        if isinstance(actor_key, str):
+            if actor_key in self.actors:
+                return self.actors[actor_key]
+            try:
+                aid = int(actor_key)
+                if self.world:
+                    return self.world.get_actor(aid)
+            except Exception:
+                return None
+        else:
+            try:
+                if self.world:
+                    return self.world.get_actor(int(actor_key))
+            except Exception:
+                return None
+        return None
+
+    def _resolve_sensor(self, sensor_key: SensorKey) -> Tuple[Optional[str], Optional[carla.Sensor]]:
+        if isinstance(sensor_key, str):
+            if sensor_key in self.sensors:
+                return sensor_key, self.sensors[sensor_key]
+            try:
+                sid = int(sensor_key)
+                if self.world:
+                    s = self.world.get_actor(sid)
+                    for alias, ss in self.sensors.items():
+                        if ss.id == sid:
+                            return alias, ss
+                    return str(sid), s
+            except Exception:
+                return None, None
+        else:
+            sid = int(sensor_key)
+            if self.world:
+                s = self.world.get_actor(sid)
+                for alias, ss in self.sensors.items():
+                    if ss.id == sid:
+                        return alias, ss
+                return str(sid), s
+        return None, None
+
+    # ---------- Connection ----------
     def connect(self) -> bool:
-        """
-        Connect to CARLA server.
-        
-        Returns:
-            True if connection successful, False otherwise
-        """
         try:
             with self.lock:
                 if self.client is None:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
-                
                 self.world = self.client.get_world()
-                logger.info(f"Connected to CARLA server at {self.carla_host}:{self.carla_port}")
-                logger.info(f"Current map: {self.world.get_map().name}")
+                logger.info("Connected to CARLA at %s:%s | map=%s",
+                            self.carla_host, self.carla_port, self.world.get_map().name)
                 return True
-                
         except Exception as e:
-            logger.error(f"Failed to connect to CARLA: {e}")
+            logger.error("Failed to connect: %s", e)
             return False
-    
+
     def disconnect(self) -> bool:
-        """
-        Disconnect from CARLA server.
-        
-        Returns:
-            True if disconnection successful, False otherwise
-        """
         try:
             with self.lock:
-                # Destroy all actors
-                for actor_id, actor in self.actors.items():
-                    try:
-                        actor.destroy()
-                    except:
-                        pass
-                
-                self.actors.clear()
-                self.actor_types.clear()
-                self.actor_blueprints.clear()
-                self.traffic_lights.clear()
-                self.sensors.clear()
-                self.sensor_data.clear()
-                
-                if self.client:
-                    self.client = None
-                    self.world = None
-                
-                logger.info("Disconnected from CARLA server")
+                for _, a in list(self.actors.items()):
+                    try: a.destroy()
+                    except Exception: pass
+                for _, s in list(self.sensors.items()):
+                    try: s.destroy()
+                    except Exception: pass
+                self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
+                self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
+                self.world = None; self.client = None
+                logger.info("Disconnected from CARLA")
                 return True
-                
         except Exception as e:
-            logger.error(f"Error during disconnect: {e}")
+            logger.error("Error during disconnect: %s", e)
             return False
-    
+
     def is_connected(self) -> bool:
-        """
-        Check if connected to CARLA server.
-        
-        Returns:
-            True if connected, False otherwise
-        """
         return self.client is not None and self.world is not None
-    
-    def start_simulation(self) -> bool:
-        """
-        Start the simulation.
-        
-        Returns:
-            True if successful, False otherwise
-        """
+
+    # ---------- Simulation ----------
+    def advance_simulation(self) -> bool:
         try:
             with self.lock:
                 if not self.is_connected():
                     return False
-                
-                self.simulation_running = True
-                self.simulation_time = 0.0
-                logger.info("Simulation started")
+                self.world.tick()
                 return True
-                
         except Exception as e:
-            logger.error(f"Error starting simulation: {e}")
+            logger.error("advance_simulation error: %s", e)
             return False
-    
-    def stop_simulation(self) -> bool:
-        """
-        Stop the simulation.
-        
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            with self.lock:
-                self.simulation_running = False
-                logger.info("Simulation stopped")
-                return True
-                
-        except Exception as e:
-            logger.error(f"Error stopping simulation: {e}")
-            return False
-    
+
     def step_simulation(self, delta_time: float) -> bool:
-        """
-        Step the simulation by the given time.
-        
-        Args:
-            delta_time: Time step in seconds
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            with self.lock:
-                if not self.is_connected() or not self.simulation_running:
-                    return False
-                
-                # Update simulation time
-                self.simulation_time += delta_time
-                
-                # Update sensor data
-                self._update_sensors()
-                
-                return True
-                
-        except Exception as e:
-            logger.error(f"Error stepping simulation: {e}")
-            return False
-    
+        # Kept for backward compatibility; no-op in unified design
+        return self.is_connected()
+
     def get_simulation_time(self) -> float:
-        """
-        Get current simulation time.
-        
-        Returns:
-            Current simulation time in seconds
-        """
-        return self.simulation_time
-    
-    def spawn_actor(self, actor_type: str, actor_id: str, 
-                   location: List[float], rotation: List[float],
-                   attributes: Dict[str, Any] = None) -> bool:
-        """
-        Spawn an actor in CARLA.
-        
-        Args:
-            actor_type: Type of actor (e.g., 'vehicle.tesla.model3', 'walker.pedestrian.0001')
-            actor_id: Unique identifier for the actor
-            location: [x, y, z] coordinates
-            rotation: [pitch, yaw, roll] in degrees
-            attributes: Additional attributes for the actor
-            
-        Returns:
-            True if spawn successful, False otherwise
-        """
+        return self._sim_timestamp()
+
+    # ---------- Actor Lifecycle ----------
+    def spawn_actor(self, actor_type: str, actor_id: str,
+                    location: List[float], rotation: List[float],
+                    attributes: Dict[str, Any] = None) -> bool:
         try:
             with self.lock:
-                if not self.is_connected():
-                    return False
-                
-                if actor_id in self.actors:
-                    logger.warning(f"Actor {actor_id} already exists")
-                    return False
-                
-                # Get blueprint
-                blueprint = self.world.get_blueprint_library().find(actor_type)
-                if not blueprint:
-                    logger.error(f"Blueprint {actor_type} not found")
-                    return False
-                
-                # Set attributes
+                if not self.is_connected(): return False
+                if actor_id in self.actors: return False
+                bp = self.world.get_blueprint_library().find(actor_type)
+                if not bp: return False
                 if attributes:
-                    for key, value in attributes.items():
-                        if blueprint.has_attribute(key):
-                            blueprint.set_attribute(key, str(value))
-                
-                # Create transform
+                    for k, v in attributes.items():
+                        if bp.has_attribute(k): bp.set_attribute(k, str(v))
                 transform = carla.Transform(
-                    carla.Location(location[0], location[1], location[2]),
-                    carla.Rotation(rotation[0], rotation[1], rotation[2])
+                    carla.Location(*[float(v) for v in location]),
+                    carla.Rotation(*[float(v) for v in rotation])
                 )
-                
-                # Spawn actor
-                actor = self.world.spawn_actor(blueprint, transform)
-                
-                # Track actor
+                actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
-                self.actor_blueprints[actor_id] = blueprint
-                
-                logger.info(f"Spawned actor {actor_id} of type {actor_type}")
+                self.actor_blueprints[actor_id] = bp
                 return True
-                
         except Exception as e:
-            logger.error(f"Error spawning actor {actor_id}: {e}")
+            logger.error("spawn_actor error: %s", e)
             return False
-    
-    def destroy_actor(self, actor_id: str) -> bool:
-        """
-        Destroy an actor.
-        
-        Args:
-            actor_id: Unique identifier for the actor
-            
-        Returns:
-            True if destroy successful, False otherwise
-        """
+
+    def destroy_actor(self, actor_key: ActorKey) -> bool:
         try:
             with self.lock:
-                if actor_id not in self.actors:
-                    logger.warning(f"Actor {actor_id} not found")
-                    return False
-                
-                actor = self.actors[actor_id]
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return False
+                for alias, a in list(self.actors.items()):
+                    if a.id == actor.id:
+                        self.actors.pop(alias, None)
+                        self.actor_types.pop(alias, None)
+                        self.actor_blueprints.pop(alias, None)
                 actor.destroy()
-                
-                # Remove from tracking
-                del self.actors[actor_id]
-                del self.actor_types[actor_id]
-                del self.actor_blueprints[actor_id]
-                
-                logger.info(f"Destroyed actor {actor_id}")
                 return True
-                
         except Exception as e:
-            logger.error(f"Error destroying actor {actor_id}: {e}")
+            logger.error("destroy_actor error: %s", e)
             return False
-    
-    def update_actor_transform(self, actor_id: str, 
-                             location: List[float], rotation: List[float]) -> bool:
-        """
-        Update actor transform.
-        
-        Args:
-            actor_id: Unique identifier for the actor
-            location: [x, y, z] coordinates
-            rotation: [pitch, yaw, roll] in degrees
-            
-        Returns:
-            True if update successful, False otherwise
-        """
+
+    def update_actor_transform(self, actor_key: ActorKey, location: List[float], rotation: List[float]) -> bool:
         try:
             with self.lock:
-                if actor_id not in self.actors:
-                    return False
-                
-                actor = self.actors[actor_id]
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return False
                 transform = carla.Transform(
-                    carla.Location(location[0], location[1], location[2]),
-                    carla.Rotation(rotation[0], rotation[1], rotation[2])
+                    carla.Location(*[float(v) for v in location]),
+                    carla.Rotation(*[float(v) for v in rotation])
                 )
                 actor.set_transform(transform)
                 return True
-                
         except Exception as e:
-            logger.error(f"Error updating transform for actor {actor_id}: {e}")
+            logger.error("update_actor_transform error: %s", e)
             return False
-    
-    def update_actor_velocity(self, actor_id: str, velocity: List[float]) -> bool:
-        """
-        Update actor velocity.
-        
-        Args:
-            actor_id: Unique identifier for the actor
-            velocity: [x, y, z] velocity components
-            
-        Returns:
-            True if update successful, False otherwise
-        """
+
+    def update_actor_velocity(self, actor_key: ActorKey, velocity: List[float]) -> bool:
         try:
             with self.lock:
-                if actor_id not in self.actors:
-                    return False
-                
-                actor = self.actors[actor_id]
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return False
+                vec = carla.Vector3D(*[float(v) for v in velocity])
                 if hasattr(actor, 'set_velocity'):
-                    actor.set_velocity(carla.Vector3D(velocity[0], velocity[1], velocity[2]))
-                    return True
+                    actor.set_velocity(vec); return True
                 return False
-                
         except Exception as e:
-            logger.error(f"Error updating velocity for actor {actor_id}: {e}")
+            logger.error("update_actor_velocity error: %s", e)
             return False
-    
-    def get_actor_transform(self, actor_id: str) -> Optional[Dict[str, List[float]]]:
-        """
-        Get actor transform.
-        
-        Args:
-            actor_id: Unique identifier for the actor
-            
-        Returns:
-            Dictionary with 'location' and 'rotation' lists, or None if not found
-        """
-        try:
-            with self.lock:
-                if actor_id not in self.actors:
-                    return None
-                
-                actor = self.actors[actor_id]
-                transform = actor.get_transform()
-                
-                return {
-                    'location': [transform.location.x, transform.location.y, transform.location.z],
-                    'rotation': [transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]
-                }
-                
-        except Exception as e:
-            logger.error(f"Error getting transform for actor {actor_id}: {e}")
-            return None
-    
-    def get_actor_velocity(self, actor_id: str) -> Optional[List[float]]:
-        """
-        Get actor velocity.
-        
-        Args:
-            actor_id: Unique identifier for the actor
-            
-        Returns:
-            [x, y, z] velocity components, or None if not found
-        """
-        try:
-            with self.lock:
-                if actor_id not in self.actors:
-                    return None
-                
-                actor = self.actors[actor_id]
-                if hasattr(actor, 'get_velocity'):
-                    velocity = actor.get_velocity()
-                    return [velocity.x, velocity.y, velocity.z]
-                return None
-                
-        except Exception as e:
-            logger.error(f"Error getting velocity for actor {actor_id}: {e}")
-            return None
-    
+
     def get_all_actors(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Get information about all actors.
-        
-        Returns:
-            Dictionary mapping actor IDs to actor information
-        """
         try:
             with self.lock:
-                result = {}
-                for actor_id, actor in self.actors.items():
-                    transform = actor.get_transform()
-                    result[actor_id] = {
-                        'type': self.actor_types[actor_id],
-                        'location': [transform.location.x, transform.location.y, transform.location.z],
-                        'rotation': [transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]
+                out = {}
+                for alias, actor in self.actors.items():
+                    t = actor.get_transform()
+                    out[alias] = {
+                        'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                        'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                        'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
                     }
-                return result
-                
+                return out
         except Exception as e:
-            logger.error(f"Error getting all actors: {e}")
+            logger.error("get_all_actors error: %s", e)
             return {}
-    
-    def get_traffic_lights(self) -> List[str]:
-        """
-        Get all traffic light IDs.
-        
-        Returns:
-            List of traffic light IDs
-        """
+
+    # ---------- Actor Data (spec) ----------
+    def get_active_actor_ids(self, filter_pattern: str = "vehicle.*") -> List[int]:
         try:
             with self.lock:
-                if not self.is_connected():
-                    return []
-                
-                traffic_lights = self.world.get_actors().filter('traffic.traffic_light')
-                return [str(tl.id) for tl in traffic_lights]
-                
+                if not self.is_connected(): return []
+                return [int(a.id) for a in self.world.get_actors().filter(filter_pattern)]
         except Exception as e:
-            logger.error(f"Error getting traffic lights: {e}")
+            logger.error("get_active_actor_ids error: %s", e)
             return []
-    
-    def set_traffic_light_state(self, traffic_light_id: str, state: str) -> bool:
-        """
-        Set traffic light state.
-        
-        Args:
-            traffic_light_id: Traffic light ID
-            state: Traffic light state ('Red', 'Yellow', 'Green')
-            
-        Returns:
-            True if successful, False otherwise
-        """
+
+    def get_actor_basic_info(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
             with self.lock:
-                if not self.is_connected():
-                    return False
-                
-                traffic_lights = self.world.get_actors().filter('traffic.traffic_light')
-                for tl in traffic_lights:
-                    if str(tl.id) == traffic_light_id:
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return None
+                return {
+                    'actor_id': int(actor.id),
+                    'type_id': str(actor.type_id),
+                    'status': "Active" if bool(getattr(actor, 'is_alive', True)) else "Invalid",
+                    'is_alive': bool(getattr(actor, 'is_alive', True)),
+                    'timestamp': self._sim_timestamp()
+                }
+        except Exception as e:
+            logger.error("get_actor_basic_info error: %s", e)
+            return None
+
+    def get_actor_transform(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return None
+                t = actor.get_transform()
+                return {
+                    'location': {'x': float(t.location.x), 'y': float(t.location.y), 'z': float(t.location.z)},
+                    'rotation': {'pitch': float(t.rotation.pitch), 'yaw': float(t.rotation.yaw), 'roll': float(t.rotation.roll)},
+                    'timestamp': self._sim_timestamp()
+                }
+        except Exception as e:
+            logger.error("get_actor_transform error: %s", e)
+            return None
+
+    def get_actor_velocity(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None or not hasattr(actor, 'get_velocity'): return None
+                v = actor.get_velocity()
+                return {'x': float(v.x), 'y': float(v.y), 'z': float(v.z), 'timestamp': self._sim_timestamp()}
+        except Exception as e:
+            logger.error("get_actor_velocity error: %s", e)
+            return None
+
+    def get_actor_acceleration(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None or not hasattr(actor, 'get_acceleration'): return None
+                a = actor.get_acceleration()
+                return {'x': float(a.x), 'y': float(a.y), 'z': float(a.z), 'timestamp': self._sim_timestamp()}
+        except Exception as e:
+            logger.error("get_actor_acceleration error: %s", e)
+            return None
+
+    def get_actor_angular_velocity(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None or not hasattr(actor, 'get_angular_velocity'): return None
+                w = actor.get_angular_velocity()
+                return {'x': float(w.x), 'y': float(w.y), 'z': float(w.z), 'timestamp': self._sim_timestamp()}
+        except Exception as e:
+            logger.error("get_actor_angular_velocity error: %s", e)
+            return None
+
+    def get_actor_bounding_box(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None or not hasattr(actor, 'bounding_box'): return None
+                bb = actor.bounding_box
+                return {
+                    'extent': {'x': float(bb.extent.x), 'y': float(bb.extent.y), 'z': float(bb.extent.z)},
+                    'location_offset': {'x': float(bb.location.x), 'y': float(bb.location.y), 'z': float(bb.location.z)},
+                    'timestamp': self._sim_timestamp()
+                }
+        except Exception as e:
+            logger.error("get_actor_bounding_box error: %s", e)
+            return None
+
+    def get_vehicle_light_state(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return None
+                if hasattr(actor, 'get_light_state'):
+                    st = actor.get_light_state()
+                    return {'light_state_int': int(st), 'timestamp': self._sim_timestamp()}
+                return None
+        except Exception as e:
+            logger.error("get_vehicle_light_state error: %s", e)
+            return None
+
+    def set_actor_state_properties(self, actor_key: ActorKey, properties_to_set: Dict[str, Any]) -> bool:
+        try:
+            with self.lock:
+                actor = self._resolve_actor(actor_key)
+                if actor is None: return False
+
+                t_in = properties_to_set.get('transform')
+                if t_in:
+                    loc = t_in.get('location', {}); rot = t_in.get('rotation', {})
+                    transform = carla.Transform(
+                        carla.Location(float(loc.get('x', 0.0)), float(loc.get('y', 0.0)), float(loc.get('z', 0.0))),
+                        carla.Rotation(float(rot.get('pitch', 0.0)), float(rot.get('yaw', 0.0)), float(rot.get('roll', 0.0)))
+                    )
+                    actor.set_transform(transform)
+
+                tv = properties_to_set.get('target_velocity')
+                if tv:
+                    vec = carla.Vector3D(float(tv.get('x', 0.0)), float(tv.get('y', 0.0)), float(tv.get('z', 0.0)))
+                    if hasattr(actor, 'set_target_velocity'):
+                        actor.set_target_velocity(vec)
+                    elif hasattr(actor, 'set_velocity'):
+                        actor.set_velocity(vec)
+
+                tav = properties_to_set.get('target_angular_velocity')
+                if tav:
+                    avec = carla.Vector3D(float(tav.get('x', 0.0)), float(tav.get('y', 0.0)), float(tav.get('z', 0.0)))
+                    if hasattr(actor, 'set_target_angular_velocity'):
+                        actor.set_target_angular_velocity(avec)
+                    elif hasattr(actor, 'set_angular_velocity'):
+                        actor.set_angular_velocity(avec)
+
+                return True
+        except Exception as e:
+            logger.error("set_actor_state_properties error: %s", e)
+            return False
+
+    # ---------- Traffic Lights ----------
+    def _tl_state_to_int(self, state: carla.TrafficLightState) -> int:
+        if state == carla.TrafficLightState.Red: return 0
+        if state == carla.TrafficLightState.Yellow: return 1
+        if state == carla.TrafficLightState.Green: return 2
+        if state == carla.TrafficLightState.Off: return 3
+        return 4
+
+    def get_traffic_light_state(self, traffic_light_id: ActorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                if not self.is_connected(): return None
+                tid = int(traffic_light_id)
+                tl = self.world.get_actor(tid) if self.world else None
+                if tl is None or 'traffic_light' not in getattr(tl, 'type_id', ''): return None
+                state = tl.get_state()
+                data = {
+                    'id': int(tl.id),
+                    'state': int(self._tl_state_to_int(state)),
+                    'elapsed_time': float(getattr(tl, 'get_elapsed_time', lambda: 0.0)()),
+                    'timestamp': self._sim_timestamp()
+                }
+                try: data['is_frozen'] = bool(tl.is_frozen())
+                except Exception: pass
+                try: data['pole_index'] = int(tl.get_pole_index())
+                except Exception: pass
+                return data
+        except Exception as e:
+            logger.error("get_traffic_light_state error: %s", e)
+            return None
+
+    def get_all_traffic_light_states(self) -> List[Dict[str, Any]]:
+        try:
+            with self.lock:
+                if not self.is_connected(): return []
+                out = []
+                ts = self._sim_timestamp()
+                for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                    try:
+                        state = tl.get_state()
+                        item = {
+                            'id': int(tl.id),
+                            'state': int(self._tl_state_to_int(state)),
+                            'elapsed_time': float(getattr(tl, 'get_elapsed_time', lambda: 0.0)()),
+                            'timestamp': ts
+                        }
+                        try: item['is_frozen'] = bool(tl.is_frozen())
+                        except Exception: pass
+                        try: item['pole_index'] = int(tl.get_pole_index())
+                        except Exception: pass
+                        out.append(item)
+                    except Exception:
+                        continue
+                return out
+        except Exception as e:
+            logger.error("get_all_traffic_light_states error: %s", e)
+            return []
+
+    def set_traffic_light_state(self, traffic_light_id: ActorKey, state: str) -> bool:
+        try:
+            with self.lock:
+                if not self.is_connected(): return False
+                for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                    if str(tl.id) == str(traffic_light_id):
                         if state == 'Red':
                             tl.set_state(carla.TrafficLightState.Red)
                         elif state == 'Yellow':
@@ -542,318 +526,215 @@ class CarlaXMLRPCServer:
                         elif state == 'Green':
                             tl.set_state(carla.TrafficLightState.Green)
                         else:
-                            logger.error(f"Invalid traffic light state: {state}")
                             return False
-                        
-                        logger.info(f"Set traffic light {traffic_light_id} to {state}")
                         return True
-                
-                logger.error(f"Traffic light {traffic_light_id} not found")
                 return False
-                
         except Exception as e:
-            logger.error(f"Error setting traffic light state: {e}")
+            logger.error("set_traffic_light_state error: %s", e)
             return False
-    
-    def get_traffic_light_state(self, traffic_light_id: str) -> Optional[str]:
-        """
-        Get traffic light state.
-        
-        Args:
-            traffic_light_id: Traffic light ID
-            
-        Returns:
-            Traffic light state as string, or None if not found
-        """
+
+    def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
         try:
             with self.lock:
-                if not self.is_connected():
-                    return None
-                
-                traffic_lights = self.world.get_actors().filter('traffic.traffic_light')
-                for tl in traffic_lights:
-                    if str(tl.id) == traffic_light_id:
-                        state = tl.get_state()
-                        if state == carla.TrafficLightState.Red:
-                            return 'Red'
-                        elif state == carla.TrafficLightState.Yellow:
-                            return 'Yellow'
-                        elif state == carla.TrafficLightState.Green:
-                            return 'Green'
-                        else:
-                            return 'Unknown'
-                
-                return None
-                
-        except Exception as e:
-            logger.error(f"Error getting traffic light state: {e}")
-            return None
-    
-    def set_traffic_light_timer(self, traffic_light_id: str, time: float) -> bool:
-        """
-        Set traffic light timer.
-        
-        Args:
-            traffic_light_id: Traffic light ID
-            time: Time in seconds
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            with self.lock:
-                if not self.is_connected():
-                    return False
-                
-                traffic_lights = self.world.get_actors().filter('traffic.traffic_light')
-                for tl in traffic_lights:
-                    if str(tl.id) == traffic_light_id:
-                        tl.set_green_time(time)
-                        logger.info(f"Set traffic light {traffic_light_id} timer to {time}s")
+                if not self.is_connected(): return False
+                for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                    if str(tl.id) == str(traffic_light_id):
+                        tl.set_green_time(float(time_s))
                         return True
-                
-                logger.error(f"Traffic light {traffic_light_id} not found")
                 return False
-                
         except Exception as e:
-            logger.error(f"Error setting traffic light timer: {e}")
+            logger.error("set_traffic_light_timer error: %s", e)
             return False
-    
+
+    # ---------- Sensors ----------
     def create_sensor(self, sensor_type: str, sensor_id: str,
-                     location: List[float], rotation: List[float],
-                     attributes: Dict[str, Any] = None) -> bool:
-        """
-        Create a sensor.
-        
-        Args:
-            sensor_type: Type of sensor
-            sensor_id: Unique sensor ID
-            location: [x, y, z] coordinates
-            rotation: [pitch, yaw, roll] in degrees
-            attributes: Sensor attributes
-            
-        Returns:
-            True if creation successful, False otherwise
-        """
+                      location: List[float], rotation: List[float],
+                      attributes: Dict[str, Any] = None) -> bool:
         try:
             with self.lock:
-                if not self.is_connected():
-                    return False
-                
-                if sensor_id in self.sensors:
-                    logger.warning(f"Sensor {sensor_id} already exists")
-                    return False
-                
-                # Get blueprint
-                blueprint = self.world.get_blueprint_library().find(sensor_type)
-                if not blueprint:
-                    logger.error(f"Sensor blueprint {sensor_type} not found")
-                    return False
-                
-                # Set attributes
+                if not self.is_connected(): return False
+                if sensor_id in self.sensors: return False
+                bp = self.world.get_blueprint_library().find(sensor_type)
+                if not bp: return False
                 if attributes:
-                    for key, value in attributes.items():
-                        if blueprint.has_attribute(key):
-                            blueprint.set_attribute(key, str(value))
-                
-                # Create transform
+                    for k, v in attributes.items():
+                        if bp.has_attribute(k): bp.set_attribute(k, str(v))
                 transform = carla.Transform(
-                    carla.Location(location[0], location[1], location[2]),
-                    carla.Rotation(rotation[0], rotation[1], rotation[2])
+                    carla.Location(*[float(v) for v in location]),
+                    carla.Rotation(*[float(v) for v in rotation])
                 )
-                
-                # Create sensor
-                sensor = self.world.spawn_actor(blueprint, transform)
-                
-                # Set up callback
-                sensor.listen(lambda data: self._sensor_callback(sensor_id, data))
-                
-                # Track sensor
+                sensor = self.world.spawn_actor(bp, transform)
+                sensor.listen(lambda data, sid=sensor_id: self._sensor_callback(sid, data))
                 self.sensors[sensor_id] = sensor
                 self.sensor_data[sensor_id] = None
-                
-                logger.info(f"Created sensor {sensor_id} of type {sensor_type}")
+                self.sensor_blueprints[sensor_id] = bp
                 return True
-                
         except Exception as e:
-            logger.error(f"Error creating sensor {sensor_id}: {e}")
+            logger.error("create_sensor error: %s", e)
             return False
-    
-    def destroy_sensor(self, sensor_id: str) -> bool:
-        """
-        Destroy a sensor.
-        
-        Args:
-            sensor_id: Unique sensor ID
-            
-        Returns:
-            True if destroy successful, False otherwise
-        """
+
+    def destroy_sensor(self, sensor_key: SensorKey) -> bool:
         try:
             with self.lock:
-                if sensor_id not in self.sensors:
-                    logger.warning(f"Sensor {sensor_id} not found")
-                    return False
-                
-                sensor = self.sensors[sensor_id]
+                alias, sensor = self._resolve_sensor(sensor_key)
+                if sensor is None: return False
                 sensor.destroy()
-                
-                # Remove from tracking
-                del self.sensors[sensor_id]
-                if sensor_id in self.sensor_data:
-                    del self.sensor_data[sensor_id]
-                
-                logger.info(f"Destroyed sensor {sensor_id}")
+                if alias is not None:
+                    self.sensors.pop(alias, None)
+                    self.sensor_data.pop(alias, None)
+                    self.sensor_blueprints.pop(alias, None)
                 return True
-                
         except Exception as e:
-            logger.error(f"Error destroying sensor {sensor_id}: {e}")
+            logger.error("destroy_sensor error: %s", e)
             return False
-    
-    def get_sensor_data(self, sensor_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get sensor data.
-        
-        Args:
-            sensor_id: Unique sensor ID
-            
-        Returns:
-            Sensor data dictionary, or None if not found
-        """
+
+    def _sensor_callback(self, alias_key: str, data: Any):
         try:
             with self.lock:
-                if sensor_id not in self.sensor_data:
-                    return None
-                
-                return self.sensor_data[sensor_id]
-                
-        except Exception as e:
-            logger.error(f"Error getting sensor data for {sensor_id}: {e}")
-            return None
-    
-    def _sensor_callback(self, sensor_id: str, data):
-        """Callback for sensor data."""
-        try:
-            with self.lock:
-                # Convert sensor data to serializable format
-                if hasattr(data, 'raw_data'):
-                    self.sensor_data[sensor_id] = {
-                        'timestamp': data.timestamp,
-                        'frame': data.frame,
-                        'raw_data': data.raw_data
+                sensor = self.sensors.get(alias_key, None)
+                if sensor is None: return
+                out: Dict[str, Any] = {
+                    'sensor_id': int(getattr(sensor, 'id', -1)),
+                    'sensor_type': str(getattr(sensor, 'type_id', '')),
+                    'frame': int(getattr(data, 'frame', 0)),
+                    'timestamp': float(getattr(data, 'timestamp', self._sim_timestamp())),
+                }
+                # Transform at measurement
+                try:
+                    t = getattr(data, 'transform', None) or sensor.get_transform()
+                    out['transform_at_measurement'] = {
+                        'location': {'x': float(t.location.x), 'y': float(t.location.y), 'z': float(t.location.z)},
+                        'rotation': {'pitch': float(t.rotation.pitch), 'yaw': float(t.rotation.yaw), 'roll': float(t.rotation.roll)},
+                        'timestamp': self._sim_timestamp()
                     }
+                except Exception:
+                    pass
+
+                # Metadata from blueprint
+                meta: Dict[str, Any] = {}
+                bp = self.sensor_blueprints.get(alias_key, None)
+                if bp is not None:
+                    try:
+                        for attr in bp:
+                            try:
+                                meta[attr.id] = attr.as_string()
+                            except Exception:
+                                meta[attr.id] = str(attr)
+                    except Exception:
+                        pass
+
+                # Camera (Image)
+                if hasattr(data, 'raw_data') and hasattr(data, 'width') and hasattr(data, 'height'):
+                    out['data_blob'] = Binary(bytes(getattr(data, 'raw_data', b'')))
+                    meta.setdefault('width', int(getattr(data, 'width', 0)))
+                    meta.setdefault('height', int(getattr(data, 'height', 0)))
+                    # fov may be in attributes
+                    try:
+                        meta.setdefault('fov', float(sensor.attributes.get('fov')))  # type: ignore
+                    except Exception:
+                        pass
+                    meta.setdefault('image_format', 'BGRA')
+                    out['metadata'] = meta
+
+                # LiDAR
+                elif hasattr(data, 'raw_data') or hasattr(data, 'points'):
+                    if hasattr(data, 'raw_data'):
+                        out['data_blob'] = Binary(bytes(getattr(data, 'raw_data', b'')))
+                    else:
+                        try:
+                            pts_json = json.dumps(getattr(data, 'points', []))
+                            out['data_blob'] = Binary(pts_json.encode('utf-8'))
+                        except Exception:
+                            out['data_blob'] = Binary(b'')
+                    out['metadata'] = meta
+
+                # IMU/GNSS/others (fallback)
                 else:
-                    self.sensor_data[sensor_id] = {
-                        'timestamp': data.timestamp,
-                        'frame': data.frame,
-                        'data': str(data)
-                    }
+                    s = str(data)
+                    out['data_blob'] = Binary(s.encode('utf-8'))
+                    out['metadata'] = meta
+
+                self.sensor_data[alias_key] = out
         except Exception as e:
-            logger.error(f"Error in sensor callback for {sensor_id}: {e}")
-    
-    def _update_sensors(self):
-        """Update sensor data."""
-        # This is called during simulation step
-        # Sensor data is updated via callbacks
-        pass
-    
+            logger.error("sensor_callback error: %s", e)
+            self.sensor_data[alias_key] = {'error': str(e), 'timestamp': time.time(), 'sensor_id': -1}
+
+    def get_sensor_data(self, sensor_key: SensorKey) -> Optional[Dict[str, Any]]:
+        try:
+            with self.lock:
+                alias, _ = self._resolve_sensor(sensor_key)
+                if alias is None or alias not in self.sensor_data: return None
+                return self.sensor_data[alias]
+        except Exception as e:
+            logger.error("get_sensor_data error: %s", e)
+            return None
+
+    def get_detected_objects(self, infrastructure_id: str, sensor_key: SensorKey) -> str:
+        # Placeholder: return empty JSON array
+        return json.dumps([])
+
+    # ---------- Maps ----------
     def get_map_name(self) -> str:
-        """
-        Get current map name.
-        
-        Returns:
-            Current map name
-        """
         try:
             with self.lock:
-                if not self.is_connected():
-                    return ""
-                
+                if not self.is_connected(): return ""
                 return self.world.get_map().name
-                
         except Exception as e:
-            logger.error(f"Error getting map name: {e}")
+            logger.error("get_map_name error: %s", e)
             return ""
-    
+
     def get_available_maps(self) -> List[str]:
-        """
-        Get list of available maps.
-        
-        Returns:
-            List of available map names
-        """
         try:
-            return self.client.get_available_maps()
+            if not self.client: return []
+            return list(self.client.get_available_maps())
         except Exception as e:
-            logger.error(f"Error getting available maps: {e}")
+            logger.error("get_available_maps error: %s", e)
             return []
-    
+
     def load_map(self, map_name: str) -> bool:
-        """
-        Load a map.
-        
-        Args:
-            map_name: Name of the map to load
-            
-        Returns:
-            True if successful, False otherwise
-        """
         try:
             with self.lock:
-                if not self.is_connected():
-                    return False
-                
+                if not self.is_connected(): return False
                 self.world = self.client.load_world(map_name)
-                logger.info(f"Loaded map: {map_name}")
                 return True
-                
         except Exception as e:
-            logger.error(f"Error loading map {map_name}: {e}")
+            logger.error("load_map error: %s", e)
             return False
-    
+
+    # ---------- Server lifecycle ----------
     def start(self):
-        """Start the XML-RPC server."""
-        logger.info(f"Starting CARLA XML-RPC server on {self.host}:{self.port}")
+        logger.info("Starting CARLA XML-RPC server on %s:%s", self.host, self.port)
         try:
             self.server.serve_forever()
         except KeyboardInterrupt:
             logger.info("Server stopped by user")
         finally:
             self.disconnect()
-    
+
     def stop(self):
-        """Stop the XML-RPC server."""
         logger.info("Stopping CARLA XML-RPC server")
-        self.server.shutdown()
-        self.disconnect()
+        try:
+            self.server.shutdown()
+        finally:
+            self.disconnect()
 
 
 def main():
-    """Main function to run the CARLA XML-RPC server."""
-    parser = argparse.ArgumentParser(description='CARLA XML-RPC Server for MOSAIC Integration')
-    parser.add_argument('--host', default='localhost', help='Host address for XML-RPC server')
-    parser.add_argument('--port', type=int, default=8090, help='Port for XML-RPC server')
-    parser.add_argument('--carla-host', default='localhost', help='CARLA server host')
-    parser.add_argument('--carla-port', type=int, default=2000, help='CARLA server port')
-    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
-    
+    parser = argparse.ArgumentParser(description='CARLA XML-RPC Server (Unified)')
+    parser.add_argument('--host', default='localhost')
+    parser.add_argument('--port', type=int, default=8090)
+    parser.add_argument('--carla-host', default='localhost')
+    parser.add_argument('--carla-port', type=int, default=2000)
+    parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
-    
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
-    
-    # Create and start server
-    server = CarlaXMLRPCServer(
-        host=args.host,
-        port=args.port,
-        carla_host=args.carla_host,
-        carla_port=args.carla_port
-    )
-    
+
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port)
     try:
         server.start()
     except KeyboardInterrupt:
-        logger.info("Server interrupted")
+        logger.info("Interrupted")
     finally:
         server.stop()
 
