@@ -449,6 +449,16 @@ class CarlaXMLRPCServer:
                         actor.set_target_angular_velocity(avec)
                     elif hasattr(actor, 'set_angular_velocity'):
                         actor.set_angular_velocity(avec)
+                ctrl = properties_to_set.get('control')  # {'throttle':..,'steer':..,'brake':..,'reverse':..}
+            if ctrl and str(getattr(actor, 'type_id', '')).startswith('vehicle.'):
+                try:
+                    c = carla.VehicleControl()
+                    for k, v in ctrl.items():
+                        if hasattr(c, k):
+                            setattr(c, k, v)
+                    actor.apply_control(c)
+                except Exception as e:
+                    logger.debug("apply_control ignored: %s", e)
 
                 return True
         except Exception as e:
