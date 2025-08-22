@@ -13,6 +13,7 @@ Enhancements vs original:
 
 Requires: A running CARLA server and the XML-RPC bridge server.
 """
+# run with python3 /mnt/data/carla_xmlrpc_test_plus.py --url http://localhost:8090
 import argparse
 import json
 import time
