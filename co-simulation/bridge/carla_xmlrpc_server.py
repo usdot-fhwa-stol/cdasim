@@ -292,14 +292,47 @@ class CarlaXMLRPCServer:
         try:
             with self.lock:
                 actor = self._resolve_actor(actor_key)
-                if actor is None: return False
-                vec = carla.Vector3D(*[float(v) for v in velocity])
+                if actor is None:
+                    return False
+
+                # 兼容多种输入格式
+                if isinstance(velocity, dict):
+                    vx = float(velocity.get('x', 0.0))
+                    vy = float(velocity.get('y', 0.0))
+                    vz = float(velocity.get('z', 0.0))
+                else:
+                    if not hasattr(velocity, '__len__') or len(velocity) != 3:
+                        logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
+                        return False
+                    vx, vy, vz = (float(velocity[0]), float(velocity[1]), float(velocity[2]))
+
+                vec = carla.Vector3D(vx, vy, vz)
+
+                # 若有目标速度接口，优先用它（与 set_actor_state_properties 保持一致）
+                if hasattr(actor, 'set_target_velocity'):
+                    actor.set_target_velocity(vec)
+                    return True
+
+                # 否则回退到 set_velocity
                 if hasattr(actor, 'set_velocity'):
-                    actor.set_velocity(vec); return True
+                    try:
+                        # 若可开启动力学仿真，尽量确保开启
+                        if hasattr(actor, 'set_simulate_physics'):
+                            try:
+                                actor.set_simulate_physics(True)
+                            except Exception:
+                                pass
+                        actor.set_velocity(vec)
+                        return True
+                    except Exception as e:
+                        logger.debug("set_velocity failed: %s", e)
+                        return False
+
                 return False
         except Exception as e:
             logger.error("update_actor_velocity error: %s", e)
             return False
+
 
     def get_all_actors(self) -> Dict[str, Dict[str, Any]]:
         try:

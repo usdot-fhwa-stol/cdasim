@@ -79,7 +79,7 @@ def main():
     print("get_available_maps():", pretty(server.get_available_maps()))
     if mname:
         # Do not force reload if it fails; just report.
-        print("load_map(curr_map):", server.load_map(mname))
+        print("load_map(curr_map):", server.load_map("Town02"))
 
     section("Actor Lifecycle (robust spawn)")
     # Try a few common blueprints to maximize spawn success
