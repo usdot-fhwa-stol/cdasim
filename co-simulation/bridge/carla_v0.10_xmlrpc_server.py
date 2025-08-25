@@ -236,25 +236,62 @@ class CarlaXMLRPCServer:
                     attributes: Dict[str, Any] = None) -> bool:
         try:
             with self.lock:
-                if not self.is_connected(): return False
-                if actor_id in self.actors: return False
-                bp = self.world.get_blueprint_library().find(actor_type)
-                if not bp: return False
+                if not self.is_connected():
+                    return False
+                if actor_id in self.actors:
+                    return False
+
+                lib = self.world.get_blueprint_library()
+
+                bp = None
+                req = (actor_type or "").strip()
+
+                # 1) 精确查找
+                if req:
+                    try:
+                        bp = lib.find(req)
+                    except Exception:
+                        bp = None
+
+                # 2) 模糊匹配
+                if bp is None and req:
+                    cands = lib.filter(req)
+                    if cands:
+                        bp = cands[0]
+
+                # 3) 自适应（未指定或都找不到时）
+                if bp is None:
+                    for pattern in ("vehicle.*", "walker.pedestrian.*", "*"):
+                        cands = lib.filter(pattern)
+                        if cands:
+                            bp = cands[0]
+                            break
+
+                if bp is None:
+                    logger.error("No blueprint available for actor_type=%r", actor_type)
+                    return False
+
+                # 设置属性
                 if attributes:
                     for k, v in attributes.items():
-                        if bp.has_attribute(k): bp.set_attribute(k, str(v))
+                        if bp.has_attribute(k):
+                            bp.set_attribute(k, str(v))
+
                 transform = carla.Transform(
                     carla.Location(*[float(v) for v in location]),
                     carla.Rotation(*[float(v) for v in rotation])
                 )
+
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
-                self.actor_types[actor_id] = actor_type
+                # 记录“实际使用的蓝图 id”，避免出现 None
+                self.actor_types[actor_id] = getattr(bp, "id", req) or req
                 self.actor_blueprints[actor_id] = bp
                 return True
         except Exception as e:
             logger.error("spawn_actor error: %s", e)
             return False
+
 
     def destroy_actor(self, actor_key: ActorKey) -> bool:
         try:
