@@ -1,4 +1,7 @@
-
+try:
+    CARLA_VERSION = getattr(carla, "__version__", "unknown")
+except Exception:
+    CARLA_VERSION = "unknown"
 #!/usr/bin/env python3
 """
 CARLA XML-RPC Server for MOSAIC Integration (Unified XML-RPC per redesign spec)
@@ -27,10 +30,18 @@ import time
 
 # Add CARLA Python API to path
 try:
-    sys.path.append(
-        glob.glob('PythonAPI/carla/dist/carla-*%d.%d-%s.egg' %
-                  (sys.version_info.major, sys.version_info.minor,
-                   'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
+    # v0.10 仍提供 Python egg/whl，但平台标识与路径可能有差异；这里做更宽松匹配并加报错提示
+    pattern = f"PythonAPI/carla/dist/carla-*{sys.version_info.major}.{sys.version_info.minor}-*.egg"
+    matches = glob.glob(pattern)
+    if not matches:
+        # 兼容可能的 .whl 安装或不同平台标识；保持旧模式再尝试一次
+        fallback = glob.glob('PythonAPI/carla/dist/carla-*.egg') + glob.glob('PythonAPI/carla/dist/*.whl')
+        matches = fallback
+    if matches:
+        sys.path.append(matches[0])
+    else:
+        print("Cannot find CARLA Python package (egg/whl). Ensure v0.10.0 UE5 build is installed.")
+        sys.exit(1)
 except IndexError:
     print("Cannot find CARLA library .egg file")
     sys.exit(1)
@@ -184,8 +195,12 @@ class CarlaXMLRPCServer:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
-                logger.info("Connected to CARLA at %s:%s | map=%s",
-                            self.carla_host, self.carla_port, self.world.get_map().name)
+                try:
+                    current_map = self.world.get_map().name
+                except Exception:
+                    current_map = "<unknown>"
+                logger.info("Connected to CARLA %s at %s:%s | map=%s",
+                            CARLA_VERSION, self.carla_host, self.carla_port, current_map)
                 return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
@@ -679,7 +694,7 @@ class CarlaXMLRPCServer:
                     meta.setdefault('image_format', 'BGRA')
                     out['metadata'] = meta
 
-                # LiDAR
+                # LiDAR（v0.10 图像/点云 API 保持一致；此处逻辑不变）
                 elif hasattr(data, 'raw_data') or hasattr(data, 'points'):
                     if hasattr(data, 'raw_data'):
                         out['data_blob'] = Binary(bytes(getattr(data, 'raw_data', b'')))
@@ -728,8 +743,18 @@ class CarlaXMLRPCServer:
 
     def get_available_maps(self) -> List[str]:
         try:
-            if not self.client: return []
-            return list(self.client.get_available_maps())
+            if not self.client:
+                return []
+            maps = []
+            try:
+                # v0.10 仍可能提供此方法，但资源很少（多为 Town10）
+                maps = list(self.client.get_available_maps())
+            except Exception:
+                maps = []
+            # v0.10 官方仅保证升级了 Town10，如查询为空则给出兜底提示
+            if not maps:
+                maps = ['Carla/Maps/Town10HD_Opt', 'Carla/Maps/Town10HD']
+            return maps
         except Exception as e:
             logger.error("get_available_maps error: %s", e)
             return []
@@ -738,8 +763,13 @@ class CarlaXMLRPCServer:
         try:
             with self.lock:
                 if not self.is_connected(): return False
-                self.world = self.client.load_world(map_name)
-                return True
+                try:
+                    self.world = self.client.load_world(map_name)
+                    return True
+                except Exception as e:
+                    # v0.10 缺少大量旧地图；遇到不可用时返回 False 而不是抛异常
+                    logger.warning("load_map failed for %s on v0.10: %s", map_name, e)
+                    return False
         except Exception as e:
             logger.error("load_map error: %s", e)
             return False
