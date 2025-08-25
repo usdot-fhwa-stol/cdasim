@@ -1,0 +1,105 @@
+@@
+-    sys.path.append(
+-        glob.glob('PythonAPI/carla/dist/carla-*%d.%d-%s.egg' %
+-                  (sys.version_info.major, sys.version_info.minor,
+-                   'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
++    # v0.10 仍提供 Python egg/whl，但平台标识与路径可能有差异；这里做更宽松匹配并加报错提示
++    pattern = f"PythonAPI/carla/dist/carla-*{sys.version_info.major}.{sys.version_info.minor}-*.egg"
++    matches = glob.glob(pattern)
++    if not matches:
++        # 兼容可能的 .whl 安装或不同平台标识；保持旧模式再尝试一次
++        fallback = glob.glob('PythonAPI/carla/dist/carla-*.egg') + glob.glob('PythonAPI/carla/dist/*.whl')
++        matches = fallback
++    if matches:
++        sys.path.append(matches[0])
++    else:
++        print("Cannot find CARLA Python package (egg/whl). Ensure v0.10.0 UE5 build is installed.")
++        sys.exit(1)
+@@
+ import carla
++try:
++    CARLA_VERSION = getattr(carla, "__version__", "unknown")
++except Exception:
++    CARLA_VERSION = "unknown"
+@@
+-        self.server.register_function(self.get_available_maps, 'get_available_maps')
++        self.server.register_function(self.get_available_maps, 'get_available_maps')
+         self.server.register_function(self.load_map, 'load_map')
+@@
+     def connect(self) -> bool:
+         try:
+             with self.lock:
+                 if self.client is None:
+                     self.client = carla.Client(self.carla_host, self.carla_port)
+                     self.client.set_timeout(10.0)
+                 self.world = self.client.get_world()
+-                logger.info("Connected to CARLA at %s:%s | map=%s",
+-                            self.carla_host, self.carla_port, self.world.get_map().name)
++                try:
++                    current_map = self.world.get_map().name
++                except Exception:
++                    current_map = "<unknown>"
++                logger.info("Connected to CARLA %s at %s:%s | map=%s",
++                            CARLA_VERSION, self.carla_host, self.carla_port, current_map)
+                 return True
+@@
+     def get_available_maps(self) -> List[str]:
+         try:
+-            if not self.client: return []
+-            return list(self.client.get_available_maps())
++            if not self.client:
++                return []
++            maps = []
++            try:
++                # v0.10 仍可能提供此方法，但资源很少（多为 Town10）
++                maps = list(self.client.get_available_maps())
++            except Exception:
++                maps = []
++            # v0.10 官方仅保证升级了 Town10，如查询为空则给出兜底提示
++            if not maps:
++                maps = ['Carla/Maps/Town10HD_Opt', 'Carla/Maps/Town10HD']
++            return maps
+         except Exception as e:
+             logger.error("get_available_maps error: %s", e)
+             return []
+@@
+     def load_map(self, map_name: str) -> bool:
+         try:
+             with self.lock:
+                 if not self.is_connected(): return False
+-                self.world = self.client.load_world(map_name)
+-                return True
++                try:
++                    self.world = self.client.load_world(map_name)
++                    return True
++                except Exception as e:
++                    # v0.10 缺少大量旧地图；遇到不可用时返回 False 而不是抛异常
++                    logger.warning("load_map failed for %s on v0.10: %s", map_name, e)
++                    return False
+         except Exception as e:
+             logger.error("load_map error: %s", e)
+             return False
+@@
+-    def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
++    def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
+         try:
+             with self.lock:
+                 if not self.is_connected(): return False
+                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                     if str(tl.id) == str(traffic_light_id):
+-                        tl.set_green_time(float(time_s))
+-                        return True
++                        # v0.10 未在发布说明中明确移除该接口，但出于稳健性，加特性探测
++                        if hasattr(tl, "set_green_time"):
++                            tl.set_green_time(float(time_s))
++                            return True
++                        else:
++                            logger.warning("set_green_time not available on this CARLA build.")
++                            return False
+                 return False
+         except Exception as e:
+             logger.error("set_traffic_light_timer error: %s", e)
+             return False
+@@
+-                # LiDAR
++                # LiDAR（v0.10 图像/点云 API 保持一致；此处逻辑不变）
