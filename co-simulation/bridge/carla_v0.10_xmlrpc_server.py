@@ -262,20 +262,17 @@ class CarlaXMLRPCServer:
                 bp = None
                 req = (actor_type or "").strip()
 
-                # 1) 精确查找
                 if req:
                     try:
                         bp = lib.find(req)
                     except Exception:
                         bp = None
 
-                # 2) 模糊匹配
                 if bp is None and req:
                     cands = lib.filter(req)
                     if cands:
                         bp = cands[0]
 
-                # 3) 自适应（未指定或都找不到时）
                 if bp is None:
                     for pattern in ("vehicle.*", "walker.pedestrian.*", "*"):
                         cands = lib.filter(pattern)
@@ -287,7 +284,6 @@ class CarlaXMLRPCServer:
                     logger.error("No blueprint available for actor_type=%r", actor_type)
                     return False
 
-                # 设置属性
                 if attributes:
                     for k, v in attributes.items():
                         if bp.has_attribute(k):
@@ -300,7 +296,6 @@ class CarlaXMLRPCServer:
 
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
-                # 记录“实际使用的蓝图 id”，避免出现 None
                 self.actor_types[actor_id] = getattr(bp, "id", req) or req
                 self.actor_blueprints[actor_id] = bp
                 return True
@@ -347,7 +342,6 @@ class CarlaXMLRPCServer:
                 if actor is None:
                     return False
 
-                # 兼容多种输入格式
                 if isinstance(velocity, dict):
                     vx = float(velocity.get('x', 0.0))
                     vy = float(velocity.get('y', 0.0))
@@ -360,15 +354,12 @@ class CarlaXMLRPCServer:
 
                 vec = carla.Vector3D(vx, vy, vz)
 
-                # 若有目标速度接口，优先用它（与 set_actor_state_properties 保持一致）
                 if hasattr(actor, 'set_target_velocity'):
                     actor.set_target_velocity(vec)
                     return True
 
-                # 否则回退到 set_velocity
                 if hasattr(actor, 'set_velocity'):
                     try:
-                        # 若可开启动力学仿真，尽量确保开启
                         if hasattr(actor, 'set_simulate_physics'):
                             try:
                                 actor.set_simulate_physics(True)
