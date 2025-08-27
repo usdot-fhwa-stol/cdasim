@@ -371,6 +371,60 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                     this.rti.triggerInteraction(detectionInteraction);
                 }
+
+                // Emit CARLA state updates towards SUMO: actors and traffic lights
+                try {
+                    // Actors
+                    java.util.Map<String, java.util.Map<String, Object>> actors = carlaXmlRpcClient.getAllActors();
+                    for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : actors.entrySet()) {
+                        String actorId = entry.getKey();
+                        java.util.Map<String, Object> info = entry.getValue();
+
+                        java.util.List<Double> loc = null;
+                        java.util.List<Double> rot = null;
+                        java.util.List<Double> vel = null;
+
+                        Object t = info.get("transform");
+                        if (t instanceof java.util.Map) {
+                            Object l = ((java.util.Map<?,?>) t).get("location");
+                            Object r = ((java.util.Map<?,?>) t).get("rotation");
+                            if (l instanceof java.util.List) {
+                                // assume [x,y,z]
+                                loc = new java.util.ArrayList<>();
+                                for (Object o : (java.util.List<?>) l) if (o instanceof Number) loc.add(((Number)o).doubleValue());
+                            }
+                            if (r instanceof java.util.List) {
+                                // assume [pitch,yaw,roll]
+                                rot = new java.util.ArrayList<>();
+                                for (Object o : (java.util.List<?>) r) if (o instanceof Number) rot.add(((Number)o).doubleValue());
+                            }
+                        }
+                        Object v = info.get("velocity");
+                        if (v instanceof java.util.List) {
+                            vel = new java.util.ArrayList<>();
+                            for (Object o : (java.util.List<?>) v) if (o instanceof Number) vel.add(((Number)o).doubleValue());
+                        }
+
+                        this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaActorResponse(time, actorId, loc, rot, vel, null));
+                    }
+
+                    // Traffic lights
+                    java.util.List<java.util.Map<String, Object>> tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
+                    for (java.util.Map<String, Object> tl : tlStates) {
+                        Object id = tl.get("id");
+                        Object state = tl.get("state");
+                        Object timer = tl.get("timer");
+                        String idStr = id != null ? id.toString() : null;
+                        String stateStr = state != null ? state.toString() : null;
+                        Double timerVal = null;
+                        if (timer instanceof Number) timerVal = ((Number) timer).doubleValue();
+                        if (idStr != null && stateStr != null) {
+                            this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaTrafficLightResponse(time, idStr, stateStr, timerVal));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
+                }
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
                 rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
@@ -493,7 +547,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } else if (command[5] == 0x85) {
                 log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
             } else {
-                rti.triggerInteraction(new CarlaTraciRequest(this.nextTimeStep, length, command));
+                log.debug("Ignoring legacy TraCI request path in favor of XML-RPC interactions");
             }
 
         } catch (IllegalValueException e) {
@@ -516,14 +570,20 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
         if (interaction.getTypeId().equals(CarlaTraciResponse.TYPE_ID)) {
-            this.receiveInteraction((CarlaTraciResponse) interaction);
+            log.debug("Ignoring legacy CarlaTraciResponse interaction");
         } else if (interaction.getTypeId().equals(SimulationStepResponse.TYPE_ID)) {
-            this.receiveInteraction((SimulationStepResponse) interaction);
+            log.debug("Ignoring legacy SimulationStepResponse interaction");
         } else if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((CarlaV2xMessageReception) interaction);
         }
         else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
             this.receiveInteraction((DetectorRegistration) interaction);
+        }
+        else if (interaction.getTypeId().equals(org.eclipse.mosaic.interactions.application.CarlaActorRequest.TYPE_ID)) {
+            this.receiveInteraction((org.eclipse.mosaic.interactions.application.CarlaActorRequest) interaction);
+        }
+        else if (interaction.getTypeId().equals(org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest.TYPE_ID)) {
+            this.receiveInteraction((org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest) interaction);
         }
     }
 
@@ -541,6 +601,53 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
         }
 
+    }
+
+    private void receiveInteraction(org.eclipse.mosaic.interactions.application.CarlaActorRequest interaction) {
+        try {
+            boolean ok = true;
+            if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaActorRequest.Action.CREATE) {
+                ok = carlaXmlRpcClient.spawnActor(
+                    interaction.getActorType(), interaction.getActorId(),
+                    interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
+            } else if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaActorRequest.Action.UPDATE) {
+                if (interaction.getLocation() != null || interaction.getRotation() != null) {
+                    ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+                }
+                if (interaction.getVelocity() != null) {
+                    ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                }
+                if (interaction.getProperties() != null) {
+                    ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
+                }
+            } else if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaActorRequest.Action.DESTROY) {
+                ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
+            }
+            if (!ok) {
+                log.warn("CarlaActorRequest action {} failed for actor {}", interaction.getAction(), interaction.getActorId());
+            }
+        } catch (Exception e) {
+            log.error("Error while processing CarlaActorRequest for {}: {}", interaction.getActorId(), e.getMessage());
+        }
+    }
+
+    private void receiveInteraction(org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest interaction) {
+        try {
+            if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest.Action.UPDATE) {
+                boolean ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
+                if (!ok) {
+                    log.warn("Failed to set traffic light {} state {}", interaction.getTrafficLightId(), interaction.getState());
+                }
+                if (interaction.getTimerSeconds() != null) {
+                    boolean timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                    if (!timerOk) {
+                        log.warn("Failed to set traffic light {} timer {}", interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error while processing CarlaTrafficLightRequest for {}: {}", interaction.getTrafficLightId(), e.getMessage());
+        }
     }
 
     /**
