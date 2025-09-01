@@ -21,11 +21,17 @@ import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
-import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
-import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
+// import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
+// import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest;
+import org.eclipse.mosaic.interactions.application.CarlaActorRequest;
+import org.eclipse.mosaic.interactions.application.CarlaTrafficLightResponse;
+import org.eclipse.mosaic.interactions.application.CarlaActorResponse;
+import org.eclipse.mosaic.interactions.application.SimulationStep;
+
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -46,6 +52,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -517,20 +525,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Trigger a new CarlaTraciRequest, SimulationStep or ExternalMessage
-     * interaction
+     * Trigger interactions based on commands received from CARLA simulator.
+     * Now uses XML-RPC for simulation advancement instead of TraCI.
      *
      * @param length  command length
      * @param command command
      */
     public synchronized void triggerInteraction(int length, byte[] command) throws InternalFederateException {
         try {
-            // trigger interaction based on the command type simulation step or not
+            // Handle different command types using XML-RPC approach
             if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
-                rti.triggerInteraction(new SimulationStep(this.nextTimeStep));
-                isSimulationStep = true;
-                // log.debug("trigger simulation step interaction at time: " +
-                // this.nextTimeStep);
+                // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
+                boolean advanced = carlaXmlRpcClient.advanceSimulation();
+                if (advanced) {
+                    // Trigger internal simulation step coordination
+                    triggerInternalSimulationStep();
+                    log.debug("CARLA simulation advanced via XML-RPC at time: {}", this.nextTimeStep);
+                } else {
+                    log.warn("Failed to advance CARLA simulation via XML-RPC");
+                }
             } else if (command[5] == 0x0d) {
                 // send received V2X message to CARLA simulator
                 sendReceivedV2xMessageToCarla();
@@ -542,7 +555,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     rti.triggerInteraction(new ExternalMessage(this.nextTimeStep, message[1], message[0]));
                     // log.debug("received message from CARLA simulator: message is sent by {};
                     // message: {}", message[0],
-                    // message[1]);
+                    // message: {}", message[1]);
                 }
             } else if (command[5] == 0x85) {
                 log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
@@ -552,6 +565,23 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         } catch (IllegalValueException e) {
             throw new InternalFederateException(e);
+        }
+    }
+
+    /**
+     * Internal method to trigger simulation step coordination.
+     * This replaces the external SimulationStep interaction with internal logic.
+     */
+    private void triggerInternalSimulationStep() {
+        // Set simulation step flag to trigger state updates and time advancement
+        isSimulationStep = true;
+        
+        // Optionally, we can still trigger a SimulationStep interaction for other federates
+        // that might need to know about simulation advancement
+        try {
+            rti.triggerInteraction(new SimulationStep(this.nextTimeStep));
+        } catch (Exception e) {
+            log.warn("Failed to trigger SimulationStep interaction: {}", e.getMessage());
         }
     }
 
@@ -569,11 +599,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         String type = interaction.getTypeId();
         long interactionTime = interaction.getTime();
         log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-        if (interaction.getTypeId().equals(CarlaTraciResponse.TYPE_ID)) {
-            log.debug("Ignoring legacy CarlaTraciResponse interaction");
-        } else if (interaction.getTypeId().equals(SimulationStepResponse.TYPE_ID)) {
-            log.debug("Ignoring legacy SimulationStepResponse interaction");
-        } else if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
+        
+        // Handle interactions using XML-RPC calls
+        if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
             this.receiveInteraction((CarlaV2xMessageReception) interaction);
         }
         else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
@@ -603,14 +631,14 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     }
 
-    private void receiveInteraction(org.eclipse.mosaic.interactions.application.CarlaActorRequest interaction) {
+    private void receiveInteraction(CarlaActorRequest interaction) {
         try {
             boolean ok = true;
-            if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaActorRequest.Action.CREATE) {
+            if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
                 ok = carlaXmlRpcClient.spawnActor(
                     interaction.getActorType(), interaction.getActorId(),
                     interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
-            } else if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaActorRequest.Action.UPDATE) {
+            } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
                 if (interaction.getLocation() != null || interaction.getRotation() != null) {
                     ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
                 }
@@ -620,7 +648,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (interaction.getProperties() != null) {
                     ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
                 }
-            } else if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaActorRequest.Action.DESTROY) {
+            } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
                 ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
             }
             if (!ok) {
@@ -631,9 +659,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
-    private void receiveInteraction(org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest interaction) {
+    private void receiveInteraction(CarlaTrafficLightRequest interaction) {
         try {
-            if (interaction.getAction() == org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest.Action.UPDATE) {
+            if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
                 boolean ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
                 if (!ok) {
                     log.warn("Failed to set traffic light {} state {}", interaction.getTrafficLightId(), interaction.getState());
@@ -650,38 +678,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
-    /**
-     * process the Carla traci response interaction
-     *
-     * @param interaction Carla Traci Response interaction
-     */
-    private void receiveInteraction(CarlaTraciResponse interaction) {
-        try {
-            // check the data output stream available
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().write(interaction.getResult());
-            }
-        } catch (Exception e) {
-            log.error("error occurs during process carla traci response interaction: {} ", e.getMessage());
-        }
-    }
 
-    /**
-     * process the traci response interaction
-     *
-     * @param interaction Simulation Step Response interaction
-     */
-    private void receiveInteraction(SimulationStepResponse interaction) {
-        try {
 
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().write(interaction.getResult());
-            }
 
-        } catch (Exception e) {
-            log.error("error occurs during process simulation step response interaction: {}", e.getMessage());
-        }
-    }
 
     /**
      * Process the CARLA vehicles receiving V2X message interaction
@@ -695,49 +694,49 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Send received V2X message to CARLA simulator
+     * Send received V2X message to CARLA simulator via XML-RPC
      */
     private void sendReceivedV2xMessageToCarla() {
-        List<String> v2xMessageSent = new ArrayList<>();
-        int totoalBytesSent = 6;
+        List<Map<String, Object>> v2xMessages = new ArrayList<>();
+        
         while (!carlaV2xInteractionQueue.isEmpty()) {
             if (carlaV2xInteractionQueue.peek().getTime() > nextTimeStep)
                 break;
+                
             CarlaV2xMessageReception carlaV2xMessageReception = carlaV2xInteractionQueue.poll();
             if (carlaV2xMessageReception != null) {
-                String message = "Time: " + carlaV2xMessageReception.getTime() + "; Receiver ID: "
-                        + carlaV2xMessageReception.getReceiverID() + "; Message: "
-                        + carlaV2xMessageReception.getMessage() + ".";
-
-                totoalBytesSent += message.length() + 4;
-
-                v2xMessageSent.add(message);
+                Map<String, Object> messageData = new HashMap<>();
+                messageData.put("timestamp", carlaV2xMessageReception.getTime());
+                messageData.put("receiverId", carlaV2xMessageReception.getReceiverID());
+                messageData.put("message", carlaV2xMessageReception.getMessage());
+                messageData.put("senderId", "MOSAIC_SUMO");
+                
+                v2xMessages.add(messageData);
             }
         }
-        if (totoalBytesSent > 255) {
-            totoalBytesSent += 4;
-        }
-        try {
-            // send messages to client
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().writeInt(totoalBytesSent + 11);
-                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x00 });
-                if (totoalBytesSent - 4 > 255) {
-                    carlaConnection.getDataOutputStream().writeByte(0);
-                    carlaConnection.getDataOutputStream().writeInt(totoalBytesSent);
-                } else {
-                    carlaConnection.getDataOutputStream().writeByte(totoalBytesSent);
+        
+        if (!v2xMessages.isEmpty()) {
+            try {
+                // Send V2X messages via XML-RPC instead of TraCI bridge
+                for (Map<String, Object> messageData : v2xMessages) {
+                    // Use XML-RPC client to send V2X message to CARLA
+                    // This assumes CARLA XML-RPC server has a method to handle V2X messages
+                    boolean sent = carlaXmlRpcClient.sendV2xMessage(
+                        (String) messageData.get("receiverId"),
+                        (String) messageData.get("message"),
+                        (String) messageData.get("senderId"),
+                        (Long) messageData.get("timestamp")
+                    );
+                    
+                    if (sent) {
+                        log.debug("V2X message sent to CARLA via XML-RPC: {}", messageData);
+                    } else {
+                        log.warn("Failed to send V2X message to CARLA via XML-RPC: {}", messageData);
+                    }
                 }
-                carlaConnection.getDataOutputStream().writeByte(0x0d);
-                if (!v2xMessageSent.isEmpty()) {
-                    ListTraciWriter<String> listTraci = new ListTraciWriter<String>(new StringTraciWriter());
-                    listTraci.writeVariableArgument(carlaConnection.getDataOutputStream(), v2xMessageSent);
-                } else {
-                    carlaConnection.getDataOutputStream().writeInt(0);
-                }
+            } catch (Exception e) {
+                log.error("Error sending V2X messages to CARLA via XML-RPC: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("error occurs during sending messages to bridge: {}", e.getMessage());
         }
     }
 

@@ -86,6 +86,9 @@ public class CarlaXmlRpcClient {
     private static final String GET_AVAILABLE_MAPS = "get_available_maps";
     private static final String LOAD_MAP = "load_map";
 
+    // V2X Communication
+    private static final String SEND_V2X_MESSAGE = "send_v2x_message";
+
     // Configuration
     private static final int DEFAULT_RETRY_ATTEMPTS = 3;
     private static final long DEFAULT_RETRY_DELAY_MS = 1000;
@@ -625,6 +628,31 @@ public class CarlaXmlRpcClient {
             return result instanceof Boolean && (Boolean) result;
         } catch (Exception e) {
             log.error("Failed to set traffic light timer for {} to {}s: {}", trafficLightId, timeSeconds, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send V2X message to CARLA simulator via XML-RPC
+     * @param receiverId ID of the receiving entity in CARLA
+     * @param message V2X message content
+     * @param senderId ID of the sending entity
+     * @param timestamp Message timestamp
+     * @return true if successful
+     */
+    public boolean sendV2xMessage(String receiverId, String message, String senderId, Long timestamp) {
+        try {
+            Map<String, Object> messageData = new HashMap<>();
+            messageData.put("receiverId", receiverId);
+            messageData.put("message", message);
+            messageData.put("senderId", senderId);
+            messageData.put("timestamp", timestamp);
+            
+            Object[] params = new Object[]{messageData};
+            Object result = executeWithRetry(SEND_V2X_MESSAGE, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to send V2X message to {}: {}", receiverId, e.getMessage());
             return false;
         }
     }
