@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Copyright (c) 2025 University of Georgia. All rights reserved.
 
 # See the NOTICE file(s) distributed with this work for additional
