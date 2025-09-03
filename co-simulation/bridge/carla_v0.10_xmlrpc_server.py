@@ -1,8 +1,21 @@
+#!/usr/bin/env python
+# Copyright (c) 2025 University of Georgia. All rights reserved.
+
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# http://www.eclipse.org/legal/epl-2.0
+
+# SPDX-License-Identifier: EPL-2.0
+# Contact: Zongtan.Li@uga.edu
+
 try:
     CARLA_VERSION = getattr(carla, "__version__", "unknown")
 except Exception:
     CARLA_VERSION = "unknown"
-#!/usr/bin/env python3
+
 """
 CARLA XML-RPC Server for MOSAIC Integration (Unified XML-RPC per redesign spec)
 
@@ -28,23 +41,7 @@ from xmlrpc.client import Binary
 import glob
 import time
 
-# Add CARLA Python API to path
-try:
-    # v0.10 仍提供 Python egg/whl，但平台标识与路径可能有差异；这里做更宽松匹配并加报错提示
-    pattern = f"PythonAPI/carla/dist/carla-*{sys.version_info.major}.{sys.version_info.minor}-*.egg"
-    matches = glob.glob(pattern)
-    if not matches:
-        # 兼容可能的 .whl 安装或不同平台标识；保持旧模式再尝试一次
-        fallback = glob.glob('PythonAPI/carla/dist/carla-*.egg') + glob.glob('PythonAPI/carla/dist/*.whl')
-        matches = fallback
-    if matches:
-        sys.path.append(matches[0])
-    else:
-        print("Cannot find CARLA Python package (egg/whl). Ensure v0.10.0 UE5 build is installed.")
-        sys.exit(1)
-except IndexError:
-    print("Cannot find CARLA library .egg file")
-    sys.exit(1)
+
 
 import carla
 
