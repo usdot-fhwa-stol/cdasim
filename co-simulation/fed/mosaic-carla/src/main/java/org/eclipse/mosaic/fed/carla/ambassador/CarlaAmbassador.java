@@ -10,654 +10,215 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package org.eclipse.mosaic.fed.carla.ambassador;
 
-import com.google.common.collect.Lists;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.StringUtils;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.xmlrpc.XmlRpcException;
-import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
-import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
-import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
-import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
-import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
-import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
-import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
+import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
+import org.eclipse.mosaic.lib.objects.detector.Size;
+import org.eclipse.mosaic.lib.util.junit.TestFileRule;
 import org.eclipse.mosaic.rti.TIME;
-import org.eclipse.mosaic.rti.api.*;
-import org.eclipse.mosaic.rti.api.federatestarter.ExecutableFederateExecutor;
-import org.eclipse.mosaic.rti.api.federatestarter.NopFederateExecutor;
+import org.eclipse.mosaic.rti.api.IllegalValueException;
+import org.eclipse.mosaic.rti.api.InternalFederateException;
+import org.eclipse.mosaic.rti.api.RtiAmbassador;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
+import org.eclipse.mosaic.rti.api.parameters.FederateDescriptor;
 import org.eclipse.mosaic.rti.config.CLocalHost;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
 
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.net.MalformedURLException;
-import java.net.URL;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+
+
 
 /**
- * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
- * simulator CARLA. It is used to visualize the traffic simulation in 3D
- * environment.
+ * Tests for {@link CarlaAmbassador}.
  */
-public class CarlaAmbassador extends AbstractFederateAmbassador {
+public class CarlaAmbassadorTest {
 
-    /**
-     * Connection between CARLA federate and CARLA simulator.
-     */
-    private CarlaConnection carlaConnection = null;
+    private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    /**
-     * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
-     */
-    private CarlaXmlRpcClient carlaXmlRpcClient = null;
+    private final TestFileRule testFileRule = new TestFileRule(temporaryFolder).basedir("carla");
 
-    /**
-     * Command used to start CARLA simulator.
-     */
-    FederateExecutor federateExecutor = null;
+    @Rule
+    public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(testFileRule);
 
-    /**
-     * Simulation time.
-     */
-    long nextTimeStep;
+    private RtiAmbassador rtiMock;
 
-    /**
-     * CARLA configuration file
-     */
-    CarlaConfiguration carlaConfig;
+    private CarlaAmbassador ambassador;
 
-    /**
-     * flag for simulation step
-     */
-    boolean isSimulationStep = false;
+    private CarlaXmlRpcClient carlaXmlRpcClientMock;
 
-    /**
-     * Sleep after each connection try. Unit: [ms].
-     */
-    private final static long SLEEP_AFTER_ATTEMPT = 1000L;
+    @Before
+    public void setup() throws IOException, NoSuchFieldException {
 
-    /**
-     * Maximum amount of attempts to connect to CARLA simulator.
-     */
-    private int connectionAttempts = 5;
+        rtiMock = mock(RtiAmbassador.class);
 
+        carlaXmlRpcClientMock = mock(CarlaXmlRpcClient.class); 
 
-    /**
-     * Carla simulator client port
-     */
-    private int carlaSimulatorClientPort = -1;
+        FederateDescriptor handleMock = mock(FederateDescriptor.class);
 
-    /**
-     * The process for running the connection bridge client
-     */
-    private Process connectionProcess = null;
+        File workingDir = temporaryFolder.getRoot();
 
-    /**
-     * Queue for temporary storage of V2X messages that CARLA vehicles receive
-     */
-    private final PriorityBlockingQueue<CarlaV2xMessageReception> carlaV2xInteractionQueue = new PriorityBlockingQueue<>();
+        CLocalHost testHostConfig = new CLocalHost();
 
-    private List<DetectorRegistration> registeredDetectors = new ArrayList<>();
+        testHostConfig.workingDirectory = workingDir.getAbsolutePath();
 
-    /**
-     * Creates a new {@link CarlaAmbassador} object.
-     *
-     * @param ambassadorParameter includes parameters for the CARLA Ambassador.
-     */
-    public CarlaAmbassador(AmbassadorParameter ambassadorParameter) {
-        super(ambassadorParameter);
-        try {
-            // read the CARLA configuration file
-            carlaConfig = new ObjectInstantiation<>(CarlaConfiguration.class, log)
-                    .readFile(ambassadorParameter.configuration);
-        } catch (InstantiationException e) {
-            log.error("Configuration object could not be instantiated: ", e);
-        }
+        when(handleMock.getHost()).thenReturn(testHostConfig);
 
-        log.info("carlaConfig.updateInterval: " + carlaConfig.updateInterval);
+        when(handleMock.getId()).thenReturn("carla");
 
-        // check the carla configuration
-        checkConfiguration();
+        ambassador = new CarlaAmbassador(
+                new AmbassadorParameter("carla", temporaryFolder.newFile("carla/carla_config.json")));
+
+        ambassador.setRtiAmbassador(rtiMock);
+
+        ambassador.setFederateDescriptor(handleMock);
+
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaXmlRpcClient"), carlaXmlRpcClientMock);
+
+       
+
     }
 
-    /**
-     * Check the updateInterval is validated.
-     */
-    private void checkConfiguration() {
-        if (carlaConfig.updateInterval <= 0) {
-            throw new RuntimeException("Invalid carla interval, should be >0");
-        }
-    }
+    @Test
+    public void initialize() throws Throwable {
+        CarlaConfiguration config = new CarlaConfiguration();
+        config.carlaCDASimAdapterUrl="https://testing/something";
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaConfig"), config);
 
-    /**
-     * Creates and sets new federate executor.
-     *
-     * @param host name of the host (as specified in /etc/hosts.json)
-     * @param port port number to be used by this federate
-     * @param os   operating system enum
-     * @return FederateExecutor.
-     */
-    @Nonnull
-    @Override
-    public FederateExecutor createFederateExecutor(String host, int port, CLocalHost.OperatingSystem os) {
-        // CARLA needs to start the federate by itself, therefore we need to store the
-        // federate starter locally and use it later
-        federateExecutor = new ExecutableFederateExecutor(descriptor, getCarlaExecutable("CarlaUE4"),
-                getProgramArguments(port));
-        this.carlaSimulatorClientPort = port;
-        return new NopFederateExecutor();
-    }
-
-    /**
-     * Get CARLA simulator executable file location
-     *
-     * @param executable the name of carla executable file
-     * @return the path to CarlaUE4 executable file
-     */
-    String getCarlaExecutable(String executable) {
-        String carlaHome = null;
-        if (carlaConfig.carlaUE4Path != null) {
-            carlaHome = carlaConfig.carlaUE4Path;
-            log.info("use carla path from configuration file: " + carlaHome);
-        }
-        else if (System.getenv("CARLA_HOME") != null) {
-            carlaHome = System.getenv("CARLA_HOME");
-            log.info("use carla path from environmental variable: " + carlaHome);
-        }
-        if (StringUtils.isNotBlank(carlaHome)) {
-            boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-            if (isWindows) {
-                executable += ".exe";
-            } else {
-                executable += ".sh";
-            }
-            return carlaHome + File.separator + executable;
-        }
-        return executable;
-    }
-
-    /**
-     * This method is called to tell the federate the start time and the end time.
-     * It is also used to start CARLA, and connect to CARLA.
-     *
-     * @param startTime Start time of the simulation run in nano seconds.
-     * @param endTime   End time of the simulation run in nano seconds.
-     * @throws InternalFederateException Exception is thrown if an error is occurred
-     *                                   while execute of a federate.
-     */
-    @Override
-    public void initialize(long startTime, long endTime) throws InternalFederateException {
-        super.initialize(startTime, endTime);
-
-        nextTimeStep = startTime;
-        try {
-            rti.requestAdvanceTime(nextTimeStep, 0, (byte) 1);
-        } catch (IllegalValueException e) {
-            log.error("Error during advanceTime request", e);
-            throw new InternalFederateException(e);
-        }
-        // Start the CARLA simulator
-        startCarlaLocal();
-        //initialize CarlaXmlRpcClient
-        //set the connected server URL
-        try{
-            if (carlaXmlRpcClient== null) {
-                URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
-                carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
-            }
-            
-        }
-        catch (MalformedURLException m) 
-        {
-            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
-                + "connection! Check carla_config.json!", m);
-        }
+        // RUN
+        ambassador.initialize(0, 100 * TIME.SECOND);
+        // ASSERT
+        verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
         
+
     }
 
-    /**
-     * Connects to CARLA simulator using the given host and port.
-     *
-     * @param host host on which CARLA simulator is running.
-     * @param port port on which CARLA client is listening.
-     */
-    @Override
-    public void connectToFederate(String host, int port) {
-        // Start the Carla connection server
-        String bridgePath = null;
-        int carlaConnectionPort = 8913;
+    @Test
+    public void processTimeAdvanceGrant() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException, IllegalValueException {
+        List<DetectorRegistration> registeredDetectors = new ArrayList<>();
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+        registeredDetectors.add( registration);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"), registeredDetectors);
+
+        // Setup Get detected objects return
+        // Object 1 is CAR
+        DetectedObject predictedCar = new DetectedObject(
+                DetectionType.CAR,
+                0.7,
+                "sensorID1",
+                "projection String2",
+                100,
+                CartesianPoint.xyz(-1.1, -2, -3.2),
+                new Vector3d(1, 1, 1),
+                new Vector3d(.1, .2, .3),
+                new Size(2, 1, .5),
+                100);
+        Double[][] covarianceMatrix =  { {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0} , {1.0, 0.0, 0.0}};
+        predictedCar.setPositionCovariance(covarianceMatrix);
+        predictedCar.setVelocityCovariance(covarianceMatrix);
+        predictedCar.setAngularVelocityCovariance(covarianceMatrix);
+        DetectedObject predictedBus = new DetectedObject(
+            DetectionType.BUS,
+            0.5,
+            "sensorID1",
+            "projection String",
+            101,
+            CartesianPoint.xyz(1.1, 2, 3.2),
+            new Vector3d(0, 0, 0),
+            new Vector3d(),
+            new Size(0, 0, 0),
+            100);
+        Double[][] bus_covarianceMatrix =  { {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0} , {0.0, 0.0, 0.0}};
+        predictedBus.setPositionCovariance(bus_covarianceMatrix);
+        predictedBus.setVelocityCovariance(bus_covarianceMatrix);
+        predictedBus.setAngularVelocityCovariance(bus_covarianceMatrix);
+
+        DetectedObject[] detectedObjects = {predictedBus, predictedCar};
+        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenReturn(detectedObjects);
+        // Set is simulation timestep to true 
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("isSimulationStep"), true);
+
+        ambassador.processTimeAdvanceGrant(100);
+
+        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+        verify(rtiMock, times(2)).triggerInteraction(any(DetectedObjectInteraction.class));
+    }
+
+    @Test
+    public void processTimeAdvanceGrantException() throws InternalFederateException, NoSuchFieldException, SecurityException, XmlRpcException, IllegalValueException {
+        List<DetectorRegistration> registeredDetectors = new ArrayList<>();
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+        registeredDetectors.add( registration);
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("registeredDetectors"), registeredDetectors);
+
         
-        if (carlaConfig.carlaConnectionPort != 0)
-            carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
-
-        // get the connection bridge file
-        if (carlaConfig.bridgePath != null) {
-            bridgePath = carlaConfig.bridgePath;
-            log.info("Use connection bridge path from configuration file: " + carlaConfig.bridgePath);
-        } else {
-            log.error("Could not find connection bridge.");
-            return;
-        }
-        if (carlaConnection == null) {
-            // start the carla connection
-
-            carlaConnection = new CarlaConnection("localhost", carlaConnectionPort, this);
-            Thread carlaThread = new Thread(carlaConnection);
-            carlaThread.start();
-        }
-
-        String[] bridgePathArray = bridgePath.split(";");
-
-        String path = bridgePathArray[0];
-        String command = bridgePathArray[1];
-
-        // check the current operating system
-        boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-
-        if (isWindows) {
-            command = "cmd.exe /c start " + command;
-        } else {
-            command = "sh " + command;
-        }
-        // connect carla client
-        while (connectionAttempts-- > 0) {
-            boolean connected = true;
-
-            try {
-                connectionProcess = Runtime.getRuntime().exec(command, null, new File(path));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                if (connectionAttempts == 0) {
-                    log.info("Maximum connection attempts reached and connecting to CARLA simulator failed.");
-                } else {
-                    log.warn("Error while connecting to CARLA simulator. Retrying.");
-                }
-
-                try {
-                    Thread.sleep(SLEEP_AFTER_ATTEMPT);
-                } catch (InterruptedException e) {
-                    log.error("Could not execute Thread.sleep({}). Reason: {}", SLEEP_AFTER_ATTEMPT, e.getMessage());
-                }
-                connected = false;
-            }
-
-            if (connected) {
-                log.info("Client connected");
-                break;
-            }
-        }
-    }
-
-    @Override
-    public void connectToFederate(String host, InputStream in, InputStream err) {
-        this.connectToFederate(host, carlaSimulatorClientPort);
-    }
-
-    /**
-     * Starts the CARLA binary locally.
-     */
-    void startCarlaLocal() throws InternalFederateException {
-        if (!descriptor.isToStartAndStop()) {
-            return;
-        }
-
-        File dir = new File(descriptor.getHost().workingDirectory, descriptor.getId());
-        log.info("Start Federate local");
-        log.info("Directory: " + dir);
-
+        when(carlaXmlRpcClientMock.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId() )).thenThrow(XmlRpcException.class);
+         // Set is simulation timestep to true 
+        FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("isSimulationStep"), true);
+        // Verify that when exceptiopn is thrown by CarlaXmlRpcClient, no interactions are trigger and exception is caught
         try {
-            Process p = federateExecutor.startLocalFederate(dir);
-            connectToFederate("localhost", p.getInputStream(), p.getErrorStream());
-            // read error output of process in an extra thread
-            new ProcessLoggingThread(log, p.getInputStream(), "carla", ProcessLoggingThread.Level.Info).start();
-            new ProcessLoggingThread(log, p.getErrorStream(), "carla", ProcessLoggingThread.Level.Error).start();
-
-        } catch (FederateExecutor.FederateStarterException e) {
-            log.error("Error while executing command: {}", federateExecutor.toString());
-            throw new InternalFederateException("Error while starting Carla: " + e.getLocalizedMessage());
-        }
-    }
-
-    /**
-     * This method is called by the AbstractFederateAmbassador when a time advance
-     * has been granted by the RTI. Before this call is placed, any unprocessed
-     * interaction is forwarded to the federate using the processInteraction method.
-     *
-     * @param time The timestamp towards which the federate can advance it local
-     *             time.
-     */
-    @Override
-    public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
-
-        if (time < nextTimeStep) {
-            // process time advance only if time is equal or greater than the next
-            // simulation time step
-            return;
+            ambassador.processTimeAdvanceGrant(0);
+        }catch (Exception e) {
+            assertEquals(InternalFederateException.class, e.getClass());
+            assertEquals(XmlRpcException.class, e.getCause().getClass());
         }
 
-        try {
-            if ( time == 0 ) {
-                // Try to connect to CARLA CDA Sim Adapter on first timestep
-                carlaXmlRpcClient.connect(60);
-            }
-            // if the simulation step received from CARLA, advance CARLA federate local
-            // simulation time
-            if (isSimulationStep) {
-                List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
-                // Get all detections from all currently registered detectors.
-                for (DetectorRegistration registration: registeredDetectors ) {
-                    DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
-                    for (DetectedObject detected: detections) {
-                        DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
-                        // Convert nanosecond timestamp to millisecond timestamp
-                        interaction.getDetectedObject().setTimestamp((int)(time/1e6));
-                        detectedObjectInteractions.add(interaction);
-                    }
-                }
-                // trigger all detection interactions
-                for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
-                    this.rti.triggerInteraction(detectionInteraction);
-                }
-                nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
-                isSimulationStep = false;
-                rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
-            }
-            
-        } 
-        catch (IllegalValueException e) {
-            log.error("Failed to process advance time grant due to : ", e);
-        }
-        catch (XmlRpcException e ) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
-                        + "Adapter connection! Check carla_config.json!", e);
-        }
-        catch (InterruptedException e) {
-            log.error("Failed to process advance time grant due to failed thread sleep!", e);
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * This method is called by the time management service to signal that the
-     * simulation is finished.
-     */
-    @Override
-    public void finishSimulation() throws InternalFederateException {
-        log.info("Closing CARLA connection.");
-
-        if (carlaConnection != null) {
-            carlaConnection.closeSocket();
-        }
-
-        if (federateExecutor != null) {
-            try {
-                federateExecutor.stopLocalFederate();
-            } catch (FederateExecutor.FederateStarterException e) {
-                log.warn("Could not properly stop federate");
-            }
-        }
-
-        if (connectionProcess != null) {
-            try {
-
-                connectionProcess.waitFor(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                log.warn("Something went wrong when stopping a process", e);
-                Thread.currentThread().interrupt();
-            } finally {
-                connectionProcess.destroy();
-            }
-        }
-        log.info("Finished simulation");
-    }
-
-    /**
-     * get the CARLA command arguments
-     *
-     * @param port CARLA simulator client port
-     * @return the list of CARLA command arguments
-     */
-    List<String> getProgramArguments(int port) {
-
-        List<String> args = Lists.newArrayList("-carla-rpc-port", Integer.toString(port));
-
-        return args;
-    }
-
-    /**
-     * Returns whether this federate is time constrained. Is set if the federate is
-     * sensitive towards the correct ordering of events. The federate ambassador
-     * will ensure that the message processing happens in time stamp order. If set
-     * to false, interactions will be processed will be in receive order.
-     *
-     * @return {@code true} if this federate is time constrained, else {@code false}
-     */
-    @Override
-    public boolean isTimeConstrained() {
-        return true;
-    }
-
-    /**
-     * Returns whether this federate is time regulating. Is set if the federate
-     * influences other federates and can prevent them from advancing their local
-     * time.
-     *
-     * @return {@code true} if this federate is time regulating, {@code false} else
-     */
-    @Override
-    public boolean isTimeRegulating() {
-        return true;
-    }
-
-    /**
-     * Trigger a new CarlaTraciRequest, SimulationStep or ExternalMessage
-     * interaction
-     *
-     * @param length  command length
-     * @param command command
-     */
-    public synchronized void triggerInteraction(int length, byte[] command) throws InternalFederateException {
-        try {
-            // trigger interaction based on the command type simulation step or not
-            if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
-                rti.triggerInteraction(new SimulationStep(this.nextTimeStep));
-                isSimulationStep = true;
-                // log.debug("trigger simulation step interaction at time: " +
-                // this.nextTimeStep);
-            } else if (command[5] == 0x0d) {
-                // send received V2X message to CARLA simulator
-                sendReceivedV2xMessageToCarla();
-                // log.debug("Carla ambassador sends V2X messages to bridge client.");
-            } else if (command[5] == 0x2f) {
-                // receive message from CARLA simulator
-                String[] message = processReceivedV2xMessageFromCarla(length, command);
-                if (message != null) {
-                    rti.triggerInteraction(new ExternalMessage(this.nextTimeStep, message[1], message[0]));
-                    // log.debug("received message from CARLA simulator: message is sent by {};
-                    // message: {}", message[0],
-                    // message[1]);
-                }
-            } else if (command[5] == 0x85) {
-                log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
-            } else {
-                rti.triggerInteraction(new CarlaTraciRequest(this.nextTimeStep, length, command));
-            }
-
-        } catch (IllegalValueException e) {
-            throw new InternalFederateException(e);
-        }
-    }
-
-    /**
-     * This method is called by the {@link AbstractFederateAmbassador}s whenever the
-     * federate can safely process interactions in its incoming interaction queue.
-     * The decision when it is safe to process such an interaction depends on the
-     * policies TimeRegulating and TimeConstrained that has to be set by the
-     * federate.
-     *
-     * @param interaction the interaction to be processed
-     */
-    @Override
-    public void processInteraction(Interaction interaction) {
-        String type = interaction.getTypeId();
-        long interactionTime = interaction.getTime();
-        log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
-        if (interaction.getTypeId().equals(CarlaTraciResponse.TYPE_ID)) {
-            this.receiveInteraction((CarlaTraciResponse) interaction);
-        } else if (interaction.getTypeId().equals(SimulationStepResponse.TYPE_ID)) {
-            this.receiveInteraction((SimulationStepResponse) interaction);
-        } else if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
-            this.receiveInteraction((CarlaV2xMessageReception) interaction);
-        }
-        else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
-            this.receiveInteraction((DetectorRegistration) interaction);
-        }
-    }
-
-    /**
-     * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
-     * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
-     * @throws InterruptedException
-     */
-    private void receiveInteraction(DetectorRegistration interaction) {
-        try {
-            carlaXmlRpcClient.createSensor(interaction);
-            registeredDetectors.add(interaction);
-        }
-        catch(XmlRpcException e) {
-            log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
-        }
+        verify(carlaXmlRpcClientMock, times(1)).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+        verify(rtiMock, times(0)).triggerInteraction(any(DetectedObjectInteraction.class));
 
     }
 
-    /**
-     * process the Carla traci response interaction
-     *
-     * @param interaction Carla Traci Response interaction
-     */
-    private void receiveInteraction(CarlaTraciResponse interaction) {
-        try {
-            // check the data output stream available
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().write(interaction.getResult());
-            }
-        } catch (Exception e) {
-            log.error("error occurs during process carla traci response interaction: {} ", e.getMessage());
-        }
+    @Test
+    public void processDetectorRegistrationInteraction() throws XmlRpcException {
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
+
+        ambassador.processInteraction(registration);
+
+        verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
+
     }
 
-    /**
-     * process the traci response interaction
-     *
-     * @param interaction Simulation Step Response interaction
-     */
-    private void receiveInteraction(SimulationStepResponse interaction) {
-        try {
+    @Test
+    public void processDetectorRegistrationInteractionException() throws XmlRpcException {
+        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
+        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
 
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().write(interaction.getResult());
-            }
+        doThrow(new XmlRpcException("")).when(carlaXmlRpcClientMock).createSensor(registration);
+        ambassador.processInteraction(registration);
 
-        } catch (Exception e) {
-            log.error("error occurs during process simulation step response interaction: {}", e.getMessage());
-        }
+        verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
     }
 
-    /**
-     * Process the CARLA vehicles receiving V2X message interaction
-     *
-     * @param interaction CarlaV2xMessageReception interaction
-     */
-    private void receiveInteraction(CarlaV2xMessageReception interaction) {
-        log.info("{} received V2x message: {}.", interaction.getReceiverID(), interaction.getMessage());
 
-        interactionQueue.add(interaction);
-    }
 
-    /**
-     * Send received V2X message to CARLA simulator
-     */
-    private void sendReceivedV2xMessageToCarla() {
-        List<String> v2xMessageSent = new ArrayList<>();
-        int totoalBytesSent = 6;
-        while (!carlaV2xInteractionQueue.isEmpty()) {
-            if (carlaV2xInteractionQueue.peek().getTime() > nextTimeStep)
-                break;
-            CarlaV2xMessageReception carlaV2xMessageReception = carlaV2xInteractionQueue.poll();
-            if (carlaV2xMessageReception != null) {
-                String message = "Time: " + carlaV2xMessageReception.getTime() + "; Receiver ID: "
-                        + carlaV2xMessageReception.getReceiverID() + "; Message: "
-                        + carlaV2xMessageReception.getMessage() + ".";
-
-                totoalBytesSent += message.length() + 4;
-
-                v2xMessageSent.add(message);
-            }
-        }
-        if (totoalBytesSent > 255) {
-            totoalBytesSent += 4;
-        }
-        try {
-            // send messages to client
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().writeInt(totoalBytesSent + 11);
-                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x00 });
-                if (totoalBytesSent - 4 > 255) {
-                    carlaConnection.getDataOutputStream().writeByte(0);
-                    carlaConnection.getDataOutputStream().writeInt(totoalBytesSent);
-                } else {
-                    carlaConnection.getDataOutputStream().writeByte(totoalBytesSent);
-                }
-                carlaConnection.getDataOutputStream().writeByte(0x0d);
-                if (!v2xMessageSent.isEmpty()) {
-                    ListTraciWriter<String> listTraci = new ListTraciWriter<String>(new StringTraciWriter());
-                    listTraci.writeVariableArgument(carlaConnection.getDataOutputStream(), v2xMessageSent);
-                } else {
-                    carlaConnection.getDataOutputStream().writeInt(0);
-                }
-            }
-        } catch (Exception e) {
-            log.error("error occurs during sending messages to bridge: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Process the received messages from CARLA simulator.
-     *
-     * @param length  the length of command
-     * @param command received command
-     * @return received external message
-     */
-    private String[] processReceivedV2xMessageFromCarla(int length, byte[] command) {
-
-        String message;
-        if (command[4] == 0) {
-            message = new String(Arrays.copyOfRange(command, 15, length));
-        } else {
-            message = new String(Arrays.copyOfRange(command, 11, length));
-        }
-        try {
-            // send response to client
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().writeInt(11);
-                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            }
-        } catch (Exception e) {
-            log.error("error occurs during process received messages: {}",  e.getMessage());
-        }
-        return message.split(";");
-    }
 }
