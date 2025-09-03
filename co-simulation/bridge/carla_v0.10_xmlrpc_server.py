@@ -1,4 +1,6 @@
-# Copyright (c) 2025 MSC Lab, University of Georgia All rights reserved.
+#!/usr/bin/env python
+
+# Copyright (c) 2025 University of Georgia. All rights reserved.
 
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -8,15 +10,13 @@
 # http://www.eclipse.org/legal/epl-2.0
 
 # SPDX-License-Identifier: EPL-2.0
-
 # Contact: Zongtan.Li@uga.edu
-
 
 try:
     CARLA_VERSION = getattr(carla, "__version__", "unknown")
 except Exception:
     CARLA_VERSION = "unknown"
-#!/usr/bin/env python3
+
 """
 CARLA XML-RPC Server for MOSAIC Integration (Unified XML-RPC per redesign spec)
 

@@ -1,4 +1,6 @@
-# Copyright (c) 2025 MSC Lab, University of Georgia All rights reserved.
+#!/usr/bin/env python
+
+# Copyright (c) 2025 MSC Lab, University of Georgia. All rights reserved.
 
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,19 +12,6 @@
 # SPDX-License-Identifier: EPL-2.0
 
 # Contact: Zongtan.Li@uga.edu
-"""
-CARLA XML-RPC Server for MOSAIC Integration (Unified XML-RPC per redesign spec)
-
-This server exposes granular, XML-RPC-safe methods for:
-- Actor data (vehicles, pedestrians): transforms, velocities, accelerations, bounding boxes, etc.
-- Traffic signal states (single and bulk).
-- Sensor frames (raw bytes + metadata) with xmlrpc.client.Binary.
-- Simulation control with world.tick() via advance_simulation().
-
-It aligns with the "Proposed Redesign of the CARLA-MOSAIC Bridge Using Unified XML-RPC"
-specification (UGA MSC Lab, 2025-06-03), Sections 4–6.
-"""
-
 import argparse
 import logging
 import sys
