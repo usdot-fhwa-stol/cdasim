@@ -694,49 +694,49 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Send received V2X message to CARLA simulator via XML-RPC
+     * Send received V2X message to CARLA simulator
      */
     private void sendReceivedV2xMessageToCarla() {
-        List<Map<String, Object>> v2xMessages = new ArrayList<>();
-        
+        List<String> v2xMessageSent = new ArrayList<>();
+        int totoalBytesSent = 6;
         while (!carlaV2xInteractionQueue.isEmpty()) {
             if (carlaV2xInteractionQueue.peek().getTime() > nextTimeStep)
                 break;
-                
             CarlaV2xMessageReception carlaV2xMessageReception = carlaV2xInteractionQueue.poll();
             if (carlaV2xMessageReception != null) {
-                Map<String, Object> messageData = new HashMap<>();
-                messageData.put("timestamp", carlaV2xMessageReception.getTime());
-                messageData.put("receiverId", carlaV2xMessageReception.getReceiverID());
-                messageData.put("message", carlaV2xMessageReception.getMessage());
-                messageData.put("senderId", "MOSAIC_SUMO");
-                
-                v2xMessages.add(messageData);
+                String message = "Time: " + carlaV2xMessageReception.getTime() + "; Receiver ID: "
+                        + carlaV2xMessageReception.getReceiverID() + "; Message: "
+                        + carlaV2xMessageReception.getMessage() + ".";
+
+                totoalBytesSent += message.length() + 4;
+
+                v2xMessageSent.add(message);
             }
         }
-        
-        if (!v2xMessages.isEmpty()) {
-            try {
-                // Send V2X messages via XML-RPC instead of TraCI bridge
-                for (Map<String, Object> messageData : v2xMessages) {
-                    // Use XML-RPC client to send V2X message to CARLA
-                    // This assumes CARLA XML-RPC server has a method to handle V2X messages
-                    boolean sent = carlaXmlRpcClient.sendV2xMessage(
-                        (String) messageData.get("receiverId"),
-                        (String) messageData.get("message"),
-                        (String) messageData.get("senderId"),
-                        (Long) messageData.get("timestamp")
-                    );
-                    
-                    if (sent) {
-                        log.debug("V2X message sent to CARLA via XML-RPC: {}", messageData);
-                    } else {
-                        log.warn("Failed to send V2X message to CARLA via XML-RPC: {}", messageData);
-                    }
+        if (totoalBytesSent > 255) {
+            totoalBytesSent += 4;
+        }
+        try {
+            // send messages to client
+            if (carlaConnection.getDataOutputStream() != null) {
+                carlaConnection.getDataOutputStream().writeInt(totoalBytesSent + 11);
+                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x00 });
+                if (totoalBytesSent - 4 > 255) {
+                    carlaConnection.getDataOutputStream().writeByte(0);
+                    carlaConnection.getDataOutputStream().writeInt(totoalBytesSent);
+                } else {
+                    carlaConnection.getDataOutputStream().writeByte(totoalBytesSent);
                 }
-            } catch (Exception e) {
-                log.error("Error sending V2X messages to CARLA via XML-RPC: {}", e.getMessage());
+                carlaConnection.getDataOutputStream().writeByte(0x0d);
+                if (!v2xMessageSent.isEmpty()) {
+                    ListTraciWriter<String> listTraci = new ListTraciWriter<String>(new StringTraciWriter());
+                    listTraci.writeVariableArgument(carlaConnection.getDataOutputStream(), v2xMessageSent);
+                } else {
+                    carlaConnection.getDataOutputStream().writeInt(0);
+                }
             }
+        } catch (Exception e) {
+            log.error("error occurs during sending messages to bridge: {}", e.getMessage());
         }
     }
 
