@@ -54,11 +54,13 @@ SensorKey = Union[int, str]
 
 class CarlaXMLRPCServer:
     def __init__(self, host: str = 'localhost', port: int = 8090,
-                 carla_host: str = 'localhost', carla_port: int = 2000):
+                 carla_host: str = 'localhost', carla_port: int = 2000,
+                 tls_manager: str = 'none'):
         self.host = host
         self.port = port
         self.carla_host = carla_host
         self.carla_port = carla_port
+        self.tls_manager = tls_manager
 
         self.client: Optional[carla.Client] = None
         self.world: Optional[carla.World] = None
@@ -198,6 +200,10 @@ class CarlaXMLRPCServer:
                     current_map = "<unknown>"
                 logger.info("Connected to CARLA %s at %s:%s | map=%s",
                             CARLA_VERSION, self.carla_host, self.carla_port, current_map)
+                
+                # Configure TLS manager after successful connection
+                self._configure_tls_manager()
+                
                 return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
@@ -223,6 +229,41 @@ class CarlaXMLRPCServer:
 
     def is_connected(self) -> bool:
         return self.client is not None and self.world is not None
+
+    def _configure_tls_manager(self):
+        """
+        Configure traffic light manager based on tls_manager parameter.
+        This method should be called after connecting to CARLA.
+        """
+        try:
+            if not self.is_connected():
+                return False
+            
+            if self.tls_manager == 'carla':
+                # CARLA manages traffic lights - disable SUMO traffic light control
+                logger.info("TLS Manager: CARLA will manage traffic lights")
+                # Note: In a bridge context, this would disable SUMO traffic light control
+                # For XML-RPC server, we just log the configuration
+                
+            elif self.tls_manager == 'sumo':
+                # SUMO manages traffic lights - disable CARLA traffic light control
+                logger.info("TLS Manager: SUMO will manage traffic lights")
+                # Note: In a bridge context, this would disable CARLA traffic light control
+                # For XML-RPC server, we just log the configuration
+                
+            elif self.tls_manager == 'EVC':
+                # EVC manages traffic lights
+                logger.info("TLS Manager: EVC will manage traffic lights")
+                # Note: In a bridge context, this would disable CARLA traffic light control
+                # For XML-RPC server, we just log the configuration
+                
+            else:  # 'none' or any other value
+                logger.info("TLS Manager: No traffic light management")
+                
+            return True
+        except Exception as e:
+            logger.error("Error configuring TLS manager: %s", e)
+            return False
 
     # ---------- Simulation ----------
     def advance_simulation(self) -> bool:
@@ -823,12 +864,17 @@ def main():
     parser.add_argument('--port', type=int, default=8090)
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
+    parser.add_argument('--tls-manager',
+                       type=str,
+                       choices=['none', 'sumo', 'carla', 'EVC'],
+                       help="select traffic light manager (default: none)",
+                       default='none')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager)
     try:
         server.start()
     except KeyboardInterrupt:
