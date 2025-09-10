@@ -268,6 +268,30 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 - Gson for JSON processing
 - MOSAIC RTI API
 
+## error info
+50.25 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[732,21] cannot find symbol
+50.25 [ERROR]   symbol:   class ListTraciWriter
+50.25 [ERROR]   location: class org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador
+50.25 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[732,61] cannot find symbol
+50.25 [ERROR]   symbol:   class ListTraciWriter
+50.25 [ERROR]   location: class org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador
+50.25 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[732,89] cannot find symbol
+50.25 [ERROR]   symbol:   class StringTraciWriter
+50.25 [ERROR]   location: class org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador
+50.25 [ERROR] -> [Help 1]
+50.25 [ERROR] 
+50.25 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+50.25 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+50.25 [ERROR] 
+50.25 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+50.25 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+50.25 [ERROR] 
+50.25 [ERROR] After correcting the problems, you can resume the build with the command
+50.25 [ERROR]   mvn <args> -rf :mosaic-carla
+
+
 ## License
 
 Licensed under the Apache License, Version 2.0.
+
+
