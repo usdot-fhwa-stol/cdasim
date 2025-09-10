@@ -269,26 +269,171 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 - MOSAIC RTI API
 
 ## error info
-50.25 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[732,21] cannot find symbol
-50.25 [ERROR]   symbol:   class ListTraciWriter
-50.25 [ERROR]   location: class org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador
-50.25 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[732,61] cannot find symbol
-50.25 [ERROR]   symbol:   class ListTraciWriter
-50.25 [ERROR]   location: class org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador
-50.25 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[732,89] cannot find symbol
-50.25 [ERROR]   symbol:   class StringTraciWriter
-50.25 [ERROR]   location: class org.eclipse.mosaic.fed.carla.ambassador.CarlaAmbassador
-50.25 [ERROR] -> [Help 1]
-50.25 [ERROR] 
-50.25 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-50.25 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-50.25 [ERROR] 
-50.25 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-50.25 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-50.25 [ERROR] 
-50.25 [ERROR] After correcting the problems, you can resume the build with the command
-50.25 [ERROR]   mvn <args> -rf :mosaic-carla
-
+51.40 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:testCompile (default-testCompile) on project mosaic-carla: Compilation failure: Compilation failure: 
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[19,29] package org.junit.jupiter.api does not exist
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[20,29] package org.junit.jupiter.api does not exist
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[21,29] package org.junit.jupiter.api does not exist
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[28,36] package org.junit.jupiter.api does not exist
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[49,6] cannot find symbol
+51.40 [ERROR]   symbol:   class BeforeEach
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[55,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[56,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[75,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[76,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[98,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[99,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[122,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[123,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[181,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[182,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[236,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[237,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[274,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[275,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[320,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[321,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[351,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[352,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[378,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Test
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[379,6] cannot find symbol
+51.40 [ERROR]   symbol:   class Disabled
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[62,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[66,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[70,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[84,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[88,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[92,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[107,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.List<java.lang.Integer>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[111,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.List<java.lang.Integer>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[116,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.List<java.lang.Integer>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[136,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.Map<java.lang.String,java.lang.Object>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[141,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.Map<java.lang.String,java.lang.Object>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[204,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[209,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[222,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[226,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[245,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.List<java.util.Map<java.lang.String,java.lang.Object>>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[255,17] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.Map<java.lang.String,java.lang.Object>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[260,17] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[264,17] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[301,17] cannot find symbol
+51.40 [ERROR]   symbol:   class var
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[310,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[329,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.lang.String,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[334,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNotNull(java.util.List<java.lang.String>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[341,13] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[360,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNull(java.util.Map<java.lang.String,java.lang.Object>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[364,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNull(java.util.Map<java.lang.String,java.lang.Object>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[368,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertNull(java.util.Map<java.lang.String,java.lang.Object>,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[372,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertFalse(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/test/java/org/eclipse/mosaic/fed/carla/CarlaXmlRpcClientTest.java:[410,9] cannot find symbol
+51.40 [ERROR]   symbol:   method assertTrue(boolean,java.lang.String)
+51.40 [ERROR]   location: class org.eclipse.mosaic.fed.carla.CarlaXmlRpcClientTest
+51.40 [ERROR] -> [Help 1]
+51.40 [ERROR] 
+51.40 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+51.40 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+51.40 [ERROR] 
+51.40 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+51.40 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+51.40 [ERROR] 
+51.40 [ERROR] After correcting the problems, you can resume the build with the command
+51.40 [ERROR]   mvn <args> -rf :mosaic-carla
 
 ## License
 
