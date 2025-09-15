@@ -49,9 +49,9 @@ public class CarlaConfiguration implements Serializable {
      */
     public int carlaConnectionPort;
     /**
-     * URL where CARLACDASimAdapter XMLRPC Server is hosted
+     * URL where CARLA Sensor XMLRPC Server is hosted
      */
-    public String carlaCDASimAdapterUrl;
+    public String carlaSensorLibRPCUrl;
 
 
 
