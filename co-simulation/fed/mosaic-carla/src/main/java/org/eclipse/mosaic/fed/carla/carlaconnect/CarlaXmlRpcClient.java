@@ -103,14 +103,31 @@ public class CarlaXmlRpcClient {
     // Connection state
     private volatile boolean isConnected = false;
     private final Object connectionLock = new Object();
+    
+    // Server type for identification
+    public enum ServerType {
+        SENSOR_LIB, ACTOR_LIB
+    }
+    
+    private final ServerType serverType;
 
     /**
      * Constructor for CARLA XML-RPC Client
      * @param xmlRpcServerUrl URL of the CARLA XML-RPC server
+     * @param serverType Type of server (SENSOR_LIB or ACTOR_LIB)
+     */
+    public CarlaXmlRpcClient(URL xmlRpcServerUrl, ServerType serverType) {
+        this.serverUrl = xmlRpcServerUrl;
+        this.serverType = serverType;
+        initializeClient();
+    }
+    
+    /**
+     * Constructor for CARLA XML-RPC Client (backward compatibility)
+     * @param xmlRpcServerUrl URL of the CARLA XML-RPC server
      */
     public CarlaXmlRpcClient(URL xmlRpcServerUrl) {
-        this.serverUrl = xmlRpcServerUrl;
-        initializeClient();
+        this(xmlRpcServerUrl, ServerType.ACTOR_LIB); // Default to ACTOR_LIB for backward compatibility
     }
 
     /**
@@ -126,7 +143,15 @@ public class CarlaXmlRpcClient {
         client = new XmlRpcClient();
         client.setConfig(config);
         
-        log.info("CARLA XML-RPC client initialized for server: {}", serverUrl);
+        log.info("CARLA XML-RPC client initialized for {} server: {}", serverType, serverUrl);
+    }
+    
+    /**
+     * Get the server type for this client
+     * @return ServerType enum value
+     */
+    public ServerType getServerType() {
+        return serverType;
     }
 
     /**

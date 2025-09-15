@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
+import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMultiXmlRpcManager;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
@@ -71,6 +72,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
      */
     private CarlaXmlRpcClient carlaXmlRpcClient = null;
+    
+    /**
+     * Multi-connection manager for multiple XML-RPC servers
+     */
+    private CarlaMultiXmlRpcManager multiXmlRpcManager = null;
 
     /**
      * Command used to start CARLA simulator.
@@ -220,34 +226,55 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Start the CARLA simulator
         startCarlaLocal();
         
-        //set the connected server URL
-        if (carlaXmlRpcClient == null) {
-
-            // For CARLA Sensor Lib Connection
-            if (carlaConfig.carlaSensorLibRPCUrl != null){
-                try {
-                    URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
-                    
-                    // ****************************************Note****************************************
-                    // For Zongtan, the line below needs to update once you complete the CarlaXmlRpcClient multiple connection
-                    carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
-                } catch (MalformedURLException m) {
-                    throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
-                        + "connection! Check carla_config.json!", m);
+        // Initialize XML-RPC connections
+        if (carlaConfig.enableMultiServer) {
+            // Use multi-server manager for separate sensor and actor connections
+            multiXmlRpcManager = new CarlaMultiXmlRpcManager();
+            
+            try {
+                // Add sensor library server
+                if (carlaConfig.carlaSensorLibRPCUrl != null) {
+                    multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB, carlaConfig.carlaSensorLibRPCUrl);
+                    log.info("Added SENSOR_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
                 }
+                
+                // Add actor library server
+                if (carlaConfig.carlaActorLibRPCUrl != null) {
+                    multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB, carlaConfig.carlaActorLibRPCUrl);
+                    log.info("Added ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
+                }
+                
+                if (multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) == null && 
+                    multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB) == null) {
+                    throw new InternalFederateException("No XML-RPC servers configured for multi-server mode");
+                }
+                
+            } catch (MalformedURLException m) {
+                throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!", m);
             }
+        } else {
+            // Legacy single connection mode
+            if (carlaXmlRpcClient == null) {
+                // For CARLA Sensor Lib Connection
+                if (carlaConfig.carlaSensorLibRPCUrl != null){
+                    try {
+                        URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
+                        carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl, CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    } catch (MalformedURLException m) {
+                        throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
+                            + "connection! Check carla_config.json!", m);
+                    }
+                }
 
-            // For CARLA Actor Lib Connection
-            if (carlaConfig.carlaActorLibRPCUrl != null){
-                try {
-                    URL xmlRpcServerUrl = new URL(carlaConfig.carlaActorLibRPCUrl);
-
-                    // ****************************************Note****************************************
-                    // For Zongtan, the line below needs to update once you complete the CarlaXmlRpcClient multiple connection                    
-                    carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
-                } catch (MalformedURLException m) {
-                    throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
-                        + "connection! Check carla_config.json!", m);
+                // For CARLA Actor Lib Connection
+                if (carlaConfig.carlaActorLibRPCUrl != null){
+                    try {
+                        URL xmlRpcServerUrl = new URL(carlaConfig.carlaActorLibRPCUrl);
+                        carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl, CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                    } catch (MalformedURLException m) {
+                        throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
+                            + "connection! Check carla_config.json!", m);
+                    }
                 }
             }
         }
@@ -373,19 +400,36 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-            if ( time == 0 && carlaXmlRpcClient != null) {
-                // Try to connect to CARLA CDA Sim Adapter on first timestep
-                carlaXmlRpcClient.connect(60);
+            if (time == 0) {
+                // Try to connect to XML-RPC servers on first timestep
+                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    multiXmlRpcManager.connectAll(60);
+                } else if (carlaXmlRpcClient != null) {
+                    carlaXmlRpcClient.connect(60);
+                }
             }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
                 
-                if (/*For Zongtan, left this condition once your multiple connection is ready, this assume sensor server connected successfully*/){
+                // Handle sensor operations
+                boolean sensorConnected = false;
+                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
+                    sensorConnected = carlaXmlRpcClient.isConnected();
+                }
+                
+                if (sensorConnected) {
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
-                        DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                        DetectedObject[] detections;
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            detections = multiXmlRpcManager.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+                        } else {
+                            detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                        }
                         for (DetectedObject detected: detections) {
                             DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
                             // Convert nanosecond timestamp to millisecond timestamp
@@ -398,11 +442,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         this.rti.triggerInteraction(detectionInteraction);
                     }
                 }
-                if (/*For Zongtan, left this condition once your multiple connection is ready, this assume actor server connected successfully*/){
+                // Handle actor operations
+                boolean actorConnected = false;
+                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+                    actorConnected = carlaXmlRpcClient.isConnected();
+                }
+                
+                if (actorConnected) {
                     // Emit CARLA state updates towards SUMO: actors and traffic lights
                     try {
                         // Actors
-                        java.util.Map<String, java.util.Map<String, Object>> actors = carlaXmlRpcClient.getAllActors();
+                        java.util.Map<String, java.util.Map<String, Object>> actors;
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            actors = multiXmlRpcManager.getAllActors();
+                        } else {
+                            actors = carlaXmlRpcClient.getAllActors();
+                        }
+                        
                         for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : actors.entrySet()) {
                             String actorId = entry.getKey();
                             java.util.Map<String, Object> info = entry.getValue();
@@ -436,7 +494,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Traffic lights
-                        java.util.List<java.util.Map<String, Object>> tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
+                        java.util.List<java.util.Map<String, Object>> tlStates;
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            tlStates = multiXmlRpcManager.getAllTrafficLightStates();
+                        } else {
+                            tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
+                        }
+                        
                         for (java.util.Map<String, Object> tl : tlStates) {
                             Object id = tl.get("id");
                             Object state = tl.get("state");
@@ -482,6 +546,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         if (carlaConnection != null) {
             carlaConnection.closeSocket();
+        }
+
+        // Disconnect from XML-RPC servers
+        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+            multiXmlRpcManager.disconnectAll();
+        } else if (carlaXmlRpcClient != null) {
+            carlaXmlRpcClient.disconnect();
         }
 
         if (federateExecutor != null) {
@@ -556,7 +627,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // Handle different command types using XML-RPC approach
             if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
                 // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
-                boolean advanced = carlaXmlRpcClient.advanceSimulation();
+                boolean advanced = false;
+                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    advanced = multiXmlRpcManager.advanceSimulation();
+                } else if (carlaXmlRpcClient != null) {
+                    advanced = carlaXmlRpcClient.advanceSimulation();
+                }
+                
                 if (advanced) {
                     // Trigger internal simulation step coordination
                     triggerInternalSimulationStep();
@@ -641,37 +718,79 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @throws InterruptedException
      */
     private void receiveInteraction(DetectorRegistration interaction) {
-        if (/*For Zongtan, left this condition once your multiple connection is ready, this assume sensor server connected successfully*/){
+        boolean sensorConnected = false;
+        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+            sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
+            sensorConnected = carlaXmlRpcClient.isConnected();
+        }
+        
+        if (sensorConnected) {
             try {
-                carlaXmlRpcClient.createSensor(interaction);
+                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    multiXmlRpcManager.createSensor(interaction);
+                } else {
+                    carlaXmlRpcClient.createSensor(interaction);
+                }
                 registeredDetectors.add(interaction);
             }
             catch(XmlRpcException e) {
                 log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
             }
+        } else {
+            log.warn("Sensor server not connected, cannot create sensor: {}", interaction.getDetector().getSensorId());
         }
     }
 
     private void receiveInteraction(CarlaActorRequest interaction) {
-        if (/*For Zongtan, left this condition once your multiple connection is ready, this assume actor server connected successfully*/){
+        boolean actorConnected = false;
+        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+            actorConnected = carlaXmlRpcClient.isConnected();
+        }
+        
+        if (actorConnected) {
             try {
                 boolean ok = true;
                 if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
-                    ok = carlaXmlRpcClient.spawnActor(
-                        interaction.getActorType(), interaction.getActorId(),
-                        interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
+                    if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        ok = multiXmlRpcManager.spawnActor(
+                            interaction.getActorType(), interaction.getActorId(),
+                            interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
+                    } else {
+                        ok = carlaXmlRpcClient.spawnActor(
+                            interaction.getActorType(), interaction.getActorId(),
+                            interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
+                    }
                 } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
                     if (interaction.getLocation() != null || interaction.getRotation() != null) {
-                        ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            ok &= multiXmlRpcManager.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+                        } else {
+                            ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+                        }
                     }
                     if (interaction.getVelocity() != null) {
-                        ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            ok &= multiXmlRpcManager.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                        } else {
+                            ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                        }
                     }
                     if (interaction.getProperties() != null) {
-                        ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            ok &= multiXmlRpcManager.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
+                        } else {
+                            ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
+                        }
                     }
                 } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
-                    ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
+                    if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        ok = multiXmlRpcManager.destroyActor(interaction.getActorId());
+                    } else {
+                        ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
+                    }
                 }
                 if (!ok) {
                     log.warn("CarlaActorRequest action {} failed for actor {}", interaction.getAction(), interaction.getActorId());
@@ -679,19 +798,38 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } catch (Exception e) {
                 log.error("Error while processing CarlaActorRequest for {}: {}", interaction.getActorId(), e.getMessage());
             }
+        } else {
+            log.warn("Actor server not connected, cannot process CarlaActorRequest for actor: {}", interaction.getActorId());
         }
     }
 
     private void receiveInteraction(CarlaTrafficLightRequest interaction) {
-        if (/*For Zongtan, left this condition once your multiple connection is ready, this assume actor server connected successfully*/){
+        boolean actorConnected = false;
+        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+            actorConnected = carlaXmlRpcClient.isConnected();
+        }
+        
+        if (actorConnected) {
             try {
                 if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
-                    boolean ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
+                    boolean ok;
+                    if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        ok = multiXmlRpcManager.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
+                    } else {
+                        ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
+                    }
                     if (!ok) {
                         log.warn("Failed to set traffic light {} state {}", interaction.getTrafficLightId(), interaction.getState());
                     }
                     if (interaction.getTimerSeconds() != null) {
-                        boolean timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                        boolean timerOk;
+                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                            timerOk = multiXmlRpcManager.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                        } else {
+                            timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                        }
                         if (!timerOk) {
                             log.warn("Failed to set traffic light {} timer {}", interaction.getTrafficLightId(), interaction.getTimerSeconds());
                         }
@@ -700,6 +838,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } catch (Exception e) {
                 log.error("Error while processing CarlaTrafficLightRequest for {}: {}", interaction.getTrafficLightId(), e.getMessage());
             }
+        } else {
+            log.warn("Actor server not connected, cannot process CarlaTrafficLightRequest for traffic light: {}", interaction.getTrafficLightId());
         }
     }
 
