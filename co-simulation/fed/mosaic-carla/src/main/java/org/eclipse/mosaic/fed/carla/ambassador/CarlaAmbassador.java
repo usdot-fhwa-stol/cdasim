@@ -213,17 +213,27 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         startCarlaLocal();
         //initialize CarlaXmlRpcClient
         //set the connected server URL
-        try{
-            if (carlaXmlRpcClient== null) {
-                URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
-                carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
-            }
+        // try{
+        //     if (carlaXmlRpcClient == null && carlaConfig.carlaSensorLibRPCUrl != null) {
+        //         URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
+        //         carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+        //     }
             
-        }
-        catch (MalformedURLException m) 
-        {
-            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
-                + "connection! Check carla_config.json!", m);
+        // }
+        // catch (MalformedURLException m) 
+        // {
+        //     throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
+        //         + "connection! Check carla_config.json!", m);
+        // }
+        
+        if (carlaXmlRpcClient == null && carlaConfig.carlaSensorLibRPCUrl != null) {
+            try {
+                URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
+                carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+            } catch (MalformedURLException m) {
+                throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
+                    + "connection! Check carla_config.json!", m);
+            }
         }
         
     }
@@ -349,27 +359,29 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-            if ( time == 0 ) {
+            if ( time == 0 && carlaXmlRpcClient != null) {
                 // Try to connect to CARLA CDA Sim Adapter on first timestep
                 carlaXmlRpcClient.connect(60);
             }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
-                List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
-                // Get all detections from all currently registered detectors.
-                for (DetectorRegistration registration: registeredDetectors ) {
-                    DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
-                    for (DetectedObject detected: detections) {
-                        DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
-                        // Convert nanosecond timestamp to millisecond timestamp
-                        interaction.getDetectedObject().setTimestamp((int)(time/1e6));
-                        detectedObjectInteractions.add(interaction);
+                if (carlaXmlRpcClient != null){
+                    List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
+                    // Get all detections from all currently registered detectors.
+                    for (DetectorRegistration registration: registeredDetectors ) {
+                        DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                        for (DetectedObject detected: detections) {
+                            DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                            // Convert nanosecond timestamp to millisecond timestamp
+                            interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                            detectedObjectInteractions.add(interaction);
+                        }
                     }
-                }
-                // trigger all detection interactions
-                for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
-                    this.rti.triggerInteraction(detectionInteraction);
+                    // trigger all detection interactions
+                    for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                        this.rti.triggerInteraction(detectionInteraction);
+                    }
                 }
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
@@ -533,6 +545,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @throws InterruptedException
      */
     private void receiveInteraction(DetectorRegistration interaction) {
+        if (carlaXmlRpcClient == null){
+            log.error("Error occurred attempting to create sensor : XML-RPC Client not initialized yet");
+            return;
+        }
+            
         try {
             carlaXmlRpcClient.createSensor(interaction);
             registeredDetectors.add(interaction);
