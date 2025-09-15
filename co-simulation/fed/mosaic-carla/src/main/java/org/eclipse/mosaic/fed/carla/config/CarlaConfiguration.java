@@ -52,7 +52,10 @@ public class CarlaConfiguration implements Serializable {
      * URL where CARLACDASimAdapter XMLRPC Server is hosted
      */
     public String carlaSensorLibRPCUrl;
-
+    /**
+     * URL where CARLACDASimAdapter XMLRPC Server is hosted
+     */
+    public String carlaActorLibRPCUrl;
 
 
 }
