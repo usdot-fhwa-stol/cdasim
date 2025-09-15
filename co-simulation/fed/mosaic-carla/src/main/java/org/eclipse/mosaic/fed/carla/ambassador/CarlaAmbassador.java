@@ -219,22 +219,38 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         // Start the CARLA simulator
         startCarlaLocal();
-        //initialize CarlaXmlRpcClient
-        //set the connected server URL
-        try{
-            if (carlaXmlRpcClient== null) {
-                URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
-                carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
-            }
-            
-        }
-        catch (MalformedURLException m) 
-        {
-            throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter" 
-                + "connection! Check carla_config.json!", m);
-        }
         
-    }
+        //set the connected server URL
+        if (carlaXmlRpcClient == null) {
+
+            // For CARLA Sensor Lib Connection
+            if (carlaConfig.carlaSensorLibRPCUrl != null){
+                try {
+                    URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
+                    
+                    // ****************************************Note****************************************
+                    // For Zongtan, the line below needs to update once you complete the CarlaXmlRpcClient multiple connection
+                    carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+                } catch (MalformedURLException m) {
+                    throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
+                        + "connection! Check carla_config.json!", m);
+                }
+            }
+
+            // For CARLA Actor Lib Connection
+            if (carlaConfig.carlaActorLibRPCUrl != null){
+                try {
+                    URL xmlRpcServerUrl = new URL(carlaConfig.carlaActorLibRPCUrl);
+
+                    // ****************************************Note****************************************
+                    // For Zongtan, the line below needs to update once you complete the CarlaXmlRpcClient multiple connection                    
+                    carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
+                } catch (MalformedURLException m) {
+                    throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
+                        + "connection! Check carla_config.json!", m);
+                }
+            }
+        }
 
     /**
      * Connects to CARLA simulator using the given host and port.
@@ -357,81 +373,85 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-            if ( time == 0 ) {
+            if ( time == 0 && carlaXmlRpcClient != null) {
                 // Try to connect to CARLA CDA Sim Adapter on first timestep
                 carlaXmlRpcClient.connect(60);
             }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
-                List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
-                // Get all detections from all currently registered detectors.
-                for (DetectorRegistration registration: registeredDetectors ) {
-                    DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
-                    for (DetectedObject detected: detections) {
-                        DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
-                        // Convert nanosecond timestamp to millisecond timestamp
-                        interaction.getDetectedObject().setTimestamp((int)(time/1e6));
-                        detectedObjectInteractions.add(interaction);
+                
+                if (/*For Zongtan, left this condition once your multiple connection is ready, this assume sensor server connected successfully*/){
+                    List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
+                    // Get all detections from all currently registered detectors.
+                    for (DetectorRegistration registration: registeredDetectors ) {
+                        DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                        for (DetectedObject detected: detections) {
+                            DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                            // Convert nanosecond timestamp to millisecond timestamp
+                            interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                            detectedObjectInteractions.add(interaction);
+                        }
+                    }
+                    // trigger all detection interactions
+                    for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                        this.rti.triggerInteraction(detectionInteraction);
                     }
                 }
-                // trigger all detection interactions
-                for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
-                    this.rti.triggerInteraction(detectionInteraction);
-                }
+                if (/*For Zongtan, left this condition once your multiple connection is ready, this assume actor server connected successfully*/){
+                    // Emit CARLA state updates towards SUMO: actors and traffic lights
+                    try {
+                        // Actors
+                        java.util.Map<String, java.util.Map<String, Object>> actors = carlaXmlRpcClient.getAllActors();
+                        for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : actors.entrySet()) {
+                            String actorId = entry.getKey();
+                            java.util.Map<String, Object> info = entry.getValue();
 
-                // Emit CARLA state updates towards SUMO: actors and traffic lights
-                try {
-                    // Actors
-                    java.util.Map<String, java.util.Map<String, Object>> actors = carlaXmlRpcClient.getAllActors();
-                    for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : actors.entrySet()) {
-                        String actorId = entry.getKey();
-                        java.util.Map<String, Object> info = entry.getValue();
+                            java.util.List<Double> loc = null;
+                            java.util.List<Double> rot = null;
+                            java.util.List<Double> vel = null;
 
-                        java.util.List<Double> loc = null;
-                        java.util.List<Double> rot = null;
-                        java.util.List<Double> vel = null;
-
-                        Object t = info.get("transform");
-                        if (t instanceof java.util.Map) {
-                            Object l = ((java.util.Map<?,?>) t).get("location");
-                            Object r = ((java.util.Map<?,?>) t).get("rotation");
-                            if (l instanceof java.util.List) {
-                                // assume [x,y,z]
-                                loc = new java.util.ArrayList<>();
-                                for (Object o : (java.util.List<?>) l) if (o instanceof Number) loc.add(((Number)o).doubleValue());
+                            Object t = info.get("transform");
+                            if (t instanceof java.util.Map) {
+                                Object l = ((java.util.Map<?,?>) t).get("location");
+                                Object r = ((java.util.Map<?,?>) t).get("rotation");
+                                if (l instanceof java.util.List) {
+                                    // assume [x,y,z]
+                                    loc = new java.util.ArrayList<>();
+                                    for (Object o : (java.util.List<?>) l) if (o instanceof Number) loc.add(((Number)o).doubleValue());
+                                }
+                                if (r instanceof java.util.List) {
+                                    // assume [pitch,yaw,roll]
+                                    rot = new java.util.ArrayList<>();
+                                    for (Object o : (java.util.List<?>) r) if (o instanceof Number) rot.add(((Number)o).doubleValue());
+                                }
                             }
-                            if (r instanceof java.util.List) {
-                                // assume [pitch,yaw,roll]
-                                rot = new java.util.ArrayList<>();
-                                for (Object o : (java.util.List<?>) r) if (o instanceof Number) rot.add(((Number)o).doubleValue());
+                            Object v = info.get("velocity");
+                            if (v instanceof java.util.List) {
+                                vel = new java.util.ArrayList<>();
+                                for (Object o : (java.util.List<?>) v) if (o instanceof Number) vel.add(((Number)o).doubleValue());
+                            }
+
+                            this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaActorResponse(time, actorId, loc, rot, vel, null));
+                        }
+
+                        // Traffic lights
+                        java.util.List<java.util.Map<String, Object>> tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
+                        for (java.util.Map<String, Object> tl : tlStates) {
+                            Object id = tl.get("id");
+                            Object state = tl.get("state");
+                            Object timer = tl.get("timer");
+                            String idStr = id != null ? id.toString() : null;
+                            String stateStr = state != null ? state.toString() : null;
+                            Double timerVal = null;
+                            if (timer instanceof Number) timerVal = ((Number) timer).doubleValue();
+                            if (idStr != null && stateStr != null) {
+                                this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaTrafficLightResponse(time, idStr, stateStr, timerVal));
                             }
                         }
-                        Object v = info.get("velocity");
-                        if (v instanceof java.util.List) {
-                            vel = new java.util.ArrayList<>();
-                            for (Object o : (java.util.List<?>) v) if (o instanceof Number) vel.add(((Number)o).doubleValue());
-                        }
-
-                        this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaActorResponse(time, actorId, loc, rot, vel, null));
+                    } catch (Exception e) {
+                        log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
                     }
-
-                    // Traffic lights
-                    java.util.List<java.util.Map<String, Object>> tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
-                    for (java.util.Map<String, Object> tl : tlStates) {
-                        Object id = tl.get("id");
-                        Object state = tl.get("state");
-                        Object timer = tl.get("timer");
-                        String idStr = id != null ? id.toString() : null;
-                        String stateStr = state != null ? state.toString() : null;
-                        Double timerVal = null;
-                        if (timer instanceof Number) timerVal = ((Number) timer).doubleValue();
-                        if (idStr != null && stateStr != null) {
-                            this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaTrafficLightResponse(time, idStr, stateStr, timerVal));
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
                 }
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
@@ -621,60 +641,65 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @throws InterruptedException
      */
     private void receiveInteraction(DetectorRegistration interaction) {
-        try {
-            carlaXmlRpcClient.createSensor(interaction);
-            registeredDetectors.add(interaction);
+        if (/*For Zongtan, left this condition once your multiple connection is ready, this assume sensor server connected successfully*/){
+            try {
+                carlaXmlRpcClient.createSensor(interaction);
+                registeredDetectors.add(interaction);
+            }
+            catch(XmlRpcException e) {
+                log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
+            }
         }
-        catch(XmlRpcException e) {
-            log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
-        }
-
     }
 
     private void receiveInteraction(CarlaActorRequest interaction) {
-        try {
-            boolean ok = true;
-            if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
-                ok = carlaXmlRpcClient.spawnActor(
-                    interaction.getActorType(), interaction.getActorId(),
-                    interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
-            } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
-                if (interaction.getLocation() != null || interaction.getRotation() != null) {
-                    ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+        if (/*For Zongtan, left this condition once your multiple connection is ready, this assume actor server connected successfully*/){
+            try {
+                boolean ok = true;
+                if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
+                    ok = carlaXmlRpcClient.spawnActor(
+                        interaction.getActorType(), interaction.getActorId(),
+                        interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
+                } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
+                    if (interaction.getLocation() != null || interaction.getRotation() != null) {
+                        ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+                    }
+                    if (interaction.getVelocity() != null) {
+                        ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                    }
+                    if (interaction.getProperties() != null) {
+                        ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
+                    }
+                } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
+                    ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
                 }
-                if (interaction.getVelocity() != null) {
-                    ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                if (!ok) {
+                    log.warn("CarlaActorRequest action {} failed for actor {}", interaction.getAction(), interaction.getActorId());
                 }
-                if (interaction.getProperties() != null) {
-                    ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
-                }
-            } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
-                ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
+            } catch (Exception e) {
+                log.error("Error while processing CarlaActorRequest for {}: {}", interaction.getActorId(), e.getMessage());
             }
-            if (!ok) {
-                log.warn("CarlaActorRequest action {} failed for actor {}", interaction.getAction(), interaction.getActorId());
-            }
-        } catch (Exception e) {
-            log.error("Error while processing CarlaActorRequest for {}: {}", interaction.getActorId(), e.getMessage());
         }
     }
 
     private void receiveInteraction(CarlaTrafficLightRequest interaction) {
-        try {
-            if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
-                boolean ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
-                if (!ok) {
-                    log.warn("Failed to set traffic light {} state {}", interaction.getTrafficLightId(), interaction.getState());
-                }
-                if (interaction.getTimerSeconds() != null) {
-                    boolean timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
-                    if (!timerOk) {
-                        log.warn("Failed to set traffic light {} timer {}", interaction.getTrafficLightId(), interaction.getTimerSeconds());
+        if (/*For Zongtan, left this condition once your multiple connection is ready, this assume actor server connected successfully*/){
+            try {
+                if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
+                    boolean ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
+                    if (!ok) {
+                        log.warn("Failed to set traffic light {} state {}", interaction.getTrafficLightId(), interaction.getState());
+                    }
+                    if (interaction.getTimerSeconds() != null) {
+                        boolean timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                        if (!timerOk) {
+                            log.warn("Failed to set traffic light {} timer {}", interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                        }
                     }
                 }
+            } catch (Exception e) {
+                log.error("Error while processing CarlaTrafficLightRequest for {}: {}", interaction.getTrafficLightId(), e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("Error while processing CarlaTrafficLightRequest for {}: {}", interaction.getTrafficLightId(), e.getMessage());
         }
     }
 
