@@ -109,7 +109,7 @@ public class CarlaAmbassadorTest {
     @Test
     public void initialize() throws Throwable {
         CarlaConfiguration config = new CarlaConfiguration();
-        config.carlaCDASimAdapterUrl="https://testing/something";
+        config.carlaSensorLibRPCUrl="https://testing/something";
         FieldSetter.setField(ambassador, ambassador.getClass().getDeclaredField("carlaConfig"), config);
 
         // RUN

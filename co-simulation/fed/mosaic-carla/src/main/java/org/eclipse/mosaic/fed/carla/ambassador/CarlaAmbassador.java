@@ -223,7 +223,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         //set the connected server URL
         try{
             if (carlaXmlRpcClient== null) {
-                URL xmlRpcServerUrl = new URL(carlaConfig.carlaCDASimAdapterUrl);
+                URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
                 carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl);
             }
             
