@@ -227,7 +227,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         startCarlaLocal();
         
         // Initialize XML-RPC connections
-        if (carlaConfig.enableMultiServer) {
+        if (carlaConfig.carlaSensorLibRPCUrl != null || carlaConfig.carlaActorLibRPCUrl != null) {
             // Use multi-server manager for separate sensor and actor connections
             multiXmlRpcManager = new CarlaMultiXmlRpcManager();
             
@@ -244,7 +244,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.info("Added ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
                 }
                 
-                if (multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) == null && 
+                if (multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) == null &&
                     multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB) == null) {
                     throw new InternalFederateException("No XML-RPC servers configured for multi-server mode");
                 }
@@ -402,7 +402,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         try {
             if (time == 0) {
                 // Try to connect to XML-RPC servers on first timestep
-                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                if (multiXmlRpcManager != null) {
                     multiXmlRpcManager.connectAll(60);
                 } else if (carlaXmlRpcClient != null) {
                     carlaXmlRpcClient.connect(60);
@@ -414,7 +414,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 
                 // Handle sensor operations
                 boolean sensorConnected = false;
-                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                if (multiXmlRpcManager != null) {
                     sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
                     sensorConnected = carlaXmlRpcClient.isConnected();
@@ -425,10 +425,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
                         DetectedObject[] detections;
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             detections = multiXmlRpcManager.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
                         } else {
-                            detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                            detections = carlaXmlRpcClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
                         }
                         for (DetectedObject detected: detections) {
                             DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
@@ -444,7 +444,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 // Handle actor operations
                 boolean actorConnected = false;
-                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                if (multiXmlRpcManager != null) {
                     actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
                     actorConnected = carlaXmlRpcClient.isConnected();
@@ -455,7 +455,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     try {
                         // Actors
                         java.util.Map<String, java.util.Map<String, Object>> actors;
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             actors = multiXmlRpcManager.getAllActors();
                         } else {
                             actors = carlaXmlRpcClient.getAllActors();
@@ -495,7 +495,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
                         // Traffic lights
                         java.util.List<java.util.Map<String, Object>> tlStates;
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             tlStates = multiXmlRpcManager.getAllTrafficLightStates();
                         } else {
                             tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
@@ -549,7 +549,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         // Disconnect from XML-RPC servers
-        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+        if (multiXmlRpcManager != null) {
             multiXmlRpcManager.disconnectAll();
         } else if (carlaXmlRpcClient != null) {
             carlaXmlRpcClient.disconnect();
@@ -628,7 +628,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
                 // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
                 boolean advanced = false;
-                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                if (multiXmlRpcManager != null) {
                     advanced = multiXmlRpcManager.advanceSimulation();
                 } else if (carlaXmlRpcClient != null) {
                     advanced = carlaXmlRpcClient.advanceSimulation();
@@ -719,7 +719,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private void receiveInteraction(DetectorRegistration interaction) {
         boolean sensorConnected = false;
-        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+        if (multiXmlRpcManager != null) {
             sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
         } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
             sensorConnected = carlaXmlRpcClient.isConnected();
@@ -727,7 +727,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         
         if (sensorConnected) {
             try {
-                if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                if (multiXmlRpcManager != null) {
                     multiXmlRpcManager.createSensor(interaction);
                 } else {
                     carlaXmlRpcClient.createSensor(interaction);
@@ -744,7 +744,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     private void receiveInteraction(CarlaActorRequest interaction) {
         boolean actorConnected = false;
-        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+        if (multiXmlRpcManager != null) {
             actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
         } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
             actorConnected = carlaXmlRpcClient.isConnected();
@@ -754,7 +754,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             try {
                 boolean ok = true;
                 if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
-                    if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    if (multiXmlRpcManager != null) {
                         ok = multiXmlRpcManager.spawnActor(
                             interaction.getActorType(), interaction.getActorId(),
                             interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
@@ -765,28 +765,28 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     }
                 } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
                     if (interaction.getLocation() != null || interaction.getRotation() != null) {
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             ok &= multiXmlRpcManager.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
                         } else {
                             ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
                         }
                     }
                     if (interaction.getVelocity() != null) {
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             ok &= multiXmlRpcManager.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
                         } else {
                             ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
                         }
                     }
                     if (interaction.getProperties() != null) {
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             ok &= multiXmlRpcManager.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
                         } else {
                             ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
                         }
                     }
                 } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
-                    if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    if (multiXmlRpcManager != null) {
                         ok = multiXmlRpcManager.destroyActor(interaction.getActorId());
                     } else {
                         ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
@@ -805,7 +805,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     private void receiveInteraction(CarlaTrafficLightRequest interaction) {
         boolean actorConnected = false;
-        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+        if (multiXmlRpcManager != null) {
             actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
         } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
             actorConnected = carlaXmlRpcClient.isConnected();
@@ -815,7 +815,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             try {
                 if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
                     boolean ok;
-                    if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                    if (multiXmlRpcManager != null) {
                         ok = multiXmlRpcManager.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
                     } else {
                         ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
@@ -825,7 +825,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     }
                     if (interaction.getTimerSeconds() != null) {
                         boolean timerOk;
-                        if (carlaConfig.enableMultiServer && multiXmlRpcManager != null) {
+                        if (multiXmlRpcManager != null) {
                             timerOk = multiXmlRpcManager.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
                         } else {
                             timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
