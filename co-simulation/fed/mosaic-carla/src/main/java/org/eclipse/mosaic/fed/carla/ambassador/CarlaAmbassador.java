@@ -279,6 +279,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
         }
 
+    }
+
     /**
      * Connects to CARLA simulator using the given host and port.
      *
@@ -855,7 +857,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private void receiveInteraction(CarlaV2xMessageReception interaction) {
         log.info("{} received V2x message: {}.", interaction.getReceiverID(), interaction.getMessage());
 
-        interactionQueue.add(interaction);
+        carlaV2xInteractionQueue.add(interaction);
     }
 
     /**
