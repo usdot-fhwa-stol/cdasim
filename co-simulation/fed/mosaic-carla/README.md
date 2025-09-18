@@ -314,6 +314,6 @@ Licensed under the Apache License, Version 2.0.
 54.40 [ERROR] After correcting the problems, you can resume the build with the command
 54.40 [ERROR]   mvn <args> -rf :mosaic-carla
 ```bash
-docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma <CDASim Docker Image>:<CDASim Docker Image Tag> /bin/bash
+docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:48fe6ea /bin/bash
 ./mosaic.sh -s Town04
 ```
