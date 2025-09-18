@@ -272,7 +272,47 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 Licensed under the Apache License, Version 2.0.
 
-
+54.40 [INFO] ------------------------------------------------------------------------
+54.40 [INFO] BUILD FAILURE
+54.40 [INFO] ------------------------------------------------------------------------
+54.40 [INFO] Total time:  53.634 s
+54.40 [INFO] Finished at: 2025-09-18T14:32:48Z
+54.40 [INFO] ------------------------------------------------------------------------
+54.40 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-carla: Compilation failure: Compilation failure: 
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,34] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,47] <identifier> expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,56] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,34] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,59] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,60] not a statement
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,62] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,79] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,5] illegal start of expression
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,25] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,35] not a statement
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,60] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,53] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,63] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,72] not a statement
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,97] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,33] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,43] not a statement
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,68] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[586,37] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[586,46] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[602,37] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[614,36] ';' expected
+54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[625,5] illegal start of expression
+54.40 [ERROR] -> [Help 1]
+54.40 [ERROR] 
+54.40 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+54.40 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+54.40 [ERROR] 
+54.40 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+54.40 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+54.40 [ERROR] 
+54.40 [ERROR] After correcting the problems, you can resume the build with the command
+54.40 [ERROR]   mvn <args> -rf :mosaic-carla
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma <CDASim Docker Image>:<CDASim Docker Image Tag> /bin/bash
 ./mosaic.sh -s Town04
