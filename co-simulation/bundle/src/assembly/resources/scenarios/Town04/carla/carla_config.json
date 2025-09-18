@@ -3,6 +3,6 @@
     "carlaUE4Path": "/opt/carla/",
     "bridgePath": "/opt/carma-simulation/scenarios/Town04/carla; bridge.sh",
     "carlaConnectionPort": 8913,
-    "carlaActorLibRPCUrl": null,
-    "carlaSensorLibRPCUrl": null
+    "carlaActorLibRPCUrl": "http://127.0.0.1:8090/RPC2",
+    "carlaSensorLibRPCUrl": "null"
 }
