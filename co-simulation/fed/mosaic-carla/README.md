@@ -272,27 +272,8 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 Licensed under the Apache License, Version 2.0.
 
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,34] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,47] <identifier> expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,56] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,34] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,59] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,60] not a statement
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,62] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,79] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,5] illegal start of expression
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,25] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,35] not a statement
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,60] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,53] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,63] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,72] not a statement
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,97] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,33] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,43] not a statement
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,68] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[586,37] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[586,46] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[602,37] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[614,36] ';' expected
-51.22 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[625,5] illegal start of expres
+
+```bash
+docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma <CDASim Docker Image>:<CDASim Docker Image Tag> /bin/bash
+./mosaic.sh -s Town04
+```
