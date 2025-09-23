@@ -66,6 +66,7 @@ import org.eclipse.mosaic.fed.sumo.util.SumoVehicleClassMapping;
 import org.eclipse.mosaic.fed.sumo.util.TrafficSignManager;
 import org.eclipse.mosaic.interactions.application.SumoTraciRequest;
 import org.eclipse.mosaic.interactions.application.SumoTraciResponse;
+import org.eclipse.mosaic.interactions.application.CarlaActorRequest;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioTrafficLightRegistration;
 import org.eclipse.mosaic.interactions.traffic.InductionLoopDetectorSubscription;
 import org.eclipse.mosaic.interactions.traffic.LaneAreaDetectorSubscription;
@@ -1235,7 +1236,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 TraciSimulationStepResult simulationStepResult = traci.getSimulationControl().simulateUntil(time);
 
                 log.trace("Leaving advance time: {}", time);
-                removeExternalVehiclesFromUpdates(simulationStepResult.getVehicleUpdates());
+				removeExternalVehiclesFromUpdates(simulationStepResult.getVehicleUpdates());
+				// Emit CarlaActorRequest back to CARLA for SUMO-originated changes
+				emitCarlaActorRequests(simulationStepResult.getVehicleUpdates(), time);
                 propagateNewRoutes(simulationStepResult.getVehicleUpdates(), time);
 
                 nextTimeStep += sumoConfig.updateInterval * TIME.MILLI_SECOND;
@@ -1247,6 +1250,80 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 receivedSimulationStep = false;
                 firstAttemptToAdvanceToNextStep = true;
             }
+
+	/**
+	 * Emit CarlaActorRequest interactions reflecting SUMO-side vehicle changes.
+	 * Skips vehicles simulated externally (already removed from updates earlier).
+	 */
+	private void emitCarlaActorRequests(VehicleUpdates updates, long time) {
+		// Added vehicles -> CREATE
+		for (VehicleData vd : updates.getAdded()) {
+			try {
+				String actorId = vd.getName();
+				String actorType = traci.getVehicleControl().getVehicleTypeId(actorId);
+				List<Double> location = Arrays.asList(
+					vd.getPosition().toCartesian().getX(),
+					vd.getPosition().toCartesian().getY(),
+					0.0
+				);
+				List<Double> rotation = Arrays.asList(0.0, 0.0, vd.getHeading());
+				List<Double> velocity = Arrays.asList(vd.getSpeed());
+				CarlaActorRequest req = new CarlaActorRequest(time,
+					CarlaActorRequest.Action.CREATE,
+					actorId,
+					actorType,
+					location,
+					rotation,
+					velocity,
+					null);
+				rti.triggerInteraction(req);
+			} catch (Exception e) {
+				log.warn("Failed to emit CARLA CREATE for SUMO vehicle: {}", e.getMessage());
+			}
+		}
+
+		// Updated vehicles -> UPDATE
+		for (VehicleData vd : updates.getUpdated()) {
+			try {
+				String actorId = vd.getName();
+				List<Double> location = Arrays.asList(
+					vd.getPosition().toCartesian().getX(),
+					vd.getPosition().toCartesian().getY(),
+					0.0
+				);
+				List<Double> rotation = Arrays.asList(0.0, 0.0, vd.getHeading());
+				List<Double> velocity = Arrays.asList(vd.getSpeed());
+				CarlaActorRequest req = new CarlaActorRequest(time,
+					CarlaActorRequest.Action.UPDATE,
+					actorId,
+					null,
+					location,
+					rotation,
+					velocity,
+					null);
+				rti.triggerInteraction(req);
+			} catch (Exception e) {
+				log.warn("Failed to emit CARLA UPDATE for SUMO vehicle: {}", e.getMessage());
+			}
+		}
+
+		// Removed vehicles -> DESTROY
+		for (String removedId : updates.getRemovedNames()) {
+			try {
+				CarlaActorRequest req = new CarlaActorRequest(time,
+					CarlaActorRequest.Action.DESTROY,
+					removedId,
+					null,
+					null,
+					null,
+					null,
+					null);
+				rti.triggerInteraction(req);
+			} catch (Exception e) {
+				log.warn("Failed to emit CARLA DESTROY for SUMO vehicle: {}", e.getMessage());
+			}
+		}
+	}
 
             // System.out.println("Sumo request time advance at time: " + nextTimeStep);
             // log.info("Sumo request time advance at time: " + nextTimeStep);
