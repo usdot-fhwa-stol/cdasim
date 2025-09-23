@@ -22,19 +22,62 @@ env_settings:
     DOCKER_ORG: usdotfhwastol
     DOCKER_TAG: carma-system-4.10.0
     PROJECT_NAME: cdasim
+    MAP: Town04
   vehicles:
     - PROJECT_NAME: vehicle1
       CARMA_CONFIG_PATH: /path/to/carma-config
       DOCKER_ORG: usdotfhwastol
       DOCKER_TAG: carma-system-4.10.0
+      ROUTE: north_route
+      START_TIME: 12 #seconds
+      SPAWN_POSITION:
+        x: 10.0
+        y: 20.0
+        z: 0.0
+        yaw: 90.0
+        roll: 0.0
+        pitch: 0.0
     - PROJECT_NAME: vehicle2
       CARMA_CONFIG_PATH: /path/to/carma-config
       DOCKER_ORG: usdotfhwastol
       DOCKER_TAG: carma-system-4.10.0
+      ROUTE: north_route
+      START_TIME: 12 #seconds
+      SPAWN_POSITION:
+        x: 30.0
+        y: 20.0
+        z: 0.0
+        yaw: 90.0
+        roll: 0.0
+        pitch: 0.0
   streets:
     - PROJECT_NAME: street1
       DOCKER_ORG: usdotfhwastol
       DOCKER_TAG: carma-system-4.10.0
+      EVC:
+        enable: true
+        snmp_port: 5001
+      SPAWN_POSITION:
+        x: 10.0
+        y: 200.0
+        z: 0.0
+        yaw: 90.0
+        roll: 0.0
+        pitch: 0.0
     - PROJECT_NAME: street2
       DOCKER_ORG: usdotfhwastol
       DOCKER_TAG: carma-system-4.10.0
+      EVC:
+        enable: false
+        snmp_port: None
+      SENSORS:
+        enable: true
+        sensorId: "sensor2"
+        type: "SemanticLidarSensor"
+      SPAWN_POSITION:
+        x: 100.0
+        y: 20.0
+        z: 0.0
+        yaw: 90.0
+        roll: 0.0
+        pitch: 0.0
