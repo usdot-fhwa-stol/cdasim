@@ -592,7 +592,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
                         heading = interaction.getRotation().get(2);
                     }
                     traci.getVehicleControl().moveToXY(vehicleId,
-                            new org.eclipse.mosaic.lib.geo.CartesianPoint(x, y),
+                            org.eclipse.mosaic.lib.geo.CartesianPoint.xy(x, y),
                             heading != null ? heading : 0.0,
                             org.eclipse.mosaic.fed.sumo.traci.commands.VehicleSetMoveToXY.Mode.KEEP_ROUTE);
                 } catch (Exception e) {
