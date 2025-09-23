@@ -233,13 +233,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             
             try {
                 // Add sensor library server
+                // convert string null to null
+                if ("null".equalsIgnoreCase(carlaConfig.carlaSensorLibRPCUrl)) {
+                    carlaConfig.carlaSensorLibRPCUrl = null;
+                }
+                if ("null".equalsIgnoreCase(carlaConfig.carlaActorLibRPCUrl)) {
+                    carlaConfig.carlaActorLibRPCUrl = null;
+                }
                 if (carlaConfig.carlaSensorLibRPCUrl != null) {
+                    log.info("Start adding Sensor_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
                     multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB, carlaConfig.carlaSensorLibRPCUrl);
                     log.info("Added SENSOR_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
                 }
                 
                 // Add actor library server
                 if (carlaConfig.carlaActorLibRPCUrl != null) {
+                    log.info("Start adding ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
                     multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB, carlaConfig.carlaActorLibRPCUrl);
                     log.info("Added ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
                 }
@@ -250,7 +259,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 
             } catch (MalformedURLException m) {
-                throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!", m);
+                throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!");
             }
         } else {
             // Legacy single connection mode
