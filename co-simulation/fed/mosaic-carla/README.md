@@ -271,48 +271,87 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 ## License
 
 Licensed under the Apache License, Version 2.0.
-
-54.40 [INFO] ------------------------------------------------------------------------
-54.40 [INFO] BUILD FAILURE
-54.40 [INFO] ------------------------------------------------------------------------
-54.40 [INFO] Total time:  53.634 s
-54.40 [INFO] Finished at: 2025-09-18T14:32:48Z
-54.40 [INFO] ------------------------------------------------------------------------
-54.40 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-carla: Compilation failure: Compilation failure: 
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,34] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,47] <identifier> expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[289,56] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,34] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,59] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,60] not a statement
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,62] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[356,79] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,5] illegal start of expression
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,25] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,35] not a statement
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[363,60] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,53] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,63] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,72] not a statement
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[394,97] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,33] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,43] not a statement
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[544,68] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[586,37] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[586,46] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[602,37] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[614,36] ';' expected
-54.40 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[625,5] illegal start of expression
-54.40 [ERROR] -> [Help 1]
-54.40 [ERROR] 
-54.40 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-54.40 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-54.40 [ERROR] 
-54.40 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-54.40 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-54.40 [ERROR] 
-54.40 [ERROR] After correcting the problems, you can resume the build with the command
-54.40 [ERROR]   mvn <args> -rf :mosaic-carla
+55.95 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure: Compilation failure: 
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1258,9] illegal start of expression
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1222,9] 'try' without 'catch', 'finally' or resource declarations
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1330,35] <identifier> expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1330,48] <identifier> expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1330,50] illegal start of type
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1330,58] <identifier> expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1332,28] <identifier> expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1333,11] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1335,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1336,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1341,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1343,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1345,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1346,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1350,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1351,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1355,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1358,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1360,21] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1361,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1367,21] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1369,21] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1381,14] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1392,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1397,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1400,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1407,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1414,19] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1415,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1417,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1419,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1423,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1437,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1440,12] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1442,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1444,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1448,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1450,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1453,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1465,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1466,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1467,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1470,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1471,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1472,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1474,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1477,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1478,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1488,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1489,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1499,19] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1500,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1501,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1502,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1504,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1505,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1507,17] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1508,13] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1511,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1515,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1517,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1520,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1522,9] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1524,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1527,12] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1529,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1532,12] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1534,5] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1537,12] class, interface, or enum expected
+55.95 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1539,5] class, interface, or enum expected
+55.95 [ERROR] -> [Help 1]
+55.95 [ERROR] 
+55.95 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+55.95 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+55.95 [ERROR] 
+55.95 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+55.95 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+55.95 [ERROR] 
+55.95 [ERROR] After correcting the problems, you can resume the build with the command
+55.95 [ERROR]   mvn <args> -rf :mosaic-sumo
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
