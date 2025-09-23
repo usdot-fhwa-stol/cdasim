@@ -25,7 +25,7 @@ def generate_env_file(config, dir_path, env_filename, env_settings):
         f.write(env_content)
     print(f"Generated {env_path}")
 
-def generate_bash_script(config, template_path='sim_launch_template.sh.j2'):
+def generate_bash_script(config, template_path='config/templates/sim_launch_template.sh.j2'):
     """Generate the sim_launch.sh bash script from a template and YAML config."""
     # Read the template file
     with open(template_path, 'r') as file:
@@ -47,7 +47,7 @@ def generate_bash_script(config, template_path='sim_launch_template.sh.j2'):
 
 def main():
     # Read YAML configuration
-    with open('config.yaml', 'r') as file:
+    with open('config/parameters/parameter.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
     # Generate .env file for CDASim
