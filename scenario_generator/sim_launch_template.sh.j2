@@ -1,0 +1,55 @@
+#!/bin/bash
+#  Copyright (C) 2025 LEIDOS.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+#  use this file except in compliance with the License. You may obtain a copy of
+#  the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations under
+#  the License.
+
+# Directory paths
+CDASIM_CONFIG_DIR={{ cdasim_config_dir }}
+STREET_CONFIG_DIR={{ street_config_dir }}
+CARMA_CONFIG_DIR={{ carma_config_dir }}
+
+# Number of vehicles and streets to deploy
+NUM_VEHICLES={{ num_vehicles }}
+NUM_STREETS={{ num_streets }}
+
+# Store current directory
+CURRENT_DIR=$(pwd)
+
+# Create shared sim_net
+docker network create sim_net || true
+
+# Launch CDASim
+cd "$CDASIM_CONFIG_DIR" || { echo "Failed to cd to $CDASIM_CONFIG_DIR"; cd "$CURRENT_DIR"; exit 1; }
+source .env.cdasim
+docker compose -f docker-compose.yml --env-file .env.cdasim -p "${PROJECT_NAME}" up -d
+
+# Launch vehicles (carma_config includes platform)
+for i in $(seq 1 $NUM_VEHICLES); do
+  cd "$CARMA_CONFIG_DIR" || { echo "Failed to cd to $CARMA_CONFIG_DIR"; cd "$CURRENT_DIR"; exit 1; }
+  source .env.vehicle_${i}
+  # Create platform network for this vehicle
+  docker network create ${PROJECT_NAME}_platform_net || true
+  docker compose -f docker-compose.yml --env-file .env.vehicle_${i} -p "${PROJECT_NAME}" up -d
+done
+
+# Launch CARMA Streets
+for i in $(seq 1 $NUM_STREETS); do
+  cd "$STREET_CONFIG_DIR" || { echo "Failed to cd to $STREET_CONFIG_DIR"; cd "$CURRENT_DIR"; exit 1; }
+  source .env.street_${i}
+  # Create street network for this instance
+  docker network create ${PROJECT_NAME}_street_net || true
+  docker compose -f docker-compose.yml --env-file .env.street_${i} -p "${PROJECT_NAME}" up -d
+done
+
+# Return to original directory
+cd "$CURRENT_DIR" || exit 1

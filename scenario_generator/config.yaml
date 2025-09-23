@@ -1,0 +1,40 @@
+#  Copyright (C) 2025 LEIDOS.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+#  use this file except in compliance with the License. You may obtain a copy of
+#  the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations under
+#  the License.
+
+#  NOTE: This is a temporary file, further planning and implementation will be conducted in the following sprint
+
+cdasim_config_dir: <path-to-carma-config>
+street_config_dir: <path-to-street-config>
+carma_config_dir: <path-to-carma-config>
+env_settings:
+  cdasim:
+    DOCKER_ORG: usdotfhwastol
+    DOCKER_TAG: carma-system-4.10.0
+    PROJECT_NAME: cdasim
+  vehicles:
+    - PROJECT_NAME: vehicle1
+      CARMA_CONFIG_PATH: /path/to/carma-config
+      DOCKER_ORG: usdotfhwastol
+      DOCKER_TAG: carma-system-4.10.0
+    - PROJECT_NAME: vehicle2
+      CARMA_CONFIG_PATH: /path/to/carma-config
+      DOCKER_ORG: usdotfhwastol
+      DOCKER_TAG: carma-system-4.10.0
+  streets:
+    - PROJECT_NAME: street1
+      DOCKER_ORG: usdotfhwastol
+      DOCKER_TAG: carma-system-4.10.0
+    - PROJECT_NAME: street2
+      DOCKER_ORG: usdotfhwastol
+      DOCKER_TAG: carma-system-4.10.0
