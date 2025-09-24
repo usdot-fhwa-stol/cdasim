@@ -30,11 +30,11 @@ cleanup() {
     for project in "${PROJECT_NAMES[@]}"; do
         if [ -n "$project" ]; then
             echo "Shutting down project: $project"
-            docker compose -p "$project" down || true
+            docker compose -p "$project" down
         fi
     done
     # Remove sim_net network
-    docker network rm sim_net || true
+    docker network rm sim_net
     # Return to original directory
     cd "$CURRENT_DIR" || exit 1
     exit 1
@@ -44,7 +44,7 @@ cleanup() {
 trap cleanup ERR
 
 # Create shared sim_net
-docker network create sim_net || true
+docker network create sim_net
 
 # Launch CDASim
 cd "$CDASIM_CONFIG_DIR" || { echo "Failed to cd to $CDASIM_CONFIG_DIR"; cleanup; }
@@ -55,7 +55,7 @@ cd "$CDASIM_CONFIG_DIR" || { echo "Failed to cd to $CDASIM_CONFIG_DIR"; cleanup;
 cd "$CARMA_CONFIG_DIR" || { echo "Failed to cd to $CARMA_CONFIG_DIR"; cleanup; }
 (source .env.vehicle_{{ loop.index }} && docker compose -f docker-compose.yml --env-file .env.vehicle_{{ loop.index }} -p "{{ vehicle.PROJECT_NAME }}" up -d && PROJECT_NAMES+=("{{ vehicle.PROJECT_NAME }}"))
 # Create platform network for this vehicle
-docker network create {{ vehicle.PROJECT_NAME }}_platform_net || true
+docker network create {{ vehicle.PROJECT_NAME }}_platform_net
 {% endfor %}
 
 # Launch CARMA Streets
@@ -63,7 +63,7 @@ docker network create {{ vehicle.PROJECT_NAME }}_platform_net || true
 cd "$STREET_CONFIG_DIR" || { echo "Failed to cd to $STREET_CONFIG_DIR"; cleanup; }
 (source .env.street_{{ loop.index }} && docker compose -f docker-compose.yml --env-file .env.street_{{ loop.index }} -p "{{ street.PROJECT_NAME }}" up -d && PROJECT_NAMES+=("{{ street.PROJECT_NAME }}"))
 # Create street network for this instance
-docker network create {{ street.PROJECT_NAME }}_street_net || true
+docker network create {{ street.PROJECT_NAME }}_street_net
 {% endfor %}
 
 # Return to original directory
