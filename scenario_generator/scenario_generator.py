@@ -50,11 +50,12 @@ class ScenarioGenerator:
         
         # Render the template with config values
         bash_script = template.render(
-            num_vehicles=len(self.config['env_settings']['vehicles']),
-            num_streets=len(self.config['env_settings']['streets']),
+            config=self.config,
             cdasim_config_dir=self.config['cdasim_config_dir'],
             street_config_dir=self.config['street_config_dir'],
-            carma_config_dir=self.config['carma_config_dir']
+            carma_config_dir=self.config['carma_config_dir'],
+            vehicles=self.config['env_settings']['vehicles'],
+            streets=self.config['env_settings']['streets']
         )
         
         return bash_script
