@@ -18,38 +18,53 @@ CDASIM_CONFIG_DIR={{ cdasim_config_dir }}
 STREET_CONFIG_DIR={{ street_config_dir }}
 CARMA_CONFIG_DIR={{ carma_config_dir }}
 
-# Number of vehicles and streets to deploy
-NUM_VEHICLES={{ num_vehicles }}
-NUM_STREETS={{ num_streets }}
-
 # Store current directory
 CURRENT_DIR=$(pwd)
+
+# Track initialized projects for cleanup
+PROJECT_NAMES=()
+
+# Cleanup function to shut down initialized Docker Compose projects
+cleanup() {
+    echo "Cleaning up initialized Docker Compose projects..."
+    for project in "${PROJECT_NAMES[@]}"; do
+        if [ -n "$project" ]; then
+            echo "Shutting down project: $project"
+            docker compose -p "$project" down || true
+        fi
+    done
+    # Remove sim_net network
+    docker network rm sim_net || true
+    # Return to original directory
+    cd "$CURRENT_DIR" || exit 1
+    exit 1
+}
+
+# Trap errors to trigger cleanup
+trap cleanup ERR
 
 # Create shared sim_net
 docker network create sim_net || true
 
 # Launch CDASim
-cd "$CDASIM_CONFIG_DIR" || { echo "Failed to cd to $CDASIM_CONFIG_DIR"; cd "$CURRENT_DIR"; exit 1; }
-source .env.cdasim
-docker compose -f docker-compose.yml --env-file .env.cdasim -p "${PROJECT_NAME}" up -d
+cd "$CDASIM_CONFIG_DIR" || { echo "Failed to cd to $CDASIM_CONFIG_DIR"; cleanup; }
+(source .env.cdasim && docker compose -f docker-compose.yml --env-file .env.cdasim -p "{{ config['env_settings']['cdasim']['PROJECT_NAME'] }}" up -d && PROJECT_NAMES+=("{{ config['env_settings']['cdasim']['PROJECT_NAME'] }}"))
 
 # Launch vehicles (carma_config includes platform)
-for i in $(seq 1 $NUM_VEHICLES); do
-  cd "$CARMA_CONFIG_DIR" || { echo "Failed to cd to $CARMA_CONFIG_DIR"; cd "$CURRENT_DIR"; exit 1; }
-  source .env.vehicle_${i}
-  # Create platform network for this vehicle
-  docker network create ${PROJECT_NAME}_platform_net || true
-  docker compose -f docker-compose.yml --env-file .env.vehicle_${i} -p "${PROJECT_NAME}" up -d
-done
+{% for vehicle in vehicles %}
+cd "$CARMA_CONFIG_DIR" || { echo "Failed to cd to $CARMA_CONFIG_DIR"; cleanup; }
+(source .env.vehicle_{{ loop.index }} && docker compose -f docker-compose.yml --env-file .env.vehicle_{{ loop.index }} -p "{{ vehicle.PROJECT_NAME }}" up -d && PROJECT_NAMES+=("{{ vehicle.PROJECT_NAME }}"))
+# Create platform network for this vehicle
+docker network create {{ vehicle.PROJECT_NAME }}_platform_net || true
+{% endfor %}
 
 # Launch CARMA Streets
-for i in $(seq 1 $NUM_STREETS); do
-  cd "$STREET_CONFIG_DIR" || { echo "Failed to cd to $STREET_CONFIG_DIR"; cd "$CURRENT_DIR"; exit 1; }
-  source .env.street_${i}
-  # Create street network for this instance
-  docker network create ${PROJECT_NAME}_street_net || true
-  docker compose -f docker-compose.yml --env-file .env.street_${i} -p "${PROJECT_NAME}" up -d
-done
+{% for street in streets %}
+cd "$STREET_CONFIG_DIR" || { echo "Failed to cd to $STREET_CONFIG_DIR"; cleanup; }
+(source .env.street_{{ loop.index }} && docker compose -f docker-compose.yml --env-file .env.street_{{ loop.index }} -p "{{ street.PROJECT_NAME }}" up -d && PROJECT_NAMES+=("{{ street.PROJECT_NAME }}"))
+# Create street network for this instance
+docker network create {{ street.PROJECT_NAME }}_street_net || true
+{% endfor %}
 
 # Return to original directory
 cd "$CURRENT_DIR" || exit 1
