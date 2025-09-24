@@ -25,6 +25,7 @@ import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
 import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.interactions.application.*;
+import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest;
@@ -49,6 +50,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.net.MalformedURLException;
@@ -125,6 +128,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private final PriorityBlockingQueue<CarlaV2xMessageReception> carlaV2xInteractionQueue = new PriorityBlockingQueue<>();
 
     private List<DetectorRegistration> registeredDetectors = new ArrayList<>();
+
+    /**
+     * Cache of current CARLA actor ids for quick existence checks during synchronization.
+     */
+    private final Set<String> currentActorIds = new HashSet<>();
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -472,13 +480,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             actors = carlaXmlRpcClient.getAllActors();
                         }
                         
+                        // refresh cache of known CARLA actor ids
+                        currentActorIds.clear();
+                        currentActorIds.addAll(actors.keySet());
+
                         for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : actors.entrySet()) {
                             String actorId = entry.getKey();
                             java.util.Map<String, Object> info = entry.getValue();
 
                             java.util.List<Double> loc = null;
                             java.util.List<Double> rot = null;
-                            java.util.List<Double> vel = null;
 
                             Object t = info.get("transform");
                             if (t instanceof java.util.Map) {
@@ -495,13 +506,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                     for (Object o : (java.util.List<?>) r) if (o instanceof Number) rot.add(((Number)o).doubleValue());
                                 }
                             }
-                            Object v = info.get("velocity");
-                            if (v instanceof java.util.List) {
-                                vel = new java.util.ArrayList<>();
-                                for (Object o : (java.util.List<?>) v) if (o instanceof Number) vel.add(((Number)o).doubleValue());
-                            }
-
-                            this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaActorResponse(time, actorId, loc, rot, vel, null));
+                            // Velocity not required for SUMO synchronization, do not include
+                            this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaActorResponse(time, actorId, loc, rot, null, null));
                         }
 
                         // Traffic lights
@@ -721,6 +727,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         else if (interaction.getTypeId().equals(org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest.TYPE_ID)) {
             this.receiveInteraction((org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest) interaction);
         }
+        else if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
+            this.receiveInteraction((VehicleUpdates) interaction);
+        }
     }
 
     /**
@@ -851,6 +860,108 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
         } else {
             log.warn("Actor server not connected, cannot process CarlaTrafficLightRequest for traffic light: {}", interaction.getTrafficLightId());
+        }
+    }
+
+    /**
+     * Synchronize CARLA with SUMO vehicle updates.
+     * - Spawn missing CARLA actors for SUMO vehicles in added/updated lists
+     * - Update transforms for existing ones
+     * - Destroy CARLA actors for SUMO removed vehicles
+     */
+    private void receiveInteraction(VehicleUpdates interaction) {
+        boolean actorConnected = false;
+        if (multiXmlRpcManager != null) {
+            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+            actorConnected = carlaXmlRpcClient.isConnected();
+        }
+
+        if (!actorConnected) {
+            log.debug("Actor server not connected; skip SUMO->CARLA sync");
+            return;
+        }
+
+        try {
+            // Ensure we have up-to-date list of CARLA actors
+            java.util.Map<String, java.util.Map<String, Object>> actors;
+            if (multiXmlRpcManager != null) {
+                actors = multiXmlRpcManager.getAllActors();
+            } else {
+                actors = carlaXmlRpcClient.getAllActors();
+            }
+            currentActorIds.clear();
+            currentActorIds.addAll(actors.keySet());
+
+            // Helper to spawn/update
+            java.util.function.Consumer<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> applyVehicle = vd -> {
+                String id = vd.getName();
+                // Build location [x,y,z] from projected position (x,y), z=0 by default
+                java.util.List<Double> location = new java.util.ArrayList<>(3);
+                double x = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
+                double y = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                location.add(x);
+                location.add(y);
+                location.add(0.0);
+                // Rotation [pitch,yaw,roll] where yaw from heading if available
+                java.util.List<Double> rotation = new java.util.ArrayList<>(3);
+                rotation.add(0.0);
+                rotation.add(vd.getHeading() != null ? vd.getHeading() : 0.0);
+                rotation.add(0.0);
+
+                boolean ok;
+                if (!currentActorIds.contains(id)) {
+                    // Spawn a basic vehicle actor if missing
+                    if (multiXmlRpcManager != null) {
+                        ok = multiXmlRpcManager.spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
+                    } else {
+                        ok = carlaXmlRpcClient.spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
+                    }
+                    if (ok) {
+                        log.info("Spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
+                        currentActorIds.add(id);
+                    } else {
+                        log.debug("Failed to spawn CARLA actor for SUMO vehicle {}", id);
+                    }
+                } else {
+                    // Update transform
+                    if (multiXmlRpcManager != null) {
+                        ok = multiXmlRpcManager.updateActorTransform(id, location, rotation);
+                    } else {
+                        ok = carlaXmlRpcClient.updateActorTransform(id, location, rotation);
+                    }
+                    if (!ok) {
+                        log.debug("Failed to update CARLA actor transform for {}", id);
+                    }
+                }
+            };
+
+            // Apply to added and updated vehicles
+            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData v : interaction.getAdded()) {
+                applyVehicle.accept(v);
+            }
+            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData v : interaction.getUpdated()) {
+                applyVehicle.accept(v);
+            }
+
+            // Handle removals
+            for (String removedId : interaction.getRemovedNames()) {
+                if (currentActorIds.contains(removedId)) {
+                    boolean ok;
+                    if (multiXmlRpcManager != null) {
+                        ok = multiXmlRpcManager.destroyActor(removedId);
+                    } else {
+                        ok = carlaXmlRpcClient.destroyActor(removedId);
+                    }
+                    if (ok) {
+                        currentActorIds.remove(removedId);
+                    } else {
+                        log.debug("Failed to destroy CARLA actor {} for SUMO removal", removedId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("SUMO->CARLA vehicle synchronization failed: {}", e.getMessage());
         }
     }
 
