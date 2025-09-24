@@ -270,21 +270,70 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 ## License
 
-Licensed under the Apache License, Version 2.0.
-55.82 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure
-55.82 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[595,29] org.eclipse.mosaic.lib.geo.CartesianPoint is abstract; cannot be instantiated
-55.82 [ERROR] 
-55.82 [ERROR] -> [Help 1]
-55.82 [ERROR] 
-55.82 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-55.82 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-55.82 [ERROR] 
-55.82 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-55.82 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-55.82 [ERROR] 
-55.82 [ERROR] After correcting the problems, you can resume the build with the command
-55.82 [ERROR]   mvn <args> -rf :mosaic-sumo
+
+
+## Log
+### Carla.log
+```bash
+2025-09-23 20:57:47,565 INFO  CarlaAmbassador:144 - carlaConfig.updateInterval: 100
+2025-09-23 20:57:47,566 INFO  CarlaAmbassador:188 - use carla path from configuration file: /opt/carla/
+2025-09-23 20:57:47,630 TRACE AbstractFederateAmbassador:170 - setRtiAmbassador(RtiAmbassador rti)
+2025-09-23 20:57:48,115 TRACE AbstractFederateAmbassador:272 - initialize(long startTime, long endTime); startTime: 0, endTime: 600000000000
+2025-09-23 20:57:48,115 INFO  CarlaAmbassador:380 - Start Federate local
+2025-09-23 20:57:48,115 INFO  CarlaAmbassador:381 - Directory: ./tmp/carla
+2025-09-23 20:57:48,116 INFO  CarlaAmbassador:311 - Use connection bridge path from configuration file: /opt/carma-simulation/scenarios/Town04/carla; bridge.sh
+2025-09-23 20:57:48,117 INFO  CarlaAmbassador:360 - Client connected
+2025-09-23 20:57:48,118 INFO  CarlaAmbassador:251 - Start adding ACTOR_LIB server: http://127.0.0.1:8090/RPC2
+2025-09-23 20:57:48,120 ERROR ProcessLoggingThread:72 - Process carla : chmod: changing permissions of '/opt/carla/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping': Operation not permitted
+2025-09-23 20:57:48,128 INFO  CarlaXmlRpcClient:146 - CARLA XML-RPC client initialized for ACTOR_LIB server: http://127.0.0.1:8090/RPC2
+2025-09-23 20:57:48,128 INFO  CarlaMultiXmlRpcManager:54 - Added ACTOR_LIB client for URL: http://127.0.0.1:8090/RPC2
+2025-09-23 20:57:48,128 INFO  CarlaAmbassador:253 - Added ACTOR_LIB server: http://127.0.0.1:8090/RPC2
+2025-09-23 20:57:55,564 INFO  CarlaConnection:75 - Carla Connected
+2025-09-23 20:57:55,564 INFO  CarlaConnection:81 - Begin Co-Simulation
+2025-09-23 20:57:55,564 DEBUG CarlaAmbassador:671 - Ignoring legacy TraCI request path in favor of XML-RPC interactions
+2025-09-23 20:57:57,088 INFO  CarlaMultiXmlRpcManager:69 - Connecting to ACTOR_LIB server...
+2025-09-23 20:57:57,088 INFO  CarlaXmlRpcClient:175 - Attempting to connect to CARLA XML-RPC server (attempt 1/60)
+2025-09-23 20:57:57,088 DEBUG CarlaXmlRpcClient:866 - Executing XML-RPC call connect (request #1)
+2025-09-23 20:57:57,239 DEBUG CarlaXmlRpcClient:870 - XML-RPC call connect completed successfully (request #1)
+2025-09-23 20:57:57,239 INFO  CarlaXmlRpcClient:182 - Successfully connected to CARLA XML-RPC server
+2025-09-23 20:57:57,239 INFO  CarlaMultiXmlRpcManager:72 - Successfully connected to ACTOR_LIB server
+2025-09-23 21:07:57,325 INFO  CarlaAmbassador:556 - Closing CARLA connection.
+2025-09-23 21:07:57,325 INFO  CarlaConnection:115 - carla socket closing
+2025-09-23 21:07:57,325 INFO  CarlaConnection:118 - carla connection server socket closing
+2025-09-23 21:07:57,325 DEBUG CarlaXmlRpcClient:866 - Executing XML-RPC call disconnect (request #2)
+2025-09-23 21:07:57,325 ERROR CarlaConnection:95 - error occurs during data streaming: Socket closed
+2025-09-23 21:07:57,327 DEBUG CarlaXmlRpcClient:870 - XML-RPC call disconnect completed successfully (request #2)
+2025-09-23 21:07:57,327 INFO  CarlaXmlRpcClient:218 - Successfully disconnected from CARLA XML-RPC server
+2025-09-23 21:07:57,327 INFO  CarlaMultiXmlRpcManager:92 - Disconnected from ACTOR_LIB server
+2025-09-23 21:08:07,327 INFO  CarlaAmbassador:588 - Finished simulation
 ------
+```
+### MOSAIC.log
+```bash
+2025-09-23 20:57:47,520 INFO  MosaicSimulation:224 - Running Eclipse MOSAIC 22.1-SNAPSHOT on Java JRE v11.0.19 (Ubuntu)
+2025-09-23 20:57:47,627 INFO  LocalFederationManagement:87 - Start federation with id 'Town04'
+2025-09-23 20:57:47,627 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'application'
+2025-09-23 20:57:47,627 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'carla'
+2025-09-23 20:57:47,628 INFO  LocalFederationManagement:186 - Deploying federate 'carla' locally in ./tmp/carla
+2025-09-23 20:57:47,629 INFO  LocalFederationManagement:237 - Starting federate 'carla' locally in ./tmp/carla
+2025-09-23 20:57:47,630 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'carma'
+2025-09-23 20:57:47,630 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'infrastructure'
+2025-09-23 20:57:47,630 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'carma-cloud'
+2025-09-23 20:57:47,630 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'mapping'
+2025-09-23 20:57:47,630 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'ns3'
+2025-09-23 20:57:47,630 INFO  LocalFederationManagement:186 - Deploying federate 'ns3' locally in ./tmp/ns3
+2025-09-23 20:57:47,848 INFO  LocalFederationManagement:237 - Starting federate 'ns3' locally in ./tmp/ns3
+2025-09-23 20:57:47,917 INFO  LocalFederationManagement:92 - Add ambassador/federate with id 'sumo'
+2025-09-23 20:57:47,918 INFO  LocalFederationManagement:186 - Deploying federate 'sumo' locally in ./tmp/sumo
+2025-09-23 20:57:47,920 INFO  LocalFederationManagement:237 - Starting federate 'sumo' locally in ./tmp/sumo
+2025-09-23 20:57:47,922 WARN  SpawningFramework:245 - You didn't define any spawners in your mapping config, which means that there will be no vehicles in your simulation. Keep this in mind when troubleshooting.
+2025-09-23 20:57:48,114 INFO  CarmaV2xMessageReceiver:78 - CarmaV2xMessageReceiver started listening on UDP port: 1517.
+2025-09-23 20:57:48,115 INFO  CarmaV2xMessageReceiver:78 - CarmaV2xMessageReceiver started listening on UDP port: 1516.
+2025-09-23 21:08:07,391 INFO  MosaicStarter:311 - Simulation started: 2025-09-23 20:57:47
+2025-09-23 21:08:07,391 INFO  MosaicStarter:312 - Simulation ended: 2025-09-23 21:08:07
+2025-09-23 21:08:07,391 INFO  MosaicStarter:313 - Finishing simulation (duration: 00h 10m 19.471s)
+```
+
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
