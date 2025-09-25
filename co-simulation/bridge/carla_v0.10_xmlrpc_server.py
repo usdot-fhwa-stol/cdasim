@@ -289,6 +289,7 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> bool:
         try:
+            logger.info("[XMLRPC v0.10] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
             with self.lock:
                 if not self.is_connected():
                     return False

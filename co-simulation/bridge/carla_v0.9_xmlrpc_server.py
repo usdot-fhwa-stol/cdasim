@@ -235,6 +235,8 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> bool:
         try:
+            print("spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
+            logger.info("[XMLRPC v0.9] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
             with self.lock:
                 if not self.is_connected(): return False
                 if actor_id in self.actors: return False
@@ -253,6 +255,7 @@ class CarlaXMLRPCServer:
                 self.actor_blueprints[actor_id] = bp
                 return True
         except Exception as e:
+            print("spawn_actor error: %s", e)
             logger.error("spawn_actor error: %s", e)
             return False
 

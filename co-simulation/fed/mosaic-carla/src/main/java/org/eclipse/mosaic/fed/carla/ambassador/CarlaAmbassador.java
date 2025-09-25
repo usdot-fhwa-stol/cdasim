@@ -883,6 +883,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
+            // Log incoming sync request counts
+            int numAdded = interaction.getAdded() != null ? interaction.getAdded().size() : 0;
+            int numUpdated = interaction.getUpdated() != null ? interaction.getUpdated().size() : 0;
+            int numRemoved = interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0;
+            log.info("Starting SUMO->CARLA vehicle sync: added={}, updated={}, removed={}", numAdded, numUpdated, numRemoved);
+
             // Ensure we have up-to-date list of CARLA actors
             java.util.Map<String, java.util.Map<String, Object>> actors;
             if (multiXmlRpcManager != null) {
