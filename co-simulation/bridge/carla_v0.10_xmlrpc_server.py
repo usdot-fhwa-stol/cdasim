@@ -761,7 +761,7 @@ class CarlaXMLRPCServer:
                     meta.setdefault('image_format', 'BGRA')
                     out['metadata'] = meta
 
-                # LiDAR（v0.10 图像/点云 API 保持一致；此处逻辑不变）
+                # LiDAR (v0.10 image/point cloud API remains consistent; logic unchanged here)
                 elif hasattr(data, 'raw_data') or hasattr(data, 'points'):
                     if hasattr(data, 'raw_data'):
                         out['data_blob'] = Binary(bytes(getattr(data, 'raw_data', b'')))
@@ -814,11 +814,11 @@ class CarlaXMLRPCServer:
                 return []
             maps = []
             try:
-                # v0.10 仍可能提供此方法，但资源很少（多为 Town10）
+                # v0.10 may still provide this method, but resources are limited (mostly Town10)
                 maps = list(self.client.get_available_maps())
             except Exception:
                 maps = []
-            # v0.10 官方仅保证升级了 Town10，如查询为空则给出兜底提示
+            # v0.10 officially only guarantees Town10 upgrade; provide fallback if query is empty
             if not maps:
                 maps = ['Carla/Maps/Town10HD_Opt', 'Carla/Maps/Town10HD']
             return maps
@@ -834,7 +834,7 @@ class CarlaXMLRPCServer:
                     self.world = self.client.load_world(map_name)
                     return True
                 except Exception as e:
-                    # v0.10 缺少大量旧地图；遇到不可用时返回 False 而不是抛异常
+                    # v0.10 lacks many old maps; return False instead of throwing exception when unavailable
                     logger.warning("load_map failed for %s on v0.10: %s", map_name, e)
                     return False
         except Exception as e:

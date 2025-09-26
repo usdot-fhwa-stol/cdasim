@@ -297,7 +297,7 @@ class CarlaXMLRPCServer:
                 if actor is None:
                     return False
 
-                # 兼容多种输入格式
+                # Compatible with multiple input formats
                 if isinstance(velocity, dict):
                     vx = float(velocity.get('x', 0.0))
                     vy = float(velocity.get('y', 0.0))
@@ -310,15 +310,15 @@ class CarlaXMLRPCServer:
 
                 vec = carla.Vector3D(vx, vy, vz)
 
-                # 若有目标速度接口，优先用它（与 set_actor_state_properties 保持一致）
+                # If target velocity interface exists, use it first (consistent with set_actor_state_properties)
                 if hasattr(actor, 'set_target_velocity'):
                     actor.set_target_velocity(vec)
                     return True
 
-                # 否则回退到 set_velocity
+                # Otherwise fallback to set_velocity
                 if hasattr(actor, 'set_velocity'):
                     try:
-                        # 若可开启动力学仿真，尽量确保开启
+                        # If physics simulation can be enabled, try to ensure it is enabled
                         if hasattr(actor, 'set_simulate_physics'):
                             try:
                                 actor.set_simulate_physics(True)
