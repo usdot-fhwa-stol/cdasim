@@ -445,7 +445,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     for (DetectorRegistration registration: registeredDetectors ) {
                         DetectedObject[] detections;
                         if (multiXmlRpcManager != null) {
-                            detections = multiXmlRpcManager.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+                            detections = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB).getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
                         } else {
                             detections = carlaXmlRpcClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
                         }
@@ -475,7 +475,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         // Actors
                         java.util.Map<String, java.util.Map<String, Object>> actors;
                         if (multiXmlRpcManager != null) {
-                            actors = multiXmlRpcManager.getAllActors();
+                            actors = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).getAllActors();
                         } else {
                             actors = carlaXmlRpcClient.getAllActors();
                         }
@@ -513,7 +513,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         // Traffic lights
                         java.util.List<java.util.Map<String, Object>> tlStates;
                         if (multiXmlRpcManager != null) {
-                            tlStates = multiXmlRpcManager.getAllTrafficLightStates();
+                            tlStates = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).getAllTrafficLightStates();
                         } else {
                             tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
                         }
@@ -646,7 +646,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
                 boolean advanced = false;
                 if (multiXmlRpcManager != null) {
-                    advanced = multiXmlRpcManager.advanceSimulation();
+                    advanced = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).advanceSimulation();
                 } else if (carlaXmlRpcClient != null) {
                     advanced = carlaXmlRpcClient.advanceSimulation();
                 }
@@ -748,7 +748,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         if (sensorConnected) {
             try {
                 if (multiXmlRpcManager != null) {
-                    multiXmlRpcManager.createSensor(interaction);
+                    multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB).createSensor(interaction);
                 } else {
                     carlaXmlRpcClient.createSensor(interaction);
                 }
@@ -775,7 +775,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean ok = true;
                 if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.spawnActor(
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(
                             interaction.getActorType(), interaction.getActorId(),
                             interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
                     } else {
@@ -786,28 +786,28 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
                     if (interaction.getLocation() != null || interaction.getRotation() != null) {
                         if (multiXmlRpcManager != null) {
-                            ok &= multiXmlRpcManager.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
+                            ok &= multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
                         } else {
                             ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
                         }
                     }
                     if (interaction.getVelocity() != null) {
                         if (multiXmlRpcManager != null) {
-                            ok &= multiXmlRpcManager.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
+                            ok &= multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
                         } else {
                             ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
                         }
                     }
                     if (interaction.getProperties() != null) {
                         if (multiXmlRpcManager != null) {
-                            ok &= multiXmlRpcManager.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
+                            ok &= multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setActorStateProperties(interaction.getActorId(), interaction.getProperties());
                         } else {
                             ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
                         }
                     }
                 } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.destroyActor(interaction.getActorId());
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).destroyActor(interaction.getActorId());
                     } else {
                         ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
                     }
@@ -836,7 +836,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
                     boolean ok;
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
                     } else {
                         ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
                     }
@@ -846,7 +846,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     if (interaction.getTimerSeconds() != null) {
                         boolean timerOk;
                         if (multiXmlRpcManager != null) {
-                            timerOk = multiXmlRpcManager.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
+                            timerOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
                         } else {
                             timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
                         }
@@ -892,7 +892,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // Ensure we have up-to-date list of CARLA actors
             java.util.Map<String, java.util.Map<String, Object>> actors;
             if (multiXmlRpcManager != null) {
-                actors = multiXmlRpcManager.getAllActors();
+                actors = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).getAllActors();
             } else {
                 actors = carlaXmlRpcClient.getAllActors();
             }
@@ -919,7 +919,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (!currentActorIds.contains(id)) {
                     // Spawn a basic vehicle actor if missing
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
                     } else {
                         ok = carlaXmlRpcClient.spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
                     }
@@ -932,7 +932,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 } else {
                     // Update transform
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.updateActorTransform(id, location, rotation);
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(id, location, rotation);
                     } else {
                         ok = carlaXmlRpcClient.updateActorTransform(id, location, rotation);
                     }
@@ -955,7 +955,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (currentActorIds.contains(removedId)) {
                     boolean ok;
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.destroyActor(removedId);
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).destroyActor(removedId);
                     } else {
                         ok = carlaXmlRpcClient.destroyActor(removedId);
                     }
