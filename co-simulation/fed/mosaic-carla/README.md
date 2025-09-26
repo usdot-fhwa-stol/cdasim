@@ -270,7 +270,23 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 ## License
 
-
+53.97 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-carla: Compilation failure: Compilation failure: 
+53.97 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/carlaconnect/CarlaMultiXmlRpcManager.java:[59,54] cannot find symbol
+53.97 [ERROR]   symbol:   class XmlRpcException
+53.97 [ERROR]   location: class org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMultiXmlRpcManager
+53.97 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/carlaconnect/CarlaMultiXmlRpcManager.java:[69,22] cannot find symbol
+53.97 [ERROR]   symbol:   class XmlRpcException
+53.97 [ERROR]   location: class org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMultiXmlRpcManager
+53.97 [ERROR] -> [Help 1]
+53.97 [ERROR] 
+53.97 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+53.97 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+53.97 [ERROR] 
+53.97 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+53.97 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+53.97 [ERROR] 
+53.97 [ERROR] After correcting the problems, you can resume the build with the command
+53.97 [ERROR]   mvn <args> -rf :mosaic-carla
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
