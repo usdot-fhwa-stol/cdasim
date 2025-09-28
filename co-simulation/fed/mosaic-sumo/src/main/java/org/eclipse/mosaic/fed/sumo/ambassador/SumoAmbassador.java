@@ -655,14 +655,16 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
                 
                 try {
                     // If a timer is provided, set remaining phase duration
-                    if (tlInfo.getTimerSeconds() != null) {
-                        traci.getTrafficLightControl().setPhaseRemainingDuration(groupId, tlInfo.getTimerSeconds());
+                    long nextSwitchTime = tlInfo.getAssumedTimeOfNextSwitch();
+                    if (nextSwitchTime > 0) {
+                        // Convert nanoseconds to seconds
+                        double timerSeconds = nextSwitchTime / 1e9;
+                        traci.getTrafficLightControl().setPhaseRemainingDuration(groupId, timerSeconds);
                     }
 
-                    // Mapping a single "Red/Yellow/Green" to a full SUMO state string is
-                    // not possible without configuration; log for visibility
-                    if (tlInfo.getState() != null) {
-                        log.debug("Received CARLA TL state for group {} -> {} (no direct state mapping applied)", groupId, tlInfo.getState());
+                    // Log current state for visibility
+                    if (tlInfo.getCurrentState() != null && !tlInfo.getCurrentState().isEmpty()) {
+                        log.debug("Received CARLA TL state for group {} -> {} (no direct state mapping applied)", groupId, tlInfo.getCurrentState());
                     }
                 } catch (Exception e) {
                     log.warn("Failed to apply CARLA traffic light update for {}: {}", groupId, e.getMessage());

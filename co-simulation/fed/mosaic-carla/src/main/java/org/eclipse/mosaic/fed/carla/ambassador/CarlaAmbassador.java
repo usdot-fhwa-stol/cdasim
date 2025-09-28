@@ -533,8 +533,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                 String state = tlInfo.get("state") != null ? tlInfo.get("state").toString() : "Unknown";
                                 Double timer = tlInfo.get("timer") instanceof Number ? ((Number) tlInfo.get("timer")).doubleValue() : null;
                                 
+                                // Create a simple TrafficLightGroupInfo with basic information
+                                // Since we don't have full SUMO traffic light program details from CARLA,
+                                // we'll create a minimal representation
+                                java.util.List<org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState> states = new java.util.ArrayList<>();
+                                // Add a basic state representation
+                                states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState("r", 0)); // Red state
+                                
                                 org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
-                                    new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(id, state, timer);
+                                    new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(
+                                        id, 
+                                        "default", // program ID
+                                        0, // phase index
+                                        timer != null ? (long)(timer * 1e9) : 0, // convert seconds to nanoseconds
+                                        states
+                                    );
                                 updatedTrafficLights.put(id, tlGroupInfo);
                             }
                             
