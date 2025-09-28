@@ -1081,8 +1081,8 @@ public class CarlaXmlRpcClient {
             }
             
             if (location != null && location.size() >= 2) {
-                // Create position from location
-                org.eclipse.mosaic.lib.geo.CartesianPoint position = new org.eclipse.mosaic.lib.geo.CartesianPoint(location.get(0), location.get(1));
+                // Create position from location using static factory method
+                org.eclipse.mosaic.lib.geo.CartesianPoint position = org.eclipse.mosaic.lib.geo.CartesianPoint.xy(location.get(0), location.get(1));
                 
                 // Create heading from rotation (yaw)
                 double heading = 0.0;
@@ -1090,15 +1090,12 @@ public class CarlaXmlRpcClient {
                     heading = rotation.get(1); // yaw is typically the second element
                 }
                 
-                // Create VehicleData with basic information
-                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData(
-                    actorId, // name
-                    position, // projected position
-                    heading, // heading
-                    0.0, // speed (not available from basic actor info)
-                    "CARLA", // vehicle type
-                    Collections.emptyMap() // properties
-                );
+                // Create VehicleData using Builder pattern
+                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
+                    .position(null, position) // No GeoPoint, just CartesianPoint
+                    .movement(0.0, 0.0, 0.0) // speed, acceleration, distance
+                    .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, heading, 0.0) // drive direction, heading, slope
+                    .create();
             }
         } catch (Exception e) {
             log.warn("Failed to create VehicleData for actor {}: {}", actorId, e.getMessage());

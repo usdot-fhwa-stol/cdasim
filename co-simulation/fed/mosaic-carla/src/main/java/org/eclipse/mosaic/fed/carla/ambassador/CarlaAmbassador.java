@@ -537,8 +537,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                 // Since we don't have full SUMO traffic light program details from CARLA,
                                 // we'll create a minimal representation
                                 java.util.List<org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState> states = new java.util.ArrayList<>();
-                                // Add a basic state representation
-                                states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState("r", 0)); // Red state
+                                // Add a basic state representation - TrafficLightState constructor takes (red, green, yellow) booleans
+                                states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState(true, false, false)); // Red state
                                 
                                 org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
                                     new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(
