@@ -270,64 +270,29 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 ## License
 
-50.36 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure: Compilation failure: 
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[32,51] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaActorResponse
-50.36 [ERROR]   location: package org.eclipse.mosaic.interactions.application
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[33,51] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaTrafficLightResponse
-50.36 [ERROR]   location: package org.eclipse.mosaic.interactions.application
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[69,51] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaActorRequest
-50.36 [ERROR]   location: package org.eclipse.mosaic.interactions.application
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[574,37] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaActorResponse
-50.36 [ERROR]   location: class org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[622,37] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaTrafficLightResponse
-50.36 [ERROR]   location: class org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[622,18] receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador cannot implement receiveInteraction(org.eclipse.mosaic.rti.api.Interaction) in org.eclipse.mosaic.rti.api.FederateAmbassador
-50.36 [ERROR]   attempting to assign weaker access privileges; was public
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[129,17] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[131,17] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[133,17] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[134,51] cannot find symbol
-50.36 [ERROR]   symbol:   variable CarlaActorResponse
-50.36 [ERROR]   location: class org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[135,38] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaActorResponse
-50.36 [ERROR]   location: class org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[136,51] cannot find symbol
-50.36 [ERROR]   symbol:   variable CarlaTrafficLightResponse
-50.36 [ERROR]   location: class org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[137,38] cannot find symbol
-50.36 [ERROR]   symbol:   class CarlaTrafficLightResponse
-50.36 [ERROR]   location: class org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[139,17] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[141,17] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[143,17] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[168,13] reference to receiveInteraction is ambiguous
-50.36 [ERROR]   both method receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador and method receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador match
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[574,18] receiveInteraction(CarlaActorResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador cannot override receiveInteraction(org.eclipse.mosaic.rti.api.Interaction) in org.eclipse.mosaic.rti.api.AbstractFederateAmbassador
-50.36 [ERROR]   overridden method is final
-50.36 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoGuiAmbassador.java:[31,8] receiveInteraction(CarlaTrafficLightResponse) in org.eclipse.mosaic.fed.sumo.ambassador.SumoAmbassador cannot implement receiveInteraction(org.eclipse.mosaic.rti.api.Interaction) in org.eclipse.mosaic.rti.api.FederateAmbassador
-50.36 [ERROR]   attempting to assign weaker access privileges; was public
-50.36 [ERROR] -> [Help 1]
-50.36 [ERROR] 
-50.36 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-50.36 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-50.36 [ERROR] 
-50.36 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-50.36 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-50.36 [ERROR] 
-50.36 [ERROR] After correcting the problems, you can resume the build with the command
-50.36 [ERROR]   mvn <args> -rf :mosaic-sumo
+51.16 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure: Compilation failure: 
+51.16 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[658,31] cannot find symbol
+51.16 [ERROR]   symbol:   method getTimerSeconds()
+51.16 [ERROR]   location: variable tlInfo of type org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo
+51.16 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[659,97] cannot find symbol
+51.16 [ERROR]   symbol:   method getTimerSeconds()
+51.16 [ERROR]   location: variable tlInfo of type org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo
+51.16 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[664,31] cannot find symbol
+51.16 [ERROR]   symbol:   method getState()
+51.16 [ERROR]   location: variable tlInfo of type org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo
+51.16 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/SumoAmbassador.java:[665,130] cannot find symbol
+51.16 [ERROR]   symbol:   method getState()
+51.16 [ERROR]   location: variable tlInfo of type org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo
+51.16 [ERROR] -> [Help 1]
+51.16 [ERROR] 
+51.16 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+51.16 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+51.16 [ERROR] 
+51.16 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+51.16 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+51.16 [ERROR] 
+51.16 [ERROR] After correcting the problems, you can resume the build with the command
+51.16 [ERROR]   mvn <args> -rf :mosaic-sumo
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
