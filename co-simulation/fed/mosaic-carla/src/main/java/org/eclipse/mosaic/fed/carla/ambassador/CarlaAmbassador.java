@@ -738,17 +738,23 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     public void processInteraction(Interaction interaction) {
         String type = interaction.getTypeId();
         long interactionTime = interaction.getTime();
-        log.trace("Process interaction with type '{}' at time: {}", type, interactionTime);
+        log.info("Processing interaction with type '{}' at time: {}", type, interactionTime);
         
         // Handle interactions using XML-RPC calls
         if (interaction.getTypeId().equals(CarlaV2xMessageReception.TYPE_ID)) {
+            log.info("Processing CarlaV2xMessageReception interaction");
             this.receiveInteraction((CarlaV2xMessageReception) interaction);
         }
         else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
+            log.info("Processing DetectorRegistration interaction");
             this.receiveInteraction((DetectorRegistration) interaction);
         }
         else if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
+            log.info("Processing VehicleUpdates interaction - this should trigger spawn_actor calls");
             this.receiveInteraction((VehicleUpdates) interaction);
+        }
+        else {
+            log.debug("Ignoring interaction of type: {}", type);
         }
     }
 
@@ -790,15 +796,26 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * - Destroy CARLA actors for SUMO removed vehicles
      */
     private void receiveInteraction(VehicleUpdates interaction) {
+        log.info("Received VehicleUpdates interaction at time {}: added={}, updated={}, removed={}", 
+                interaction.getTime(), 
+                interaction.getAdded() != null ? interaction.getAdded().size() : 0,
+                interaction.getUpdated() != null ? interaction.getUpdated().size() : 0,
+                interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0);
+        
         boolean actorConnected = false;
         if (multiXmlRpcManager != null) {
             actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+            log.info("Multi-XML-RPC manager actor connection status: {}", actorConnected);
         } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
             actorConnected = carlaXmlRpcClient.isConnected();
+            log.info("Single XML-RPC client actor connection status: {}", actorConnected);
+        } else {
+            log.warn("No XML-RPC client configured for ACTOR_LIB");
         }
 
         if (!actorConnected) {
-            log.debug("Actor server not connected; skip SUMO->CARLA sync");
+            log.warn("Actor server not connected; skip SUMO->CARLA sync. multiXmlRpcManager={}, carlaXmlRpcClient={}", 
+                    multiXmlRpcManager != null, carlaXmlRpcClient != null);
             return;
         }
 
@@ -838,16 +855,19 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean ok;
                 if (!currentActorIds.contains(id)) {
                     // Spawn a basic vehicle actor if missing
+                    log.info("Attempting to spawn CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
                     if (multiXmlRpcManager != null) {
+                        log.info("Using multi-XML-RPC manager to spawn actor");
                         ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
                     } else {
+                        log.info("Using single XML-RPC client to spawn actor");
                         ok = carlaXmlRpcClient.spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
                     }
                     if (ok) {
-                        log.info("Spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
+                        log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
                         currentActorIds.add(id);
                     } else {
-                        log.debug("Failed to spawn CARLA actor for SUMO vehicle {}", id);
+                        log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned false", id);
                     }
                 } else {
                     // Update transform
@@ -890,11 +910,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.warn("SUMO->CARLA vehicle synchronization failed: {}", e.getMessage());
         }
     }
-
-
-
-
-
     /**
      * Process the CARLA vehicles receiving V2X message interaction
      *

@@ -500,9 +500,17 @@ public class CarlaXmlRpcClient {
     public boolean spawnActor(String actorType, String actorId, List<Double> location, 
                              List<Double> rotation, Map<String, Object> attributes) {
         try {
+            log.info("XML-RPC spawn_actor call: type={}, id={}, location={}, rotation={}, attributes={}", 
+                    actorType, actorId, location, rotation, attributes);
+            
             Object[] params = new Object[]{actorType, actorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
             Object result = executeWithRetry(SPAWN_ACTOR, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
+            
+            boolean success = result instanceof Boolean && (Boolean) result;
+            log.info("XML-RPC spawn_actor result: {} (result type: {}, value: {})", 
+                    success, result != null ? result.getClass().getSimpleName() : "null", result);
+            
+            return success;
         } catch (Exception e) {
             log.error("Failed to spawn actor {} of type {}: {}", actorId, actorType, e.getMessage());
             return false;
