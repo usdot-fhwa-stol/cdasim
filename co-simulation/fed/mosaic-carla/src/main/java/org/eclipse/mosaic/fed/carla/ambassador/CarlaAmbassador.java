@@ -26,12 +26,9 @@ import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
 import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
+import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
-import org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest;
-import org.eclipse.mosaic.interactions.application.CarlaActorRequest;
-import org.eclipse.mosaic.interactions.application.CarlaTrafficLightResponse;
-import org.eclipse.mosaic.interactions.application.CarlaActorResponse;
 import org.eclipse.mosaic.interactions.application.SimulationStep;
 
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -133,6 +130,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Cache of current CARLA actor ids for quick existence checks during synchronization.
      */
     private final Set<String> currentActorIds = new HashSet<>();
+
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -470,66 +468,81 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 
                 if (actorConnected) {
-                    // Emit CARLA state updates towards SUMO: actors and traffic lights
+                    // Publish CARLA state updates to SUMO using VehicleUpdates and TrafficLightUpdates
                     try {
-                        // Actors
-                        java.util.Map<String, java.util.Map<String, Object>> actors;
+                        CarlaXmlRpcClient actorClient = null;
                         if (multiXmlRpcManager != null) {
-                            actors = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).getAllActors();
+                            actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                         } else {
-                            actors = carlaXmlRpcClient.getAllActors();
+                            actorClient = carlaXmlRpcClient;
                         }
                         
-                        // refresh cache of known CARLA actor ids
+                        // Use Client's high-level change detection
+                        java.util.Map<String, Object> actorChanges = actorClient.getActorChanges();
+                        java.util.List<java.util.Map<String, Object>> addedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("added");
+                        java.util.List<java.util.Map<String, Object>> updatedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("updated");
+                        java.util.List<String> removedActors = (java.util.List<String>) actorChanges.get("removed");
+                        
+                        // Convert to VehicleData objects
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicles = new java.util.ArrayList<>();
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicles = new java.util.ArrayList<>();
+                        
+                        // Process added actors
+                        for (java.util.Map<String, Object> actorInfo : addedActors) {
+                            // Extract actor ID from the actor info (assuming it's stored as a key in the original map)
+                            // This is a simplified approach - in practice, you might need to store actor ID differently
+                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
+                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
+                            if (vehicleData != null) {
+                                addedVehicles.add(vehicleData);
+                            }
+                        }
+                        
+                        // Process updated actors
+                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
+                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
+                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
+                            if (vehicleData != null) {
+                                updatedVehicles.add(vehicleData);
+                            }
+                        }
+                        
+                        // Update current actor IDs cache
                         currentActorIds.clear();
-                        currentActorIds.addAll(actors.keySet());
-
-                        for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : actors.entrySet()) {
-                            String actorId = entry.getKey();
-                            java.util.Map<String, Object> info = entry.getValue();
-
-                            java.util.List<Double> loc = null;
-                            java.util.List<Double> rot = null;
-
-                            Object t = info.get("transform");
-                            if (t instanceof java.util.Map) {
-                                Object l = ((java.util.Map<?,?>) t).get("location");
-                                Object r = ((java.util.Map<?,?>) t).get("rotation");
-                                if (l instanceof java.util.List) {
-                                    // assume [x,y,z]
-                                    loc = new java.util.ArrayList<>();
-                                    for (Object o : (java.util.List<?>) l) if (o instanceof Number) loc.add(((Number)o).doubleValue());
-                                }
-                                if (r instanceof java.util.List) {
-                                    // assume [pitch,yaw,roll]
-                                    rot = new java.util.ArrayList<>();
-                                    for (Object o : (java.util.List<?>) r) if (o instanceof Number) rot.add(((Number)o).doubleValue());
-                                }
-                            }
-                            // Velocity not required for SUMO synchronization, do not include
-                            this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaActorResponse(time, actorId, loc, rot, null, null));
+                        java.util.Map<String, java.util.Map<String, Object>> allActors = actorClient.getAllActors();
+                        currentActorIds.addAll(allActors.keySet());
+                        
+                        // Publish VehicleUpdates if there are changes
+                        if (!addedVehicles.isEmpty() || !updatedVehicles.isEmpty() || !removedActors.isEmpty()) {
+                            VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicles, updatedVehicles, removedActors);
+                            this.rti.triggerInteraction(vehicleUpdates);
+                            log.debug("Published VehicleUpdates: added={}, updated={}, removed={}", 
+                                addedVehicles.size(), updatedVehicles.size(), removedActors.size());
                         }
 
-                        // Traffic lights
-                        java.util.List<java.util.Map<String, Object>> tlStates;
-                        if (multiXmlRpcManager != null) {
-                            tlStates = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).getAllTrafficLightStates();
-                        } else {
-                            tlStates = carlaXmlRpcClient.getAllTrafficLightStates();
+                        // Handle traffic lights using Client's change detection
+                        java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
+                        
+                        if (!trafficLightChanges.isEmpty()) {
+                            java.util.Map<String, org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo> updatedTrafficLights = new java.util.HashMap<>();
+                            
+                            for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : trafficLightChanges.entrySet()) {
+                                String id = entry.getKey();
+                                java.util.Map<String, Object> tlInfo = entry.getValue();
+                                
+                                String state = tlInfo.get("state") != null ? tlInfo.get("state").toString() : "Unknown";
+                                Double timer = tlInfo.get("timer") instanceof Number ? ((Number) tlInfo.get("timer")).doubleValue() : null;
+                                
+                                org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
+                                    new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(id, state, timer);
+                                updatedTrafficLights.put(id, tlGroupInfo);
+                            }
+                            
+                            TrafficLightUpdates trafficLightUpdates = new TrafficLightUpdates(time, updatedTrafficLights);
+                            this.rti.triggerInteraction(trafficLightUpdates);
+                            log.debug("Published TrafficLightUpdates: {} traffic lights updated", updatedTrafficLights.size());
                         }
                         
-                        for (java.util.Map<String, Object> tl : tlStates) {
-                            Object id = tl.get("id");
-                            Object state = tl.get("state");
-                            Object timer = tl.get("timer");
-                            String idStr = id != null ? id.toString() : null;
-                            String stateStr = state != null ? state.toString() : null;
-                            Double timerVal = null;
-                            if (timer instanceof Number) timerVal = ((Number) timer).doubleValue();
-                            if (idStr != null && stateStr != null) {
-                                this.rti.triggerInteraction(new org.eclipse.mosaic.interactions.application.CarlaTrafficLightResponse(time, idStr, stateStr, timerVal));
-                            }
-                        }
                     } catch (Exception e) {
                         log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
                     }
@@ -721,12 +734,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
             this.receiveInteraction((DetectorRegistration) interaction);
         }
-        else if (interaction.getTypeId().equals(org.eclipse.mosaic.interactions.application.CarlaActorRequest.TYPE_ID)) {
-            this.receiveInteraction((org.eclipse.mosaic.interactions.application.CarlaActorRequest) interaction);
-        }
-        else if (interaction.getTypeId().equals(org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest.TYPE_ID)) {
-            this.receiveInteraction((org.eclipse.mosaic.interactions.application.CarlaTrafficLightRequest) interaction);
-        }
         else if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
             this.receiveInteraction((VehicleUpdates) interaction);
         }
@@ -762,106 +769,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
-    private void receiveInteraction(CarlaActorRequest interaction) {
-        boolean actorConnected = false;
-        if (multiXmlRpcManager != null) {
-            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
-            actorConnected = carlaXmlRpcClient.isConnected();
-        }
-        
-        if (actorConnected) {
-            try {
-                boolean ok = true;
-                if (interaction.getAction() == CarlaActorRequest.Action.CREATE) {
-                    if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(
-                            interaction.getActorType(), interaction.getActorId(),
-                            interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
-                    } else {
-                        ok = carlaXmlRpcClient.spawnActor(
-                            interaction.getActorType(), interaction.getActorId(),
-                            interaction.getLocation(), interaction.getRotation(), interaction.getProperties());
-                    }
-                } else if (interaction.getAction() == CarlaActorRequest.Action.UPDATE) {
-                    if (interaction.getLocation() != null || interaction.getRotation() != null) {
-                        if (multiXmlRpcManager != null) {
-                            ok &= multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
-                        } else {
-                            ok &= carlaXmlRpcClient.updateActorTransform(interaction.getActorId(), interaction.getLocation(), interaction.getRotation());
-                        }
-                    }
-                    if (interaction.getVelocity() != null) {
-                        if (multiXmlRpcManager != null) {
-                            ok &= multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
-                        } else {
-                            ok &= carlaXmlRpcClient.updateActorVelocity(interaction.getActorId(), interaction.getVelocity());
-                        }
-                    }
-                    if (interaction.getProperties() != null) {
-                        if (multiXmlRpcManager != null) {
-                            ok &= multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setActorStateProperties(interaction.getActorId(), interaction.getProperties());
-                        } else {
-                            ok &= carlaXmlRpcClient.setActorStateProperties(interaction.getActorId(), interaction.getProperties());
-                        }
-                    }
-                } else if (interaction.getAction() == CarlaActorRequest.Action.DESTROY) {
-                    if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).destroyActor(interaction.getActorId());
-                    } else {
-                        ok = carlaXmlRpcClient.destroyActor(interaction.getActorId());
-                    }
-                }
-                if (!ok) {
-                    log.warn("CarlaActorRequest action {} failed for actor {}", interaction.getAction(), interaction.getActorId());
-                }
-            } catch (Exception e) {
-                log.error("Error while processing CarlaActorRequest for {}: {}", interaction.getActorId(), e.getMessage());
-            }
-        } else {
-            log.warn("Actor server not connected, cannot process CarlaActorRequest for actor: {}", interaction.getActorId());
-        }
-    }
-
-    private void receiveInteraction(CarlaTrafficLightRequest interaction) {
-        boolean actorConnected = false;
-        if (multiXmlRpcManager != null) {
-            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
-            actorConnected = carlaXmlRpcClient.isConnected();
-        }
-        
-        if (actorConnected) {
-            try {
-                if (interaction.getAction() == CarlaTrafficLightRequest.Action.UPDATE) {
-                    boolean ok;
-                    if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
-                    } else {
-                        ok = carlaXmlRpcClient.setTrafficLightState(interaction.getTrafficLightId(), interaction.getState());
-                    }
-                    if (!ok) {
-                        log.warn("Failed to set traffic light {} state {}", interaction.getTrafficLightId(), interaction.getState());
-                    }
-                    if (interaction.getTimerSeconds() != null) {
-                        boolean timerOk;
-                        if (multiXmlRpcManager != null) {
-                            timerOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
-                        } else {
-                            timerOk = carlaXmlRpcClient.setTrafficLightTimer(interaction.getTrafficLightId(), interaction.getTimerSeconds());
-                        }
-                        if (!timerOk) {
-                            log.warn("Failed to set traffic light {} timer {}", interaction.getTrafficLightId(), interaction.getTimerSeconds());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error while processing CarlaTrafficLightRequest for {}: {}", interaction.getTrafficLightId(), e.getMessage());
-            }
-        } else {
-            log.warn("Actor server not connected, cannot process CarlaTrafficLightRequest for traffic light: {}", interaction.getTrafficLightId());
-        }
-    }
 
     /**
      * Synchronize CARLA with SUMO vehicle updates.
@@ -1059,4 +966,5 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         return message.split(";");
     }
+
 }

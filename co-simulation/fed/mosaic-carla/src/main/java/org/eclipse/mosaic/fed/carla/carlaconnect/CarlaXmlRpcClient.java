@@ -104,6 +104,10 @@ public class CarlaXmlRpcClient {
     private volatile boolean isConnected = false;
     private final Object connectionLock = new Object();
     
+    // State management for change detection
+    private final Map<String, Map<String, Object>> previousActorStates = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Object>> previousTrafficLightStates = new ConcurrentHashMap<>();
+    
     // Server type for identification
     public enum ServerType {
         SENSOR_LIB, ACTOR_LIB
@@ -930,5 +934,238 @@ public class CarlaXmlRpcClient {
             log.error("Failed to get traffic lights: {}", e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * Get actor changes since last call (added, updated, removed)
+     * This method provides high-level change detection functionality
+     * @return Map containing "added", "updated", "removed" lists
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getActorChanges() {
+        Map<String, Object> changes = new HashMap<>();
+        List<Map<String, Object>> added = new ArrayList<>();
+        List<Map<String, Object>> updated = new ArrayList<>();
+        List<String> removed = new ArrayList<>();
+        
+        try {
+            // Get current actors
+            Map<String, Map<String, Object>> currentActors = getAllActors();
+            
+            // Find added and updated actors
+            for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
+                String actorId = entry.getKey();
+                Map<String, Object> currentState = entry.getValue();
+                
+                if (!previousActorStates.containsKey(actorId)) {
+                    // New actor
+                    added.add(currentState);
+                } else {
+                    // Existing actor - check for changes
+                    Map<String, Object> previousState = previousActorStates.get(actorId);
+                    if (hasActorStateChanged(previousState, currentState)) {
+                        updated.add(currentState);
+                    }
+                }
+            }
+            
+            // Find removed actors
+            for (String previousActorId : previousActorStates.keySet()) {
+                if (!currentActors.containsKey(previousActorId)) {
+                    removed.add(previousActorId);
+                }
+            }
+            
+            // Update cache
+            previousActorStates.clear();
+            previousActorStates.putAll(currentActors);
+            
+            changes.put("added", added);
+            changes.put("updated", updated);
+            changes.put("removed", removed);
+            
+        } catch (Exception e) {
+            log.error("Failed to get actor changes: {}", e.getMessage());
+        }
+        
+        return changes;
+    }
+
+    /**
+     * Get traffic light changes since last call
+     * @return Map of changed traffic light states
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Map<String, Object>> getTrafficLightChanges() {
+        Map<String, Map<String, Object>> changes = new HashMap<>();
+        
+        try {
+            List<Map<String, Object>> currentTlStates = getAllTrafficLightStates();
+            
+            for (Map<String, Object> tl : currentTlStates) {
+                Object id = tl.get("id");
+                Object state = tl.get("state");
+                Object timer = tl.get("timer");
+                String idStr = id != null ? id.toString() : null;
+                String stateStr = state != null ? state.toString() : null;
+                Double timerVal = null;
+                if (timer instanceof Number) timerVal = ((Number) timer).doubleValue();
+                
+                if (idStr != null && stateStr != null) {
+                    // Check if traffic light state changed
+                    boolean hasChanged = true;
+                    if (previousTrafficLightStates.containsKey(idStr)) {
+                        Map<String, Object> prevState = previousTrafficLightStates.get(idStr);
+                        String prevStateStr = prevState.get("state") != null ? prevState.get("state").toString() : null;
+                        Double prevTimer = prevState.get("timer") instanceof Number ? ((Number) prevState.get("timer")).doubleValue() : null;
+                        hasChanged = !stateStr.equals(prevStateStr) || 
+                                   (timerVal != null && prevTimer != null && !timerVal.equals(prevTimer));
+                    }
+                    
+                    if (hasChanged) {
+                        Map<String, Object> tlInfo = new HashMap<>();
+                        tlInfo.put("id", idStr);
+                        tlInfo.put("state", stateStr);
+                        tlInfo.put("timer", timerVal);
+                        changes.put(idStr, tlInfo);
+                    }
+                }
+            }
+            
+            // Update traffic light cache
+            previousTrafficLightStates.clear();
+            for (Map<String, Object> tl : currentTlStates) {
+                String id = tl.get("id") != null ? tl.get("id").toString() : null;
+                if (id != null) {
+                    previousTrafficLightStates.put(id, new HashMap<>(tl));
+                }
+            }
+            
+        } catch (Exception e) {
+            log.error("Failed to get traffic light changes: {}", e.getMessage());
+        }
+        
+        return changes;
+    }
+
+    /**
+     * Convert CARLA actor information to VehicleData
+     * @param actorId Actor ID
+     * @param actorInfo Actor information from CARLA
+     * @return VehicleData object or null if conversion fails
+     */
+    public org.eclipse.mosaic.lib.objects.vehicle.VehicleData createVehicleDataFromActor(String actorId, Map<String, Object> actorInfo) {
+        try {
+            // Extract position and rotation from transform
+            List<Double> location = null;
+            List<Double> rotation = null;
+            
+            Object transform = actorInfo.get("transform");
+            if (transform instanceof Map) {
+                Object loc = ((Map<?,?>) transform).get("location");
+                Object rot = ((Map<?,?>) transform).get("rotation");
+                
+                if (loc instanceof List) {
+                    location = new ArrayList<>();
+                    for (Object o : (List<?>) loc) {
+                        if (o instanceof Number) location.add(((Number)o).doubleValue());
+                    }
+                }
+                
+                if (rot instanceof List) {
+                    rotation = new ArrayList<>();
+                    for (Object o : (List<?>) rot) {
+                        if (o instanceof Number) rotation.add(((Number)o).doubleValue());
+                    }
+                }
+            }
+            
+            if (location != null && location.size() >= 2) {
+                // Create position from location
+                org.eclipse.mosaic.lib.geo.CartesianPoint position = new org.eclipse.mosaic.lib.geo.CartesianPoint(location.get(0), location.get(1));
+                
+                // Create heading from rotation (yaw)
+                double heading = 0.0;
+                if (rotation != null && rotation.size() >= 2) {
+                    heading = rotation.get(1); // yaw is typically the second element
+                }
+                
+                // Create VehicleData with basic information
+                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData(
+                    actorId, // name
+                    position, // projected position
+                    heading, // heading
+                    0.0, // speed (not available from basic actor info)
+                    "CARLA", // vehicle type
+                    Collections.emptyMap() // properties
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Failed to create VehicleData for actor {}: {}", actorId, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Check if actor state has changed between two states
+     * @param previousState Previous actor state
+     * @param currentState Current actor state
+     * @return true if state has changed
+     */
+    private boolean hasActorStateChanged(Map<String, Object> previousState, Map<String, Object> currentState) {
+        if (previousState == null || currentState == null) {
+            return true;
+        }
+        
+        // Compare transform information
+        Object prevTransform = previousState.get("transform");
+        Object currTransform = currentState.get("transform");
+        
+        if (prevTransform instanceof Map && currTransform instanceof Map) {
+            Map<?,?> prevMap = (Map<?,?>) prevTransform;
+            Map<?,?> currMap = (Map<?,?>) currTransform;
+            
+            Object prevLoc = prevMap.get("location");
+            Object currLoc = currMap.get("location");
+            Object prevRot = prevMap.get("rotation");
+            Object currRot = currMap.get("rotation");
+            
+            // Compare locations
+            if (!Objects.equals(prevLoc, currLoc)) {
+                return true;
+            }
+            
+            // Compare rotations
+            if (!Objects.equals(prevRot, currRot)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Clear all cached states (useful for resetting change detection)
+     */
+    public void clearStateCache() {
+        previousActorStates.clear();
+        previousTrafficLightStates.clear();
+        log.debug("Cleared state cache");
+    }
+
+    /**
+     * Get current cached actor states
+     * @return Map of actor ID to actor state
+     */
+    public Map<String, Map<String, Object>> getCachedActorStates() {
+        return new HashMap<>(previousActorStates);
+    }
+
+    /**
+     * Get current cached traffic light states
+     * @return Map of traffic light ID to traffic light state
+     */
+    public Map<String, Map<String, Object>> getCachedTrafficLightStates() {
+        return new HashMap<>(previousTrafficLightStates);
     }
 }
