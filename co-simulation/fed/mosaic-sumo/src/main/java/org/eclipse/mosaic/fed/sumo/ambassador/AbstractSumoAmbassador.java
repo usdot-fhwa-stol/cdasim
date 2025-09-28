@@ -66,7 +66,6 @@ import org.eclipse.mosaic.fed.sumo.util.SumoVehicleClassMapping;
 import org.eclipse.mosaic.fed.sumo.util.TrafficSignManager;
 import org.eclipse.mosaic.interactions.application.SumoTraciRequest;
 import org.eclipse.mosaic.interactions.application.SumoTraciResponse;
-import org.eclipse.mosaic.interactions.application.CarlaActorRequest;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioTrafficLightRegistration;
 import org.eclipse.mosaic.interactions.traffic.InductionLoopDetectorSubscription;
 import org.eclipse.mosaic.interactions.traffic.LaneAreaDetectorSubscription;
