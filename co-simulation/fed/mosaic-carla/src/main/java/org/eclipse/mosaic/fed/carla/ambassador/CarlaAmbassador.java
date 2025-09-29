@@ -200,12 +200,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         if (StringUtils.isNotBlank(carlaHome)) {
             boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-            if (isWindows) {
-                executable += ".exe";
+            // If configured, bypass launcher script to avoid chmod attempts inside it
+            if (Boolean.TRUE.equals(carlaConfig.useDirectBinary)) {
+                if (isWindows) {
+                    return carlaHome + File.separator + "CarlaUE4.exe";
+                } else {
+                    return carlaHome + File.separator + "CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping";
+                }
             } else {
-                executable += ".sh";
+                if (isWindows) {
+                    executable += ".exe";
+                } else {
+                    executable += ".sh";
+                }
+                return carlaHome + File.separator + executable;
             }
-            return carlaHome + File.separator + executable;
         }
         return executable;
     }
@@ -861,12 +870,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (!currentActorIds.contains(id)) {
                     // Spawn a basic vehicle actor if missing
                     log.info("Attempting to spawn CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
+                    String blueprint = carlaConfig != null && StringUtils.isNotBlank(carlaConfig.defaultVehicleBlueprint)
+                            ? carlaConfig.defaultVehicleBlueprint
+                            : "vehicle.tesla.model3";
                     if (multiXmlRpcManager != null) {
                         log.info("Using multi-XML-RPC manager to spawn actor");
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(blueprint, id, location, rotation, new java.util.HashMap<>());
                     } else {
                         log.info("Using single XML-RPC client to spawn actor");
-                        ok = carlaXmlRpcClient.spawnActor("vehicle.sumo", id, location, rotation, new java.util.HashMap<>());
+                        ok = carlaXmlRpcClient.spawnActor(blueprint, id, location, rotation, new java.util.HashMap<>());
                     }
                     if (ok) {
                         log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));

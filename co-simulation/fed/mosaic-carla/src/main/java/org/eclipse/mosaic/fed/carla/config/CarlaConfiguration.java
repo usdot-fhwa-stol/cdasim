@@ -58,4 +58,17 @@ public class CarlaConfiguration implements Serializable {
     public String carlaActorLibRPCUrl;
 
 
+    /**
+     * Default CARLA vehicle blueprint to spawn for SUMO vehicles.
+     * Example: "vehicle.tesla.model3".
+     */
+    public String defaultVehicleBlueprint = "vehicle.tesla.model3";
+
+    /**
+     * When running on Linux, use the direct CARLA binary instead of the shell launcher.
+     * This avoids chmod attempts inside the launcher script on some filesystems.
+     */
+    public Boolean useDirectBinary = Boolean.FALSE;
+
+
 }
