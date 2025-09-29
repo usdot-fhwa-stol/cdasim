@@ -50,7 +50,9 @@
                 "CarlaTraciResponse",
                 "SimulationStepResponse",
                 "CarlaV2xMessageReception",
-                "DetectorRegistration"
+                "DetectorRegistration",
+                "VehicleUpdates",
+                "TrafficLightStateChange"
             ],
             "javaClasspathEntries": []
         },

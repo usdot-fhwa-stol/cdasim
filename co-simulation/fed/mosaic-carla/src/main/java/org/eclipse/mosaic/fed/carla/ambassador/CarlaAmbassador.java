@@ -27,6 +27,7 @@ import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
+import org.eclipse.mosaic.interactions.traffic.TrafficLightStateChange;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.application.SimulationStep;
@@ -753,6 +754,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Processing VehicleUpdates interaction - this should trigger spawn_actor calls");
             this.receiveInteraction((VehicleUpdates) interaction);
         }
+        else if (interaction.getTypeId().equals(TrafficLightStateChange.TYPE_ID)) {
+            log.info("Processing TrafficLightStateChange interaction - this should forward traffic light commands to CARLA");
+            this.receiveInteraction((TrafficLightStateChange) interaction);
+        }
         else {
             log.debug("Ignoring interaction of type: {}", type);
         }
@@ -919,6 +924,89 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         log.info("{} received V2x message: {}.", interaction.getReceiverID(), interaction.getMessage());
 
         carlaV2xInteractionQueue.add(interaction);
+    }
+
+    /**
+     * Process traffic light state change commands and forward them to CARLA.
+     * This enables other federates (like applications or SUMO) to control CARLA traffic lights.
+     *
+     * @param interaction TrafficLightStateChange interaction
+     */
+    private void receiveInteraction(TrafficLightStateChange interaction) {
+        log.info("Received TrafficLightStateChange for traffic light group '{}' with parameter type: {}", 
+                interaction.getTrafficLightGroupId(), interaction.getParameterType());
+        
+        boolean actorConnected = false;
+        if (multiXmlRpcManager != null) {
+            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+            actorConnected = carlaXmlRpcClient.isConnected();
+        }
+        
+        if (!actorConnected) {
+            log.warn("Actor server not connected; cannot forward traffic light state change to CARLA");
+            return;
+        }
+        
+        try {
+            String trafficLightId = interaction.getTrafficLightGroupId();
+            
+            switch (interaction.getParameterType()) {
+                case ChangePhase:
+                    log.info("Changing traffic light '{}' to phase index: {}", trafficLightId, interaction.getPhaseIndex());
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, "phase_" + interaction.getPhaseIndex());
+                    } else {
+                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, "phase_" + interaction.getPhaseIndex());
+                    }
+                    break;
+                    
+                case RemainingDuration:
+                    double durationInSeconds = interaction.getPhaseRemainingDuration() / 1000.0; // ms -> s
+                    log.info("Setting traffic light '{}' remaining duration to: {} seconds", trafficLightId, durationInSeconds);
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(trafficLightId, durationInSeconds);
+                    } else {
+                        carlaXmlRpcClient.setTrafficLightTimer(trafficLightId, durationInSeconds);
+                    }
+                    break;
+                    
+                case ProgramId:
+                    log.info("Changing traffic light '{}' to program: {}", trafficLightId, interaction.getProgramId());
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, interaction.getProgramId());
+                    } else {
+                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, interaction.getProgramId());
+                    }
+                    break;
+                    
+                case ChangeProgramWithPhase:
+                    log.info("Changing traffic light '{}' to program '{}' with phase: {}", 
+                            trafficLightId, interaction.getProgramId(), interaction.getPhaseIndex());
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, interaction.getProgramId() + "_phase_" + interaction.getPhaseIndex());
+                    } else {
+                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, interaction.getProgramId() + "_phase_" + interaction.getPhaseIndex());
+                    }
+                    break;
+                    
+                case ChangeToCustomState:
+                    log.info("Setting traffic light '{}' to custom state", trafficLightId);
+                    // For custom states, we'll use a generic "custom" state
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, "custom");
+                    } else {
+                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, "custom");
+                    }
+                    break;
+                    
+                default:
+                    log.warn("Unknown traffic light state change parameter type: {}", interaction.getParameterType());
+                    break;
+            }
+        } catch (Exception e) {
+            log.error("Failed to forward traffic light state change to CARLA: {}", e.getMessage());
+        }
     }
 
     /**

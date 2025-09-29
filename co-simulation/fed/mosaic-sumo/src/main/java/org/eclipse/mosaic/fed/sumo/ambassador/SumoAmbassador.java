@@ -39,7 +39,6 @@ import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioVehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleRoutesInitialization;
 import org.eclipse.mosaic.interactions.traffic.VehicleTypesInitialization;
-import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.vehicle.VehicleRouteRegistration;
 import org.eclipse.mosaic.lib.enums.VehicleClass;
@@ -130,8 +129,6 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             this.receiveInteraction((VehicleTypesInitialization) interaction);
         } else if (interaction.getTypeId().equals(VehicleRegistration.TYPE_ID)) {
             this.receiveInteraction((VehicleRegistration) interaction);
-        } else if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
-            this.receiveInteraction((VehicleUpdates) interaction);
         } else if (interaction.getTypeId().equals(TrafficLightUpdates.TYPE_ID)) {
             this.receiveInteraction((TrafficLightUpdates) interaction);
         } else if (interaction.getTypeId().equals(CarlaTraciRequest.TYPE_ID)) {
@@ -566,82 +563,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         }
     }
 
-    /**
-     * Apply vehicle updates from CARLA to SUMO.
-     * Handles added, updated, and removed vehicles.
-     */
-    public void receiveInteraction(VehicleUpdates interaction) throws InternalFederateException {
-        try {
-            Set<String> known = traci.getSimulationControl().getKnownVehicles();
-            
-            // Handle added vehicles
-            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData : interaction.getAdded()) {
-                String vehicleId = vehicleData.getName();
-                if (!known.contains(vehicleId)) {
-                    log.debug("Ignoring VehicleUpdates for unknown SUMO vehicle: {}", vehicleId);
-                    continue;
-                }
-                
-                // Apply position and heading from CARLA
-                if (vehicleData.getProjectedPosition() != null) {
-                    try {
-                        double x = vehicleData.getProjectedPosition().getX();
-                        double y = vehicleData.getProjectedPosition().getY();
-                        double heading = vehicleData.getHeading();
-                        
-                        traci.getVehicleControl().moveToXY(vehicleId,
-                                org.eclipse.mosaic.lib.geo.CartesianPoint.xy(x, y),
-                                heading,
-                                org.eclipse.mosaic.fed.sumo.traci.commands.VehicleSetMoveToXY.Mode.KEEP_ROUTE);
-                    } catch (Exception e) {
-                        log.warn("Failed to apply CARLA vehicle position to SUMO for {}: {}", vehicleId, e.getMessage());
-                    }
-                }
-            }
-            
-            // Handle updated vehicles
-            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData : interaction.getUpdated()) {
-                String vehicleId = vehicleData.getName();
-                if (!known.contains(vehicleId)) {
-                    log.debug("Ignoring VehicleUpdates for unknown SUMO vehicle: {}", vehicleId);
-                    continue;
-                }
-                
-                // Apply position and heading from CARLA
-                if (vehicleData.getProjectedPosition() != null) {
-                    try {
-                        double x = vehicleData.getProjectedPosition().getX();
-                        double y = vehicleData.getProjectedPosition().getY();
-                        double heading = vehicleData.getHeading();
-                        
-                        traci.getVehicleControl().moveToXY(vehicleId,
-                                org.eclipse.mosaic.lib.geo.CartesianPoint.xy(x, y),
-                                heading,
-                                org.eclipse.mosaic.fed.sumo.traci.commands.VehicleSetMoveToXY.Mode.KEEP_ROUTE);
-                    } catch (Exception e) {
-                        log.warn("Failed to apply CARLA vehicle position to SUMO for {}: {}", vehicleId, e.getMessage());
-                    }
-                }
-                
-                // Apply speed if available
-                if (vehicleData.getSpeed() > 0) {
-                    try {
-                        traci.getVehicleControl().setSpeed(vehicleId, vehicleData.getSpeed());
-                    } catch (Exception e) {
-                        log.warn("Failed to apply CARLA vehicle speed to SUMO for {}: {}", vehicleId, e.getMessage());
-                    }
-                }
-            }
-            
-            // Handle removed vehicles - SUMO will handle this automatically
-            for (String removedVehicleId : interaction.getRemovedNames()) {
-                log.debug("Vehicle {} removed from CARLA, SUMO will handle removal automatically", removedVehicleId);
-            }
-            
-        } catch (Exception ex) {
-            throw new InternalFederateException(ex);
-        }
-    }
+    
 
     /**
      * Apply traffic light updates from CARLA to SUMO.
