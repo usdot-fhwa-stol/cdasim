@@ -270,26 +270,9 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 ## License
 
-53.69 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-carla: Compilation failure: Compilation failure: 
-53.69 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[541,44] constructor TrafficLightState in class org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState cannot be applied to given types;
-53.69 [ERROR]   required: boolean,boolean,boolean
-53.69 [ERROR]   found: java.lang.String,int
-53.69 [ERROR]   reason: actual and formal argument lists differ in length
-53.69 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/carlaconnect/CarlaXmlRpcClient.java:[1085,70] org.eclipse.mosaic.lib.geo.CartesianPoint is abstract; cannot be instantiated
-53.69 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/carlaconnect/CarlaXmlRpcClient.java:[1094,24] constructor VehicleData in class org.eclipse.mosaic.lib.objects.vehicle.VehicleData cannot be applied to given types;
-53.69 [ERROR]   required: long,java.lang.String,org.eclipse.mosaic.lib.geo.GeoPoint,org.eclipse.mosaic.lib.geo.CartesianPoint,double,java.lang.Double,org.eclipse.mosaic.lib.objects.vehicle.VehicleSignals,org.eclipse.mosaic.lib.objects.vehicle.VehicleEmissions,org.eclipse.mosaic.lib.objects.vehicle.VehicleConsumptions,org.eclipse.mosaic.lib.objects.vehicle.VehicleBatteryState,org.eclipse.mosaic.lib.objects.road.IRoadPosition,boolean,java.lang.String,java.lang.Double,java.lang.Double,java.lang.Double,org.eclipse.mosaic.lib.enums.DriveDirection,org.eclipse.mosaic.lib.objects.vehicle.VehicleSensors,double,double,java.lang.String,java.lang.Object
-53.69 [ERROR]   found: java.lang.String,org.eclipse.mosaic.lib.geo.CartesianPoint,double,double,java.lang.String,java.util.Map<java.lang.Object,java.lang.Object>
-53.69 [ERROR]   reason: actual and formal argument lists differ in length
-53.69 [ERROR] -> [Help 1]
-53.69 [ERROR] 
-53.69 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-53.69 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-53.69 [ERROR] 
-53.69 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-53.69 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-53.69 [ERROR] 
-53.69 [ERROR] After correcting the problems, you can resume the build with the command
-53.69 [ERROR]   mvn <args> -rf :mosaic-carla
+2025-09-29 18:06:52,249 ERROR ProcessLoggingThread:72 - Process carla : chmod: changing permissions of '/opt/carla/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping': Operation not permitted
+
+2025-09-29 19:11:20,821 - ERROR - spawn_actor error: blueprint 'vehicle.sumo' not found
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
