@@ -64,6 +64,12 @@ class CarlaXMLRPCServer:
 
         self.lock = threading.RLock()
 
+        # External-to-CARLA coordinate transform settings (SUMO/MOSAIC frame → CARLA frame)
+        # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
+        # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
+        self.input_frame: str = 'sumo'
+        self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
+
         self.server = SimpleXMLRPCServer(
             (host, port),
             requestHandler=SimpleXMLRPCRequestHandler,
@@ -121,6 +127,10 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.get_available_maps, 'get_available_maps')
         self.server.register_function(self.load_map, 'load_map')
 
+        # Coordinate transform configuration
+        self.server.register_function(self.set_input_frame_mode, 'set_input_frame_mode')
+        self.server.register_function(self.set_net_offset_xy, 'set_net_offset_xy')
+
     # ---------- Utilities ----------
     def _sim_timestamp(self) -> float:
         try:
@@ -132,6 +142,72 @@ class CarlaXMLRPCServer:
             return float(snap.timestamp.elapsed_seconds)
         except Exception:
             return 0.0
+
+    # ----- Coordinate transforms (external → CARLA) -----
+    def _to_carla_location(self, location_seq: List[float]) -> carla.Location:
+        try:
+            x_in = float(location_seq[0])
+            y_in = float(location_seq[1])
+            z_in = float(location_seq[2]) if len(location_seq) > 2 else 0.0
+        except Exception:
+            x_in, y_in, z_in = 0.0, 0.0, 0.0
+
+        if self.input_frame == 'sumo':
+            # Apply SUMO net offset, then convert to CARLA left-handed (invert Y)
+            x_off = x_in - float(self.net_offset_xy[0])
+            y_off = y_in - float(self.net_offset_xy[1])
+            return carla.Location(x_off, -y_off, z_in)
+        # Assume already in CARLA world coordinates
+        return carla.Location(x_in, y_in, z_in)
+
+    def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
+        try:
+            pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
+            yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
+            roll_in = float(rotation_seq[2]) if len(rotation_seq) > 2 else 0.0
+        except Exception:
+            pitch_in, yaw_in, roll_in = 0.0, 0.0, 0.0
+
+        if self.input_frame == 'sumo':
+            # SUMO → CARLA yaw mapping per BridgeHelper: yaw_carla = yaw_sumo - 90
+            return carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
+        return carla.Rotation(pitch_in, yaw_in, roll_in)
+
+    def _to_carla_velocity(self, velocity_seq_or_dict: Any) -> carla.Vector3D:
+        if isinstance(velocity_seq_or_dict, dict):
+            vx = float(velocity_seq_or_dict.get('x', 0.0))
+            vy = float(velocity_seq_or_dict.get('y', 0.0))
+            vz = float(velocity_seq_or_dict.get('z', 0.0))
+        else:
+            try:
+                vx = float(velocity_seq_or_dict[0])
+                vy = float(velocity_seq_or_dict[1])
+                vz = float(velocity_seq_or_dict[2])
+            except Exception:
+                vx, vy, vz = 0.0, 0.0, 0.0
+
+        if self.input_frame == 'sumo':
+            # Flip Y to match CARLA left-handed axes
+            return carla.Vector3D(vx, -vy, vz)
+        return carla.Vector3D(vx, vy, vz)
+
+    # ----- Coordinate transform configuration -----
+    def set_input_frame_mode(self, mode: str) -> bool:
+        try:
+            mode_l = str(mode).strip().lower()
+            if mode_l in ('sumo', 'carla'):
+                self.input_frame = 'sumo' if mode_l == 'sumo' else 'carla'
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_net_offset_xy(self, x: float, y: float) -> bool:
+        try:
+            self.net_offset_xy = (float(x), float(y))
+            return True
+        except Exception:
+            return False
 
     def _resolve_actor(self, actor_key: ActorKey) -> Optional[carla.Actor]:
         if isinstance(actor_key, str):
@@ -245,10 +321,9 @@ class CarlaXMLRPCServer:
                 if attributes:
                     for k, v in attributes.items():
                         if bp.has_attribute(k): bp.set_attribute(k, str(v))
-                transform = carla.Transform(
-                    carla.Location(*[float(v) for v in location]),
-                    carla.Rotation(*[float(v) for v in rotation])
-                )
+                loc = self._to_carla_location(location)
+                rot = self._to_carla_rotation(rotation)
+                transform = carla.Transform(loc, rot)
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
@@ -280,10 +355,9 @@ class CarlaXMLRPCServer:
             with self.lock:
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return False
-                transform = carla.Transform(
-                    carla.Location(*[float(v) for v in location]),
-                    carla.Rotation(*[float(v) for v in rotation])
-                )
+                loc = self._to_carla_location(location)
+                rot = self._to_carla_rotation(rotation)
+                transform = carla.Transform(loc, rot)
                 actor.set_transform(transform)
                 return True
         except Exception as e:
@@ -297,18 +371,11 @@ class CarlaXMLRPCServer:
                 if actor is None:
                     return False
 
-                # Compatible with multiple input formats
-                if isinstance(velocity, dict):
-                    vx = float(velocity.get('x', 0.0))
-                    vy = float(velocity.get('y', 0.0))
-                    vz = float(velocity.get('z', 0.0))
-                else:
-                    if not hasattr(velocity, '__len__') or len(velocity) != 3:
-                        logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
-                        return False
-                    vx, vy, vz = (float(velocity[0]), float(velocity[1]), float(velocity[2]))
-
-                vec = carla.Vector3D(vx, vy, vz)
+                # Compatible with multiple input formats and coordinate frames
+                if not (hasattr(velocity, '__len__') or isinstance(velocity, dict)):
+                    logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
+                    return False
+                vec = self._to_carla_velocity(velocity)
 
                 # If target velocity interface exists, use it first (consistent with set_actor_state_properties)
                 if hasattr(actor, 'set_target_velocity'):
@@ -462,16 +529,18 @@ class CarlaXMLRPCServer:
 
                 t_in = properties_to_set.get('transform')
                 if t_in:
-                    loc = t_in.get('location', {}); rot = t_in.get('rotation', {})
-                    transform = carla.Transform(
-                        carla.Location(float(loc.get('x', 0.0)), float(loc.get('y', 0.0)), float(loc.get('z', 0.0))),
-                        carla.Rotation(float(rot.get('pitch', 0.0)), float(rot.get('yaw', 0.0)), float(rot.get('roll', 0.0)))
-                    )
+                    loc_dict = t_in.get('location', {})
+                    rot_dict = t_in.get('rotation', {})
+                    loc_seq = [loc_dict.get('x', 0.0), loc_dict.get('y', 0.0), loc_dict.get('z', 0.0)]
+                    rot_seq = [rot_dict.get('pitch', 0.0), rot_dict.get('yaw', 0.0), rot_dict.get('roll', 0.0)]
+                    loc = self._to_carla_location(loc_seq)
+                    rot = self._to_carla_rotation(rot_seq)
+                    transform = carla.Transform(loc, rot)
                     actor.set_transform(transform)
 
                 tv = properties_to_set.get('target_velocity')
                 if tv:
-                    vec = carla.Vector3D(float(tv.get('x', 0.0)), float(tv.get('y', 0.0)), float(tv.get('z', 0.0)))
+                    vec = self._to_carla_velocity(tv)
                     if hasattr(actor, 'set_target_velocity'):
                         actor.set_target_velocity(vec)
                     elif hasattr(actor, 'set_velocity'):
