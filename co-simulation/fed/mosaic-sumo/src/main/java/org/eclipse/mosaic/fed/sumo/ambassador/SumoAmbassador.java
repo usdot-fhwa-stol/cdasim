@@ -39,7 +39,6 @@ import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
 import org.eclipse.mosaic.interactions.mapping.advanced.ScenarioVehicleRegistration;
 import org.eclipse.mosaic.interactions.traffic.VehicleRoutesInitialization;
 import org.eclipse.mosaic.interactions.traffic.VehicleTypesInitialization;
-import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.vehicle.VehicleRouteRegistration;
 import org.eclipse.mosaic.lib.enums.VehicleClass;
 import org.eclipse.mosaic.lib.math.MathUtils;
@@ -108,10 +107,7 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         super(ambassadorParameter);
     }
 
-    @Override
-    public void initialize(long startTime, long endTime) throws InternalFederateException {
-        super.initialize(startTime, endTime);
-    }
+    
 
     /**
      * This method processes the interaction.
@@ -129,8 +125,6 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             this.receiveInteraction((VehicleTypesInitialization) interaction);
         } else if (interaction.getTypeId().equals(VehicleRegistration.TYPE_ID)) {
             this.receiveInteraction((VehicleRegistration) interaction);
-        } else if (interaction.getTypeId().equals(TrafficLightUpdates.TYPE_ID)) {
-            this.receiveInteraction((TrafficLightUpdates) interaction);
         } else if (interaction.getTypeId().equals(CarlaTraciRequest.TYPE_ID)) {
             this.receiveInteraction((CarlaTraciRequest) interaction);
         } else if (interaction.getTypeId().equals(SimulationStep.TYPE_ID)) {
@@ -565,35 +559,5 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
 
     
 
-    /**
-     * Apply traffic light updates from CARLA to SUMO.
-     * Handles traffic light state and timer changes.
-     */
-    public void receiveInteraction(TrafficLightUpdates interaction) throws InternalFederateException {
-        try {
-            for (java.util.Map.Entry<String, org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo> entry : interaction.getUpdated().entrySet()) {
-                String groupId = entry.getKey();
-                org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlInfo = entry.getValue();
-                
-                try {
-                    // If a timer is provided, set remaining phase duration
-                    long nextSwitchTime = tlInfo.getAssumedTimeOfNextSwitch();
-                    if (nextSwitchTime > 0) {
-                        // Convert nanoseconds to seconds
-                        double timerSeconds = nextSwitchTime / 1e9;
-                        traci.getTrafficLightControl().setPhaseRemainingDuration(groupId, timerSeconds);
-                    }
-
-                    // Log current state for visibility
-                    if (tlInfo.getCurrentState() != null && !tlInfo.getCurrentState().isEmpty()) {
-                        log.debug("Received CARLA TL state for group {} -> {} (no direct state mapping applied)", groupId, tlInfo.getCurrentState());
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to apply CARLA traffic light update for {}: {}", groupId, e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Failed to process TrafficLightUpdates: {}", e.getMessage());
-        }
-    }
+    
 }
