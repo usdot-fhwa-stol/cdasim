@@ -64,8 +64,10 @@ public class CarlaXmlRpcClient {
     
     // Actor lifecycle
     private static final String SPAWN_ACTOR = "spawn_actor";
+    private static final String SPAWN_ACTOR_FROM_SUMO = "spawn_actor_from_sumo";
     private static final String DESTROY_ACTOR = "destroy_actor";
     private static final String UPDATE_ACTOR_TRANSFORM = "update_actor_transform";
+    private static final String UPDATE_ACTOR_TRANSFORM_FROM_SUMO = "update_actor_transform_from_sumo";
     private static final String UPDATE_ACTOR_VELOCITY = "update_actor_velocity";
     private static final String GET_ALL_ACTORS = "get_all_actors";
     
@@ -85,6 +87,10 @@ public class CarlaXmlRpcClient {
     private static final String GET_MAP_NAME = "get_map_name";
     private static final String GET_AVAILABLE_MAPS = "get_available_maps";
     private static final String LOAD_MAP = "load_map";
+
+    // Transform utilities
+    private static final String SUMO_TO_CARLA_TRANSFORM = "sumo_to_carla_transform";
+    private static final String CARLA_TO_SUMO_TRANSFORM = "carla_to_sumo_transform";
 
     // V2X Communication
     private static final String SEND_V2X_MESSAGE = "send_v2x_message";
@@ -518,6 +524,30 @@ public class CarlaXmlRpcClient {
     }
 
     /**
+     * Spawn actor using SUMO frame inputs with optional front-bumper reference and extent_x.
+     */
+    public boolean spawnActorFromSumo(String actorType, String actorId, List<Double> sumoLocation,
+                                      List<Double> sumoRotation, Double extentX, Map<String, Object> attributes,
+                                      String reference) {
+        try {
+            Object[] params = new Object[]{
+                actorType,
+                actorId,
+                sumoLocation,
+                sumoRotation,
+                extentX,
+                attributes != null ? attributes : new HashMap<>(),
+                reference != null ? reference : "sumo_front_bumper"
+            };
+            Object result = executeWithRetry(SPAWN_ACTOR_FROM_SUMO, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to spawn actor from SUMO {} of type {}: {}", actorId, actorType, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Destroy an actor
      * @param actorKey Actor ID or name
      * @return true if successful
@@ -548,6 +578,58 @@ public class CarlaXmlRpcClient {
         } catch (Exception e) {
             log.error("Failed to update actor transform for {}: {}", actorKey, e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Update actor transform using SUMO frame inputs with optional front-bumper reference and extent_x.
+     */
+    public boolean updateActorTransformFromSumo(Object actorKey, List<Double> sumoLocation, List<Double> sumoRotation,
+                                                Double extentX, String reference) {
+        try {
+            Object[] params = new Object[]{actorKey, sumoLocation, sumoRotation, extentX, reference != null ? reference : "sumo_front_bumper"};
+            Object result = executeWithRetry(UPDATE_ACTOR_TRANSFORM_FROM_SUMO, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to update actor transform from SUMO for {}: {}", actorKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Convert SUMO transform to CARLA transform via server utility.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> sumoToCarlaTransform(List<Double> sumoLocation, List<Double> sumoRotation,
+                                                    Double extentX, String reference) {
+        try {
+            Object[] params = new Object[]{sumoLocation, sumoRotation, extentX, reference != null ? reference : "sumo_front_bumper"};
+            Object result = executeWithRetry(SUMO_TO_CARLA_TRANSFORM, params, DEFAULT_RETRY_ATTEMPTS);
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return new HashMap<>();
+        } catch (Exception e) {
+            log.error("Failed to convert SUMO to CARLA transform: {}", e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    /**
+     * Convert CARLA transform to SUMO transform via server utility.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> carlaToSumoTransform(List<Double> location, List<Double> rotation, Double extentX) {
+        try {
+            Object[] params = new Object[]{location, rotation, extentX};
+            Object result = executeWithRetry(CARLA_TO_SUMO_TRANSFORM, params, DEFAULT_RETRY_ATTEMPTS);
+            if (result instanceof Map) {
+                return (Map<String, Object>) result;
+            }
+            return new HashMap<>();
+        } catch (Exception e) {
+            log.error("Failed to convert CARLA to SUMO transform: {}", e.getMessage());
+            return new HashMap<>();
         }
     }
 

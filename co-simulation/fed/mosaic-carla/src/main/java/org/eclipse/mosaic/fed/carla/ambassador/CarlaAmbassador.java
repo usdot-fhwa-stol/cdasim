@@ -438,6 +438,23 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
+                // Ensure CARLA world advances a tick here (equivalent to client.get_world().tick())
+                try {
+                    boolean advancedTick = false;
+                    if (multiXmlRpcManager != null) {
+                        CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                        if (actorClient != null && multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB)) {
+                            advancedTick = actorClient.advanceSimulation();
+                        }
+                    } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB && carlaXmlRpcClient.isConnected()) {
+                        advancedTick = carlaXmlRpcClient.advanceSimulation();
+                    }
+                    if (!advancedTick) {
+                        log.debug("Skipped CARLA tick in processTimeAdvanceGrant (no ACTOR_LIB connection or tick failed)");
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to advance CARLA simulation tick in processTimeAdvanceGrant: {}", e.getMessage());
+                }
                 
                 // Handle sensor operations
                 boolean sensorConnected = false;
@@ -873,12 +890,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     String blueprint = carlaConfig != null && StringUtils.isNotBlank(carlaConfig.defaultVehicleBlueprint)
                             ? carlaConfig.defaultVehicleBlueprint
                             : "vehicle.tesla.model3";
+                    // Use SUMO-aware spawn with front-bumper reference and extent_x if available (0.0 default)
+                    double extentX = 0.0; // If extent is available from VehicleData, set here
+                    String reference = "sumo_front_bumper";
                     if (multiXmlRpcManager != null) {
-                        log.info("Using multi-XML-RPC manager to spawn actor");
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(blueprint, id, location, rotation, new java.util.HashMap<>());
+                        log.info("Using multi-XML-RPC manager to spawn actor (SUMO-aware)");
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                                .spawnActorFromSumo(blueprint, id, location, rotation, extentX, new java.util.HashMap<>(), reference);
                     } else {
-                        log.info("Using single XML-RPC client to spawn actor");
-                        ok = carlaXmlRpcClient.spawnActor(blueprint, id, location, rotation, new java.util.HashMap<>());
+                        log.info("Using single XML-RPC client to spawn actor (SUMO-aware)");
+                        ok = carlaXmlRpcClient.spawnActorFromSumo(blueprint, id, location, rotation, extentX, new java.util.HashMap<>(), reference);
                     }
                     if (ok) {
                         log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
@@ -888,10 +909,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     }
                 } else {
                     // Update transform
+                    double extentX = 0.0; // If extent is available from VehicleData, set here
+                    String reference = "sumo_front_bumper";
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(id, location, rotation);
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                                .updateActorTransformFromSumo(id, location, rotation, extentX, reference);
                     } else {
-                        ok = carlaXmlRpcClient.updateActorTransform(id, location, rotation);
+                        ok = carlaXmlRpcClient.updateActorTransformFromSumo(id, location, rotation, extentX, reference);
                     }
                     if (!ok) {
                         log.debug("Failed to update CARLA actor transform for {}", id);
