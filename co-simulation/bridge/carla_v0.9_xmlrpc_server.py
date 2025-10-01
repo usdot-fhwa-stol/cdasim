@@ -633,12 +633,12 @@ class CarlaXMLRPCServer:
                 if not self.is_connected(): return False
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
                     if str(tl.id) == str(traffic_light_id):
-                        if state == 'Red':
+                        if state == 'Red' or state == 'phase_0':
                             tl.set_state(carla.TrafficLightState.Red)
-                        elif state == 'Yellow':
-                            tl.set_state(carla.TrafficLightState.Yellow)
-                        elif state == 'Green':
+                        elif state == 'Green' or state == 'phase_1':
                             tl.set_state(carla.TrafficLightState.Green)
+                        elif state == 'Yellow' or state == 'phase_2':
+                            tl.set_state(carla.TrafficLightState.Yellow)
                         else:
                             return False
                         return True
