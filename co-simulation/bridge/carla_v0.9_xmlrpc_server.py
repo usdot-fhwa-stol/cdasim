@@ -351,6 +351,7 @@ class CarlaXMLRPCServer:
                         pass
                 
                 if self.input_frame == 'sumo':
+                    print("extent_x:", extent_x)
                     loc = self._to_carla_location(location, rotation, extent_x)
                     rot = self._to_carla_rotation(rotation)
                 else:
