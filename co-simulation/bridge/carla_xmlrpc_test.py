@@ -44,7 +44,7 @@ def status(ok: bool, msg: str = ""):
 def try_first(server, methods: Iterable[str]) -> Optional[str]:
     for m in methods:
         try:
-            ok = bool(server.spawn_actor(m, "test_car", [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            ok = bool(server.spawn_actor(m, "test_car", [2800.438383516619, -300.2112114216437, 60.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
         except Exception:
             ok = False
         if ok:
@@ -117,10 +117,10 @@ def main():
         # Focus spectator to our spawned actor alias 'test_car'
 
         # ok_t = server.update_actor_transform("test_car", [0.2, 0.1, 0.8], [100.0, 200.0, 0.0])
-        ok_t = server.update_actor_transform("test_car", [801.438383516619, 596.2112114216437, 0.0], [0.0, 270.33667004324695, 0.0])
+        # ok_t = server.update_actor_transform("test_car", [801.438383516619, 596.2112114216437, 0.0], [0.0, 270.33667004324695, 0.0])
 
         ok_v = server.update_actor_velocity("test_car", [10.0, 0.0, 0.0])
-        print("update_actor_transform():", ok_t)
+        # print("update_actor_transform():", ok_t)
         print("update_actor_velocity():", ok_v)
     else:
         print("update_actor_* skipped (no actor)")
@@ -207,7 +207,7 @@ def main():
             status(size > 0, "received at least one sensor frame")
         else:
             print("get_sensor_data(test_cam): None")
-    time.sleep(50)  # Wait a bit before destroying sensor
+    time.sleep(5)  # Wait a bit before destroying sensor
     print("destroy_sensor(test_cam):", server.destroy_sensor("test_cam"))
 
     section("Destroy Actor / Disconnect")
