@@ -189,7 +189,7 @@ class CarlaXMLRPCServer:
 
         out_loc = carla.Location(x_off, -y_off, z_off)
         out_rot = carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
-        return out_loc, out_rot
+        return carla.Transform(out_loc, out_rot)
 
     def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
         try:
@@ -382,9 +382,10 @@ class CarlaXMLRPCServer:
 
                 if self.input_frame == 'sumo':
                     print("Default extent_x used:", extent_x)
-                    loc,rot = self.get_carla_transform(location, rotation, extent_x)
-                    print("Transformed location and rotation:")
-                    print(loc, rot)
+                    transform = self.get_carla_transform(location, rotation, extent_x)
+                    # Extract for logging
+                    loc = transform.location
+                    rot = transform.rotation
                 else:
                     try:
                         lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
