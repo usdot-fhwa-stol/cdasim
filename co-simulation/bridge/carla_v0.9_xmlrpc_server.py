@@ -351,8 +351,22 @@ class CarlaXMLRPCServer:
                     except Exception:
                         pass
                 
-                loc = self._to_carla_location(location, rotation, extent_x)
-                rot = self._to_carla_rotation(rotation)
+                if self.input_frame == 'sumo':
+                    loc = self._to_carla_location(location, rotation, extent_x)
+                    rot = self._to_carla_rotation(rotation)
+                else:
+                    try:
+                        lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+                    except Exception:
+                        lx, ly, lz = 0.0, 0.0, 0.0
+                    try:
+                        rp = float(rotation[0]) if len(rotation) > 0 else 0.0
+                        ry = float(rotation[1]) if len(rotation) > 1 else 0.0
+                        rr = float(rotation[2]) if len(rotation) > 2 else 0.0
+                    except Exception:
+                        rp, ry, rr = 0.0, 0.0, 0.0
+                    loc = carla.Location(lx, ly, lz)
+                    rot = carla.Rotation(rp, ry, rr)
                 transform = carla.Transform(loc, rot)
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
@@ -391,8 +405,22 @@ class CarlaXMLRPCServer:
                 if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
                     extent_x = float(actor.bounding_box.extent.x)
                 
-                loc = self._to_carla_location(location, rotation, extent_x)
-                rot = self._to_carla_rotation(rotation)
+                if self.input_frame == 'sumo':
+                    loc = self._to_carla_location(location, rotation, extent_x)
+                    rot = self._to_carla_rotation(rotation)
+                else:
+                    try:
+                        lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+                    except Exception:
+                        lx, ly, lz = 0.0, 0.0, 0.0
+                    try:
+                        rp = float(rotation[0]) if len(rotation) > 0 else 0.0
+                        ry = float(rotation[1]) if len(rotation) > 1 else 0.0
+                        rr = float(rotation[2]) if len(rotation) > 2 else 0.0
+                    except Exception:
+                        rp, ry, rr = 0.0, 0.0, 0.0
+                    loc = carla.Location(lx, ly, lz)
+                    rot = carla.Rotation(rp, ry, rr)
                 transform = carla.Transform(loc, rot)
                 actor.set_transform(transform)
                 return True
@@ -411,7 +439,20 @@ class CarlaXMLRPCServer:
                 if not (hasattr(velocity, '__len__') or isinstance(velocity, dict)):
                     logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
                     return False
-                vec = self._to_carla_velocity(velocity)
+                if self.input_frame == 'sumo':
+                    vec = self._to_carla_velocity(velocity)
+                else:
+                    if isinstance(velocity, dict):
+                        try:
+                            vx = float(velocity.get('x', 0.0)); vy = float(velocity.get('y', 0.0)); vz = float(velocity.get('z', 0.0))
+                        except Exception:
+                            vx, vy, vz = 0.0, 0.0, 0.0
+                    else:
+                        try:
+                            vx = float(velocity[0]); vy = float(velocity[1]); vz = float(velocity[2])
+                        except Exception:
+                            vx, vy, vz = 0.0, 0.0, 0.0
+                    vec = carla.Vector3D(vx, vy, vz)
 
                 # If target velocity interface exists, use it first (consistent with set_actor_state_properties)
                 if hasattr(actor, 'set_target_velocity'):
@@ -575,14 +616,41 @@ class CarlaXMLRPCServer:
                     if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
                         extent_x = float(actor.bounding_box.extent.x)
                     
-                    loc = self._to_carla_location(loc_seq, rot_seq, extent_x)
-                    rot = self._to_carla_rotation(rot_seq)
+                    if self.input_frame == 'sumo':
+                        loc = self._to_carla_location(loc_seq, rot_seq, extent_x)
+                        rot = self._to_carla_rotation(rot_seq)
+                    else:
+                        try:
+                            lx = float(loc_seq[0]); ly = float(loc_seq[1]); lz = float(loc_seq[2]) if len(loc_seq) > 2 else 0.0
+                        except Exception:
+                            lx, ly, lz = 0.0, 0.0, 0.0
+                        try:
+                            rp = float(rot_seq[0]) if len(rot_seq) > 0 else 0.0
+                            ry = float(rot_seq[1]) if len(rot_seq) > 1 else 0.0
+                            rr = float(rot_seq[2]) if len(rot_seq) > 2 else 0.0
+                        except Exception:
+                            rp, ry, rr = 0.0, 0.0, 0.0
+                        loc = carla.Location(lx, ly, lz)
+                        rot = carla.Rotation(rp, ry, rr)
                     transform = carla.Transform(loc, rot)
                     actor.set_transform(transform)
 
                 tv = properties_to_set.get('target_velocity')
                 if tv:
-                    vec = self._to_carla_velocity(tv)
+                    if self.input_frame == 'sumo':
+                        vec = self._to_carla_velocity(tv)
+                    else:
+                        if isinstance(tv, dict):
+                            try:
+                                vx = float(tv.get('x', 0.0)); vy = float(tv.get('y', 0.0)); vz = float(tv.get('z', 0.0))
+                            except Exception:
+                                vx, vy, vz = 0.0, 0.0, 0.0
+                        else:
+                            try:
+                                vx = float(tv[0]); vy = float(tv[1]); vz = float(tv[2])
+                            except Exception:
+                                vx, vy, vz = 0.0, 0.0, 0.0
+                        vec = carla.Vector3D(vx, vy, vz)
                     if hasattr(actor, 'set_target_velocity'):
                         actor.set_target_velocity(vec)
                     elif hasattr(actor, 'set_velocity'):
