@@ -86,6 +86,10 @@ public class CarlaXmlRpcClient {
     private static final String GET_AVAILABLE_MAPS = "get_available_maps";
     private static final String LOAD_MAP = "load_map";
 
+    // Coordinate transform configuration
+    private static final String SET_INPUT_FRAME_MODE = "set_input_frame_mode";
+    private static final String SET_NET_OFFSET_XY = "set_net_offset_xy";
+
     // V2X Communication
     private static final String SEND_V2X_MESSAGE = "send_v2x_message";
 
@@ -184,6 +188,13 @@ public class CarlaXmlRpcClient {
                         connected = true;
                         isConnected = true;
                         log.info("Successfully connected to CARLA XML-RPC server");
+
+                        // Default input frame for MOSAIC/SUMO-driven positioning is 'sumo'
+                        try {
+                            setInputFrameMode("sumo");
+                        } catch (Exception e) {
+                            log.warn("Unable to set input_frame to 'sumo' on connect: {}", e.getMessage());
+                        }
                     } else {
                         log.warn("Connection attempt {} returned unexpected result: {}", currentAttempt, result);
                     }
@@ -199,6 +210,39 @@ public class CarlaXmlRpcClient {
             if (!connected) {
                 throw new XmlRpcException("Failed to connect to CARLA XML-RPC server after " + retryAttempts + " attempts");
             }
+        }
+    }
+
+    /**
+     * Configure server input frame mode ('sumo' or 'carla').
+     * @param mode input frame mode
+     * @return true if accepted
+     */
+    public boolean setInputFrameMode(String mode) {
+        try {
+            Object[] params = new Object[]{mode};
+            Object result = executeWithRetry(SET_INPUT_FRAME_MODE, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to set input frame mode to {}: {}", mode, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Configure server SUMO net offset (x, y) applied before transform.
+     * @param x offset x
+     * @param y offset y
+     * @return true if accepted
+     */
+    public boolean setNetOffsetXY(double x, double y) {
+        try {
+            Object[] params = new Object[]{x, y};
+            Object result = executeWithRetry(SET_NET_OFFSET_XY, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to set net offset ({}, {}): {}", x, y, e.getMessage());
+            return false;
         }
     }
 
