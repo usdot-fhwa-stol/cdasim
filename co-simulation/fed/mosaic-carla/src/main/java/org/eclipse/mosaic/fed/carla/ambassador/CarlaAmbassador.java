@@ -873,12 +873,51 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     String blueprint = carlaConfig != null && StringUtils.isNotBlank(carlaConfig.defaultVehicleBlueprint)
                             ? carlaConfig.defaultVehicleBlueprint
                             : "vehicle.tesla.model3";
+                    // Attach SUMO vehicle extent to attributes if available (so server can correct front-bumper reference)
+                    java.util.Map<String, Object> attributes = new java.util.HashMap<>();
+                    try {
+                        Object extra = vd.getAdditionalData();
+                        // Prefer structured Size additional data
+                        if (extra instanceof org.eclipse.mosaic.lib.objects.detector.Size) {
+                            org.eclipse.mosaic.lib.objects.detector.Size sz = (org.eclipse.mosaic.lib.objects.detector.Size) extra;
+                            double length = sz.getLength();
+                            double width = sz.getWidth();
+                            double height = sz.getHeight();
+                            java.util.Map<String, Object> extent = new java.util.HashMap<>();
+                            extent.put("x", length / 2.0);
+                            extent.put("y", width / 2.0);
+                            extent.put("z", height / 2.0);
+                            attributes.put("extent", extent);
+                            attributes.put("length", length);
+                        } else if (extra instanceof java.util.Map) {
+                            @SuppressWarnings("rawtypes")
+                            java.util.Map m = (java.util.Map) extra;
+                            Object l = m.get("length");
+                            Object w = m.get("width");
+                            Object h = m.get("height");
+                            if (l instanceof Number || w instanceof Number || h instanceof Number) {
+                                double length = l instanceof Number ? ((Number) l).doubleValue() : 0.0;
+                                double width = w instanceof Number ? ((Number) w).doubleValue() : 0.0;
+                                double height = h instanceof Number ? ((Number) h).doubleValue() : 0.0;
+                                java.util.Map<String, Object> extent = new java.util.HashMap<>();
+                                extent.put("x", length / 2.0);
+                                extent.put("y", width / 2.0);
+                                extent.put("z", height / 2.0);
+                                attributes.put("extent", extent);
+                                if (length > 0.0) {
+                                    attributes.put("length", length);
+                                }
+                            }
+                        }
+                    } catch (Exception ignore) {
+                        // Best-effort; attributes remain empty if no size info
+                    }
                     if (multiXmlRpcManager != null) {
                         log.info("Using multi-XML-RPC manager to spawn actor");
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(blueprint, id, location, rotation, new java.util.HashMap<>());
+                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(blueprint, id, location, rotation, attributes);
                     } else {
                         log.info("Using single XML-RPC client to spawn actor");
-                        ok = carlaXmlRpcClient.spawnActor(blueprint, id, location, rotation, new java.util.HashMap<>());
+                        ok = carlaXmlRpcClient.spawnActor(blueprint, id, location, rotation, attributes);
                     }
                     if (ok) {
                         log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));

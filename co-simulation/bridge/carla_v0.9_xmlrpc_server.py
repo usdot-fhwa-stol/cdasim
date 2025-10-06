@@ -70,6 +70,8 @@ class CarlaXMLRPCServer:
         # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
         self.input_frame: str = 'sumo'
         self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
+        # Default front-bumper-to-center offset (half vehicle length) used if not provided
+        self.default_extent_x: float = 2.25  # meters (approx. 4.5 m vehicle length)
 
         self.server = SimpleXMLRPCServer(
             (host, port),
@@ -148,7 +150,12 @@ class CarlaXMLRPCServer:
             return 0.0
 
     # ----- Coordinate transforms (external → CARLA) -----
-    def _to_carla_location(self, location_seq: List[float], rotation_seq: List[float] = None, extent_x: float = 0.0) -> carla.Location:
+    def get_carla_transform(self, location_seq: List[float], rotation_seq: List[float], extent_x: float) -> carla.Transform:
+        """
+        Build a CARLA Transform from SUMO-style location/rotation with front-bumper reference.
+        extent_x is the front-bumper-to-center offset (half vehicle length).
+        Applies configured SUMO net offset and converts to CARLA (left-handed, yaw-90).
+        """
         try:
             x_in = float(location_seq[0])
             y_in = float(location_seq[1])
@@ -156,30 +163,35 @@ class CarlaXMLRPCServer:
         except Exception:
             x_in, y_in, z_in = 0.0, 0.0, 0.0
 
-        if self.input_frame == 'sumo':
-            # Apply vehicle center offset if rotation and extent are provided
-            if rotation_seq is not None and extent_x > 0.0:
-                try:
-                    yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
-                    pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
-                    
-                    # From front-center-bumper to center (SUMO reference system)
-                    # Reference: http://sumo.sourceforge.net/userdoc/Purgatory/Vehicle_Values.html#angle
-                    yaw = -1 * yaw_in + 90
-                    x_center = x_in - math.cos(math.radians(yaw)) * extent_x
-                    y_center = y_in - math.sin(math.radians(yaw)) * extent_x
-                    z_center = z_in - math.sin(math.radians(pitch_in)) * extent_x
-                except Exception:
-                    x_center, y_center, z_center = x_in, y_in, z_in
-            else:
+        try:
+            pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
+            yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
+            roll_in = float(rotation_seq[2]) if len(rotation_seq) > 2 else 0.0
+        except Exception:
+            pitch_in, yaw_in, roll_in = 0.0, 0.0, 0.0
+
+        ex = float(extent_x) if extent_x is not None else 0.0
+        if ex > 0.0:
+            try:
+                yaw_tmp = -1 * yaw_in + 90.0
+                x_center = x_in - math.cos(math.radians(yaw_tmp)) * ex
+                y_center = y_in - math.sin(math.radians(yaw_tmp)) * ex
+                z_center = z_in - math.sin(math.radians(pitch_in)) * ex
+            except Exception:
                 x_center, y_center, z_center = x_in, y_in, z_in
-            
-            # Apply SUMO net offset
+        else:
+            x_center, y_center, z_center = x_in, y_in, z_in
+
+        try:
             x_off = x_center - float(self.net_offset_xy[0])
             y_off = y_center - float(self.net_offset_xy[1])
             z_off = z_center
-            return carla.Location(x_off, -y_off, z_off)
-        return carla.Location(x_in, y_in, z_in)
+        except Exception:
+            x_off, y_off, z_off = x_center, y_center, z_center
+
+        out_loc = carla.Location(x_off, -y_off, z_off)
+        out_rot = carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
+        return carla.Transform(out_loc, out_rot)
 
     def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
         try:
@@ -342,16 +354,22 @@ class CarlaXMLRPCServer:
                     for k, v in attributes.items():
                         if bp.has_attribute(k): bp.set_attribute(k, str(v))
                 
-                # Get vehicle front-bumper-to-center offset (extent_x) for proper center calculation
-                # Priority: attributes from client (extent_x or length), then blueprint hint, else 0.0
+                # Determine extent_x to correct SUMO front-bumper reference
+                # Priority: attributes from client (extent/extent_x/length), then blueprint hint, else default
                 extent_x = 0.0
                 if attributes:
                     try:
-                        if 'extent_x' in attributes:
+                        if 'extent' in attributes:
+                            ext = attributes['extent']
+                            if isinstance(ext, dict) and 'x' in ext:
+                                extent_x = float(ext.get('x', 0.0))
+                            elif hasattr(ext, '__len__') and len(ext) > 0:
+                                extent_x = float(ext[0])
+                        if extent_x == 0.0 and 'extent_x' in attributes:
                             extent_x = float(attributes['extent_x'])
-                        elif 'length' in attributes:
+                        if extent_x == 0.0 and 'length' in attributes:
                             extent_x = float(attributes['length']) / 2.0
-                        elif 'vehicle.length' in attributes:
+                        if extent_x == 0.0 and 'vehicle.length' in attributes:
                             extent_x = float(attributes['vehicle.length']) / 2.0
                     except Exception:
                         extent_x = 0.0
@@ -359,11 +377,12 @@ class CarlaXMLRPCServer:
                     try:
                         extent_x = float(bp.get_attribute('extent_x').as_str())
                     except Exception:
-                        pass
-                
+                        extent_x = 0.0
+                if extent_x == 0.0:
+                    extent_x = float(self.default_extent_x)
+
                 if self.input_frame == 'sumo':
-                    loc = self._to_carla_location(location, rotation, extent_x)
-                    rot = self._to_carla_rotation(rotation)
+                    transform = self.get_carla_transform(location, rotation, extent_x)
                 else:
                     try:
                         lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
@@ -386,7 +405,8 @@ class CarlaXMLRPCServer:
                     f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
                     f"attributes={attributes}========"
                 )
-                transform = carla.Transform(loc, rot)
+                if self.input_frame != 'sumo':
+                    transform = carla.Transform(loc, rot)
                 # Prefer a safe spawn: try_spawn_actor returns None if blocked/invalid
                 actor = self.world.try_spawn_actor(bp, transform)
                 if actor is None:
@@ -427,11 +447,15 @@ class CarlaXMLRPCServer:
                 # Get vehicle extent for proper center calculation
                 extent_x = 0.0
                 if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
-                    extent_x = float(actor.bounding_box.extent.x)
-                
+                    try:
+                        extent_x = float(actor.bounding_box.extent.x)
+                    except Exception:
+                        extent_x = 0.0
+                if extent_x == 0.0:
+                    extent_x = float(self.default_extent_x)
+
                 if self.input_frame == 'sumo':
-                    loc = self._to_carla_location(location, rotation, extent_x)
-                    rot = self._to_carla_rotation(rotation)
+                    transform = self.get_carla_transform(location, rotation, extent_x)
                 else:
                     try:
                         lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
@@ -445,7 +469,8 @@ class CarlaXMLRPCServer:
                         rp, ry, rr = 0.0, 0.0, 0.0
                     loc = carla.Location(lx, ly, lz)
                     rot = carla.Rotation(rp, ry, rr)
-                transform = carla.Transform(loc, rot)
+                if self.input_frame != 'sumo':
+                    transform = carla.Transform(loc, rot)
                 actor.set_transform(transform)
                 return True
         except Exception as e:
@@ -638,11 +663,15 @@ class CarlaXMLRPCServer:
                     # Get vehicle extent for proper center calculation
                     extent_x = 0.0
                     if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
-                        extent_x = float(actor.bounding_box.extent.x)
-                    
+                        try:
+                            extent_x = float(actor.bounding_box.extent.x)
+                        except Exception:
+                            extent_x = 0.0
+                    if extent_x == 0.0:
+                        extent_x = float(self.default_extent_x)
+
                     if self.input_frame == 'sumo':
-                        loc = self._to_carla_location(loc_seq, rot_seq, extent_x)
-                        rot = self._to_carla_rotation(rot_seq)
+                        transform = self.get_carla_transform(loc_seq, rot_seq, extent_x)
                     else:
                         try:
                             lx = float(loc_seq[0]); ly = float(loc_seq[1]); lz = float(loc_seq[2]) if len(loc_seq) > 2 else 0.0
@@ -656,7 +685,8 @@ class CarlaXMLRPCServer:
                             rp, ry, rr = 0.0, 0.0, 0.0
                         loc = carla.Location(lx, ly, lz)
                         rot = carla.Rotation(rp, ry, rr)
-                    transform = carla.Transform(loc, rot)
+                    if self.input_frame != 'sumo':
+                        transform = carla.Transform(loc, rot)
                     actor.set_transform(transform)
 
                 tv = properties_to_set.get('target_velocity')
