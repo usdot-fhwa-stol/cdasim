@@ -175,10 +175,7 @@ class CarlaXMLRPCServer:
             x_off = x_center - float(self.net_offset_xy[0])
             y_off = y_center - float(self.net_offset_xy[1])
             z_off = z_center
-            
-            # Transform to CARLA left-handed system (invert Y)
             return carla.Location(x_off, -y_off, z_off)
-        # Assume already in CARLA world coordinates
         return carla.Location(x_in, y_in, z_in)
 
     def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
@@ -332,7 +329,6 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> bool:
         try:
-            print("spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
             logger.info("[XMLRPC v0.9] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
             with self.lock:
                 if not self.is_connected(): return False
@@ -367,11 +363,16 @@ class CarlaXMLRPCServer:
                         rp, ry, rr = 0.0, 0.0, 0.0
                     loc = carla.Location(lx, ly, lz)
                     rot = carla.Rotation(rp, ry, rr)
+                # print carla.location and carla.rotation after transformation
+                # carla_loc = loc.to_dict()
+                # carla_rot = rot.to_dict()
+                print(f"========spawn_actor received: actor {actor_id} of type {actor_type} at {loc} with rotation {rot} and attributes {attributes}========")
                 transform = carla.Transform(loc, rot)
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
+                print(f"========spawn_actor success========")
                 return True
         except Exception as e:
             print("spawn_actor error: %s", e)
