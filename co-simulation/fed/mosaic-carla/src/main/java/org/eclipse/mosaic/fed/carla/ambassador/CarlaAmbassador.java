@@ -431,8 +431,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // Try to connect to XML-RPC servers on first timestep
                 if (multiXmlRpcManager != null) {
                     multiXmlRpcManager.connectAll(60);
+                    // After connecting, configure server input frame and SUMO net offset if provided
+                    try {
+                        org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                        if (actorClient != null && actorClient.isConnected()) {
+                            actorClient.setInputFrameMode("sumo");
+                            double[] netOffset = readSumoNetOffsetFromEnv();
+                            actorClient.setNetOffsetXY(netOffset[0], netOffset[1]);
+                        }
+                    } catch (Exception ignore) { }
                 } else if (carlaXmlRpcClient != null) {
                     carlaXmlRpcClient.connect(60);
+                    try {
+                        carlaXmlRpcClient.setInputFrameMode("sumo");
+                        double[] netOffset = readSumoNetOffsetFromEnv();
+                        carlaXmlRpcClient.setNetOffsetXY(netOffset[0], netOffset[1]);
+                    } catch (Exception ignore) { }
                 }
             }
             // if the simulation step received from CARLA, advance CARLA federate local
@@ -733,6 +747,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } catch (Exception e) {
             log.warn("Failed to trigger SimulationStep interaction: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Read SUMO netOffset from environment or scenario config if available.
+     * Falls back to (0,0) if not provided.
+     */
+    private double[] readSumoNetOffsetFromEnv() {
+        try {
+            String xStr = System.getenv("SUMO_NET_OFFSET_X");
+            String yStr = System.getenv("SUMO_NET_OFFSET_Y");
+            if (xStr != null && yStr != null) {
+                return new double[]{Double.parseDouble(xStr), Double.parseDouble(yStr)};
+            }
+        } catch (Exception ignore) { }
+        // TODO: optionally parse scenario net.xml to read <location netOffset="x,y"> if paths are known
+        return new double[]{0.0, 0.0};
     }
 
     /**

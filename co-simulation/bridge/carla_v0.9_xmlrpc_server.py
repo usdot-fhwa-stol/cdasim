@@ -172,22 +172,20 @@ class CarlaXMLRPCServer:
 
         ex = float(extent_x) if extent_x is not None else 0.0
         if ex > 0.0:
-            try:
-                yaw_tmp = -1 * yaw_in + 90.0
-                x_center = x_in - math.cos(math.radians(yaw_tmp)) * ex
-                y_center = y_in - math.sin(math.radians(yaw_tmp)) * ex
-                z_center = z_in - math.sin(math.radians(pitch_in)) * ex
-            except Exception:
-                x_center, y_center, z_center = x_in, y_in, z_in
+           
+            yaw_tmp = -1 * yaw_in + 90.0
+            x_center = x_in - math.cos(math.radians(yaw_tmp)) * ex
+            y_center = y_in - math.sin(math.radians(yaw_tmp)) * ex
+            z_center = z_in - math.sin(math.radians(pitch_in)) * ex
+
         else:
             x_center, y_center, z_center = x_in, y_in, z_in
 
-        try:
-            x_off = x_center - float(self.net_offset_xy[0])
-            y_off = y_center - float(self.net_offset_xy[1])
-            z_off = z_center
-        except Exception:
-            x_off, y_off, z_off = x_center, y_center, z_center
+     
+        x_off = x_center - float(self.net_offset_xy[0])
+        y_off = y_center - float(self.net_offset_xy[1])
+        z_off = z_center
+
 
         out_loc = carla.Location(x_off, -y_off, z_off)
         out_rot = carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
