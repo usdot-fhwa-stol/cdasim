@@ -25,6 +25,14 @@ from xmlrpc.client import Binary
 import glob
 import time
 
+# Import net offset reader
+try:
+    from net_offset_reader import read_net_offset_from_xml, find_town04_net_xml
+except ImportError:
+    # Fallback if net_offset_reader is not available
+    def read_net_offset_from_xml(path): return (0.0, 0.0)
+    def find_town04_net_xml(): return ""
+
 # Add CARLA Python API to path
 try:
     sys.path.append(
@@ -69,7 +77,17 @@ class CarlaXMLRPCServer:
         # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
         # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
         self.input_frame: str = 'sumo'
-        self.net_offset_xy: Tuple[float, float] = (503.02,423.76)
+        
+        # Try to read net offset from Town04.net.xml, fallback to hardcoded value
+        net_xml_path = find_town04_net_xml()
+        if net_xml_path:
+            self.net_offset_xy = read_net_offset_from_xml(net_xml_path)
+            logger.info(f"Loaded net offset from {net_xml_path}: {self.net_offset_xy}")
+        else:
+            # Fallback to hardcoded Town04 net offset
+            self.net_offset_xy: Tuple[float, float] = (503.02, 423.76)
+            logger.info(f"Using hardcoded net offset: {self.net_offset_xy}")
+        
         # Default front-bumper-to-center offset (half vehicle length) used if not provided
         self.default_extent_x: float = 4.5  # meters (approx. 4.5 m vehicle length)
 
@@ -397,13 +415,8 @@ class CarlaXMLRPCServer:
                     f"attributes={attributes}========"
                 )
                 transform = carla.Transform(loc, rot)
-                # Prefer a safe spawn: try_spawn_actor returns None if blocked/invalid
-                
                 print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
-                actor = self.world.try_spawn_actor(bp, transform)
-                if actor is None:
-                    logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
-                    return False
+                actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
