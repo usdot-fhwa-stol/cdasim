@@ -366,7 +366,12 @@ class CarlaXMLRPCServer:
                 # print carla.location and carla.rotation after transformation
                 # carla_loc = loc.to_dict()
                 # carla_rot = rot.to_dict()
-                print(f"========spawn_actor received: actor {actor_id} of type {actor_type} at {loc} with rotation {rot} and attributes {attributes}========")
+                print(
+                    f"========spawn_actor received: actor {actor_id} of type {actor_type} "
+                    f"loc=({loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}) "
+                    f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
+                    f"attributes={attributes}========"
+                )
                 transform = carla.Transform(loc, rot)
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
