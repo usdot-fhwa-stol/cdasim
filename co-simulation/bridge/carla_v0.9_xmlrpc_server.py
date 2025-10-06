@@ -69,7 +69,7 @@ class CarlaXMLRPCServer:
         # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
         # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
         self.input_frame: str = 'sumo'
-        self.net_offset_xy: Tuple[float, float] = (0,0)
+        self.net_offset_xy: Tuple[float, float] = (503.02,423.76)
         # Default front-bumper-to-center offset (half vehicle length) used if not provided
         self.default_extent_x: float = 4.5  # meters (approx. 4.5 m vehicle length)
 
