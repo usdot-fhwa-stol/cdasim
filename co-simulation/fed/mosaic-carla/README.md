@@ -273,6 +273,24 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 2025-09-29 18:06:52,249 ERROR ProcessLoggingThread:72 - Process carla : chmod: changing permissions of '/opt/carla/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping': Operation not permitted
 
 2025-09-29 19:11:20,821 - ERROR - spawn_actor error: blueprint 'vehicle.sumo' not found
+
+
+801.438383516619, 596.2112114216437
+
+    "x": 804.134765625,
+    "y": -371.2112121582031,
+    "z": 59.63209915161133
+
+x offset = 222.299316375
+y offset = 223.677886842
+
+Transformed location and rotation:
+Location(x=1026.434082, y=-594.889099, z=0.000000) Rotation(pitch=0.000000, yaw=180.336670, roll=0.000000)
+
+2025-10-06 20:40:33,185 - ERROR - update_actor_transform error: Python argument types in
+    Actor.set_transform(Vehicle, tuple)
+did not match C++ signature:
+    set_transform(carla::client::Actor {lvalue}, carla::geom::Transform transform)
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge

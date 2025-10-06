@@ -69,9 +69,9 @@ class CarlaXMLRPCServer:
         # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
         # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
         self.input_frame: str = 'sumo'
-        self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
+        self.net_offset_xy: Tuple[float, float] = (0,0)
         # Default front-bumper-to-center offset (half vehicle length) used if not provided
-        self.default_extent_x: float = 2.25  # meters (approx. 4.5 m vehicle length)
+        self.default_extent_x: float = 4.5  # meters (approx. 4.5 m vehicle length)
 
         self.server = SimpleXMLRPCServer(
             (host, port),
@@ -191,7 +191,7 @@ class CarlaXMLRPCServer:
 
         out_loc = carla.Location(x_off, -y_off, z_off)
         out_rot = carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
-        return carla.Transform(out_loc, out_rot)
+        return out_loc, out_rot
 
     def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
         try:
@@ -237,6 +237,7 @@ class CarlaXMLRPCServer:
 
     def set_net_offset_xy(self, x: float, y: float) -> bool:
         try:
+            print(f"Setting net_offset_xy to ({x}, {y})")
             self.net_offset_xy = (float(x), float(y))
             return True
         except Exception:
@@ -382,7 +383,10 @@ class CarlaXMLRPCServer:
                     extent_x = float(self.default_extent_x)
 
                 if self.input_frame == 'sumo':
-                    transform = self.get_carla_transform(location, rotation, extent_x)
+                    print("Default extent_x used:", extent_x)
+                    loc,rot = self.get_carla_transform(location, rotation, extent_x)
+                    print("Transformed location and rotation:")
+                    print(loc, rot)
                 else:
                     try:
                         lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
@@ -405,8 +409,7 @@ class CarlaXMLRPCServer:
                     f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
                     f"attributes={attributes}========"
                 )
-                if self.input_frame != 'sumo':
-                    transform = carla.Transform(loc, rot)
+                transform = carla.Transform(loc, rot)
                 # Prefer a safe spawn: try_spawn_actor returns None if blocked/invalid
                 actor = self.world.try_spawn_actor(bp, transform)
                 if actor is None:
@@ -415,6 +418,7 @@ class CarlaXMLRPCServer:
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
+                
                 print(f"========spawn_actor success========")
                 return True
         except Exception as e:
