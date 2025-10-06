@@ -18,6 +18,7 @@ import sys
 import os
 import json
 import threading
+import math
 from typing import Dict, List, Optional, Tuple, Any, Union
 from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 from xmlrpc.client import Binary
@@ -144,7 +145,7 @@ class CarlaXMLRPCServer:
             return 0.0
 
     # ----- Coordinate transforms (external → CARLA) -----
-    def _to_carla_location(self, location_seq: List[float]) -> carla.Location:
+    def _to_carla_location(self, location_seq: List[float], rotation_seq: List[float] = None, extent_x: float = 0.0) -> carla.Location:
         try:
             x_in = float(location_seq[0])
             y_in = float(location_seq[1])
@@ -153,10 +154,30 @@ class CarlaXMLRPCServer:
             x_in, y_in, z_in = 0.0, 0.0, 0.0
 
         if self.input_frame == 'sumo':
-            # Apply SUMO net offset, then convert to CARLA left-handed (invert Y)
-            x_off = x_in - float(self.net_offset_xy[0])
-            y_off = y_in - float(self.net_offset_xy[1])
-            return carla.Location(x_off, -y_off, z_in)
+            # Apply vehicle center offset if rotation and extent are provided
+            if rotation_seq is not None and extent_x > 0.0:
+                try:
+                    yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
+                    pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
+                    
+                    # From front-center-bumper to center (SUMO reference system)
+                    # Reference: http://sumo.sourceforge.net/userdoc/Purgatory/Vehicle_Values.html#angle
+                    yaw = -1 * yaw_in + 90
+                    x_center = x_in - math.cos(math.radians(yaw)) * extent_x
+                    y_center = y_in - math.sin(math.radians(yaw)) * extent_x
+                    z_center = z_in - math.sin(math.radians(pitch_in)) * extent_x
+                except Exception:
+                    x_center, y_center, z_center = x_in, y_in, z_in
+            else:
+                x_center, y_center, z_center = x_in, y_in, z_in
+            
+            # Apply SUMO net offset
+            x_off = x_center - float(self.net_offset_xy[0])
+            y_off = y_center - float(self.net_offset_xy[1])
+            z_off = z_center
+            
+            # Transform to CARLA left-handed system (invert Y)
+            return carla.Location(x_off, -y_off, z_off)
         # Assume already in CARLA world coordinates
         return carla.Location(x_in, y_in, z_in)
 
@@ -321,7 +342,16 @@ class CarlaXMLRPCServer:
                 if attributes:
                     for k, v in attributes.items():
                         if bp.has_attribute(k): bp.set_attribute(k, str(v))
-                loc = self._to_carla_location(location)
+                
+                # Get vehicle extent for proper center calculation
+                extent_x = 0.0
+                if bp.has_attribute('extent_x'):
+                    try:
+                        extent_x = float(bp.get_attribute('extent_x').as_str())
+                    except Exception:
+                        pass
+                
+                loc = self._to_carla_location(location, rotation, extent_x)
                 rot = self._to_carla_rotation(rotation)
                 transform = carla.Transform(loc, rot)
                 actor = self.world.spawn_actor(bp, transform)
@@ -355,7 +385,13 @@ class CarlaXMLRPCServer:
             with self.lock:
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return False
-                loc = self._to_carla_location(location)
+                
+                # Get vehicle extent for proper center calculation
+                extent_x = 0.0
+                if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
+                    extent_x = float(actor.bounding_box.extent.x)
+                
+                loc = self._to_carla_location(location, rotation, extent_x)
                 rot = self._to_carla_rotation(rotation)
                 transform = carla.Transform(loc, rot)
                 actor.set_transform(transform)
@@ -533,7 +569,13 @@ class CarlaXMLRPCServer:
                     rot_dict = t_in.get('rotation', {})
                     loc_seq = [loc_dict.get('x', 0.0), loc_dict.get('y', 0.0), loc_dict.get('z', 0.0)]
                     rot_seq = [rot_dict.get('pitch', 0.0), rot_dict.get('yaw', 0.0), rot_dict.get('roll', 0.0)]
-                    loc = self._to_carla_location(loc_seq)
+                    
+                    # Get vehicle extent for proper center calculation
+                    extent_x = 0.0
+                    if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
+                        extent_x = float(actor.bounding_box.extent.x)
+                    
+                    loc = self._to_carla_location(loc_seq, rot_seq, extent_x)
                     rot = self._to_carla_rotation(rot_seq)
                     transform = carla.Transform(loc, rot)
                     actor.set_transform(transform)
