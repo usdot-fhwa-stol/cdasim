@@ -342,16 +342,26 @@ class CarlaXMLRPCServer:
                     for k, v in attributes.items():
                         if bp.has_attribute(k): bp.set_attribute(k, str(v))
                 
-                # Get vehicle extent for proper center calculation
+                # Get vehicle front-bumper-to-center offset (extent_x) for proper center calculation
+                # Priority: attributes from client (extent_x or length), then blueprint hint, else 0.0
                 extent_x = 0.0
-                if bp.has_attribute('extent_x'):
+                if attributes:
+                    try:
+                        if 'extent_x' in attributes:
+                            extent_x = float(attributes['extent_x'])
+                        elif 'length' in attributes:
+                            extent_x = float(attributes['length']) / 2.0
+                        elif 'vehicle.length' in attributes:
+                            extent_x = float(attributes['vehicle.length']) / 2.0
+                    except Exception:
+                        extent_x = 0.0
+                if extent_x == 0.0 and bp.has_attribute('extent_x'):
                     try:
                         extent_x = float(bp.get_attribute('extent_x').as_str())
                     except Exception:
                         pass
                 
                 if self.input_frame == 'sumo':
-                    print("extent_x:", extent_x)
                     loc = self._to_carla_location(location, rotation, extent_x)
                     rot = self._to_carla_rotation(rotation)
                 else:
