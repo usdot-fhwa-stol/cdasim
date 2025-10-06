@@ -109,17 +109,24 @@ def main():
     ]
     chosen = try_first(server, candidates)
     print("spawn_actor():", bool(chosen), "| blueprint:", chosen)
+    try:
+        print("set_spectator_to_actor('test_car','follow'):", server.set_spectator_to_actor('test_car', 'follow', 12.0, 6.0, -18.0))
+    except Exception as e:
+        print("set_spectator_to_actor failed:", e)
     print("get_all_actors():", pretty(server.get_all_actors()))
     before_ids = set(get_actor_id_list(server))
 
     # Move and set velocity only if we spawned
     if chosen:
+        # Focus spectator to our spawned actor alias 'test_car'
+
         ok_t = server.update_actor_transform("test_car", [0.2, 0.1, 0.8], [100.0, 200.0, 0.0])
         ok_v = server.update_actor_velocity("test_car", [10.0, 0.0, 0.0])
         print("update_actor_transform():", ok_t)
         print("update_actor_velocity():", ok_v)
     else:
         print("update_actor_* skipped (no actor)")
+        
 
     section("Actor Data + state update verification")
     ids = get_actor_id_list(server, "vehicle.*")

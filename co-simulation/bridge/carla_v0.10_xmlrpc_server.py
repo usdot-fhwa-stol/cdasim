@@ -134,6 +134,9 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.get_sensor_data, 'get_sensor_data')
         self.server.register_function(self.get_detected_objects, 'get_detected_objects')
 
+        # Spectator / camera utilities
+        self.server.register_function(self.set_spectator_to_actor, 'set_spectator_to_actor')
+
         # Maps
         self.server.register_function(self.get_map_name, 'get_map_name')
         self.server.register_function(self.get_available_maps, 'get_available_maps')
@@ -975,6 +978,40 @@ class CarlaXMLRPCServer:
     def get_detected_objects(self, infrastructure_id: str, sensor_key: SensorKey) -> str:
         # Placeholder: return empty JSON array
         return json.dumps([])
+
+    # ---------- Spectator Utilities ----------
+    def set_spectator_to_actor(self, actor_key: ActorKey, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
+        try:
+            with self.lock:
+                if not self.is_connected():
+                    return False
+                actor = self._resolve_actor(actor_key)
+                if actor is None:
+                    return False
+                t = actor.get_transform()
+                spectator = self.world.get_spectator()
+                if spectator is None:
+                    return False
+
+                preset_l = str(preset).strip().lower()
+                if preset_l == 'topdown':
+                    cam_loc = carla.Location(t.location.x, t.location.y, t.location.z + abs(up))
+                    cam_rot = carla.Rotation(pitch=-90.0, yaw=t.rotation.yaw, roll=0.0)
+                else:  # 'follow' default
+                    try:
+                        yaw_rad = math.radians(t.rotation.yaw)
+                        dx = float(back) * math.cos(yaw_rad)
+                        dy = float(back) * math.sin(yaw_rad)
+                    except Exception:
+                        dx, dy = float(back), 0.0
+                    cam_loc = carla.Location(t.location.x - dx, t.location.y - dy, t.location.z + float(up))
+                    cam_rot = carla.Rotation(pitch=float(pitch), yaw=t.rotation.yaw, roll=0.0)
+
+                spectator.set_transform(carla.Transform(cam_loc, cam_rot))
+                return True
+        except Exception as e:
+            logger.error("set_spectator_to_actor error: %s", e)
+            return False
 
     # ---------- Maps ----------
     def get_map_name(self) -> str:
