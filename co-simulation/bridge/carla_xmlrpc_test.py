@@ -44,7 +44,7 @@ def status(ok: bool, msg: str = ""):
 def try_first(server, methods: Iterable[str]) -> Optional[str]:
     for m in methods:
         try:
-            ok = bool(server.spawn_actor(m, "test_car", [0.0, 0.0, 2.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            ok = bool(server.spawn_actor(m, "test_car", [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
         except Exception:
             ok = False
         if ok:
@@ -89,9 +89,9 @@ def main():
     mname = server.get_map_name()
     print("get_map_name():", mname)
     print("get_available_maps():", pretty(server.get_available_maps()))
-    if mname:
+    # if mname:
         # Do not force reload if it fails; just report.
-        print("load_map(curr_map):", server.load_map("Town02"))
+        # print("load_map(curr_map):", server.load_map("Town02"))
 
     section("Actor Lifecycle (robust spawn)")
     # Try a few common blueprints to maximize spawn success
@@ -109,7 +109,7 @@ def main():
 
     # Move and set velocity only if we spawned
     if chosen:
-        ok_t = server.update_actor_transform("test_car", [5.0, 0.0, 2.0], [0.0, 0.0, 0.0])
+        ok_t = server.update_actor_transform("test_car", [0.2, 0.1, 0.8], [100.0, 200.0, 0.0])
         ok_v = server.update_actor_velocity("test_car", [10.0, 0.0, 0.0])
         print("update_actor_transform():", ok_t)
         print("update_actor_velocity():", ok_v)
@@ -194,6 +194,7 @@ def main():
             status(size > 0, "received at least one sensor frame")
         else:
             print("get_sensor_data(test_cam): None")
+    # time.sleep(50)  # Wait a bit before destroying sensor
     print("destroy_sensor(test_cam):", server.destroy_sensor("test_cam"))
 
     section("Destroy Actor / Disconnect")
