@@ -51,6 +51,7 @@ mkdir -p build/cmake-build && cd build/cmake-build
 cmake ../..
 make -j$(nproc)
 sudo make install
+# /home/thing1/carla-source/Co-Simulation/Sumo/examples
 
 # Install python3.7 and lxml
 python3.7 -m pip install pip

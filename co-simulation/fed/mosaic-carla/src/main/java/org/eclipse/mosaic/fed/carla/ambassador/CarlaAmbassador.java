@@ -955,7 +955,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             actorConnected = carlaXmlRpcClient.isConnected();
         }
         
-        if (!actorConnected) {
+        if (!actorConnected) {  
             log.warn("Actor server not connected; cannot forward traffic light state change to CARLA");
             return;
         }
