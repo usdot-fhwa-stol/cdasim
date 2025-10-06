@@ -44,7 +44,8 @@ def status(ok: bool, msg: str = ""):
 def try_first(server, methods: Iterable[str]) -> Optional[str]:
     for m in methods:
         try:
-            ok = bool(server.spawn_actor(m, "test_car", [2800.438383516619, -300.2112114216437, 60.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            
+            ok = bool(server.spawn_actor(m, "test_car", [801.4380151583109, 596.2112135861423, 60.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
         except Exception:
             ok = False
         if ok:
@@ -80,7 +81,7 @@ def main():
     status(ok, "connected")
     # Default to CARLA input frame for this test to avoid SUMO transform
     try:
-        print("set_input_frame_mode('carla'):", server.set_input_frame_mode('carla'))
+        print("set_input_frame_mode('sumo'):", server.set_input_frame_mode('sumo'))
     except Exception as e:
         print("set_input_frame_mode failed:", e)
     print("is_connected():", server.is_connected())
