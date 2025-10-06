@@ -191,18 +191,7 @@ class CarlaXMLRPCServer:
         out_rot = carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
         return carla.Transform(out_loc, out_rot)
 
-    def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
-        try:
-            pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
-            yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
-            roll_in = float(rotation_seq[2]) if len(rotation_seq) > 2 else 0.0
-        except Exception:
-            pitch_in, yaw_in, roll_in = 0.0, 0.0, 0.0
 
-        if self.input_frame == 'sumo':
-            # SUMO → CARLA yaw mapping per BridgeHelper: yaw_carla = yaw_sumo - 90
-            return carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
-        return carla.Rotation(pitch_in, yaw_in, roll_in)
 
     def _to_carla_velocity(self, velocity_seq_or_dict: Any) -> carla.Vector3D:
         if isinstance(velocity_seq_or_dict, dict):
@@ -343,7 +332,6 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> bool:
         try:
-            logger.info("[XMLRPC v0.9] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
             with self.lock:
                 if not self.is_connected(): return False
                 if actor_id in self.actors: return False
@@ -410,6 +398,8 @@ class CarlaXMLRPCServer:
                 )
                 transform = carla.Transform(loc, rot)
                 # Prefer a safe spawn: try_spawn_actor returns None if blocked/invalid
+                
+                print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
                 actor = self.world.try_spawn_actor(bp, transform)
                 if actor is None:
                     logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
