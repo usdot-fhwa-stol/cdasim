@@ -71,7 +71,7 @@ class CarlaXMLRPCServer:
         self.input_frame: str = 'sumo'
         self.net_offset_xy: Tuple[float, float] = (503.02,423.76)
         # Default front-bumper-to-center offset (half vehicle length) used if not provided
-        self.default_extent_x: float = 4.5  # meters (approx. 4.5 m vehicle length)
+        self.default_extent_x: float = 4.5 # meters (approx. 4.5 m vehicle length)
 
         self.server = SimpleXMLRPCServer(
             (host, port),
@@ -343,7 +343,6 @@ class CarlaXMLRPCServer:
                 
                 # Determine extent_x to correct SUMO front-bumper reference
                 # Priority: attributes from client (extent/extent_x/length), then blueprint hint, else default
-                extent_x = 0.0
                 if attributes:
                     try:
                         if 'extent' in attributes:
@@ -352,23 +351,24 @@ class CarlaXMLRPCServer:
                                 extent_x = float(ext.get('x', 0.0))
                             elif hasattr(ext, '__len__') and len(ext) > 0:
                                 extent_x = float(ext[0])
-                        if extent_x == 0.0 and 'extent_x' in attributes:
+                        if 'extent_x' in attributes:
                             extent_x = float(attributes['extent_x'])
-                        if extent_x == 0.0 and 'length' in attributes:
+                        if 'length' in attributes:
                             extent_x = float(attributes['length']) / 2.0
-                        if extent_x == 0.0 and 'vehicle.length' in attributes:
+                        if 'vehicle.length' in attributes:
                             extent_x = float(attributes['vehicle.length']) / 2.0
                     except Exception:
-                        extent_x = 0.0
-                if extent_x == 0.0 and bp.has_attribute('extent_x'):
+                        print("Invalid extent_x in attributes")
+                if  bp.has_attribute('extent_x'):
                     try:
                         extent_x = float(bp.get_attribute('extent_x').as_str())
                     except Exception:
-                        extent_x = 0.0
-                if extent_x == 0.0:
+                        extent_x = float(self.default_extent_x)
+                else:
                     extent_x = float(self.default_extent_x)
 
                 if self.input_frame == 'sumo':
+                    
                     print("Default extent_x used:", extent_x)
                     transform = self.get_carla_transform(location, rotation, extent_x)
                     # Extract for logging
@@ -438,14 +438,13 @@ class CarlaXMLRPCServer:
                 if actor is None: return False
                 
                 # Get vehicle extent for proper center calculation
-                extent_x = 0.0
+                extent_x = float(self.default_extent_x)
                 if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
                     try:
                         extent_x = float(actor.bounding_box.extent.x)
                     except Exception:
-                        extent_x = 0.0
-                if extent_x == 0.0:
-                    extent_x = float(self.default_extent_x)
+                        extent_x = float(self.default_extent_x)
+                    
 
                 if self.input_frame == 'sumo':
                     transform = self.get_carla_transform(location, rotation, extent_x)
@@ -654,14 +653,13 @@ class CarlaXMLRPCServer:
                     rot_seq = [rot_dict.get('pitch', 0.0), rot_dict.get('yaw', 0.0), rot_dict.get('roll', 0.0)]
                     
                     # Get vehicle extent for proper center calculation
-                    extent_x = 0.0
+                    extent_x = float(self.default_extent_x)
                     if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
                         try:
                             extent_x = float(actor.bounding_box.extent.x)
                         except Exception:
-                            extent_x = 0.0
-                    if extent_x == 0.0:
-                        extent_x = float(self.default_extent_x)
+                            extent_x = float(self.default_extent_x)
+                        
 
                     if self.input_frame == 'sumo':
                         transform = self.get_carla_transform(loc_seq, rot_seq, extent_x)

@@ -389,7 +389,6 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> bool:
         try:
-            logger.info("[XMLRPC v0.10] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
             with self.lock:
                 if not self.is_connected():
                     return False
@@ -455,6 +454,8 @@ class CarlaXMLRPCServer:
                 transform = carla.Transform(loc, rot)
 
                 # Prefer try_spawn_actor to validate location; returns None if blocked/invalid
+                logger.info("[XMLRPC v0.10] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
+
                 actor = self.world.try_spawn_actor(bp, transform)
                 if actor is None:
                     logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)

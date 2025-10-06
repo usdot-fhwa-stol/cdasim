@@ -45,7 +45,9 @@ def try_first(server, methods: Iterable[str]) -> Optional[str]:
     for m in methods:
         try:
             
-            ok = bool(server.spawn_actor(m, "test_car", [801.4380151583109, 596.2112135861423, 60.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            
+            ok = bool(server.spawn_actor(m, "test_car", [817.4380151583109, 596.2112135861423, 5.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            time.sleep(2)  # Give server a moment to register actor
         except Exception:
             ok = False
         if ok:
