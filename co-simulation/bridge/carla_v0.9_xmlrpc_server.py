@@ -376,15 +376,19 @@ class CarlaXMLRPCServer:
                     f"attributes={attributes}========"
                 )
                 transform = carla.Transform(loc, rot)
-                actor = self.world.spawn_actor(bp, transform)
+                # Prefer a safe spawn: try_spawn_actor returns None if blocked/invalid
+                actor = self.world.try_spawn_actor(bp, transform)
+                if actor is None:
+                    logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
+                    return False
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
                 print(f"========spawn_actor success========")
                 return True
         except Exception as e:
-            print("spawn_actor error: %s", e)
-            logger.error("spawn_actor error: %s", e)
+            print("spawn_actor error:", e)
+            logger.error("spawn_actor error:", e)
             return False
 
     def destroy_actor(self, actor_key: ActorKey) -> bool:

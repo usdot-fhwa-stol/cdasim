@@ -454,7 +454,11 @@ class CarlaXMLRPCServer:
                     rot = carla.Rotation(rp, ry, rr)
                 transform = carla.Transform(loc, rot)
 
-                actor = self.world.spawn_actor(bp, transform)
+                # Prefer try_spawn_actor to validate location; returns None if blocked/invalid
+                actor = self.world.try_spawn_actor(bp, transform)
+                if actor is None:
+                    logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
+                    return False
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = getattr(bp, "id", req) or req
                 self.actor_blueprints[actor_id] = bp
