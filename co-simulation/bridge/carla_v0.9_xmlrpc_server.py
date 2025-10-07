@@ -68,6 +68,12 @@ class CarlaXMLRPCServer:
 
         self.lock = threading.RLock()
 
+        # Flag to track if first actor has been spawned (for automatic spectator switching)
+        self.first_actor_spawned = False
+
+        # Default extent_x for vehicle center calculation
+        self.default_extent_x = 2.0
+
         # External-to-CARLA coordinate transform settings (SUMO/MOSAIC frame → CARLA frame)
         # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
         # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
@@ -297,6 +303,7 @@ class CarlaXMLRPCServer:
                     except Exception: pass
                 self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
                 self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
+                self.first_actor_spawned = False  # Reset flag for next session
                 self.world = None; self.client = None
                 logger.info("Disconnected from CARLA")
                 return True
@@ -367,9 +374,8 @@ class CarlaXMLRPCServer:
                     extent_x = float(self.default_extent_x)
 
                 if self.input_frame == 'sumo':
-                    
                     print("Default extent_x used:", extent_x)
-                    transform = self.get_carla_transform(location, rotation, extent_x)
+                    transform = self._to_carla_location(location, rotation, extent_x)
                     # Extract for logging
                     loc = transform.location
                     rot = transform.rotation
@@ -386,21 +392,30 @@ class CarlaXMLRPCServer:
                         rp, ry, rr = 0.0, 0.0, 0.0
                     loc = carla.Location(lx, ly, lz)
                     rot = carla.Rotation(rp, ry, rr)
-                # print carla.location and carla.rotation after transformation
-                # carla_loc = loc.to_dict()
-                # carla_rot = rot.to_dict()
+                    transform = carla.Transform(loc, rot)
+                
                 print(
                     f"========spawn_actor received: actor {actor_id} of type {actor_type} "
                     f"loc=({loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}) "
                     f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
                     f"attributes={attributes}========"
                 )
-                transform = carla.Transform(loc, rot)
                 print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
                 actor = self.world.spawn_actor(bp, transform)
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
+                
+                # Automatically switch spectator to first actor
+                if not self.first_actor_spawned:
+                    self.first_actor_spawned = True
+                    try:
+                        # Switch spectator to follow the first spawned actor
+                        self.set_spectator_to_actor(actor_id, 'follow', 12.0, 6.0, -15.0)
+                        print(f"========Spectator switched to follow first actor: {actor_id}========")
+                    except Exception as e:
+                        print(f"Failed to switch spectator to actor {actor_id}: {e}")
+                        logger.error("Failed to switch spectator to first actor: %s", e)
                 
                 print(f"========spawn_actor success========")
                 return True
@@ -441,7 +456,7 @@ class CarlaXMLRPCServer:
                     
 
                 if self.input_frame == 'sumo':
-                    transform = self.get_carla_transform(location, rotation, extent_x)
+                    transform = self._to_carla_location(location, rotation, extent_x)
                 else:
                     try:
                         lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
@@ -656,7 +671,7 @@ class CarlaXMLRPCServer:
                         
 
                     if self.input_frame == 'sumo':
-                        transform = self.get_carla_transform(loc_seq, rot_seq, extent_x)
+                        transform = self._to_carla_location(loc_seq, rot_seq, extent_x)
                     else:
                         try:
                             lx = float(loc_seq[0]); ly = float(loc_seq[1]); lz = float(loc_seq[2]) if len(loc_seq) > 2 else 0.0
