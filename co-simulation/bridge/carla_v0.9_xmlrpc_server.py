@@ -91,6 +91,34 @@ class CarlaXMLRPCServer:
         self._register_methods()
         logger.info("XML-RPC methods registered")
 
+    def _safe_try_spawn(self, bp: carla.ActorBlueprint, base_transform: carla.Transform) -> Optional[carla.Actor]:
+        """
+        Try to spawn an actor safely by attempting multiple height offsets and small XY jitters
+        using world.try_spawn_actor. Returns the actor on success or None if all attempts fail.
+        """
+        if not self.world:
+            return None
+        # Heights (meters) to try to avoid ground collisions; small to large
+        height_offsets = [0.0, 0.2, 0.5, 1.0]
+        # Small xy jitters (meters)
+        xy_jitters = [(0.0, 0.0), (0.2, 0.0), (-0.2, 0.0), (0.0, 0.2), (0.0, -0.2), (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2)]
+
+        for dz in height_offsets:
+            for dx, dy in xy_jitters:
+                try:
+                    t = carla.Transform(
+                        carla.Location(base_transform.location.x + dx,
+                                       base_transform.location.y + dy,
+                                       base_transform.location.z + dz),
+                        base_transform.rotation
+                    )
+                    actor = self.world.try_spawn_actor(bp, t)
+                    if actor is not None:
+                        return actor
+                except Exception:
+                    continue
+        return None
+
     # ---------- Registration ----------
     def _register_methods(self):
         # Connection
@@ -374,7 +402,7 @@ class CarlaXMLRPCServer:
                     extent_x = float(self.default_extent_x)
 
                 if self.input_frame == 'sumo':
-                    print("Default extent_x used:", extent_x)
+                    # print("Default extent_x used:", extent_x)
                     transform = self._to_carla_location(location, rotation, extent_x)
                     # Extract for logging
                     loc = transform.location
@@ -401,7 +429,11 @@ class CarlaXMLRPCServer:
                     f"attributes={attributes}========"
                 )
                 print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
-                actor = self.world.spawn_actor(bp, transform)
+                # Attempt safe spawn with collision avoidance (height offsets and slight jitters)
+                actor = self._safe_try_spawn(bp, transform)
+                if actor is None:
+                    logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
+                    return False
                 self.actors[actor_id] = actor
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp

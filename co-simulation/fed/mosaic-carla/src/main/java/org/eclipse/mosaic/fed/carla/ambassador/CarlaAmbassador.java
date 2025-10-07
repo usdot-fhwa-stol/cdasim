@@ -942,11 +942,20 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     } catch (Exception ignore) {
                         // Best-effort; attributes remain empty if no size info
                     }
+                    // Apply a small Z-lift to reduce spawn collisions with ground
+                    final double SPAWN_Z_LIFT = 2; // meters
+                    if (location != null && location.size() >= 3) {
+                        try {
+                            double z = location.get(2) != null ? location.get(2) : 0.0;
+                            location.set(2, z + SPAWN_Z_LIFT);
+                        } catch (Exception ignore) { /* keep original if any issue */ }
+                    }
+
                     if (multiXmlRpcManager != null) {
-                        log.info("Using multi-XML-RPC manager to spawn actor");
+                        log.info("Using multi-XML-RPC manager to spawn actor (z+{} m)", SPAWN_Z_LIFT);
                         ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).spawnActor(blueprint, id, location, rotation, attributes);
                     } else {
-                        log.info("Using single XML-RPC client to spawn actor");
+                        log.info("Using single XML-RPC client to spawn actor (z+{} m)", SPAWN_Z_LIFT);
                         ok = carlaXmlRpcClient.spawnActor(blueprint, id, location, rotation, attributes);
                     }
                     if (ok) {
