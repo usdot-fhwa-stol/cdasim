@@ -275,7 +275,12 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 2025-09-29 19:11:20,821 - ERROR - spawn_actor error: blueprint 'vehicle.sumo' not found
 
 
-
+spawn_actor error: Spawn failed because of collision at spawn position
+--- Logging error ---
+Traceback (most recent call last):
+  File "carla_v0.9_xmlrpc_server.py", line 404, in spawn_actor
+    actor = self.world.spawn_actor(bp, transform)
+RuntimeError: Spawn failed because of collision at spawn position
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
