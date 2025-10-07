@@ -26,12 +26,7 @@ import glob
 import time
 
 # Import net offset reader
-try:
-    from net_offset_reader import read_net_offset_from_xml, find_town04_net_xml
-except ImportError:
-    # Fallback if net_offset_reader is not available
-    def read_net_offset_from_xml(path): return (0.0, 0.0)
-    def find_town04_net_xml(): return ""
+
 
 # Add CARLA Python API to path
 try:
@@ -79,17 +74,8 @@ class CarlaXMLRPCServer:
         self.input_frame: str = 'sumo'
         
         # Try to read net offset from Town04.net.xml, fallback to hardcoded value
-        net_xml_path = find_town04_net_xml()
-        if net_xml_path:
-            self.net_offset_xy = read_net_offset_from_xml(net_xml_path)
-            logger.info(f"Loaded net offset from {net_xml_path}: {self.net_offset_xy}")
-        else:
-            # Fallback to hardcoded Town04 net offset
-            self.net_offset_xy: Tuple[float, float] = (503.02, 423.76)
-            logger.info(f"Using hardcoded net offset: {self.net_offset_xy}")
-        
-        # Default front-bumper-to-center offset (half vehicle length) used if not provided
-        self.default_extent_x: float = 4.5 # meters (approx. 4.5 m vehicle length)
+      
+        self.net_offset_xy: Tuple[float, float] = (503.02, 423.76)
 
         self.server = SimpleXMLRPCServer(
             (host, port),
@@ -168,12 +154,7 @@ class CarlaXMLRPCServer:
             return 0.0
 
     # ----- Coordinate transforms (external → CARLA) -----
-    def get_carla_transform(self, location_seq: List[float], rotation_seq: List[float], extent_x: float) -> carla.Transform:
-        """
-        Build a CARLA Transform from SUMO-style location/rotation with front-bumper reference.
-        extent_x is the front-bumper-to-center offset (half vehicle length).
-        Applies configured SUMO net offset and converts to CARLA (left-handed, yaw-90).
-        """
+    def _to_carla_location(self, location_seq: List[float], rotation_seq: List[float] = None, extent_x: float = 0.0) -> carla.Location:
         try:
             x_in = float(location_seq[0])
             y_in = float(location_seq[1])

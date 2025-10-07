@@ -436,16 +436,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                         if (actorClient != null && actorClient.isConnected()) {
                             actorClient.setInputFrameMode("sumo");
-                            double[] netOffset = readSumoNetOffsetFromEnv();
-                            actorClient.setNetOffsetXY(netOffset[0], netOffset[1]);
+                            // double[] netOffset = readSumoNetOffsetFromEnv();
+                            // actorClient.setNetOffsetXY(netOffset[0], netOffset[1]);
                         }
                     } catch (Exception ignore) { }
                 } else if (carlaXmlRpcClient != null) {
                     carlaXmlRpcClient.connect(60);
                     try {
                         carlaXmlRpcClient.setInputFrameMode("sumo");
-                        double[] netOffset = readSumoNetOffsetFromEnv();
-                        carlaXmlRpcClient.setNetOffsetXY(netOffset[0], netOffset[1]);
+                        // double[] netOffset = readSumoNetOffsetFromEnv();
+                        // carlaXmlRpcClient.setNetOffsetXY(netOffset[0], netOffset[1]);
                     } catch (Exception ignore) { }
                 }
             }
