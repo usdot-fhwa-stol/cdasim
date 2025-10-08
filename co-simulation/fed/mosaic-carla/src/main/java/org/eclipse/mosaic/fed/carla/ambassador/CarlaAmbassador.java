@@ -153,8 +153,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // read the CARLA configuration file
             carlaConfig = new ObjectInstantiation<>(CarlaConfiguration.class, log)
                     .readFile(ambassadorParameter.configuration);
+            
+            // check for sumo network file for TL mappings
+            if (carlaConfig.sumoNetworkPath == null || carlaConfig.sumoNetworkPath.isEmpty())
+                throw new FileNotFoundException("carla_config.json has no 'sumoNetworkPath' value; TL mapping will be disabled.");
+            File sumoNet = new File(carlaConfig.sumoNetworkPath);
+            if (!sumoNet.exists()) 
+                throw new FileNotFoundException("carla_config.json 'sumoNetworkPath' is invalid; TL mapping will be disabled.");
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
+        } catch (FileNotFoundException e) {
+            log.warn(e.getMessage());
         }
 
         log.info("carlaConfig.updateInterval: " + carlaConfig.updateInterval);
