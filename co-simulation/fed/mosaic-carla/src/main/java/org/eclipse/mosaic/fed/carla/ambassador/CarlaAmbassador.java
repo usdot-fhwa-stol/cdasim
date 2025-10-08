@@ -132,6 +132,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private final Set<String> currentActorIds = new HashSet<>();
 
+    /**
+     * Mapping of sumo net tlLogic ids to corresponding phase states.
+     */
+    private Map<String, List<String>> tlLogicStates = new HashMap<>();
+
+    /**
+     * Mapping of sumo net tlLogic ids to linkSignalIDs and corresponding value.
+     */
+    private Map<String, List<String>> tlLogicLinkSignals = new HashMap<>();
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
