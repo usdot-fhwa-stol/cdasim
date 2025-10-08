@@ -4,5 +4,6 @@
     "bridgePath": "/opt/carma-simulation/scenarios/Town04/carla; bridge.sh",
     "carlaConnectionPort": 8913,
     "carlaActorLibRPCUrl": "http://127.0.0.1:8090/RPC2",
-    "carlaSensorLibRPCUrl": "null"
+    "carlaSensorLibRPCUrl": "null",
+    "sumoNetworkPath": "../sumo/Town04.net.xml"
 }
