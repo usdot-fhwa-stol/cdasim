@@ -43,8 +43,12 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.config.CLocalHost;
 
 import javax.annotation.Nonnull;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.Document;
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1135,6 +1139,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.error("error occurs during process received messages: {}",  e.getMessage());
         }
         return message.split(";");
+    }
+
+    /**
+     * 
+     */
+    private void parseSumoNetwork(File netXmlFile) {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(false);
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        Document xml_doc = db.parse(netXmlFile);
     }
 
 }
