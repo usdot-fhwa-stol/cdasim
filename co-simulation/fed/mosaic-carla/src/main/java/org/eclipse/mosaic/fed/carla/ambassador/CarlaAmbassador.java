@@ -173,11 +173,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             if (StringUtils.isBlank(netXmlPath)) {
                 // Default Town04 path in repository bundle
                 netXmlPath = "co-simulation/bundle/src/assembly/resources/scenarios/Town04/sumo/Town04.net.xml";
+                log.info("Using default net.xml path: {}", netXmlPath);
+            } else {
+                log.info("Using net.xml path from environment: {}", netXmlPath);
             }
+            
             double[] parsed = readSumoNetOffsetFromNetXml(netXmlPath);
             if (parsed != null) {
                 sumoNetOffsetXY = parsed;
-                log.info("SUMO netOffset parsed: x={}, y={}", sumoNetOffsetXY[0], sumoNetOffsetXY[1]);
+                log.info("SUMO netOffset successfully parsed from {}: x={}, y={}", netXmlPath, sumoNetOffsetXY[0], sumoNetOffsetXY[1]);
             } else {
                 // Fallback to env
                 sumoNetOffsetXY = readSumoNetOffsetFromEnv();
@@ -803,15 +807,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(fis);
             doc.getDocumentElement().normalize();
+            
+            // Look for <location> element with netOffset attribute
             Element location = (Element) doc.getElementsByTagName("location").item(0);
             if (location != null && location.hasAttribute("netOffset")) {
                 String val = location.getAttribute("netOffset");
+                log.info("Found netOffset attribute: {}", val);
                 String[] parts = val.split(",");
                 if (parts.length >= 2) {
                     double x = Double.parseDouble(parts[0].trim());
                     double y = Double.parseDouble(parts[1].trim());
+                    log.info("Parsed netOffset: x={}, y={}", x, y);
                     return new double[]{x, y};
                 }
+            } else {
+                log.warn("No location element with netOffset found in {}", path);
             }
         } catch (Exception e) {
             log.warn("Failed to parse netOffset from {}: {}", path, e.getMessage());
