@@ -30,8 +30,6 @@ import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightStateChange;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
-import org.eclipse.mosaic.interactions.application.SimulationStep;
-
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -170,19 +168,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         // Initialize SUMO net offset
         try {
-            String netXmlPath = System.getenv("SUMO_NET_XML");
-            if (StringUtils.isBlank(netXmlPath)) {
-                // Default Town04 path in repository bundle
-                netXmlPath = "co-simulation/bundle/src/assembly/resources/scenarios/Town04/sumo/Town04.net.xml";
-                log.info("Using default net.xml path: {}", netXmlPath);
+            String sumoNetXmlPath = carlaConfig.sumoNetXmlPath;
+            if (StringUtils.isBlank(sumoNetXmlPath)) {
+                log.error("Couldn't find .net.xml file under the directory: {}", sumoNetXmlPath);
             } else {
-                log.info("Using net.xml path from environment: {}", netXmlPath);
+                log.info("Using net.xml path from: {}", sumoNetXmlPath);
             }
             
-            double[] parsed = readSumoNetOffsetFromNetXml(netXmlPath);
+            double[] parsed = readSumoNetOffsetFromNetXml(sumoNetXmlPath);
             if (parsed != null) {
                 sumoNetOffsetXY = parsed;
-                log.info("SUMO netOffset successfully parsed from {}: x={}, y={}", netXmlPath, sumoNetOffsetXY[0], sumoNetOffsetXY[1]);
+                log.info("SUMO netOffset successfully parsed from {}: x={}, y={}", sumoNetXmlPath, sumoNetOffsetXY[0], sumoNetOffsetXY[1]);
             } else {
                 // Fallback to env
                 sumoNetOffsetXY = readSumoNetOffsetFromEnv();
