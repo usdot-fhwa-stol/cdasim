@@ -63,6 +63,7 @@ import java.net.URL;
 import java.util.Map;
 import java.util.HashMap;
 import java.text.ParseException;
+import java.lang.Math;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -1237,6 +1238,27 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         
         return phases.get(phaseIdx);
+    }
+
+    /**
+     * Apply a SUMO state mask to CARLA tls for a given tlLogic.
+     */
+    private void applyMaskToCarla(String tlLogicId, String stateMask) {
+        final List<String> carlaIds = tlLogicLinkSignals.get(tlLogicId);
+        if (carlaIds == null || carlaIds.isEmpty()) {
+            log.warn("No linkSignal mapping for tlLogic '{}', cannot apply mask", tlLogicId);
+            return;
+        }
+
+        final int n = Math.min(stateMask.length(), carlaIds.size());
+        for (int i = 0; i < n; i++) {
+            final String carlaId = carlaIds.get(i);
+            if (carlaId == null) continue;
+            final String color = charToColor(stateMask.charAt(i));
+            if (!setCarlaTrafficLightColor(carlaId, color)) {
+                log.debug("Failed to set CARLA TL {} -> {}", carlaId, color);
+            }
+        }
     }
 
     /**
