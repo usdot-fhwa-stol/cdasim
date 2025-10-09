@@ -56,13 +56,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
-import java.util.HashMap;
 import java.text.ParseException;
+import java.io.FileNotFoundException;
 import java.lang.Math;
 
 /**
@@ -163,11 +165,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     .readFile(ambassadorParameter.configuration);
             
             // check for sumo network file for TL mappings
-            if (carlaConfig.sumoNetworkPath == null || carlaConfig.sumoNetworkPath.isEmpty())
-                throw new FileNotFoundException("carla_config.json has no 'sumoNetworkPath' value; TL mapping will be disabled.");
-            File sumoNet = new File(carlaConfig.sumoNetworkPath);
-            if (!sumoNet.exists()) 
-                throw new FileNotFoundException("carla_config.json 'sumoNetworkPath' is invalid; TL mapping will be disabled.");
+            if (carlaConfig.sumoNetXmlPath == null || carlaConfig.sumoNetXmlPath.isEmpty())
+                throw new FileNotFoundException("carla_config.json has no 'sumoNetXmlPath' value; TL mapping will be disabled.");
+            File sumoNet = new File(carlaConfig.sumoNetXmlPath);
+            if (!sumoNet.exists())
+                throw new FileNotFoundException("carla_config.json 'sumoNetXmlPath' is invalid; TL mapping will be disabled.");
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
         } catch (FileNotFoundException e) {
@@ -1015,8 +1017,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             
             switch (interaction.getParameterType()) {
                 case ChangePhase:
-                    final String phaseIdx = interaction.getPhaseIndex();
-                    final String stateMask = resolveStateMask(tlLogicId, null, phaseIdx); // programID not specified
+                    int phaseIdx = interaction.getPhaseIndex();
+                    String stateMask = resolveStateMask(tlLogicId, null, phaseIdx); // programID not specified
                     if (stateMask == null) {
                         log.warn("No state mask for tlLogic='{}' phaseIndex={}", tlLogicId, phaseIdx);
                         return;
@@ -1025,17 +1027,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     break;
 
                 case RemainingDuration:
-                    final String phaseIdx = interaction.getPhaseIndex();
-                    final String stateMask = resolveStateMask(tlLogicId, null, phaseIdx);
+                    phaseIdx = interaction.getPhaseIndex();
+                    stateMask = resolveStateMask(tlLogicId, null, phaseIdx);
                     if (stateMask == null) {
                         log.debug("RemainingDuration received but cannot resolve mask for tlLogic='{}' phaseIndex={}",
                                 tlLogicId, phaseIdx);
                         return;
                     }
-                    final double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
-                    applyTimerToCarla(tlLogicId, stateMask, remainingSec);
 
-                    final double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
+                    double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
                     if (remainingSec > 0.0) {
                         applyTimerToCarla(tlLogicId, stateMask, remainingSec);
                     }
@@ -1047,10 +1047,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     
                 case ChangeProgramWithPhase:
                     log.info("Changing traffic light '{}' to program '{}' with phase: {}", 
-                            trafficLightId, interaction.getProgramId(), interaction.getPhaseIndex());
-                    final int phaseIdx = interaction.getPhaseIndex();
+                            tlLogicId, interaction.getProgramId(), interaction.getPhaseIndex());
+                    phaseIdx = interaction.getPhaseIndex();
                     final String programId = interaction.getProgramId();
-                    final String stateMask = resolveStateMask(tlLogicId, programId, phaseIdx);
+                    stateMask = resolveStateMask(tlLogicId, programId, phaseIdx);
                     if (stateMask == null) {
                         log.warn("No state mask for tlLogic='{}' program='{}' phaseIndex={}",
                                 tlLogicId, programId, phaseIdx);
@@ -1058,7 +1058,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     }
                     applyMaskToCarla(tlLogicId, stateMask);
 
-                    final double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
+                    remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
                     if (remainingSec > 0.0) {
                         applyTimerToCarla(tlLogicId, stateMask, remainingSec);
                     }
@@ -1225,12 +1225,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Parsed tlLogic link mappings for {} controllers", tlLogicLinkSignals.size());
 
         } catch (Exception e) {
-            log.error("Failed parsing SUMO .net.xml {}", netXml, e);
+            log.error("Failed parsing SUMO .net.xml {}", netXmlFile, e);
         }
     }
 
-    @Nullable
-    private String resolveStateMask(String tlLogicId, @Nullable String programId, int phaseIdx) {
+    private String resolveStateMask(String tlLogicId, String programId, int phaseIdx) {
         Map<String, List<String>> programs = tlLogicStatesByProgram.get(tlLogicId);
         if (programs == null || programs.isEmpty()) {
             log.warn("Could not resolve state mask for tlLogic:{} Program:{}", tlLogicId, programId);
@@ -1281,8 +1280,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         if (carlaIds == null || carlaIds.isEmpty()) return;
         final int n = Math.min(stateMask.length(), carlaIds.size());
         for (int i = 0; i < n; i++) {
-            final char ch = stateMask.charAt(i);    
-            if (!isGreenChar(ch)) continue;
+            final char ch = stateMask.charAt(i);
+            if (!charToColor(ch).equals("Green")) continue;
             final String carlaId = carlaIds.get(i);
             if (carlaId == null) continue;
             if (!setCarlaTrafficLightTimer(carlaId, seconds)) {

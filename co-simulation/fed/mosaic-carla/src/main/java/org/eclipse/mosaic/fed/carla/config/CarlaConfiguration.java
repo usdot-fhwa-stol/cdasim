@@ -56,7 +56,10 @@ public class CarlaConfiguration implements Serializable {
      * URL where CARLACDASimAdapter XMLRPC Server is hosted
      */
     public String carlaActorLibRPCUrl;
-
+    /**
+     * SUMO .net.xml file path
+     */
+    public String sumoNetXmlPath;
 
     /**
      * Default CARLA vehicle blueprint to spawn for SUMO vehicles.
