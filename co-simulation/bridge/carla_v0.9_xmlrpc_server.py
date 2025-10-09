@@ -565,14 +565,51 @@ class CarlaXMLRPCServer:
     def get_all_actors(self) -> Dict[str, Dict[str, Any]]:
         try:
             with self.lock:
+                if not self.is_connected():
+                    return {}
+                
                 out = {}
+                # Get actual actors from CARLA world to detect externally removed actors
+                world_actors = {}
+                try:
+                    for actor in self.world.get_actors():
+                        world_actors[str(actor.id)] = actor
+                except Exception as e:
+                    logger.warning("Failed to get world actors: %s", e)
+                    world_actors = {}
+                
+                # Clean up actors that no longer exist in CARLA world
+                actors_to_remove = []
                 for alias, actor in self.actors.items():
-                    t = actor.get_transform()
-                    out[alias] = {
-                        'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
-                        'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
-                        'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
-                    }
+                    if str(actor.id) not in world_actors:
+                        actors_to_remove.append(alias)
+                        logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
+                
+                for alias in actors_to_remove:
+                    self.actors.pop(alias, None)
+                    self.actor_types.pop(alias, None)
+                    self.actor_blueprints.pop(alias, None)
+                
+                # Build output with currently existing actors
+                for alias, actor in self.actors.items():
+                    try:
+                        # Double-check actor still exists and is valid
+                        if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
+                            t = actor.get_transform()
+                            out[alias] = {
+                                'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                                'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                            }
+                        else:
+                            logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
+                    except Exception as e:
+                        logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e)
+                        # Remove invalid actor from tracking
+                        self.actors.pop(alias, None)
+                        self.actor_types.pop(alias, None)
+                        self.actor_blueprints.pop(alias, None)
+                
                 return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
