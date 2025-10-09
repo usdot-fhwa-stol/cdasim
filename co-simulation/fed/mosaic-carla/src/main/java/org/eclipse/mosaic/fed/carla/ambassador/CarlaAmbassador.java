@@ -56,6 +56,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.HashMap;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -132,6 +141,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private final Set<String> currentActorIds = new HashSet<>();
 
+    /**
+     * SUMO net offset parsed from scenario .net.xml (x, y) in meters.
+     */
+    private double[] sumoNetOffsetXY = new double[]{0.0, 0.0};
+
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -152,6 +166,27 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         // check the carla configuration
         checkConfiguration();
+
+        // Initialize SUMO net offset
+        try {
+            String netXmlPath = System.getenv("SUMO_NET_XML");
+            if (StringUtils.isBlank(netXmlPath)) {
+                // Default Town04 path in repository bundle
+                netXmlPath = "co-simulation/bundle/src/assembly/resources/scenarios/Town04/sumo/Town04.net.xml";
+            }
+            double[] parsed = readSumoNetOffsetFromNetXml(netXmlPath);
+            if (parsed != null) {
+                sumoNetOffsetXY = parsed;
+                log.info("SUMO netOffset parsed: x={}, y={}", sumoNetOffsetXY[0], sumoNetOffsetXY[1]);
+            } else {
+                // Fallback to env
+                sumoNetOffsetXY = readSumoNetOffsetFromEnv();
+                log.info("SUMO netOffset via env or default: x={}, y={}", sumoNetOffsetXY[0], sumoNetOffsetXY[1]);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to parse SUMO netOffset; using defaults: {}", ex.getMessage());
+            sumoNetOffsetXY = readSumoNetOffsetFromEnv();
+        }
     }
 
     /**
@@ -431,22 +466,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // Try to connect to XML-RPC servers on first timestep
                 if (multiXmlRpcManager != null) {
                     multiXmlRpcManager.connectAll(60);
-                    // After connecting, configure server input frame and SUMO net offset if provided
-                    try {
-                        org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                        if (actorClient != null && actorClient.isConnected()) {
-                            actorClient.setInputFrameMode("sumo");
-                            // double[] netOffset = readSumoNetOffsetFromEnv();
-                            // actorClient.setNetOffsetXY(netOffset[0], netOffset[1]);
-                        }
-                    } catch (Exception ignore) { }
                 } else if (carlaXmlRpcClient != null) {
                     carlaXmlRpcClient.connect(60);
-                    try {
-                        carlaXmlRpcClient.setInputFrameMode("sumo");
-                        // double[] netOffset = readSumoNetOffsetFromEnv();
-                        // carlaXmlRpcClient.setNetOffsetXY(netOffset[0], netOffset[1]);
-                    } catch (Exception ignore) { }
                 }
             }
             // if the simulation step received from CARLA, advance CARLA federate local
@@ -766,6 +787,78 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
+     * Parse netOffset from a SUMO .net.xml file. Returns null if not found.
+     */
+    private double[] readSumoNetOffsetFromNetXml(String path) {
+        if (StringUtils.isBlank(path)) {
+            return null;
+        }
+        File f = new File(path);
+        if (!f.exists() || !f.isFile()) {
+            return null;
+        }
+        try (FileInputStream fis = new FileInputStream(f)) {
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            dbFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(fis);
+            doc.getDocumentElement().normalize();
+            Element location = (Element) doc.getElementsByTagName("location").item(0);
+            if (location != null && location.hasAttribute("netOffset")) {
+                String val = location.getAttribute("netOffset");
+                String[] parts = val.split(",");
+                if (parts.length >= 2) {
+                    double x = Double.parseDouble(parts[0].trim());
+                    double y = Double.parseDouble(parts[1].trim());
+                    return new double[]{x, y};
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse netOffset from {}: {}", path, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Convert SUMO projected position and heading to CARLA frame, applying netOffset and handedness.
+     * Optionally adjust by extentX to convert front-bumper reference to vehicle center.
+     */
+    private Transform carlaTransformFromSumo(double xSumo, double ySumo, Double headingDeg, Double extentX) {
+        double xOff = xSumo - sumoNetOffsetXY[0];
+        double yOff = ySumo - sumoNetOffsetXY[1];
+        double carlaX = xOff;
+        double carlaY = -yOff; // flip handedness
+        double carlaZ = 0.0;
+        double yawDeg = headingDeg != null ? (headingDeg - 90.0) : 0.0;
+        double pitchDeg = 0.0;
+        double rollDeg = 0.0;
+        if (extentX != null && extentX > 0.0) {
+            double rad = Math.toRadians(yawDeg);
+            carlaX -= Math.cos(rad) * extentX;
+            carlaY -= Math.sin(rad) * extentX;
+        }
+        return new Transform(carlaX, carlaY, carlaZ, pitchDeg, yawDeg, rollDeg);
+    }
+
+    /** Simple struct for passing transforms */
+    private static class Transform {
+        final double x; final double y; final double z; final double pitch; final double yaw; final double roll;
+        Transform(double x, double y, double z, double pitch, double yaw, double roll) {
+            this.x = x; this.y = y; this.z = z; this.pitch = pitch; this.yaw = yaw; this.roll = roll;
+        }
+        List<Double> toLocationList() {
+            List<Double> l = new ArrayList<>(3);
+            l.add(x); l.add(y); l.add(z);
+            return l;
+        }
+        List<Double> toRotationList() {
+            List<Double> r = new ArrayList<>(3);
+            r.add(pitch); r.add(yaw); r.add(roll);
+            return r;
+        }
+    }
+
+    /**
      * This method is called by the {@link AbstractFederateAmbassador}s whenever the
      * federate can safely process interactions in its incoming interaction queue.
      * The decision when it is safe to process such an interaction depends on the
@@ -883,18 +976,28 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // Helper to spawn/update
             java.util.function.Consumer<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> applyVehicle = vd -> {
                 String id = vd.getName();
-                // Build location [x,y,z] from projected position (x,y), z=0 by default
-                java.util.List<Double> location = new java.util.ArrayList<>(3);
-                double x = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
-                double y = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
-                location.add(x);
-                location.add(y);
-                location.add(0.0);
-                // Rotation [pitch,yaw,roll] where yaw from heading if available
-                java.util.List<Double> rotation = new java.util.ArrayList<>(3);
-                rotation.add(0.0);
-                rotation.add(vd.getHeading() != null ? vd.getHeading() : 0.0);
-                rotation.add(0.0);
+                double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
+                double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
+                Double extentX = null;
+                try {
+                    Object extra = vd.getAdditionalData();
+                    if (extra instanceof org.eclipse.mosaic.lib.objects.detector.Size) {
+                        org.eclipse.mosaic.lib.objects.detector.Size sz = (org.eclipse.mosaic.lib.objects.detector.Size) extra;
+                        extentX = sz.getLength() / 2.0;
+                    } else if (extra instanceof java.util.Map) {
+                        @SuppressWarnings("rawtypes")
+                        java.util.Map m = (java.util.Map) extra;
+                        Object l = m.get("length");
+                        if (l instanceof Number) {
+                            extentX = ((Number) l).doubleValue() / 2.0;
+                        }
+                    }
+                } catch (Exception ignore) { }
+                Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                java.util.List<Double> location = tf.toLocationList();
+                java.util.List<Double> rotation = tf.toRotationList();
 
                 boolean ok;
                 if (!currentActorIds.contains(id)) {
@@ -942,7 +1045,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     } catch (Exception ignore) {
                         // Best-effort; attributes remain empty if no size info
                     }
-                    // Apply a small Z-lift to reduce spawn collisions with ground
+                    // Apply a small Z-lift to reduce spawn collisions with ground (client/server do no conversion)
                     final double SPAWN_Z_LIFT = 2; // meters
                     if (location != null && location.size() >= 3) {
                         try {
