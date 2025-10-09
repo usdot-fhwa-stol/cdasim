@@ -45,7 +45,9 @@ import org.eclipse.mosaic.rti.config.CLocalHost;
 import javax.annotation.Nonnull;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.Document;
+import org.wc3.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -60,6 +62,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.HashMap;
+import java.text.ParseException;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -137,12 +140,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private final Set<String> currentActorIds = new HashSet<>();
 
     /**
-     * Mapping of sumo net tlLogic ids to corresponding phase states.
+     * Mapping of SUMO net tlLogic ids to corresponding phase programs.
      */
-    private Map<String, List<String>> tlLogicStates = new HashMap<>();
+    private Map<String, Map<String, List<String>>> tlLogicStatesByProgram = new HashMap<>();
 
     /**
-     * Mapping of sumo net tlLogic ids to linkSignalIDs and corresponding value.
+     * Mapping of SUMO net tlLogic ids to CARLA linkSignalID/traffic light ids.
      */
     private Map<String, List<String>> tlLogicLinkSignals = new HashMap<>();
 
@@ -1142,13 +1145,81 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * 
+     * Pareses SUMO .net.xml file to create mappings between tlLogic ids, program ids, state phases 
+     * and CARLA traffic light ids.
+     * @param netXmlFile Sumo .net.xml file to be parsed.
+     * @throws ParseException Exception to be thrown if parsing is unsuccessfull.
      */
     private void parseSumoNetwork(File netXmlFile) {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setNamespaceAware(false);
-        DocumentBuilder db = dbf.newDocumentBuilder();
-        Document xml_doc = db.parse(netXmlFile);
+        try {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(false);
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(netXmlFile);
+
+            NodeList tlLogics = doc.getElementsByTagName("tlLogic");
+            for (int i = 0; i < tlLogics.getLength(); i++) {
+                Element tl = (Element) tlLogics.item(i);
+
+                final String tlId = tl.getAttribute("id");
+                // programID falls back to 0 (default SUMO value)
+                final String programId = tl.hasAttribute("programID") ? tl.getAttribute("programID") : "0";
+
+                // tlLogic ID -> programID -> phases
+                NodeList phases = tl.getElementsByTagName("phase");
+                List<String> stateList = new ArrayList<>(phases.getLength());
+                for (int p = 0; p < phases.getLength(); p++) {
+                    Element ph = (Element) phases.item(p);
+                    stateList.add(ph.getAttribute("state")); // e.g., "rGyG"
+                }
+                if (!stateList.isEmpty()) {
+                    tlLogicStatesByProgram
+                        .computeIfAbsent(tlId, __ -> new HashMap<>())
+                        .put(programId, Collections.unmodifiableList(stateList));
+                }
+
+                // linkSignalID:i -> CARLA/ODR id mapping
+                if (!tlLogicLinkSignals.containsKey(tlId)) {
+                    NodeList params = tl.getElementsByTagName("param");
+                    int maxIndex = -1;
+                    Map<Integer, String> tmp = new HashMap<>();
+                    for (int j = 0; j < params.getLength(); j++) {
+                        Element pm = (Element) params.item(j);
+                        String key = pm.getAttribute("key");
+                        if (key != null && key.startsWith("linkSignalID:")) {
+                            String idxStr = key.substring("linkSignalID:".length());
+                            try {
+                                int idx = Integer.parseInt(idxStr);
+                                String val = pm.getAttribute("value");
+                                tmp.put(idx, val);
+                                if (idx > maxIndex) maxIndex = idx;
+                            } catch (NumberFormatException ignore) {  } // ignore
+                        }
+                    }
+
+                    if (!tmp.isEmpty()) {
+                        List<String> ordered = new ArrayList<>(Collections.nCopies(maxIndex + 1, null));
+                        for (Map.Entry<Integer, String> e : tmp.entrySet()) {
+                            int k = e.getKey();
+                            if (k >= 0 && k < ordered.size()) ordered.set(k, e.getValue());
+                        }
+                        tlLogicLinkSignals.put(tlId, Collections.unmodifiableList(ordered));
+                    }
+                }
+            }
+
+            log.info("Parsed tlLogic states for {} controllers; with programs: {}",
+                    tlLogicStatesByProgram.size(),
+                    tlLogicStatesByProgram.entrySet().stream()
+                            .collect(java.util.stream.Collectors.toMap(
+                                    Map.Entry::getKey,
+                                    e -> e.getValue().keySet())));
+
+            log.info("Parsed tlLogic link mappings for {} controllers", tlLogicLinkSignals.size());
+
+        } catch (Exception e) {
+            log.error("Failed parsing SUMO .net.xml {}", netXml, e);
+        }
     }
 
 }
