@@ -143,8 +143,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * SUMO net offset parsed from scenario .net.xml (x, y) in meters.
+     * Default to Town04 values if parsing fails.
      */
-    private double[] sumoNetOffsetXY = new double[]{0.0, 0.0};
+    private double[] sumoNetOffsetXY = new double[]{503.02, 423.76};
 
 
     /**
@@ -786,8 +787,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 return new double[]{Double.parseDouble(xStr), Double.parseDouble(yStr)};
             }
         } catch (Exception ignore) { }
-        // TODO: optionally parse scenario net.xml to read <location netOffset="x,y"> if paths are known
-        return new double[]{0.0, 0.0};
+        // Default to Town04 netOffset if not found in environment
+        return new double[]{503.02, 423.76};
     }
 
     /**
