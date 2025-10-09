@@ -1267,6 +1267,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
+     * Applies timer to given CARLA traffic lights. (Only applies to green lights due to 
+     * API limitations)
+     */
+    private void applyTimerToCarla(String tlLogicId, String stateMask, double seconds) {
+        final List<String> carlaIds = tlLogicLinkSignals.get(tlLogicId);
+        if (carlaIds == null || carlaIds.isEmpty()) return;
+        final int n = Math.min(stateMask.length(), carlaIds.size());
+        for (int i = 0; i < n; i++) {
+            final char ch = stateMask.charAt(i);    
+            if (!isGreenChar(ch)) continue;
+            final String carlaId = carlaIds.get(i);
+            if (carlaId == null) continue;
+            if (!setCarlaTrafficLightTimer(carlaId, seconds)) {
+                log.debug("Failed to set CARLA TL {} timer {}s", carlaId, seconds);
+            }
+        }
+    }
+
+    /**
      * Send a color to CARLA via whichever client is active.
      * Expects "Red", "Yellow" or "Green".
      */
@@ -1281,6 +1300,24 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
         } catch (Exception e) {
             log.error("setTrafficLightState failed for {} -> {}", tlId, color, e);
+            return false;
+        }
+    }
+
+    /**
+     * Send a green-timer value to CARLA (seconds).
+     */
+    private boolean setCarlaTrafficLightTimer(String tlId, double seconds) {
+        try {
+            if (multiXmlRpcManager != null) {
+                return multiXmlRpcManager
+                        .getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                        .setTrafficLightTimer(tlId, seconds);
+            } else {
+                return carlaXmlRpcClient.setTrafficLightTimer(tlId, seconds);
+            }
+        } catch (Exception e) {
+            log.error("setTrafficLightTimer failed for {} -> {}s", tlId, seconds, e);
             return false;
         }
     }
