@@ -1239,4 +1239,23 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         return phases.get(phaseIdx);
     }
 
+    /**
+     * Send a color to CARLA via whichever client is active.
+     * Expects "Red", "Yellow" or "Green".
+     */
+    private boolean setCarlaTrafficLightColor(String tlId, String color) {
+        try {
+            if (multiXmlRpcManager != null) {
+                return multiXmlRpcManager
+                        .getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                        .setTrafficLightState(tlId, color);
+            } else {
+                return carlaXmlRpcClient.setTrafficLightState(tlId, color);
+            }
+        } catch (Exception e) {
+            log.error("setTrafficLightState failed for {} -> {}", tlId, color, e);
+            return false;
+        }
+    }
+
 }
