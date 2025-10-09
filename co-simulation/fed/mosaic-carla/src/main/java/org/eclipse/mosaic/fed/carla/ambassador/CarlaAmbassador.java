@@ -1011,16 +1011,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         
         try {
-            String trafficLightId = interaction.getTrafficLightGroupId();
+            String tlLogicId = interaction.getTrafficLightGroupId();
             
             switch (interaction.getParameterType()) {
                 case ChangePhase:
-                    log.info("Changing traffic light '{}' to phase index: {}", trafficLightId, interaction.getPhaseIndex());
-                    if (multiXmlRpcManager != null) {
-                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, "phase_" + interaction.getPhaseIndex());
-                    } else {
-                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, "phase_" + interaction.getPhaseIndex());
+                    final String stateMask = resolveStateMask(tlGroupId, null, interaction.getPhaseIndex()); // programID not specified
+                    if (stateMask == null) {
+                        log.warn("No state mask for tlLogic='{}' phaseIndex={}", tlGroupId, phaseIdx);
+                        return;
                     }
+                    applyMaskToCarla(tlLogicId, stateMask);
                     break;
                     
                 case RemainingDuration:
@@ -1224,14 +1224,19 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     @Nullable
-    private String resolveStateMask(String tlLogicId, String programId, int phaseIdx) {
+    private String resolveStateMask(String tlLogicId, @Nullable String programId, int phaseIdx) {
         Map<String, List<String>> program = tlLogicStatesByProgram.get(tlLogicId);
         if (program == null || program.isEmpty()) {
             log.warn("Could not resolve state mask for tlLogic:{} Program:{}", tlLogicId, programId);
             return null;
         }
+        
+        List<String> phases = null;
+        if (programId != null)
+            phases = program.get(programId);
+        else
+            phases = program.values().iterator().next();
 
-        List<String> phases = program.get(programId);
         if (phases == null || phaseIdx < 0 || phaseIdx >= phases.size()) {
             log.warn("Could not resolve state mask for tlLogic:{}", tlLogicId);
             return null;
