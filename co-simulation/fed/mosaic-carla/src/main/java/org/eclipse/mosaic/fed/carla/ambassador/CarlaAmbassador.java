@@ -1222,4 +1222,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
+    @Nullable
+    private String resolveStateMask(String tlLogicId, String programId, int phaseIdx) {
+        Map<String, List<String>> program = tlLogicStatesByProgram.get(tlLogicId);
+        if (program == null || program.isEmpty()) {
+            log.warn("Could not resolve state mask for tlLogic:{} Program:{}", tlLogicId, programId);
+            return null;
+        }
+
+        List<String> phases = program.get(programId);
+        if (phases == null || phaseIdx < 0 || phaseIdx >= phases.size()) {
+            log.warn("Could not resolve state mask for tlLogic:{}", tlLogicId);
+            return null;
+        }
+        
+        return phases.get(phaseIdx);
+    }
+
 }
