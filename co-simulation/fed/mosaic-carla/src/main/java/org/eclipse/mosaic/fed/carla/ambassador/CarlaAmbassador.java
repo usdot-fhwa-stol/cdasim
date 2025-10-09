@@ -1258,4 +1258,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
+    private static String charToColor(char c) {
+        switch (Character.toLowerCase(c)) {
+            case 'g': case 'p': return "Green";
+            case 'y':           return "Yellow";
+            case 'r':
+            default:            return "Red"; // default to red
+        }
+    }
+
 }
