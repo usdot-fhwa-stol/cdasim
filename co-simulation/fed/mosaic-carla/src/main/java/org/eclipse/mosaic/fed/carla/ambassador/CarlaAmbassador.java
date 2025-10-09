@@ -1015,51 +1015,57 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             
             switch (interaction.getParameterType()) {
                 case ChangePhase:
-                    final String stateMask = resolveStateMask(tlGroupId, null, interaction.getPhaseIndex()); // programID not specified
+                    final String phaseIdx = interaction.getPhaseIndex();
+                    final String stateMask = resolveStateMask(tlLogicId, null, phaseIdx); // programID not specified
                     if (stateMask == null) {
-                        log.warn("No state mask for tlLogic='{}' phaseIndex={}", tlGroupId, phaseIdx);
+                        log.warn("No state mask for tlLogic='{}' phaseIndex={}", tlLogicId, phaseIdx);
                         return;
                     }
                     applyMaskToCarla(tlLogicId, stateMask);
                     break;
-                    
+
                 case RemainingDuration:
-                    double durationInSeconds = interaction.getPhaseRemainingDuration() / 1000.0; // ms -> s
-                    log.info("Setting traffic light '{}' remaining duration to: {} seconds", trafficLightId, durationInSeconds);
-                    if (multiXmlRpcManager != null) {
-                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(trafficLightId, durationInSeconds);
-                    } else {
-                        carlaXmlRpcClient.setTrafficLightTimer(trafficLightId, durationInSeconds);
+                    final String phaseIdx = interaction.getPhaseIndex();
+                    final String stateMask = resolveStateMask(tlLogicId, null, phaseIdx);
+                    if (stateMask == null) {
+                        log.debug("RemainingDuration received but cannot resolve mask for tlLogic='{}' phaseIndex={}",
+                                tlLogicId, phaseIdx);
+                        return;
+                    }
+                    final double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
+                    applyTimerToCarla(tlLogicId, stateMask, remainingSec);
+
+                    final double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
+                    if (remainingSec > 0.0) {
+                        applyTimerToCarla(tlLogicId, stateMask, remainingSec);
                     }
                     break;
                     
                 case ProgramId:
-                    log.info("Changing traffic light '{}' to program: {}", trafficLightId, interaction.getProgramId());
-                    if (multiXmlRpcManager != null) {
-                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, interaction.getProgramId());
-                    } else {
-                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, interaction.getProgramId());
-                    }
+                    log.debug("Ignoring ProgramId change for '{}' (no mask provided)", tlLogicId);
                     break;
                     
                 case ChangeProgramWithPhase:
                     log.info("Changing traffic light '{}' to program '{}' with phase: {}", 
                             trafficLightId, interaction.getProgramId(), interaction.getPhaseIndex());
-                    if (multiXmlRpcManager != null) {
-                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, interaction.getProgramId() + "_phase_" + interaction.getPhaseIndex());
-                    } else {
-                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, interaction.getProgramId() + "_phase_" + interaction.getPhaseIndex());
+                    final int phaseIdx = interaction.getPhaseIndex();
+                    final String programId = interaction.getProgramId();
+                    final String stateMask = resolveStateMask(tlLogicId, programId, phaseIdx);
+                    if (stateMask == null) {
+                        log.warn("No state mask for tlLogic='{}' program='{}' phaseIndex={}",
+                                tlLogicId, programId, phaseIdx);
+                        return;
+                    }
+                    applyMaskToCarla(tlLogicId, stateMask);
+
+                    final double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
+                    if (remainingSec > 0.0) {
+                        applyTimerToCarla(tlLogicId, stateMask, remainingSec);
                     }
                     break;
                     
                 case ChangeToCustomState:
-                    log.info("Setting traffic light '{}' to custom state", trafficLightId);
-                    // For custom states, we'll use a generic "custom" state
-                    if (multiXmlRpcManager != null) {
-                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(trafficLightId, "custom");
-                    } else {
-                        carlaXmlRpcClient.setTrafficLightState(trafficLightId, "custom");
-                    }
+                    log.debug("Ignoring ChangeToCustomState for '{}' (not representable in CARLA API)", tlLogicId);
                     break;
                     
                 default:
@@ -1225,17 +1231,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     @Nullable
     private String resolveStateMask(String tlLogicId, @Nullable String programId, int phaseIdx) {
-        Map<String, List<String>> program = tlLogicStatesByProgram.get(tlLogicId);
-        if (program == null || program.isEmpty()) {
+        Map<String, List<String>> programs = tlLogicStatesByProgram.get(tlLogicId);
+        if (programs == null || programs.isEmpty()) {
             log.warn("Could not resolve state mask for tlLogic:{} Program:{}", tlLogicId, programId);
             return null;
         }
         
         List<String> phases = null;
         if (programId != null)
-            phases = program.get(programId);
+            phases = programs.get(programId);
         else
-            phases = program.values().iterator().next();
+            phases = programs.values().iterator().next();
 
         if (phases == null || phaseIdx < 0 || phaseIdx >= phases.size()) {
             log.warn("Could not resolve state mask for tlLogic:{}", tlLogicId);
