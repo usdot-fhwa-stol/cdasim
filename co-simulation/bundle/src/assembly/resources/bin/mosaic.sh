@@ -18,5 +18,6 @@ tmp=`ls ${dir_libs} | grep jar`
 libs=${dir_libs}/${tmp//[^A-Za-z0-9\-\.]/:${dir_libs}/}
 
 # create and run command
-cmd="java -Xmx${javaMemorySizeXmx} ${javaRemoteDebugging} -cp .:${mosaic}:${libs} org.eclipse.mosaic.starter.MosaicStarter $*"
-$cmd
+cmd="java -Xmx${javaMemorySizeXmx} ${javaRemoteDebugging} \
+  -cp .:./etc:${mosaic}:${libs} \
+  org.eclipse.mosaic.starter.MosaicStarter $*"
