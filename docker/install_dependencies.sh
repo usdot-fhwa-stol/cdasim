@@ -18,7 +18,10 @@ set -e
 
 # Install software-proprties-common to be able to setup PPA repos
 sudo apt-get update
-sudo apt-get install -y software-properties-common
+sudo apt-get install -y software-properties-common apt-transport-https ca-certificates curl software-properties-common
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -32,8 +35,12 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   python3.7-distutils x11-xserver-utils dconf-editor dbus-x11 libglvnd0 libgl1 \
   libglx0 libegl1 libxext6 libx11-6 python3-dev \
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
-  wget vim nano xterm libprotobuf-dev
+  wget vim nano xterm libprotobuf-dev \
+  docker-ce
+  
 sudo rm -rf /var/lib/apt/lists/*
+
+
 
 sudo apt-get clean
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
