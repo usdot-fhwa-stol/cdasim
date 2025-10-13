@@ -24,11 +24,16 @@ Usage:
     python manual_control.py [--carla-host localhost] [--carla-port 2000] [--xmlrpc-host localhost] [--xmlrpc-port 8090]
 
 Controls:
-    W/A/S/D - Move forward/left/backward/right
-    Q/E - Turn left/right
-    SPACE - Brake
+    W - Accelerate forward
+    S - Brake/Reverse
+    A - Steer left
+    D - Steer right
+    SPACE - Engage reverse
     R - Reset position
-    ESC - Exit
+    H - Show help
+    Q/X/ESC - Exit
+    
+Note: In Docker environments, press Enter after each key press
 """
 
 import argparse
@@ -78,6 +83,8 @@ class ManualControl:
         # Control state
         self.running = False
         self.control_thread: Optional[threading.Thread] = None
+        self.input_queue = []
+        self.input_lock = threading.Lock()
         
         # Vehicle control parameters
         self.steer = 0.0
@@ -323,22 +330,41 @@ class ManualControl:
     def control_loop(self):
         """Main control loop"""
         logger.info("Starting control loop...")
-        logger.info("Controls: W/A/S/D - Move, Q/E - Turn, SPACE - Brake, R - Reset, ESC - Exit")
+        logger.info("Controls: W/A/S/D - Move, SPACE - Reverse, R - Reset, H - Help, Q/X/ESC - Exit")
+        logger.info("Note: In Docker, press Enter after each key press")
+        
+        # Check if we're in a Docker environment
+        is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+        input_thread = None
+        
+        if is_docker:
+            logger.info("Docker environment detected - using line-based input")
+            # Start input thread for Docker
+            input_thread = threading.Thread(target=self._input_thread, daemon=True)
+            input_thread.start()
         
         try:
             import pygame
             pygame.init()
             pygame.display.set_mode((100, 100))  # Small window for input focus
+            logger.info("Using pygame for input handling")
             
         except ImportError:
             logger.warning("pygame not available, using keyboard input fallback")
             pygame = None
+        
+        # Initialize input method
+        input_method = "pygame" if pygame else ("docker_input" if is_docker else "keyboard")
+        logger.info(f"Input method: {input_method}")
         
         while self.running:
             try:
                 # Handle input
                 if pygame:
                     self._handle_pygame_input(pygame)
+                elif is_docker:
+                    # Process queued input from input thread
+                    self._process_queued_input()
                 else:
                     self._handle_keyboard_input()
                 
@@ -401,13 +427,70 @@ class ManualControl:
             if msvcrt.kbhit():
                 key = msvcrt.getch().decode('utf-8').lower()
                 self._process_key(key)
-        else:  # Linux/Mac
+        else:  # Linux/Mac/Docker
+            try:
+                import select
+                import tty
+                import termios
+                
+                # Check if stdin is available and has data
+                if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+                    # Set terminal to raw mode for single character input
+                    old_settings = termios.tcgetattr(sys.stdin)
+                    try:
+                        tty.setraw(sys.stdin.fileno())
+                        key = sys.stdin.read(1).lower()
+                        self._process_key(key)
+                    finally:
+                        # Restore terminal settings
+                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            except (ImportError, OSError, termios.error) as e:
+                # Fallback for environments where termios doesn't work (like some Docker setups)
+                logger.debug(f"Termios not available, using alternative input method: {e}")
+                self._handle_alternative_input()
+
+    def _handle_alternative_input(self):
+        """Alternative input method for Docker environments"""
+        try:
+            # Try to read from stdin without blocking
             import select
-            import tty
-            import termios
-            
             if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-                key = sys.stdin.read(1).lower()
+                # Read a line and process the first character
+                line = sys.stdin.readline().strip()
+                if line:
+                    key = line[0].lower()
+                    self._process_key(key)
+        except Exception as e:
+            logger.debug(f"Alternative input method failed: {e}")
+            # If all else fails, just continue without input
+            pass
+
+    def _input_thread(self):
+        """Separate thread for handling input in Docker environments"""
+        logger.info("Starting input thread for Docker environment")
+        try:
+            while self.running:
+                try:
+                    # Read input from stdin
+                    line = input().strip()
+                    if line:
+                        key = line[0].lower()
+                        with self.input_lock:
+                            self.input_queue.append(key)
+                except EOFError:
+                    logger.info("Input stream closed")
+                    break
+                except Exception as e:
+                    logger.debug(f"Input thread error: {e}")
+                    time.sleep(0.1)
+        except Exception as e:
+            logger.error(f"Input thread failed: {e}")
+
+    def _process_queued_input(self):
+        """Process queued input from the input thread"""
+        with self.input_lock:
+            while self.input_queue:
+                key = self.input_queue.pop(0)
                 self._process_key(key)
 
     def _process_key(self, key):
@@ -415,19 +498,43 @@ class ManualControl:
         if key == 'w':
             self.throttle = min(self.throttle + 0.1, self.max_throttle)
             self.brake = 0.0
+            logger.debug("Throttle increased")
         elif key == 's':
             self.brake = min(self.brake + 0.1, self.max_brake)
             self.throttle = 0.0
+            logger.debug("Brake applied")
         elif key == 'a':
             self.steer = max(self.steer - 0.1, -self.max_steer_angle)
+            logger.debug("Steer left")
         elif key == 'd':
             self.steer = min(self.steer + 0.1, self.max_steer_angle)
+            logger.debug("Steer right")
         elif key == ' ':
             self.reverse = True
+            logger.debug("Reverse engaged")
         elif key == 'r':
             self._reset_vehicle_position()
-        elif key == '\x1b':  # ESC
+            logger.info("Vehicle position reset")
+        elif key == '\x1b' or key == 'q' or key == 'x':  # ESC, Q, or X to exit
+            logger.info("Exit command received")
             self.running = False
+        elif key == 'h':
+            self._print_help()
+        else:
+            logger.debug(f"Unknown key: {key}")
+
+    def _print_help(self):
+        """Print control help"""
+        logger.info("=== Manual Control Help ===")
+        logger.info("W - Accelerate forward")
+        logger.info("S - Brake/Reverse")
+        logger.info("A - Steer left")
+        logger.info("D - Steer right")
+        logger.info("SPACE - Engage reverse")
+        logger.info("R - Reset vehicle position")
+        logger.info("H - Show this help")
+        logger.info("Q/X/ESC - Exit")
+        logger.info("========================")
 
     def _reset_vehicle_position(self):
         """Reset vehicle to spawn point"""
