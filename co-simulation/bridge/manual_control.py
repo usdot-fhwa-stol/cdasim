@@ -140,14 +140,10 @@ class ManualControl:
     def spawn_vehicle(self) -> bool:
         """Spawn a controllable vehicle in CARLA"""
         try:
-            # Get a random spawn point
-            spawn_points = self.world.get_map().get_spawn_points()
-            if not spawn_points:
-                logger.error("No spawn points available")
-                return False
-            
-            # Use the first spawn point
-            spawn_point = spawn_points[0]
+            # Use fixed spawn position (298, -172)
+            spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            spawn_rotation = carla.Rotation(pitch=0.0, yaw=0.0, roll=0.0)
+            spawn_point = carla.Transform(spawn_location, spawn_rotation)
             
             # Get vehicle blueprint
             blueprint_library = self.world.get_blueprint_library()
@@ -192,15 +188,9 @@ class ManualControl:
                 logger.error("XML-RPC client not connected")
                 return False
             
-            # Get spawn point
-            spawn_points = self.world.get_map().get_spawn_points()
-            if not spawn_points:
-                logger.error("No spawn points available")
-                return False
-            
-            spawn_point = spawn_points[0]
-            location = [spawn_point.location.x, spawn_point.location.y, spawn_point.location.z]
-            rotation = [spawn_point.rotation.pitch, spawn_point.rotation.yaw, spawn_point.rotation.roll]
+            # Use fixed spawn position (298, -172)
+            location = [298.0, -172.0, 0.0]
+            rotation = [0.0, 0.0, 0.0]
             
             # Spawn via XML-RPC
             success = self.xmlrpc_client.spawn_actor(
@@ -391,11 +381,12 @@ class ManualControl:
             return
         
         try:
-            spawn_points = self.world.get_map().get_spawn_points()
-            if spawn_points:
-                spawn_point = spawn_points[0]
-                self.vehicle.set_transform(spawn_point)
-                logger.info("Vehicle position reset")
+            # Reset to fixed spawn position (298, -172)
+            spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            spawn_rotation = carla.Rotation(pitch=0.0, yaw=0.0, roll=0.0)
+            spawn_point = carla.Transform(spawn_location, spawn_rotation)
+            self.vehicle.set_transform(spawn_point)
+            logger.info("Vehicle position reset to (298, -172)")
         except Exception as e:
             logger.error(f"Failed to reset vehicle position: {e}")
 
