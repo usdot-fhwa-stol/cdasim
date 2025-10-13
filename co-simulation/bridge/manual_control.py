@@ -140,8 +140,28 @@ class ManualControl:
     def spawn_vehicle(self) -> bool:
         """Spawn a controllable vehicle in CARLA"""
         try:
-            # Use fixed spawn position (298, -172)
+            # Use fixed spawn position (298, -172) with proper ground height
             spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            
+            # Get the ground height at this location
+            waypoint = self.world.get_map().get_waypoint(spawn_location)
+            if waypoint:
+                spawn_location.z = waypoint.transform.location.z + 0.5  # Add small offset above ground
+            else:
+                # Fallback: try to find a nearby spawn point
+                spawn_points = self.world.get_map().get_spawn_points()
+                if spawn_points:
+                    # Find the closest spawn point to our target location
+                    target_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+                    closest_point = min(spawn_points, 
+                                      key=lambda p: p.location.distance(target_location))
+                    spawn_location = closest_point.location
+                    spawn_location.x = 298.0  # Keep our target X coordinate
+                    spawn_location.y = -172.0  # Keep our target Y coordinate
+                    spawn_location.z += 0.5  # Add small offset above ground
+                else:
+                    spawn_location.z = 1.0  # Default height if no waypoints found
+            
             spawn_rotation = carla.Rotation(pitch=0.0, yaw=0.0, roll=0.0)
             spawn_point = carla.Transform(spawn_location, spawn_rotation)
             
@@ -162,11 +182,33 @@ class ManualControl:
             # Set vehicle attributes
             vehicle_blueprint.set_attribute('role_name', 'manual_control_vehicle')
             
-            # Spawn the vehicle
-            self.vehicle = self.world.spawn_actor(vehicle_blueprint, spawn_point)
+            # Try to spawn the vehicle with collision detection
+            self.vehicle = self.world.try_spawn_actor(vehicle_blueprint, spawn_point)
             if not self.vehicle:
-                logger.error("Failed to spawn vehicle")
-                return False
+                # If spawn failed due to collision, try nearby positions
+                logger.warning(f"Failed to spawn at exact position ({spawn_location.x}, {spawn_location.y}, {spawn_location.z}), trying nearby positions...")
+                
+                # Try spawning at nearby positions
+                offsets = [(0, 2), (0, -2), (2, 0), (-2, 0), (2, 2), (-2, -2), (2, -2), (-2, 2)]
+                for offset_x, offset_y in offsets:
+                    try_location = carla.Location(
+                        x=spawn_location.x + offset_x,
+                        y=spawn_location.y + offset_y,
+                        z=spawn_location.z
+                    )
+                    try_waypoint = self.world.get_map().get_waypoint(try_location)
+                    if try_waypoint:
+                        try_location.z = try_waypoint.transform.location.z + 0.5
+                    
+                    try_point = carla.Transform(try_location, spawn_rotation)
+                    self.vehicle = self.world.try_spawn_actor(vehicle_blueprint, try_point)
+                    if self.vehicle:
+                        logger.info(f"Successfully spawned vehicle at nearby position: ({try_location.x}, {try_location.y}, {try_location.z})")
+                        break
+                
+                if not self.vehicle:
+                    logger.error("Failed to spawn vehicle at any nearby position")
+                    return False
             
             self.vehicle_id = str(self.vehicle.id)
             logger.info(f"Spawned vehicle with ID: {self.vehicle_id} at position: {spawn_point.location}")
@@ -188,8 +230,17 @@ class ManualControl:
                 logger.error("XML-RPC client not connected")
                 return False
             
-            # Use fixed spawn position (298, -172)
-            location = [298.0, -172.0, 0.0]
+            # Use fixed spawn position (298, -172) with proper ground height
+            spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            
+            # Get the ground height at this location
+            waypoint = self.world.get_map().get_waypoint(spawn_location)
+            if waypoint:
+                spawn_location.z = waypoint.transform.location.z + 0.5
+            else:
+                spawn_location.z = 1.0  # Default height
+            
+            location = [spawn_location.x, spawn_location.y, spawn_location.z]
             rotation = [0.0, 0.0, 0.0]
             
             # Spawn via XML-RPC
@@ -381,12 +432,20 @@ class ManualControl:
             return
         
         try:
-            # Reset to fixed spawn position (298, -172)
+            # Reset to fixed spawn position (298, -172) with proper ground height
             spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            
+            # Get the ground height at this location
+            waypoint = self.world.get_map().get_waypoint(spawn_location)
+            if waypoint:
+                spawn_location.z = waypoint.transform.location.z + 0.5
+            else:
+                spawn_location.z = 1.0  # Default height
+            
             spawn_rotation = carla.Rotation(pitch=0.0, yaw=0.0, roll=0.0)
             spawn_point = carla.Transform(spawn_location, spawn_rotation)
             self.vehicle.set_transform(spawn_point)
-            logger.info("Vehicle position reset to (298, -172)")
+            logger.info(f"Vehicle position reset to ({spawn_location.x}, {spawn_location.y}, {spawn_location.z})")
         except Exception as e:
             logger.error(f"Failed to reset vehicle position: {e}")
 
@@ -479,13 +538,8 @@ class ManualControl:
         finally:
             self.cleanup()
         
-        return True
-# 2025-10-13 19:09:18,028 - INFO - Connected to CARLA at localhost:2000
-# 2025-10-13 19:09:18,030 - INFO - Connected to XML-RPC bridge at localhost:8090
-# 2025-10-13 19:09:18,042 - ERROR - Failed to spawn vehicle: Spawn failed because of collision at spawn position
-# 2025-10-13 19:09:18,042 - WARNING - Failed to spawn vehicle directly via CARLA, trying XML-RPC fallback...
-# 2025-10-13 19:09:18,043 - ERROR - Failed to spawn vehicle via XML-RPC
-# 2025-10-13 19:09:18,043 - ERROR - Failed to spawn vehicle via both direct CARLA and XML-RPC methods
+            return True
+
 def main():
     parser = argparse.ArgumentParser(description='Manual Control for CARLA-SUMO Co-simulation')
     parser.add_argument('--carla-host', default='localhost', help='CARLA server host')
