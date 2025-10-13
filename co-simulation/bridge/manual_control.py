@@ -480,7 +480,12 @@ class ManualControl:
             self.cleanup()
         
         return True
-
+# 2025-10-13 19:09:18,028 - INFO - Connected to CARLA at localhost:2000
+# 2025-10-13 19:09:18,030 - INFO - Connected to XML-RPC bridge at localhost:8090
+# 2025-10-13 19:09:18,042 - ERROR - Failed to spawn vehicle: Spawn failed because of collision at spawn position
+# 2025-10-13 19:09:18,042 - WARNING - Failed to spawn vehicle directly via CARLA, trying XML-RPC fallback...
+# 2025-10-13 19:09:18,043 - ERROR - Failed to spawn vehicle via XML-RPC
+# 2025-10-13 19:09:18,043 - ERROR - Failed to spawn vehicle via both direct CARLA and XML-RPC methods
 def main():
     parser = argparse.ArgumentParser(description='Manual Control for CARLA-SUMO Co-simulation')
     parser.add_argument('--carla-host', default='localhost', help='CARLA server host')
