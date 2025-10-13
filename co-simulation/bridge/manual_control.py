@@ -309,7 +309,7 @@ class ManualControl:
                                   f"({current_transform.location.x:.2f}, "
                                   f"{current_transform.location.y:.2f}, "
                                   f"{current_transform.location.z:.2f})")
-                        logger.info(f"Velocity: {current_velocity.length():.2f} m/s")
+                        logger.info(f"Velocity: {current_velocity.length:.2f} m/s")
                 
                 self.last_position = current_transform
                 self.last_position_update = current_time
