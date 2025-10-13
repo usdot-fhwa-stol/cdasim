@@ -559,6 +559,34 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
+        // Handle added vehicles from external simulators (like CARLA)
+        for (VehicleData addedVehicle : vehicleUpdates.getAdded()) {
+            String vehicleId = addedVehicle.getName();
+            if (!externalVehicleMap.containsKey(vehicleId)) {
+                log.info("Adding external vehicle '{}' from {} to SUMO", vehicleId, vehicleUpdates.getSenderId());
+                
+                // Add to external vehicle map
+                ExternalVehicleState vehicleState = new ExternalVehicleState();
+                vehicleState.setLastMovementInfo(addedVehicle);
+                vehicleState.setAdded(true);
+                externalVehicleMap.put(vehicleId, vehicleState);
+                
+                // Send VehicleFederateAssignment to mark this vehicle as externally simulated
+                try {
+                    VehicleFederateAssignment assignment = new VehicleFederateAssignment(
+                        vehicleUpdates.getTime(), 
+                        vehicleId, 
+                        vehicleUpdates.getSenderId()
+                    );
+                    rti.triggerInteraction(assignment);
+                    log.debug("Sent VehicleFederateAssignment for external vehicle '{}'", vehicleId);
+                } catch (IllegalValueException e) {
+                    log.error("Failed to send VehicleFederateAssignment for vehicle '{}': {}", vehicleId, e.getMessage());
+                }
+            }
+        }
+
+        // Handle updated vehicles
         ExternalVehicleState vehicleState;
         for (VehicleData updatedVehicle : vehicleUpdates.getUpdated()) {
             vehicleState = externalVehicleMap.get(updatedVehicle.getName());
@@ -567,9 +595,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             }
         }
 
+        // Handle removed vehicles
         for (String removed : vehicleUpdates.getRemovedNames()) {
             if (externalVehicleMap.containsKey(removed)) {
+                log.info("Removing external vehicle '{}' from SUMO", removed);
                 traci.getSimulationControl().removeVehicle(removed, VehicleSetRemove.Reason.ARRIVED);
+                externalVehicleMap.remove(removed);
             }
         }
     }
@@ -1284,6 +1315,46 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 }
                 if (latestVehicleData != null) {
                     try {
+                        // Check if vehicle exists in SUMO, if not, add it first
+                        if (!traci.getSimulationControl().getKnownVehicles().contains(external.getKey())) {
+                            // Add external vehicle to SUMO at the specified position
+                            log.info("Adding external vehicle '{}' to SUMO at position ({}, {})", 
+                                external.getKey(), 
+                                latestVehicleData.getPosition().toCartesian().getX(),
+                                latestVehicleData.getPosition().toCartesian().getY());
+                            
+                            // Use a default route and vehicle type for external vehicles
+                            String defaultRoute = "default_route";
+                            String defaultVehicleType = "DEFAULT_VEHTYPE";
+                            
+                            // Ensure default route exists
+                            if (!routeCache.containsKey(defaultRoute)) {
+                                // Create a simple default route if it doesn't exist
+                                List<String> defaultEdges = new ArrayList<>();
+                                // Try to get any available edge as a fallback
+                                try {
+                                    List<String> availableEdges = traci.getEdgeControl().getEdgeIds();
+                                    if (!availableEdges.isEmpty()) {
+                                        defaultEdges.add(availableEdges.get(0));
+                                        VehicleRoute defaultRouteObj = new VehicleRoute(defaultRoute, defaultEdges, new ArrayList<>(), 0d);
+                                        routeCache.put(defaultRoute, defaultRouteObj);
+                                        traci.getRouteControl().addRoute(defaultRoute, defaultEdges);
+                                    }
+                                } catch (Exception e) {
+                                    log.warn("Could not create default route for external vehicle: {}", e.getMessage());
+                                }
+                            }
+                            
+                            if (routeCache.containsKey(defaultRoute)) {
+                                traci.getSimulationControl().addVehicle(external.getKey(), defaultRoute, defaultVehicleType, "random", "0", "0");
+                                log.info("Successfully added external vehicle '{}' to SUMO", external.getKey());
+                            } else {
+                                log.warn("Could not add external vehicle '{}' to SUMO - no default route available", external.getKey());
+                                continue;
+                            }
+                        }
+                        
+                        // Now move the vehicle to the correct position
                         traci.getVehicleControl().moveToXY(external.getKey(),
                                 latestVehicleData.getPosition().toCartesian(), latestVehicleData.getHeading(),
                                 VehicleSetMoveToXY.Mode.KEEP_ROUTE);

@@ -1007,7 +1007,10 @@ public class CarlaXmlRpcClient {
             // Find added and updated actors
             for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
                 String actorId = entry.getKey();
-                Map<String, Object> currentState = entry.getValue();
+                Map<String, Object> currentState = new HashMap<>(entry.getValue());
+                
+                // Add actor ID to the state map so it can be retrieved later
+                currentState.put("id", actorId);
                 
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
@@ -1142,11 +1145,27 @@ public class CarlaXmlRpcClient {
                     heading = rotation.get(1); // yaw is typically the second element
                 }
                 
-                // Create VehicleData using Builder pattern
+                // Extract velocity if available
+                double speed = 0.0;
+                Object velocity = actorInfo.get("velocity");
+                if (velocity instanceof Map) {
+                    Object vel = ((Map<?,?>) velocity).get("linear");
+                    if (vel instanceof List) {
+                        List<?> velList = (List<?>) vel;
+                        if (velList.size() >= 3) {
+                            double vx = velList.get(0) instanceof Number ? ((Number)velList.get(0)).doubleValue() : 0.0;
+                            double vy = velList.get(1) instanceof Number ? ((Number)velList.get(1)).doubleValue() : 0.0;
+                            speed = Math.sqrt(vx * vx + vy * vy);
+                        }
+                    }
+                }
+                
+                // Create VehicleData using Builder pattern with proper route information for external vehicles
                 return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
                     .position(null, position) // No GeoPoint, just CartesianPoint
-                    .movement(0.0, 0.0, 0.0) // speed, acceleration, distance
+                    .movement(speed, 0.0, 0.0) // speed, acceleration, distance
                     .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, heading, 0.0) // drive direction, heading, slope
+                    .route("default_route") // Use default route for external vehicles
                     .create();
             }
         } catch (Exception e) {
