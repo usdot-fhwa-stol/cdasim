@@ -12,7 +12,8 @@
 # SPDX-License-Identifier: EPL-2.0
 
 # Contact: Zongtan.Li@uga.edu
-
+# 2025-10-13 19:13:30,278 - INFO - Vehicle moved 344.08m to position: (298.00, -172.00, 0.20)
+# 2025-10-13 19:13:30,278 - ERROR - Failed to update position tracking: 'Vector3D' object has no attribute 'length'
 """
 Manual Control Script for CARLA-SUMO Co-simulation
 
