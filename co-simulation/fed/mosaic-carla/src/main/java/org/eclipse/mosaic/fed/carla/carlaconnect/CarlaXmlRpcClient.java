@@ -623,9 +623,13 @@ public class CarlaXmlRpcClient {
             Object result = executeWithRetry(GET_ALL_ACTORS, params, DEFAULT_RETRY_ATTEMPTS);
             
             if (result instanceof Map) {
-                return (Map<String, Map<String, Object>>) result;
+                Map<String, Map<String, Object>> actors = (Map<String, Map<String, Object>>) result;
+                log.debug("Retrieved {} actors from CARLA XML-RPC server", actors.size());
+                return actors;
+            } else {
+                log.warn("getAllActors returned unexpected result type: {}", result != null ? result.getClass().getSimpleName() : "null");
+                return new HashMap<>();
             }
-            return new HashMap<>();
         } catch (Exception e) {
             log.error("Failed to get all actors: {}", e.getMessage());
             return new HashMap<>();
@@ -1003,6 +1007,7 @@ public class CarlaXmlRpcClient {
         try {
             // Get current actors
             Map<String, Map<String, Object>> currentActors = getAllActors();
+            log.debug("Current actors count: {}, Previous actors count: {}", currentActors.size(), previousActorStates.size());
             
             // Find added and updated actors
             for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
@@ -1015,11 +1020,13 @@ public class CarlaXmlRpcClient {
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
                     added.add(currentState);
+                    log.info("Detected new actor: {}", actorId);
                 } else {
                     // Existing actor - check for changes
                     Map<String, Object> previousState = previousActorStates.get(actorId);
                     if (hasActorStateChanged(previousState, currentState)) {
                         updated.add(currentState);
+                        log.debug("Detected updated actor: {}", actorId);
                     }
                 }
             }
@@ -1028,6 +1035,7 @@ public class CarlaXmlRpcClient {
             for (String previousActorId : previousActorStates.keySet()) {
                 if (!currentActors.containsKey(previousActorId)) {
                     removed.add(previousActorId);
+                    log.info("Detected removed actor: {}", previousActorId);
                 }
             }
             
@@ -1038,6 +1046,8 @@ public class CarlaXmlRpcClient {
             changes.put("added", added);
             changes.put("updated", updated);
             changes.put("removed", removed);
+            
+            log.debug("Actor changes: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
             
         } catch (Exception e) {
             log.error("Failed to get actor changes: {}", e.getMessage());
