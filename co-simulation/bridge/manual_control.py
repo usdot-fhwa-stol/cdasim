@@ -12,8 +12,7 @@
 # SPDX-License-Identifier: EPL-2.0
 
 # Contact: Zongtan.Li@uga.edu
-# 2025-10-13 19:13:30,278 - INFO - Vehicle moved 344.08m to position: (298.00, -172.00, 0.20)
-# 2025-10-13 19:13:30,278 - ERROR - Failed to update position tracking: 'Vector3D' object has no attribute 'length'
+
 """
 Manual Control Script for CARLA-SUMO Co-simulation
 
@@ -39,6 +38,7 @@ import time
 import threading
 import signal
 import logging
+import math
 from typing import Optional, Dict, Any
 import xmlrpc.client
 
@@ -310,7 +310,9 @@ class ManualControl:
                                   f"({current_transform.location.x:.2f}, "
                                   f"{current_transform.location.y:.2f}, "
                                   f"{current_transform.location.z:.2f})")
-                        logger.info(f"Velocity: {current_velocity.length:.2f} m/s")
+                        # Calculate velocity magnitude using math
+                        velocity_magnitude = math.sqrt(current_velocity.x**2 + current_velocity.y**2 + current_velocity.z**2)
+                        logger.info(f"Velocity: {velocity_magnitude:.2f} m/s")
                 
                 self.last_position = current_transform
                 self.last_position_update = current_time
