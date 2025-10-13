@@ -16,10 +16,9 @@
 """
 Manual Control Script for CARLA-SUMO Co-simulation
 
-This script creates a keyboard-controlled vehicle in CARLA via XML-RPC to test position synchronization
-with SUMO. The vehicle is spawned through the XML-RPC bridge server. When the script stops, the vehicle 
-is properly removed from CARLA, and the CARLA Ambassador will detect the removal and send VehicleUpdates 
-with removedNames to SUMO.
+This script creates a keyboard-controlled vehicle in CARLA to test position synchronization
+with SUMO. When the script stops, the vehicle is properly removed from CARLA, and the
+CARLA Ambassador will detect the removal and send VehicleUpdates with removedNames to SUMO.
 
 Usage:
     python manual_control.py [--carla-host localhost] [--carla-port 2000] [--xmlrpc-host localhost] [--xmlrpc-port 8090]
@@ -465,15 +464,16 @@ class ManualControl:
             logger.error("Failed to connect to CARLA")
             return False
         
-        # Connect to XML-RPC bridge (required for vehicle spawning)
-        if not self.connect_xmlrpc():
-            logger.error("Failed to connect to XML-RPC bridge")
-            return False
+        # Connect to XML-RPC bridge (optional)
+        self.connect_xmlrpc()
         
-        # Spawn vehicle via XML-RPC
-        if not self.spawn_vehicle_via_xmlrpc():
-            logger.error("Failed to spawn vehicle via XML-RPC")
-            return False
+        # Spawn vehicle directly via CARLA (default method)
+        if not self.spawn_vehicle():
+            logger.warning("Failed to spawn vehicle directly via CARLA, trying XML-RPC fallback...")
+            # Fallback to XML-RPC method if direct CARLA spawning fails
+            if not self.spawn_vehicle_via_xmlrpc():
+                logger.error("Failed to spawn vehicle via both direct CARLA and XML-RPC methods")
+                return False
         
         # Start control loop
         self.running = True
