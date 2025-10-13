@@ -270,20 +270,25 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 
 ## License
 
-2025-09-29 18:06:52,249 ERROR ProcessLoggingThread:72 - Process carla : chmod: changing permissions of '/opt/carla/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping': Operation not permitted
-
-2025-09-29 19:11:20,821 - ERROR - spawn_actor error: blueprint 'vehicle.sumo' not found
-
-
-Default extent_x used: 2.0
-========spawn_actor received: actor veh_0 of type vehicle.tesla.model3 loc=(300.418, -172.439, 0.000) rot=(pitch=0.0, yaw=180.3, roll=0.0) attributes={}========
-spawn actor at loc=300.418, -172.439, 0.000, rot=0.0, 180.3, 0.0
-spawn_actor error: Spawn failed because of collision at spawn position
---- Logging error ---
-Traceback (most recent call last):
-  File "carla_v0.9_xmlrpc_server.py", line 404, in spawn_actor
-    actor = self.world.spawn_actor(bp, transform)
-RuntimeError: Spawn failed because of collision at spawn position
+07.8 [INFO] ------------------------------------------------------------------------
+107.8 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure: Compilation failure: 
+107.8 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[576,60] constructor VehicleFederateAssignment in class org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment cannot be applied to given types;
+107.8 [ERROR]   required: long,java.lang.String,java.lang.String,double,java.lang.String,org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture,java.util.List<java.lang.String>
+107.8 [ERROR]   found: long,java.lang.String,java.lang.String
+107.8 [ERROR]   reason: actual and formal argument lists differ in length
+107.8 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1336,72] cannot find symbol
+107.8 [ERROR]   symbol:   method getEdgeControl()
+107.8 [ERROR]   location: variable traci of type org.eclipse.mosaic.fed.sumo.traci.TraciClient
+107.8 [ERROR] -> [Help 1]
+107.8 [ERROR] 
+107.8 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+107.8 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+107.8 [ERROR] 
+107.8 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+107.8 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+107.8 [ERROR] 
+107.8 [ERROR] After correcting the problems, you can resume the build with the command
+107.8 [ERROR]   mvn <args> -rf :mosaic-sumo
 
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
