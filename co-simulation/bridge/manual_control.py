@@ -82,6 +82,7 @@ class ManualControl:
         
         # Control state
         self.running = False
+        self.spawned_by_us = False
         self.control_thread: Optional[threading.Thread] = None
         self.input_queue = []
         self.input_lock = threading.Lock()
@@ -145,9 +146,36 @@ class ManualControl:
             logger.error(f"Failed to connect to XML-RPC bridge: {e}")
             return False
 
+    def _find_existing_manual_vehicle(self) -> Optional[carla.Vehicle]:
+        """Return existing vehicle with role_name 'manual_control_vehicle' if present."""
+        if not self.world:
+            return None
+        try:
+            actors = self.world.get_actors()
+            for actor in actors:
+                # Some actors may not have attributes
+                role = getattr(getattr(actor, 'attributes', {}), 'get', lambda *_: None)('role_name')
+                if role == 'manual_control_vehicle':
+                    return actor
+        except Exception as e:
+            logger.debug(f"Failed to search for existing manual control vehicle: {e}")
+        return None
+
     def spawn_vehicle(self) -> bool:
         """Spawn a controllable vehicle in CARLA"""
         try:
+            # Reuse existing manual control vehicle if present
+            existing = self._find_existing_manual_vehicle()
+            if existing:
+                self.vehicle = existing
+                self.vehicle_id = str(existing.id)
+                self.spawned_by_us = False
+                logger.info(f"Reusing existing manual control vehicle with ID: {self.vehicle_id}")
+                # Initialize position tracking
+                self.last_position = self.vehicle.get_transform()
+                self.last_position_update = time.time()
+                return True
+
             # Use fixed spawn position (298, -172) with proper ground height
             spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
             
@@ -219,6 +247,7 @@ class ManualControl:
                     return False
             
             self.vehicle_id = str(self.vehicle.id)
+            self.spawned_by_us = True
             logger.info(f"Spawned vehicle with ID: {self.vehicle_id} at position: {spawn_point.location}")
             
             # Set initial position for tracking
@@ -237,6 +266,18 @@ class ManualControl:
             if not self.xmlrpc_client:
                 logger.error("XML-RPC client not connected")
                 return False
+
+            # Reuse existing manual control vehicle if present
+            existing = self._find_existing_manual_vehicle()
+            if existing:
+                self.vehicle = existing
+                self.vehicle_id = str(existing.id)
+                self.spawned_by_us = False
+                logger.info(f"Reusing existing manual control vehicle with ID: {self.vehicle_id}")
+                # Initialize position tracking
+                self.last_position = self.vehicle.get_transform()
+                self.last_position_update = time.time()
+                return True
             
             # Use fixed spawn position (298, -172) with proper ground height
             spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
@@ -267,6 +308,7 @@ class ManualControl:
                     if hasattr(actor, 'attributes') and actor.attributes.get('role_name') == 'manual_control_vehicle':
                         self.vehicle = actor
                         self.vehicle_id = str(actor.id)
+                        self.spawned_by_us = True
                         logger.info(f"Found spawned vehicle with ID: {self.vehicle_id}")
                         return True
             
@@ -561,7 +603,7 @@ class ManualControl:
 
     def destroy_vehicle(self):
         """Destroy the controlled vehicle"""
-        if self.vehicle:
+        if self.vehicle and self.spawned_by_us:
             try:
                 vehicle_id = self.vehicle_id
                 self.vehicle.destroy()
@@ -582,7 +624,7 @@ class ManualControl:
 
     def destroy_vehicle_via_xmlrpc(self):
         """Destroy vehicle via XML-RPC bridge"""
-        if self.vehicle_id and self.xmlrpc_client:
+        if self.vehicle_id and self.xmlrpc_client and self.spawned_by_us:
             try:
                 success = self.xmlrpc_client.destroy_actor(self.vehicle_id)
                 if success:
@@ -607,11 +649,7 @@ class ManualControl:
         self.destroy_vehicle_via_xmlrpc()
         
         # Close connections
-        if self.xmlrpc_client:
-            try:
-                self.xmlrpc_client.disconnect()
-            except:
-                pass
+        # Avoid triggering server-side global cleanup; do not call disconnect here
         
         logger.info("Cleanup completed")
 
