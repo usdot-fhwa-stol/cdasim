@@ -1018,7 +1018,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // Create VehicleData using Builder pattern with SUMO coordinates
                 return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
                     .position(null, sumoPosition) // No GeoPoint, just CartesianPoint with SUMO coordinates
-                    .projectedPosition(sumoPosition) // Set projected position for SUMO compatibility
                     .movement(speed, 0.0, 0.0) // speed, acceleration, distance
                     .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, sumoTransform.yaw, 0.0) // drive direction, heading, slope
                     .route("external_carla_route") // Use specific route for external CARLA vehicles
