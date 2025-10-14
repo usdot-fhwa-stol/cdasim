@@ -467,11 +467,28 @@ class CarlaXMLRPCServer:
                         # Double-check actor still exists and is valid
                         if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
                             t = actor.get_transform()
-                            out[alias] = {
+                            actor_data = {
                                 'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
-                                'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
-                                'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                                'transform': {
+                                    'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                    'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                                }
                             }
+                            
+                            # Add velocity information if available
+                            if hasattr(actor, 'get_velocity'):
+                                try:
+                                    v = actor.get_velocity()
+                                    actor_data['velocity'] = {
+                                        'linear': [float(v.x), float(v.y), float(v.z)]
+                                    }
+                                except Exception as e:
+                                    logger.debug("Failed to get velocity for actor %s: %s", alias, e)
+                                    actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            else:
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            
+                            out[alias] = actor_data
                         else:
                             logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
                     except Exception as e:

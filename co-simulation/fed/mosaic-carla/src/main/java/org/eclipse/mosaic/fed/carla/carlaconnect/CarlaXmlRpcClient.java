@@ -1216,6 +1216,23 @@ public class CarlaXmlRpcClient {
             }
         }
         
+        // Compare velocity information
+        Object prevVelocity = previousState.get("velocity");
+        Object currVelocity = currentState.get("velocity");
+        
+        if (prevVelocity instanceof Map && currVelocity instanceof Map) {
+            Map<?,?> prevVelMap = (Map<?,?>) prevVelocity;
+            Map<?,?> currVelMap = (Map<?,?>) currVelocity;
+            
+            Object prevLinear = prevVelMap.get("linear");
+            Object currLinear = currVelMap.get("linear");
+            
+            // Compare linear velocities
+            if (!Objects.equals(prevLinear, currLinear)) {
+                return true;
+            }
+        }
+        
         return false;
     }
 

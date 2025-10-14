@@ -377,40 +377,43 @@ class ManualControl:
         logger.info("Controls: W/A/S/D - Move, SPACE - Reverse, R - Reset, H - Help, Q/X/ESC - Exit")
         logger.info("Note: In Docker, press Enter after each key press")
         
-        # Check if we're in a Docker environment
-        is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
-        input_thread = None
-        
-        if is_docker:
-            logger.info("Docker environment detected - using line-based input")
-            # Start input thread for Docker
-            input_thread = threading.Thread(target=self._input_thread, daemon=True)
-            input_thread.start()
+        # No Docker dependency - use pygame only
         
         try:
             import pygame
             pygame.init()
-            pygame.display.set_mode((100, 100))  # Small window for input focus
+            
+            # Create a proper window for better user experience
+            screen = pygame.display.set_mode((400, 300))
+            pygame.display.set_caption("CARLA Manual Control")
+            clock = pygame.time.Clock()
+            font = pygame.font.Font(None, 24)
+            
             logger.info("Using pygame for input handling")
             
         except ImportError:
-            logger.warning("pygame not available, using keyboard input fallback")
-            pygame = None
+            logger.error("pygame not available. Please install: pip install pygame")
+            return
         
         # Initialize input method
-        input_method = "pygame" if pygame else ("docker_input" if is_docker else "keyboard")
-        logger.info(f"Input method: {input_method}")
+        logger.info("Input method: pygame")
         
         while self.running:
             try:
-                # Handle input
-                if pygame:
-                    self._handle_pygame_input(pygame)
-                elif is_docker:
-                    # Process queued input from input thread
-                    self._process_queued_input()
-                else:
-                    self._handle_keyboard_input()
+                # Handle pygame events
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        self.running = False
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                            self.running = False
+                        elif event.key == pygame.K_r:
+                            self._reset_vehicle_position()
+                        elif event.key == pygame.K_h:
+                            self._print_help()
+                
+                # Update controls based on key states
+                self._update_pygame_controls()
                 
                 # Update vehicle control
                 self.update_vehicle_control()
@@ -418,12 +421,95 @@ class ManualControl:
                 # Update position tracking
                 self.update_position_tracking()
                 
-                # Small delay to prevent excessive CPU usage
-                time.sleep(0.01)
+                # Draw HUD
+                self._draw_pygame_hud(screen, font)
+                
+                # Limit frame rate
+                clock.tick(60)
                 
             except Exception as e:
                 logger.error(f"Error in control loop: {e}")
                 time.sleep(0.1)
+        
+        pygame.quit()
+
+    def _update_pygame_controls(self):
+        """Update control state based on currently pressed keys"""
+        import pygame
+        keys = pygame.key.get_pressed()
+        
+        # Throttle/Brake
+        if keys[pygame.K_w]:
+            self.throttle = min(1.0, self.throttle + self.throttle_speed * 0.016)  # 60 FPS
+            self.brake = max(0.0, self.brake - self.brake_speed * 0.016)
+        elif keys[pygame.K_s]:
+            self.brake = min(1.0, self.brake + self.brake_speed * 0.016)
+            self.throttle = max(0.0, self.throttle - self.throttle_speed * 0.016)
+        else:
+            # Gradual release
+            self.throttle = max(0.0, self.throttle - self.throttle_speed * 0.016)
+            self.brake = max(0.0, self.brake - self.brake_speed * 0.016)
+        
+        # Steering
+        if keys[pygame.K_a]:
+            self.steer = max(-1.0, self.steer - self.steer_speed * 0.016)
+        elif keys[pygame.K_d]:
+            self.steer = min(1.0, self.steer + self.steer_speed * 0.016)
+        else:
+            # Gradual return to center
+            if self.steer > 0:
+                self.steer = max(0.0, self.steer - self.steer_speed * 0.016)
+            else:
+                self.steer = min(0.0, self.steer + self.steer_speed * 0.016)
+        
+        # Reverse
+        self.reverse = keys[pygame.K_SPACE]
+
+    def _draw_pygame_hud(self, screen, font):
+        """Draw heads-up display with vehicle information"""
+        import pygame
+        # Clear screen
+        screen.fill((0, 0, 0))
+        
+        # Get vehicle information
+        speed = 0.0
+        position = "N/A"
+        if self.vehicle:
+            try:
+                velocity = self.vehicle.get_velocity()
+                speed = math.sqrt(velocity.x**2 + velocity.y**2 + velocity.z**2) * 3.6  # Convert to km/h
+                transform = self.vehicle.get_transform()
+                position = f"({transform.location.x:.1f}, {transform.location.y:.1f})"
+            except:
+                pass
+        
+        # Draw information
+        y_offset = 20
+        info_lines = [
+            "CARLA Manual Control",
+            "",
+            f"Speed: {speed:.1f} km/h",
+            f"Position: {position}",
+            f"Throttle: {self.throttle:.2f}",
+            f"Brake: {self.brake:.2f}",
+            f"Steer: {self.steer:.2f}",
+            "",
+            "Controls:",
+            "W/S: Throttle/Brake",
+            "A/D: Steering",
+            "SPACE: Reverse",
+            "R: Reset Position",
+            "H: Help",
+            "ESC/Q: Exit"
+        ]
+        
+        for line in info_lines:
+            if line:
+                text = font.render(line, True, (255, 255, 255))
+                screen.blit(text, (10, y_offset))
+            y_offset += 25
+        
+        pygame.display.flip()
 
     def _handle_pygame_input(self, pygame):
         """Handle input using pygame"""
