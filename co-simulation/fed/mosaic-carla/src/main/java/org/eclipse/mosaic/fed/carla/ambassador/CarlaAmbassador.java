@@ -532,76 +532,46 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         log.info("EXTERNAL VEHICLE DETECTION: Detected changes - Added: {}, Updated: {}, Removed: {}", 
                                 addedActors.size(), updatedActors.size(), removedActors.size());
                         
-                        // Log detailed information about added actors
+                        // Convert CARLA actor information to VehicleData for proper SUMO synchronization
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicleData = new java.util.ArrayList<>();
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicleData = new java.util.ArrayList<>();
+                        
+                        // Convert added actors
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
-                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            log.info("EXTERNAL VEHICLE ADDED: Actor ID={}, Info={}", actorId, actorInfo);
-                        }
-                        
-                        // Log detailed information about updated actors
-                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
-                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            log.info("EXTERNAL VEHICLE UPDATED: Actor ID={}, Info={}", actorId, actorInfo);
-                        }
-                        
-                        // Log detailed information about removed actors
-                        for (String removedId : removedActors) {
-                            log.info("EXTERNAL VEHICLE REMOVED: Actor ID={}", removedId);
-                        }
-                        
-                        // Convert to VehicleData objects
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicles = new java.util.ArrayList<>();
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicles = new java.util.ArrayList<>();
-                        
-                        // Process added actors
-                        for (java.util.Map<String, Object> actorInfo : addedActors) {
-                            // Extract actor ID from the actor info (assuming it's stored as a key in the original map)
-                            // This is a simplified approach - in practice, you might need to store actor ID differently
-                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = createVehicleDataFromCarlaActor(actorId, actorInfo);
-                            if (vehicleData != null) {
-                                addedVehicles.add(vehicleData);
+                            String actorId = (String) actorInfo.get("id");
+                            if (actorId != null) {
+                                org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
+                                if (vehicleData != null) {
+                                    addedVehicleData.add(vehicleData);
+                                    log.debug("Converted external CARLA actor '{}' to VehicleData for SUMO sync", actorId);
+                                }
                             }
                         }
                         
-                        // Process updated actors
+                        // Convert updated actors
                         for (java.util.Map<String, Object> actorInfo : updatedActors) {
-                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = createVehicleDataFromCarlaActor(actorId, actorInfo);
-                            if (vehicleData != null) {
-                                updatedVehicles.add(vehicleData);
+                            String actorId = (String) actorInfo.get("id");
+                            if (actorId != null) {
+                                org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
+                                if (vehicleData != null) {
+                                    updatedVehicleData.add(vehicleData);
+                                    log.debug("Converted updated CARLA actor '{}' to VehicleData for SUMO sync", actorId);
+                                }
                             }
                         }
                         
-                        // Update current actor IDs cache
                         currentActorIds.clear();
                         java.util.Map<String, java.util.Map<String, Object>> allActors = actorClient.getAllActors();
                         currentActorIds.addAll(allActors.keySet());
                         
-                        // Publish VehicleUpdates if there are changes
-                        if (!addedVehicles.isEmpty() || !updatedVehicles.isEmpty() || !removedActors.isEmpty()) {
-                            VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicles, updatedVehicles, removedActors);
+                        // Publish VehicleUpdates with converted VehicleData if there are changes
+                        if (!addedVehicleData.isEmpty() || !updatedVehicleData.isEmpty() || !removedActors.isEmpty()) {
+                            VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicleData, updatedVehicleData, removedActors);
                             this.rti.triggerInteraction(vehicleUpdates);
-                            log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
-                                addedVehicles.size(), updatedVehicles.size(), removedActors.size());
-                            
-                            // Log each vehicle being sent to SUMO
-                            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicle : addedVehicles) {
-                                log.info("CARLA->SUMO SYNC: Sending new vehicle to SUMO - ID={}, Position=({}, {}), Speed={}", 
-                                    vehicle.getName(), 
-                                    vehicle.getPosition().toCartesian().getX(), 
-                                    vehicle.getPosition().toCartesian().getY(),
-                                    vehicle.getSpeed());
-                            }
-                            
-                            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicle : updatedVehicles) {
-                                log.info("CARLA->SUMO SYNC: Sending vehicle update to SUMO - ID={}, Position=({}, {}), Speed={}", 
-                                    vehicle.getName(), 
-                                    vehicle.getPosition().toCartesian().getX(), 
-                                    vehicle.getPosition().toCartesian().getY(),
-                                    vehicle.getSpeed());
-                            }
+                            log.info("Published VehicleUpdates to SUMO: added={}, updated={}, removed={}", 
+                                    addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
                         }
+
 
                         // Handle traffic lights using Client's change detection
                         java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
@@ -887,6 +857,95 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
+     * Convert CARLA actor information to VehicleData for SUMO synchronization.
+     * This method extracts position, velocity, and other vehicle properties from CARLA actor data
+     * and converts them to the SUMO coordinate system.
+     * 
+     * @param actorId CARLA actor ID
+     * @param actorInfo CARLA actor information map
+     * @return VehicleData object or null if conversion fails
+     */
+    private org.eclipse.mosaic.lib.objects.vehicle.VehicleData convertCarlaActorToVehicleData(String actorId, java.util.Map<String, Object> actorInfo) {
+        try {
+            // Extract transform information
+            Object transformObj = actorInfo.get("transform");
+            if (!(transformObj instanceof java.util.Map)) {
+                log.warn("No transform information found for CARLA actor '{}'", actorId);
+                return null;
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> transform = (java.util.Map<String, Object>) transformObj;
+            
+            // Extract location
+            Object locationObj = transform.get("location");
+            if (!(locationObj instanceof java.util.List)) {
+                log.warn("No location information found for CARLA actor '{}'", actorId);
+                return null;
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.List<Object> locationList = (java.util.List<Object>) locationObj;
+            if (locationList.size() < 3) {
+                log.warn("Insufficient location data for CARLA actor '{}'", actorId);
+                return null;
+            }
+            
+            double xCarla = ((Number) locationList.get(0)).doubleValue();
+            double yCarla = ((Number) locationList.get(1)).doubleValue();
+            double zCarla = ((Number) locationList.get(2)).doubleValue();
+            
+            // Extract rotation
+            Object rotationObj = transform.get("rotation");
+            double yawDeg = 0.0;
+            if (rotationObj instanceof java.util.List) {
+                @SuppressWarnings("unchecked")
+                java.util.List<Object> rotationList = (java.util.List<Object>) rotationObj;
+                if (rotationList.size() >= 2) {
+                    yawDeg = ((Number) rotationList.get(1)).doubleValue(); // yaw is typically the second element
+                }
+            }
+            
+            // Convert CARLA coordinates to SUMO coordinates
+            Transform sumoTransform = sumoTransformFromCarla(xCarla, yCarla, zCarla, yawDeg, null);
+            
+            // Extract velocity information
+            double speed = 0.0;
+            Object velocityObj = actorInfo.get("velocity");
+            if (velocityObj instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> velocityMap = (java.util.Map<String, Object>) velocityObj;
+                Object linearVelObj = velocityMap.get("linear");
+                if (linearVelObj instanceof java.util.List) {
+                    @SuppressWarnings("unchecked")
+                    java.util.List<Object> linearVelList = (java.util.List<Object>) linearVelObj;
+                    if (linearVelList.size() >= 3) {
+                        double vx = ((Number) linearVelList.get(0)).doubleValue();
+                        double vy = ((Number) linearVelList.get(1)).doubleValue();
+                        speed = Math.sqrt(vx * vx + vy * vy); // Calculate speed magnitude
+                    }
+                }
+            }
+            
+            // Create CartesianPoint for projected position
+            org.eclipse.mosaic.lib.geo.CartesianPoint projectedPosition = 
+                org.eclipse.mosaic.lib.geo.CartesianPoint.xy(sumoTransform.x, sumoTransform.y);
+            
+            // Create VehicleData using Builder pattern
+            return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(time, actorId)
+                .position(null, projectedPosition) // No GeoPoint, just CartesianPoint
+                .movement(speed, 0.0, 0.0) // speed, acceleration, distance
+                .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, sumoTransform.yaw, 0.0) // drive direction, heading, slope
+                .route("external_carla_route") // Use special route for external CARLA vehicles
+                .create();
+                
+        } catch (Exception e) {
+            log.warn("Failed to convert CARLA actor '{}' to VehicleData: {}", actorId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Convert CARLA position and heading to SUMO frame, applying netOffset and handedness.
      * This is the inverse transformation of carlaTransformFromSumo.
      * Used for external CARLA vehicle synchronization to SUMO.
@@ -934,100 +993,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         return new Transform(sumoX, sumoY, sumoZ, 0.0, sumoHeadingDeg, 0.0);
     }
 
-    /**
-     * Convert CARLA actor information to VehicleData with proper coordinate transformation.
-     * This method applies sumoTransformFromCarla to convert CARLA coordinates to SUMO coordinates.
-     * 
-     * @param actorId Actor ID
-     * @param actorInfo Actor information from CARLA
-     * @return VehicleData object with SUMO coordinates or null if conversion fails
-     */
-    private org.eclipse.mosaic.lib.objects.vehicle.VehicleData createVehicleDataFromCarlaActor(String actorId, java.util.Map<String, Object> actorInfo) {
-        try {
-            // Extract position and rotation from transform
-            java.util.List<Double> location = null;
-            java.util.List<Double> rotation = null;
-            
-            Object transform = actorInfo.get("transform");
-            if (transform instanceof java.util.Map) {
-                Object loc = ((java.util.Map<?,?>) transform).get("location");
-                Object rot = ((java.util.Map<?,?>) transform).get("rotation");
-                
-                if (loc instanceof java.util.List) {
-                    location = new java.util.ArrayList<>();
-                    for (Object o : (java.util.List<?>) loc) {
-                        if (o instanceof Number) location.add(((Number)o).doubleValue());
-                    }
-                }
-                
-                if (rot instanceof java.util.List) {
-                    rotation = new java.util.ArrayList<>();
-                    for (Object o : (java.util.List<?>) rot) {
-                        if (o instanceof Number) rotation.add(((Number)o).doubleValue());
-                    }
-                }
-            }
-            
-            if (location != null && location.size() >= 3) {
-                // Extract CARLA coordinates
-                double carlaX = location.get(0);
-                double carlaY = location.get(1);
-                double carlaZ = location.get(2);
-                
-                // Extract CARLA yaw from rotation
-                Double carlaYaw = null;
-                if (rotation != null && rotation.size() >= 2) {
-                    carlaYaw = rotation.get(1); // yaw is typically the second element
-                }
-                
-                // Extract vehicle extent for coordinate conversion
-                Double extentX = null;
-                Object extent = actorInfo.get("extent");
-                if (extent instanceof java.util.Map) {
-                    Object x = ((java.util.Map<?,?>) extent).get("x");
-                    if (x instanceof Number) {
-                        extentX = ((Number) x).doubleValue();
-                    }
-                }
-                
-                // Convert CARLA coordinates to SUMO coordinates using our transformation function
-                Transform sumoTransform = sumoTransformFromCarla(carlaX, carlaY, carlaZ, carlaYaw, extentX);
-                
-                // Create SUMO position from transformed coordinates
-                org.eclipse.mosaic.lib.geo.CartesianPoint sumoPosition = org.eclipse.mosaic.lib.geo.CartesianPoint.xy(sumoTransform.x, sumoTransform.y);
-                
-                // Extract velocity if available
-                double speed = 0.0;
-                Object velocity = actorInfo.get("velocity");
-                if (velocity instanceof java.util.Map) {
-                    Object vel = ((java.util.Map<?,?>) velocity).get("linear");
-                    if (vel instanceof java.util.List) {
-                        java.util.List<?> velList = (java.util.List<?>) vel;
-                        if (velList.size() >= 3) {
-                            double vx = velList.get(0) instanceof Number ? ((Number)velList.get(0)).doubleValue() : 0.0;
-                            double vy = velList.get(1) instanceof Number ? ((Number)velList.get(1)).doubleValue() : 0.0;
-                            speed = Math.sqrt(vx * vx + vy * vy);
-                        }
-                    }
-                }
-                
-                log.debug("CARLA->SUMO TRANSFORM: Actor {} - CARLA({}, {}, {}) yaw={} -> SUMO({}, {}, {}) heading={}", 
-                    actorId, carlaX, carlaY, carlaZ, carlaYaw, 
-                    sumoTransform.x, sumoTransform.y, sumoTransform.z, sumoTransform.yaw);
-                
-                // Create VehicleData using Builder pattern with SUMO coordinates
-                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
-                    .position(null, sumoPosition) // No GeoPoint, just CartesianPoint with SUMO coordinates
-                    .movement(speed, 0.0, 0.0) // speed, acceleration, distance
-                    .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, sumoTransform.yaw, 0.0) // drive direction, heading, slope
-                    .route("external_carla_route") // Use specific route for external CARLA vehicles
-                    .create();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to create VehicleData for CARLA actor {}: {}", actorId, e.getMessage());
-        }
-        return null;
-    }
 
     /** Simple struct for passing transforms */
     private static class Transform {
@@ -1046,7 +1011,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             return r;
         }
     }
-
     /**
      * This method is called by the {@link AbstractFederateAmbassador}s whenever the
      * federate can safely process interactions in its incoming interaction queue.
@@ -1168,6 +1132,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
                 Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                double speed = vd.getSpeed(); // Get speed from VehicleData
+                
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
                 Double extentX = null;
                 try {
@@ -1187,11 +1153,32 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
                 java.util.List<Double> location = tf.toLocationList();
                 java.util.List<Double> rotation = tf.toRotationList();
+                
+                // Calculate velocity vector from speed and heading
+                java.util.List<Double> velocity = new java.util.ArrayList<>();
+                if (speed > 0.0 && heading != null) {
+                    // Convert heading from degrees to radians
+                    double headingRad = Math.toRadians(heading);
+                    // Calculate velocity components in CARLA coordinate system
+                    // Note: CARLA uses left-handed coordinate system, SUMO uses right-handed
+                    double vx = speed * Math.cos(headingRad);
+                    double vy = speed * Math.sin(headingRad);
+                    double vz = 0.0; // Assume no vertical velocity
+                    velocity.add(vx);
+                    velocity.add(vy);
+                    velocity.add(vz);
+                } else {
+                    // Zero velocity
+                    velocity.add(0.0);
+                    velocity.add(0.0);
+                    velocity.add(0.0);
+                }
 
                 boolean ok;
                 if (!currentActorIds.contains(id)) {
                     // Spawn a basic vehicle actor if missing
-                    log.info("Attempting to spawn CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
+                    log.info("Attempting to spawn CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
+                            id, location.get(0), location.get(1), rotation.get(1), speed);
                     String blueprint = carlaConfig != null && StringUtils.isNotBlank(carlaConfig.defaultVehicleBlueprint)
                             ? carlaConfig.defaultVehicleBlueprint
                             : "vehicle.tesla.model3";
@@ -1251,20 +1238,51 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         ok = carlaXmlRpcClient.spawnActor(blueprint, id, location, rotation, attributes);
                     }
                     if (ok) {
-                        log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {}", id, location.get(0), location.get(1), rotation.get(1));
+                        log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
+                                id, location.get(0), location.get(1), rotation.get(1), speed);
                         currentActorIds.add(id);
+                        
+                        // Set initial velocity after spawning
+                        if (multiXmlRpcManager != null) {
+                            boolean velocityOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorVelocity(id, velocity);
+                            if (velocityOk) {
+                                log.debug("Successfully set initial velocity for spawned actor '{}': {}", id, velocity);
+                            } else {
+                                log.debug("Failed to set initial velocity for spawned actor '{}'", id);
+                            }
+                        } else {
+                            boolean velocityOk = carlaXmlRpcClient.updateActorVelocity(id, velocity);
+                            if (velocityOk) {
+                                log.debug("Successfully set initial velocity for spawned actor '{}': {}", id, velocity);
+                            } else {
+                                log.debug("Failed to set initial velocity for spawned actor '{}'", id);
+                            }
+                        }
                     } else {
                         log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned false", id);
                     }
                 } else {
-                    // Update transform
+                    // Update transform and velocity for existing actors
+                    boolean transformOk = false;
+                    boolean velocityOk = false;
+                    
                     if (multiXmlRpcManager != null) {
-                        ok = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(id, location, rotation);
+                        transformOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(id, location, rotation);
+                        velocityOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorVelocity(id, velocity);
                     } else {
-                        ok = carlaXmlRpcClient.updateActorTransform(id, location, rotation);
+                        transformOk = carlaXmlRpcClient.updateActorTransform(id, location, rotation);
+                        velocityOk = carlaXmlRpcClient.updateActorVelocity(id, velocity);
                     }
-                    if (!ok) {
+                    
+                    if (!transformOk) {
                         log.debug("Failed to update CARLA actor transform for {}", id);
+                    }
+                    if (!velocityOk) {
+                        log.debug("Failed to update CARLA actor velocity for {}", id);
+                    }
+                    
+                    if (transformOk && velocityOk) {
+                        log.debug("Successfully updated CARLA actor '{}' transform and velocity (speed: {} m/s)", id, speed);
                     }
                 }
             };
