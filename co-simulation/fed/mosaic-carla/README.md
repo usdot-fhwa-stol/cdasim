@@ -269,26 +269,24 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 - MOSAIC RTI API
 
 ## License
-
-07.8 [INFO] ------------------------------------------------------------------------
-107.8 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure: Compilation failure: 
-107.8 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[576,60] constructor VehicleFederateAssignment in class org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment cannot be applied to given types;
-107.8 [ERROR]   required: long,java.lang.String,java.lang.String,double,java.lang.String,org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture,java.util.List<java.lang.String>
-107.8 [ERROR]   found: long,java.lang.String,java.lang.String
-107.8 [ERROR]   reason: actual and formal argument lists differ in length
-107.8 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1336,72] cannot find symbol
-107.8 [ERROR]   symbol:   method getEdgeControl()
-107.8 [ERROR]   location: variable traci of type org.eclipse.mosaic.fed.sumo.traci.TraciClient
-107.8 [ERROR] -> [Help 1]
-107.8 [ERROR] 
-107.8 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-107.8 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-107.8 [ERROR] 
-107.8 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-107.8 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-107.8 [ERROR] 
-107.8 [ERROR] After correcting the problems, you can resume the build with the command
-107.8 [ERROR]   mvn <args> -rf :mosaic-sumo
+108.6 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-sumo: Compilation failure: Compilation failure: 
+108.6 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[576,60] constructor VehicleFederateAssignment in class org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment cannot be applied to given types;
+108.6 [ERROR]   required: long,java.lang.String,java.lang.String,double,java.lang.String,org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture,java.util.List<java.lang.String>
+108.6 [ERROR]   found: long,java.lang.String,java.lang.String
+108.6 [ERROR]   reason: actual and formal argument lists differ in length
+108.6 [ERROR] /home/carma/src/co-simulation/fed/mosaic-sumo/src/main/java/org/eclipse/mosaic/fed/sumo/ambassador/AbstractSumoAmbassador.java:[1336,72] cannot find symbol
+108.6 [ERROR]   symbol:   method getEdgeControl()
+108.6 [ERROR]   location: variable traci of type org.eclipse.mosaic.fed.sumo.traci.TraciClient
+108.6 [ERROR] -> [Help 1]
+108.6 [ERROR] 
+108.6 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+108.6 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+108.6 [ERROR] 
+108.6 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+108.6 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+108.6 [ERROR] 
+108.6 [ERROR] After correcting the problems, you can resume the build with the command
+108.6 [ERROR]   mvn <args> -rf :mosaic-sumo
 
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
