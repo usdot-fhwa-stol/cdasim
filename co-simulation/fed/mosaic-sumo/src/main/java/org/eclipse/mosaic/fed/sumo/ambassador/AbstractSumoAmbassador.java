@@ -576,11 +576,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     VehicleFederateAssignment assignment = new VehicleFederateAssignment(
                         vehicleUpdates.getTime(), 
                         vehicleId, 
-                        vehicleUpdates.getSenderId(),
-                        0.0, // surroundingVehiclesRadius
-                        "DEFAULT_VEHTYPE", // vehicleTypeId
-                        null, // vehicleDeparture
-                        new ArrayList<>() // applications
+                        vehicleUpdates.getSenderId()
                     );
                     rti.triggerInteraction(assignment);
                     log.debug("Sent VehicleFederateAssignment for external vehicle '{}'", vehicleId);
@@ -1337,16 +1333,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                                 List<String> defaultEdges = new ArrayList<>();
                                 // Try to get any available edge as a fallback
                                 try {
-                                    // Get available routes and use edges from the first route
-                                    List<String> availableRoutes = traci.getRouteControl().getRouteIds();
-                                    if (!availableRoutes.isEmpty()) {
-                                        List<String> availableEdges = traci.getRouteControl().getRouteEdges(availableRoutes.get(0));
-                                        if (!availableEdges.isEmpty()) {
-                                            defaultEdges.add(availableEdges.get(0));
-                                            VehicleRoute defaultRouteObj = new VehicleRoute(defaultRoute, defaultEdges, new ArrayList<>(), 0d);
-                                            routeCache.put(defaultRoute, defaultRouteObj);
-                                            traci.getRouteControl().addRoute(defaultRoute, defaultEdges);
-                                        }
+                                    List<String> availableEdges = traci.getEdgeControl().getEdgeIds();
+                                    if (!availableEdges.isEmpty()) {
+                                        defaultEdges.add(availableEdges.get(0));
+                                        VehicleRoute defaultRouteObj = new VehicleRoute(defaultRoute, defaultEdges, new ArrayList<>(), 0d);
+                                        routeCache.put(defaultRoute, defaultRouteObj);
+                                        traci.getRouteControl().addRoute(defaultRoute, defaultEdges);
                                     }
                                 } catch (Exception e) {
                                     log.warn("Could not create default route for external vehicle: {}", e.getMessage());
