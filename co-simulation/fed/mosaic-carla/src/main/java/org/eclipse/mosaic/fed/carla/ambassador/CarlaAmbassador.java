@@ -170,6 +170,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             File sumoNet = new File(carlaConfig.sumoNetXmlPath);
             if (!sumoNet.exists())
                 throw new FileNotFoundException("carla_config.json 'sumoNetXmlPath' is invalid; TL mapping will be disabled.");
+            parseSumoNetFile(sumoNet);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
         } catch (FileNotFoundException e) {
