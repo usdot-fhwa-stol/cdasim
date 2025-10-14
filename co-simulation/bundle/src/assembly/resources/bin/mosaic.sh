@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x # echo commands
 
 # set maximum JVM memory
 javaMemorySizeXmx="2g"
@@ -17,7 +18,18 @@ dir_libs=./lib/third-party
 tmp=`ls ${dir_libs} | grep jar`
 libs=${dir_libs}/${tmp//[^A-Za-z0-9\-\.]/:${dir_libs}/}
 
+# check if mosaic/third-party jars exist
+if [[ -z "${mosaic}" || -z "${libs}" ]]; then
+  echo "ERROR: Could not build classpath. Check ./lib/mosaic and ./lib/third-party for jars."
+  exit 1
+fi
+
+echo "CLASSPATH=.:./etc:${mosaic}:${libs}"
+
 # create and run command
-cmd="java -Xmx${javaMemorySizeXmx} ${javaRemoteDebugging} \
-  -cp .:./etc:${mosaic}:${libs} \
-  org.eclipse.mosaic.starter.MosaicStarter $*"
+exec java -Xmx"${javaMemorySizeXmx}" \
+  ${javaRemoteDebugging:+${javaRemoteDebugging}} \
+  -Dlogback.configurationFile=/opt/carma-simulation/etc/logback.xml \
+  -Dlogback.debug=true \
+  -cp ".:/opt/carma-simulation/etc:${mosaic}:${libs}" \
+  org.eclipse.mosaic.starter.MosaicStarter "$@"
