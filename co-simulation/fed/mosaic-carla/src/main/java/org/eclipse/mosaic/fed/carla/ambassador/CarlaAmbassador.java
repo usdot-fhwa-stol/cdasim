@@ -471,6 +471,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     carlaXmlRpcClient.connect(60);
                 }
             }
+            
+            // Always check for actor changes on each time advance, not just on simulation steps
+            // This ensures we detect manually controlled vehicles and other external actors
+            checkAndPublishActorChanges(time);
+            
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
@@ -503,107 +508,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     // trigger all detection interactions
                     for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                         this.rti.triggerInteraction(detectionInteraction);
-                    }
-                }
-                // Handle actor operations
-                boolean actorConnected = false;
-                if (multiXmlRpcManager != null) {
-                    actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
-                    actorConnected = carlaXmlRpcClient.isConnected();
-                }
-                
-                if (actorConnected) {
-                    // Publish CARLA state updates to SUMO using VehicleUpdates and TrafficLightUpdates
-                    try {
-                        CarlaXmlRpcClient actorClient = null;
-                        if (multiXmlRpcManager != null) {
-                            actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                        } else {
-                            actorClient = carlaXmlRpcClient;
-                        }
-                        
-                        // Use Client's high-level change detection
-                        java.util.Map<String, Object> actorChanges = actorClient.getActorChanges();
-                        java.util.List<java.util.Map<String, Object>> addedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("added");
-                        java.util.List<java.util.Map<String, Object>> updatedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("updated");
-                        java.util.List<String> removedActors = (java.util.List<String>) actorChanges.get("removed");
-                        
-                        // Convert to VehicleData objects
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicles = new java.util.ArrayList<>();
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicles = new java.util.ArrayList<>();
-                        
-                        // Process added actors
-                        for (java.util.Map<String, Object> actorInfo : addedActors) {
-                            // Extract actor ID from the actor info (assuming it's stored as a key in the original map)
-                            // This is a simplified approach - in practice, you might need to store actor ID differently
-                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
-                            if (vehicleData != null) {
-                                addedVehicles.add(vehicleData);
-                            }
-                        }
-                        
-                        // Process updated actors
-                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
-                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
-                            if (vehicleData != null) {
-                                updatedVehicles.add(vehicleData);
-                            }
-                        }
-                        
-                        // Update current actor IDs cache
-                        currentActorIds.clear();
-                        java.util.Map<String, java.util.Map<String, Object>> allActors = actorClient.getAllActors();
-                        currentActorIds.addAll(allActors.keySet());
-                        
-                        // Publish VehicleUpdates if there are changes
-                        if (!addedVehicles.isEmpty() || !updatedVehicles.isEmpty() || !removedActors.isEmpty()) {
-                            VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicles, updatedVehicles, removedActors);
-                            this.rti.triggerInteraction(vehicleUpdates);
-                            log.debug("Published VehicleUpdates: added={}, updated={}, removed={}", 
-                                addedVehicles.size(), updatedVehicles.size(), removedActors.size());
-                        }
-
-                        // Handle traffic lights using Client's change detection
-                        java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
-                        
-                        if (!trafficLightChanges.isEmpty()) {
-                            java.util.Map<String, org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo> updatedTrafficLights = new java.util.HashMap<>();
-                            
-                            for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : trafficLightChanges.entrySet()) {
-                                String id = entry.getKey();
-                                java.util.Map<String, Object> tlInfo = entry.getValue();
-                                
-                                String state = tlInfo.get("state") != null ? tlInfo.get("state").toString() : "Unknown";
-                                Double timer = tlInfo.get("timer") instanceof Number ? ((Number) tlInfo.get("timer")).doubleValue() : null;
-                                
-                                // Create a simple TrafficLightGroupInfo with basic information
-                                // Since we don't have full SUMO traffic light program details from CARLA,
-                                // we'll create a minimal representation
-                                java.util.List<org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState> states = new java.util.ArrayList<>();
-                                // Add a basic state representation - TrafficLightState constructor takes (red, green, yellow) booleans
-                                states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState(true, false, false)); // Red state
-                                
-                                org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
-                                    new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(
-                                        id, 
-                                        "default", // program ID
-                                        0, // phase index
-                                        timer != null ? (long)(timer * 1e9) : 0, // convert seconds to nanoseconds
-                                        states
-                                    );
-                                updatedTrafficLights.put(id, tlGroupInfo);
-                            }
-                            
-                            TrafficLightUpdates trafficLightUpdates = new TrafficLightUpdates(time, updatedTrafficLights);
-                            this.rti.triggerInteraction(trafficLightUpdates);
-                            log.debug("Published TrafficLightUpdates: {} traffic lights updated", updatedTrafficLights.size());
-                        }
-                        
-                    } catch (Exception e) {
-                        log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
                     }
                 }
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
@@ -751,6 +655,113 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         } catch (IllegalValueException e) {
             throw new InternalFederateException(e);
+        }
+    }
+
+    /**
+     * Check for actor changes and publish VehicleUpdates to SUMO
+     * This method is called on every time advance to ensure we detect manually controlled vehicles
+     */
+    private void checkAndPublishActorChanges(long time) {
+        // Handle actor operations
+        boolean actorConnected = false;
+        if (multiXmlRpcManager != null) {
+            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+            actorConnected = carlaXmlRpcClient.isConnected();
+        }
+        
+        if (actorConnected) {
+            // Publish CARLA state updates to SUMO using VehicleUpdates and TrafficLightUpdates
+            try {
+                CarlaXmlRpcClient actorClient = null;
+                if (multiXmlRpcManager != null) {
+                    actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                } else {
+                    actorClient = carlaXmlRpcClient;
+                }
+                
+                // Use Client's high-level change detection
+                java.util.Map<String, Object> actorChanges = actorClient.getActorChanges();
+                java.util.List<java.util.Map<String, Object>> addedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("added");
+                java.util.List<java.util.Map<String, Object>> updatedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("updated");
+                java.util.List<String> removedActors = (java.util.List<String>) actorChanges.get("removed");
+                
+                // Convert to VehicleData objects
+                java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicles = new java.util.ArrayList<>();
+                java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicles = new java.util.ArrayList<>();
+                
+                // Process added actors
+                for (java.util.Map<String, Object> actorInfo : addedActors) {
+                    String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
+                    org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
+                    if (vehicleData != null) {
+                        addedVehicles.add(vehicleData);
+                        log.info("Detected new CARLA actor: {} at position ({}, {})", 
+                            actorId, 
+                            vehicleData.getPosition().toCartesian().getX(),
+                            vehicleData.getPosition().toCartesian().getY());
+                    }
+                }
+                
+                // Process updated actors
+                for (java.util.Map<String, Object> actorInfo : updatedActors) {
+                    String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
+                    org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
+                    if (vehicleData != null) {
+                        updatedVehicles.add(vehicleData);
+                    }
+                }
+                
+                // Update current actor IDs cache
+                currentActorIds.clear();
+                java.util.Map<String, java.util.Map<String, Object>> allActors = actorClient.getAllActors();
+                currentActorIds.addAll(allActors.keySet());
+                
+                // Publish VehicleUpdates if there are changes
+                if (!addedVehicles.isEmpty() || !updatedVehicles.isEmpty() || !removedActors.isEmpty()) {
+                    VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicles, updatedVehicles, removedActors);
+                    this.rti.triggerInteraction(vehicleUpdates);
+                    log.info("Published VehicleUpdates to SUMO: added={}, updated={}, removed={}", 
+                        addedVehicles.size(), updatedVehicles.size(), removedActors.size());
+                }
+
+                // Handle traffic lights using Client's change detection
+                java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
+                
+                if (!trafficLightChanges.isEmpty()) {
+                    java.util.Map<String, org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo> updatedTrafficLights = new java.util.HashMap<>();
+                    
+                    for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : trafficLightChanges.entrySet()) {
+                        String id = entry.getKey();
+                        java.util.Map<String, Object> tlInfo = entry.getValue();
+                        
+                        String state = tlInfo.get("state") != null ? tlInfo.get("state").toString() : "Unknown";
+                        Double timer = tlInfo.get("timer") instanceof Number ? ((Number) tlInfo.get("timer")).doubleValue() : null;
+                        
+                        // Create a simple TrafficLightGroupInfo with basic information
+                        java.util.List<org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState> states = new java.util.ArrayList<>();
+                        states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState(true, false, false)); // Red state
+                        
+                        org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
+                            new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(
+                                id, 
+                                "default", // program ID
+                                0, // phase index
+                                timer != null ? (long)(timer * 1e9) : 0, // convert seconds to nanoseconds
+                                states
+                            );
+                        updatedTrafficLights.put(id, tlGroupInfo);
+                    }
+                    
+                    TrafficLightUpdates trafficLightUpdates = new TrafficLightUpdates(time, updatedTrafficLights);
+                    this.rti.triggerInteraction(trafficLightUpdates);
+                    log.debug("Published TrafficLightUpdates: {} traffic lights updated", updatedTrafficLights.size());
+                }
+                
+            } catch (Exception e) {
+                log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
+            }
         }
     }
 
