@@ -563,7 +563,11 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         for (VehicleData addedVehicle : vehicleUpdates.getAdded()) {
             String vehicleId = addedVehicle.getName();
             if (!externalVehicleMap.containsKey(vehicleId)) {
-                log.info("Adding external vehicle '{}' from {} to SUMO", vehicleId, vehicleUpdates.getSenderId());
+                log.info("SUMO RECEIVED EXTERNAL VEHICLE: Adding external vehicle '{}' from {} to SUMO at position ({}, {}) with speed {}", 
+                    vehicleId, vehicleUpdates.getSenderId(), 
+                    addedVehicle.getPosition().toCartesian().getX(), 
+                    addedVehicle.getPosition().toCartesian().getY(),
+                    addedVehicle.getSpeed());
                 
                 // Add to external vehicle map
                 ExternalVehicleState vehicleState = new ExternalVehicleState();
@@ -595,6 +599,11 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         for (VehicleData updatedVehicle : vehicleUpdates.getUpdated()) {
             vehicleState = externalVehicleMap.get(updatedVehicle.getName());
             if (vehicleState != null) {
+                log.info("SUMO RECEIVED EXTERNAL VEHICLE UPDATE: Updating external vehicle '{}' from {} at position ({}, {}) with speed {}", 
+                    updatedVehicle.getName(), vehicleUpdates.getSenderId(),
+                    updatedVehicle.getPosition().toCartesian().getX(), 
+                    updatedVehicle.getPosition().toCartesian().getY(),
+                    updatedVehicle.getSpeed());
                 vehicleState.setLastMovementInfo(updatedVehicle);
             }
         }
@@ -602,7 +611,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         // Handle removed vehicles
         for (String removed : vehicleUpdates.getRemovedNames()) {
             if (externalVehicleMap.containsKey(removed)) {
-                log.info("Removing external vehicle '{}' from SUMO", removed);
+                log.info("SUMO RECEIVED EXTERNAL VEHICLE REMOVAL: Removing external vehicle '{}' from SUMO", removed);
                 traci.getSimulationControl().removeVehicle(removed, VehicleSetRemove.Reason.ARRIVED);
                 externalVehicleMap.remove(removed);
             }
@@ -1322,10 +1331,11 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                         // Check if vehicle exists in SUMO, if not, add it first
                         if (!traci.getSimulationControl().getKnownVehicles().contains(external.getKey())) {
                             // Add external vehicle to SUMO at the specified position
-                            log.info("Adding external vehicle '{}' to SUMO at position ({}, {})", 
+                            log.info("SUMO ADDING EXTERNAL VEHICLE: Adding external vehicle '{}' to SUMO at position ({}, {}) with speed {}", 
                                 external.getKey(), 
                                 latestVehicleData.getPosition().toCartesian().getX(),
-                                latestVehicleData.getPosition().toCartesian().getY());
+                                latestVehicleData.getPosition().toCartesian().getY(),
+                                latestVehicleData.getSpeed());
                             
                             // Use a default route and vehicle type for external vehicles
                             String defaultRoute = "default_route";
@@ -1355,9 +1365,10 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             
                             if (routeCache.containsKey(defaultRoute)) {
                                 traci.getSimulationControl().addVehicle(external.getKey(), defaultRoute, defaultVehicleType, "random", "0", "0");
-                                log.info("Successfully added external vehicle '{}' to SUMO", external.getKey());
+                                log.info("SUMO SUCCESSFULLY ADDED EXTERNAL VEHICLE: Successfully added external vehicle '{}' to SUMO with route '{}' and type '{}'", 
+                                    external.getKey(), defaultRoute, defaultVehicleType);
                             } else {
-                                log.warn("Could not add external vehicle '{}' to SUMO - no default route available", external.getKey());
+                                log.warn("SUMO FAILED TO ADD EXTERNAL VEHICLE: Could not add external vehicle '{}' to SUMO - no default route available", external.getKey());
                                 continue;
                             }
                         }
@@ -1366,6 +1377,11 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                         traci.getVehicleControl().moveToXY(external.getKey(),
                                 latestVehicleData.getPosition().toCartesian(), latestVehicleData.getHeading(),
                                 VehicleSetMoveToXY.Mode.KEEP_ROUTE);
+                        log.info("SUMO MOVED EXTERNAL VEHICLE: Moved external vehicle '{}' to position ({}, {}) with heading {}", 
+                            external.getKey(),
+                            latestVehicleData.getPosition().toCartesian().getX(),
+                            latestVehicleData.getPosition().toCartesian().getY(),
+                            latestVehicleData.getHeading());
                     } catch (InternalFederateException e) {
                         log.warn("Could not set position of vehicle " + external.getKey(), e);
                     }

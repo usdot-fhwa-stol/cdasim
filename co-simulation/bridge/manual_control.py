@@ -293,6 +293,7 @@ class ManualControl:
             rotation = [0.0, 0.0, 0.0]
             
             # Spawn via XML-RPC
+            logger.info(f"MANUAL CONTROL: Attempting to spawn vehicle via XML-RPC at position {location} with rotation {rotation}")
             success = self.xmlrpc_client.spawn_actor(
                 'vehicle.tesla.model3',
                 'manual_control_vehicle',
@@ -302,14 +303,15 @@ class ManualControl:
             )
             
             if success:
-                logger.info("Vehicle spawned via XML-RPC bridge")
+                logger.info("MANUAL CONTROL: Vehicle spawned successfully via XML-RPC bridge")
                 # Get the vehicle from CARLA world
                 for actor in self.world.get_actors():
                     if hasattr(actor, 'attributes') and actor.attributes.get('role_name') == 'manual_control_vehicle':
                         self.vehicle = actor
                         self.vehicle_id = str(actor.id)
                         self.spawned_by_us = True
-                        logger.info(f"Found spawned vehicle with ID: {self.vehicle_id}")
+                        logger.info(f"MANUAL CONTROL: Found spawned vehicle with ID: {self.vehicle_id}")
+                        logger.info(f"MANUAL CONTROL: Vehicle position: {actor.get_transform().location}")
                         return True
             
             logger.error("Failed to spawn vehicle via XML-RPC")
