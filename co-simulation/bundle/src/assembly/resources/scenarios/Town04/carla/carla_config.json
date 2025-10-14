@@ -5,5 +5,5 @@
     "carlaConnectionPort": 8913,
     "carlaActorLibRPCUrl": "http://127.0.0.1:8090/RPC2",
     "carlaSensorLibRPCUrl": "null",
-    "sumoNetXmlPath": "~/src/co-simulation/bundle/src/assembly/resources/scenarios/Town04/carla"
+    "sumoNetXmlPath": "/home/carma/src/co-simulation/bundle/src/assembly/resources/scenarios/Town04/sumo/Town04.net.xml"
 }
