@@ -529,8 +529,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         java.util.List<java.util.Map<String, Object>> updatedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("updated");
                         java.util.List<String> removedActors = (java.util.List<String>) actorChanges.get("removed");
                         
-                        log.info("EXTERNAL VEHICLE DETECTION: Detected changes - Added: {}, Updated: {}, Removed: {}", 
-                                addedActors.size(), updatedActors.size(), removedActors.size());
                         
                         // Convert CARLA actor information to VehicleData for proper SUMO synchronization
                         java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicleData = new java.util.ArrayList<>();
@@ -568,8 +566,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         if (!addedVehicleData.isEmpty() || !updatedVehicleData.isEmpty() || !removedActors.isEmpty()) {
                             VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicleData, updatedVehicleData, removedActors);
                             this.rti.triggerInteraction(vehicleUpdates);
-                            log.info("Published VehicleUpdates to SUMO: added={}, updated={}, removed={}", 
-                                    addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
                         }
 
 
@@ -835,25 +831,53 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * Convert SUMO projected position and heading to CARLA frame, applying netOffset and handedness.
+     * This implementation follows the Python bridge_helper.py get_carla_transform logic.
      * Optionally adjust by extentX to convert front-bumper reference to vehicle center.
+     * 
+     * @param xSumo SUMO X coordinate
+     * @param ySumo SUMO Y coordinate
+     * @param headingDeg SUMO heading angle in degrees
+     * @param extentX Vehicle extent in X direction (half length) for front-bumper to center conversion
+     * @return Transform object with CARLA coordinates and heading
      */
-    
-
     private Transform carlaTransformFromSumo(double xSumo, double ySumo, Double headingDeg, Double extentX) {
-        double xOff = xSumo - sumoNetOffsetXY[0];
-        double yOff = ySumo - sumoNetOffsetXY[1];
-        double carlaX = xOff;
-        double carlaY = -yOff; // flip handedness
-        double carlaZ = 0.0;
-        double yawDeg = headingDeg != null ? (headingDeg - 90.0) : 0.0;
+        // Start with SUMO coordinates
+        double sumoX = xSumo;
+        double sumoY = ySumo;
+        double sumoZ = 0.0;
+        
+        // From front-center-bumper to center (sumo reference system)
+        // Following Python logic: yaw = -1 * in_rotation.yaw + 90
+        if (extentX != null && extentX > 0.0 && headingDeg != null) {
+            double yaw = -1 * headingDeg + 90; // Python: yaw = -1 * in_rotation.yaw + 90
+            double yawRad = Math.toRadians(yaw);
+            // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
+            //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
+            //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
+            sumoX -= Math.cos(yawRad) * extentX;
+            sumoY -= Math.sin(yawRad) * extentX;
+            // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
+        }
+        
+        // Applying offset sumo-carla net
+        // Python: out_location = (out_location[0] - offset[0], out_location[1] - offset[1], out_location[2])
+        double xWithOffset = sumoX - sumoNetOffsetXY[0];
+        double yWithOffset = sumoY - sumoNetOffsetXY[1];
+        double zWithOffset = sumoZ;
+        
+        // Transform to carla reference system (left-handed)
+        // Python: carla.Location(out_location[0], -out_location[1], out_location[2])
+        double carlaX = xWithOffset;
+        double carlaY = -yWithOffset; // Flip Y for left-handed system
+        double carlaZ = zWithOffset;
+        
+        // Convert SUMO heading to CARLA yaw
+        // Python: carla.Rotation(out_rotation[0], out_rotation[1] - 90, out_rotation[2])
+        double carlaYawDeg = headingDeg != null ? (headingDeg - 90.0) : 0.0;
         double pitchDeg = 0.0;
         double rollDeg = 0.0;
-        if (extentX != null && extentX > 0.0) {
-            double rad = Math.toRadians(yawDeg);
-            carlaX -= Math.cos(rad) * extentX;
-            carlaY -= Math.sin(rad) * extentX;
-        }
-        return new Transform(carlaX, carlaY, carlaZ, pitchDeg, yawDeg, rollDeg);
+        
+        return new Transform(carlaX, carlaY, carlaZ, pitchDeg, carlaYawDeg, rollDeg);
     }
 
     /**
@@ -947,7 +971,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     /**
      * Convert CARLA position and heading to SUMO frame, applying netOffset and handedness.
-     * This is the inverse transformation of carlaTransformFromSumo.
+     * This implementation follows the Python bridge_helper.py get_sumo_transform logic.
      * Used for external CARLA vehicle synchronization to SUMO.
      * 
      * @param xCarla CARLA X coordinate
@@ -963,23 +987,33 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         double carlaY = yCarla;
         double carlaZ = zCarla;
         
-        // Apply extent offset if provided (convert from center to front-bumper reference)
+        // From center to front-center-bumper (carla reference system)
+        // Following Python logic: yaw = -1 * in_rotation.yaw
         if (extentX != null && extentX > 0.0 && yawDeg != null) {
-            double rad = Math.toRadians(yawDeg);
-            carlaX += Math.cos(rad) * extentX;
-            carlaY += Math.sin(rad) * extentX;
+            double yaw = -1 * yawDeg; // Invert yaw like in Python
+            double yawRad = Math.toRadians(yaw);
+            // Python: out_location = (in_location.x + math.cos(math.radians(yaw)) * extent.x,
+            //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
+            //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
+            carlaX += Math.cos(yawRad) * extentX;
+            carlaY -= Math.sin(yawRad) * extentX;
+            // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
         }
         
-        // Transform from CARLA left-handed system to SUMO right-handed system
-        double xOff = carlaX;
-        double yOff = -carlaY; // flip handedness (inverse of carlaTransformFromSumo)
+        // Applying offset carla-sumo net
+        // Python: out_location = (out_location[0] + offset[0], out_location[1] - offset[1], out_location[2])
+        double xWithOffset = carlaX + sumoNetOffsetXY[0];
+        double yWithOffset = carlaY - sumoNetOffsetXY[1];
+        double zWithOffset = carlaZ;
         
-        // Apply SUMO net offset (inverse of subtraction in carlaTransformFromSumo)
-        double sumoX = xOff + sumoNetOffsetXY[0];
-        double sumoY = yOff + sumoNetOffsetXY[1];
-        double sumoZ = carlaZ;
+        // Transform to sumo reference system (right-handed)
+        // Python: carla.Location(out_location[0], -out_location[1], out_location[2])
+        double sumoX = xWithOffset;
+        double sumoY = -yWithOffset; // Flip Y for right-handed system
+        double sumoZ = zWithOffset;
         
-        // Convert CARLA yaw to SUMO heading (inverse of headingDeg - 90.0)
+        // Convert CARLA yaw to SUMO heading
+        // Python: carla.Rotation(out_rotation[0], out_rotation[1] + 90, out_rotation[2])
         double sumoHeadingDeg = yawDeg != null ? (yawDeg + 90.0) : 0.0;
         
         // Normalize heading to [0, 360) range
