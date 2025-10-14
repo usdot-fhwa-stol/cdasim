@@ -558,7 +558,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             // Extract actor ID from the actor info (assuming it's stored as a key in the original map)
                             // This is a simplified approach - in practice, you might need to store actor ID differently
                             String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
+                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = createVehicleDataFromCarlaActor(actorId, actorInfo);
                             if (vehicleData != null) {
                                 addedVehicles.add(vehicleData);
                             }
@@ -567,7 +567,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         // Process updated actors
                         for (java.util.Map<String, Object> actorInfo : updatedActors) {
                             String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = actorClient.createVehicleDataFromActor(actorId, actorInfo);
+                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = createVehicleDataFromCarlaActor(actorId, actorInfo);
                             if (vehicleData != null) {
                                 updatedVehicles.add(vehicleData);
                             }
@@ -867,6 +867,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Convert SUMO projected position and heading to CARLA frame, applying netOffset and handedness.
      * Optionally adjust by extentX to convert front-bumper reference to vehicle center.
      */
+    
+
     private Transform carlaTransformFromSumo(double xSumo, double ySumo, Double headingDeg, Double extentX) {
         double xOff = xSumo - sumoNetOffsetXY[0];
         double yOff = ySumo - sumoNetOffsetXY[1];
@@ -882,6 +884,150 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             carlaY -= Math.sin(rad) * extentX;
         }
         return new Transform(carlaX, carlaY, carlaZ, pitchDeg, yawDeg, rollDeg);
+    }
+
+    /**
+     * Convert CARLA position and heading to SUMO frame, applying netOffset and handedness.
+     * This is the inverse transformation of carlaTransformFromSumo.
+     * Used for external CARLA vehicle synchronization to SUMO.
+     * 
+     * @param xCarla CARLA X coordinate
+     * @param yCarla CARLA Y coordinate  
+     * @param zCarla CARLA Z coordinate
+     * @param yawDeg CARLA yaw angle in degrees
+     * @param extentX Vehicle extent in X direction (half length) for front-bumper to center conversion
+     * @return Transform object with SUMO coordinates and heading
+     */
+    private Transform sumoTransformFromCarla(double xCarla, double yCarla, double zCarla, Double yawDeg, Double extentX) {
+        // Start with CARLA coordinates
+        double carlaX = xCarla;
+        double carlaY = yCarla;
+        double carlaZ = zCarla;
+        
+        // Apply extent offset if provided (convert from center to front-bumper reference)
+        if (extentX != null && extentX > 0.0 && yawDeg != null) {
+            double rad = Math.toRadians(yawDeg);
+            carlaX += Math.cos(rad) * extentX;
+            carlaY += Math.sin(rad) * extentX;
+        }
+        
+        // Transform from CARLA left-handed system to SUMO right-handed system
+        double xOff = carlaX;
+        double yOff = -carlaY; // flip handedness (inverse of carlaTransformFromSumo)
+        
+        // Apply SUMO net offset (inverse of subtraction in carlaTransformFromSumo)
+        double sumoX = xOff + sumoNetOffsetXY[0];
+        double sumoY = yOff + sumoNetOffsetXY[1];
+        double sumoZ = carlaZ;
+        
+        // Convert CARLA yaw to SUMO heading (inverse of headingDeg - 90.0)
+        double sumoHeadingDeg = yawDeg != null ? (yawDeg + 90.0) : 0.0;
+        
+        // Normalize heading to [0, 360) range
+        while (sumoHeadingDeg < 0) {
+            sumoHeadingDeg += 360.0;
+        }
+        while (sumoHeadingDeg >= 360.0) {
+            sumoHeadingDeg -= 360.0;
+        }
+        
+        return new Transform(sumoX, sumoY, sumoZ, 0.0, sumoHeadingDeg, 0.0);
+    }
+
+    /**
+     * Convert CARLA actor information to VehicleData with proper coordinate transformation.
+     * This method applies sumoTransformFromCarla to convert CARLA coordinates to SUMO coordinates.
+     * 
+     * @param actorId Actor ID
+     * @param actorInfo Actor information from CARLA
+     * @return VehicleData object with SUMO coordinates or null if conversion fails
+     */
+    private org.eclipse.mosaic.lib.objects.vehicle.VehicleData createVehicleDataFromCarlaActor(String actorId, java.util.Map<String, Object> actorInfo) {
+        try {
+            // Extract position and rotation from transform
+            java.util.List<Double> location = null;
+            java.util.List<Double> rotation = null;
+            
+            Object transform = actorInfo.get("transform");
+            if (transform instanceof java.util.Map) {
+                Object loc = ((java.util.Map<?,?>) transform).get("location");
+                Object rot = ((java.util.Map<?,?>) transform).get("rotation");
+                
+                if (loc instanceof java.util.List) {
+                    location = new java.util.ArrayList<>();
+                    for (Object o : (java.util.List<?>) loc) {
+                        if (o instanceof Number) location.add(((Number)o).doubleValue());
+                    }
+                }
+                
+                if (rot instanceof java.util.List) {
+                    rotation = new java.util.ArrayList<>();
+                    for (Object o : (java.util.List<?>) rot) {
+                        if (o instanceof Number) rotation.add(((Number)o).doubleValue());
+                    }
+                }
+            }
+            
+            if (location != null && location.size() >= 3) {
+                // Extract CARLA coordinates
+                double carlaX = location.get(0);
+                double carlaY = location.get(1);
+                double carlaZ = location.get(2);
+                
+                // Extract CARLA yaw from rotation
+                Double carlaYaw = null;
+                if (rotation != null && rotation.size() >= 2) {
+                    carlaYaw = rotation.get(1); // yaw is typically the second element
+                }
+                
+                // Extract vehicle extent for coordinate conversion
+                Double extentX = null;
+                Object extent = actorInfo.get("extent");
+                if (extent instanceof java.util.Map) {
+                    Object x = ((java.util.Map<?,?>) extent).get("x");
+                    if (x instanceof Number) {
+                        extentX = ((Number) x).doubleValue();
+                    }
+                }
+                
+                // Convert CARLA coordinates to SUMO coordinates using our transformation function
+                Transform sumoTransform = sumoTransformFromCarla(carlaX, carlaY, carlaZ, carlaYaw, extentX);
+                
+                // Create SUMO position from transformed coordinates
+                org.eclipse.mosaic.lib.geo.CartesianPoint sumoPosition = org.eclipse.mosaic.lib.geo.CartesianPoint.xy(sumoTransform.x, sumoTransform.y);
+                
+                // Extract velocity if available
+                double speed = 0.0;
+                Object velocity = actorInfo.get("velocity");
+                if (velocity instanceof java.util.Map) {
+                    Object vel = ((java.util.Map<?,?>) velocity).get("linear");
+                    if (vel instanceof java.util.List) {
+                        java.util.List<?> velList = (java.util.List<?>) vel;
+                        if (velList.size() >= 3) {
+                            double vx = velList.get(0) instanceof Number ? ((Number)velList.get(0)).doubleValue() : 0.0;
+                            double vy = velList.get(1) instanceof Number ? ((Number)velList.get(1)).doubleValue() : 0.0;
+                            speed = Math.sqrt(vx * vx + vy * vy);
+                        }
+                    }
+                }
+                
+                log.debug("CARLA->SUMO TRANSFORM: Actor {} - CARLA({}, {}, {}) yaw={} -> SUMO({}, {}, {}) heading={}", 
+                    actorId, carlaX, carlaY, carlaZ, carlaYaw, 
+                    sumoTransform.x, sumoTransform.y, sumoTransform.z, sumoTransform.yaw);
+                
+                // Create VehicleData using Builder pattern with SUMO coordinates
+                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
+                    .position(null, sumoPosition) // No GeoPoint, just CartesianPoint with SUMO coordinates
+                    .projectedPosition(sumoPosition) // Set projected position for SUMO compatibility
+                    .movement(speed, 0.0, 0.0) // speed, acceleration, distance
+                    .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, sumoTransform.yaw, 0.0) // drive direction, heading, slope
+                    .route("external_carla_route") // Use specific route for external CARLA vehicles
+                    .create();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to create VehicleData for CARLA actor {}: {}", actorId, e.getMessage());
+        }
+        return null;
     }
 
     /** Simple struct for passing transforms */
