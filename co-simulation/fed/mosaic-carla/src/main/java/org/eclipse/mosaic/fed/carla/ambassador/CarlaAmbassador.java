@@ -529,10 +529,29 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         java.util.List<java.util.Map<String, Object>> updatedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("updated");
                         java.util.List<String> removedActors = (java.util.List<String>) actorChanges.get("removed");
                         
+                        log.info("EXTERNAL VEHICLE DETECTION: Detected changes - Added: {}, Updated: {}, Removed: {}", 
+                                addedActors.size(), updatedActors.size(), removedActors.size());
                         
-                        // Convert CARLA actor information to VehicleData for proper SUMO synchronization
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicleData = new java.util.ArrayList<>();
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicleData = new java.util.ArrayList<>();
+                        // Log detailed information about added actors
+                        for (java.util.Map<String, Object> actorInfo : addedActors) {
+                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
+                            log.info("EXTERNAL VEHICLE ADDED: Actor ID={}, Info={}", actorId, actorInfo);
+                        }
+                        
+                        // Log detailed information about updated actors
+                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
+                            String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
+                            log.info("EXTERNAL VEHICLE UPDATED: Actor ID={}, Info={}", actorId, actorInfo);
+                        }
+                        
+                        // Log detailed information about removed actors
+                        for (String removedId : removedActors) {
+                            log.info("EXTERNAL VEHICLE REMOVED: Actor ID={}", removedId);
+                        }
+                        
+                        // Convert to VehicleData objects
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicles = new java.util.ArrayList<>();
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicles = new java.util.ArrayList<>();
                         
                         // Convert added actors
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
@@ -566,8 +585,26 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         if (!addedVehicleData.isEmpty() || !updatedVehicleData.isEmpty() || !removedActors.isEmpty()) {
                             VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicleData, updatedVehicleData, removedActors);
                             this.rti.triggerInteraction(vehicleUpdates);
+                            log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
+                                addedVehicles.size(), updatedVehicles.size(), removedActors.size());
+                            
+                            // Log each vehicle being sent to SUMO
+                            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicle : addedVehicles) {
+                                log.info("CARLA->SUMO SYNC: Sending new vehicle to SUMO - ID={}, Position=({}, {}), Speed={}", 
+                                    vehicle.getName(), 
+                                    vehicle.getPosition().toCartesian().getX(), 
+                                    vehicle.getPosition().toCartesian().getY(),
+                                    vehicle.getSpeed());
+                            }
+                            
+                            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicle : updatedVehicles) {
+                                log.info("CARLA->SUMO SYNC: Sending vehicle update to SUMO - ID={}, Position=({}, {}), Speed={}", 
+                                    vehicle.getName(), 
+                                    vehicle.getPosition().toCartesian().getX(), 
+                                    vehicle.getPosition().toCartesian().getY(),
+                                    vehicle.getSpeed());
+                            }
                         }
-
 
                         // Handle traffic lights using Client's change detection
                         java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();

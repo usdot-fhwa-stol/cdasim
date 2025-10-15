@@ -544,26 +544,19 @@ public class CarlaXmlRpcClient {
     public boolean spawnActor(String actorType, String actorId, List<Double> location, 
                              List<Double> rotation, Map<String, Object> attributes) {
         try {
-            log.info("XML-RPC SPAWN ACTOR REQUEST: type={}, id={}, location={}, rotation={}, attributes={}", 
+            log.info("XML-RPC spawn_actor call: type={}, id={}, location={}, rotation={}, attributes={}", 
                     actorType, actorId, location, rotation, attributes);
             
             Object[] params = new Object[]{actorType, actorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
             Object result = executeWithRetry(SPAWN_ACTOR, params, DEFAULT_RETRY_ATTEMPTS);
             
             boolean success = result instanceof Boolean && (Boolean) result;
-            log.info("XML-RPC SPAWN ACTOR RESULT: {} (result type: {}, value: {})", 
+            log.info("XML-RPC spawn_actor result: {} (result type: {}, value: {})", 
                     success, result != null ? result.getClass().getSimpleName() : "null", result);
-            
-            if (success) {
-                log.info("XML-RPC SPAWN ACTOR SUCCESS: Successfully spawned actor '{}' of type '{}' at position ({}, {}, {})", 
-                    actorId, actorType, location.get(0), location.get(1), location.get(2));
-            } else {
-                log.warn("XML-RPC SPAWN ACTOR FAILED: Failed to spawn actor '{}' of type '{}'", actorId, actorType);
-            }
             
             return success;
         } catch (Exception e) {
-            log.error("XML-RPC SPAWN ACTOR ERROR: Failed to spawn actor {} of type {}: {}", actorId, actorType, e.getMessage());
+            log.error("Failed to spawn actor {} of type {}: {}", actorId, actorType, e.getMessage());
             return false;
         }
     }
