@@ -63,20 +63,6 @@ sudo make install
 python3.7 -m pip install pip
 python3.7 -m pip install lxml==4.5.0
 
-# Install CARLA
-CARLA_TAR="CARLA_0.9.10.tar.gz"
-cd /home/carma/src/
-if [[ ! -f "$CARLA_TAR" ]]; then
-    echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
-    wget -q "https://carla-releases.s3.us-east-005.backblazeb2.com/Linux/CARLA_0.9.10.tar.gz"
-fi
-
-sudo mkdir -p /opt/carla
-sudo chown -R carma:carma /opt/carla
-tar xzvf "$CARLA_TAR" -C /opt/carla
-# Adding configuration file to fix error output from CARLA (https://github.com/carla-simulator/carla/issues/2820)
-echo $'pcm.!default {\n  type plug\n  slave.pcm \"null\"\n}' | sudo tee /etc/asound.conf
-
 # Installation of maven
 wget -q "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
 tar xzvf apache-maven-3.8.3-bin.tar.gz -C /opt/
