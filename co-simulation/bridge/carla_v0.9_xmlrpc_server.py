@@ -675,6 +675,7 @@ class CarlaXMLRPCServer:
                             tl.set_state(carla.TrafficLightState.Green)
                         else:
                             return False
+                        print("Set traffic light %s to state %s", traffic_light_id, state)
                         return True
                 return False
         except Exception as e:

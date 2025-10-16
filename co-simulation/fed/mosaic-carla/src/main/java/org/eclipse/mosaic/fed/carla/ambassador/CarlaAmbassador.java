@@ -995,7 +995,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @param interaction TrafficLightStateChange interaction
      */
     private void receiveInteraction(TrafficLightUpdates interaction) {
-        log.info("Recieved TrafficLightUpdates interation for {}", interaction.getUpdated());
+        log.info("Received TrafficLightUpdates interaction for {} traffic lights", interaction.getUpdated().size());
 
         final long grantTimeNs = interaction.getTime();
         try {
