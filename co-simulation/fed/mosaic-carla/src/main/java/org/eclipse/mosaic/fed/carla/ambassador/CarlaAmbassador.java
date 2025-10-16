@@ -24,14 +24,12 @@ import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
 import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
 import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
 import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
+import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
-import org.eclipse.mosaic.interactions.traffic.TrafficLightStateChange;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
-import org.eclipse.mosaic.interactions.application.SimulationStep;
-
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -50,7 +48,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import java.io.File;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -170,7 +167,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             File sumoNet = new File(carlaConfig.sumoNetXmlPath);
             if (!sumoNet.exists())
                 throw new FileNotFoundException("carla_config.json 'sumoNetXmlPath' is invalid; TL mapping will be disabled.");
-            parseSumoNetFile(sumoNet);
+            parseSumoNetwork(sumoNet);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
         } catch (FileNotFoundException e) {
@@ -809,9 +806,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Processing VehicleUpdates interaction - this should trigger spawn_actor calls");
             this.receiveInteraction((VehicleUpdates) interaction);
         }
-        else if (interaction.getTypeId().equals(TrafficLightStateChange.TYPE_ID)) {
-            log.info("Processing TrafficLightStateChange interaction - this should forward traffic light commands to CARLA");
-            this.receiveInteraction((TrafficLightStateChange) interaction);
+        else if (interaction.getTypeId().equals(TrafficLightUpdates.TYPE_ID)) {
+            log.info("Processing TrafficLightUpdates interaction - this should forward traffic light commands to CARLA");
+            this.receiveInteraction((TrafficLightUpdates) interaction);
         }
         else {
             log.debug("Ignoring interaction of type: {}", type);
@@ -992,89 +989,59 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Process traffic light state change commands and forward them to CARLA.
+     * Process traffic light updates and forward them to CARLA.
      * This enables other federates (like applications or SUMO) to control CARLA traffic lights.
      *
      * @param interaction TrafficLightStateChange interaction
      */
-    private void receiveInteraction(TrafficLightStateChange interaction) {
-        log.info("Received TrafficLightStateChange for traffic light group '{}' with parameter type: {}", 
-                interaction.getTrafficLightGroupId(), interaction.getParameterType());
-        
-        boolean actorConnected = false;
-        if (multiXmlRpcManager != null) {
-            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
-            actorConnected = carlaXmlRpcClient.isConnected();
-        }
-        
-        if (!actorConnected) {
-            log.warn("Actor server not connected; cannot forward traffic light state change to CARLA");
-            return;
-        }
-        
+    private void receiveInteraction(TrafficLightUpdates interaction) {
+        log.info("Recieved TrafficLightUpdates interation for {}", interaction.getUpdated());
+
+        final long grantTimeNs = interaction.getTime();
         try {
-            String tlLogicId = interaction.getTrafficLightGroupId();
-            
-            switch (interaction.getParameterType()) {
-                case ChangePhase:
-                    int phaseIdx = interaction.getPhaseIndex();
-                    String stateMask = resolveStateMask(tlLogicId, null, phaseIdx); // programID not specified
-                    if (stateMask == null) {
-                        log.warn("No state mask for tlLogic='{}' phaseIndex={}", tlLogicId, phaseIdx);
-                        return;
-                    }
-                    applyMaskToCarla(tlLogicId, stateMask);
-                    break;
+            for (Map.Entry<String, TrafficLightGroupInfo> updatedTrafficLights : interaction.getUpdated().entrySet()) {
+                final String                tlGroupId     = updatedTrafficLights.getKey();
+                final TrafficLightGroupInfo tlGroupInfo   = updatedTrafficLights.getValue();
+                final String                programId     = tlGroupInfo.getCurrentProgramId();
+                final int                   phaseIndex    = tlGroupInfo.getCurrentPhaseIndex();
+                final long                  nextSwitchNs  = tlGroupInfo.getAssumedTimeOfNextSwitch();
+                
+                List<String> carlaIds = tlLogicLinkSignals.get(tlGroupId);
+                List<String> phases   = tlLogicStatesByProgram.get(tlGroupId).get(programId);
+                String phase          = phases.get(phaseIndex);
 
-                case RemainingDuration:
-                    phaseIdx = interaction.getPhaseIndex();
-                    stateMask = resolveStateMask(tlLogicId, null, phaseIdx);
-                    if (stateMask == null) {
-                        log.debug("RemainingDuration received but cannot resolve mask for tlLogic='{}' phaseIndex={}",
-                                tlLogicId, phaseIdx);
-                        return;
+                final int n = Math.min(phase.length(), carlaIds.size());
+                for (int i = 0; i < n; i++) {
+                    final String carlaId = carlaIds.get(i);
+                    if (carlaId == null) continue;
+                    final String color = charToColor(phase.charAt(i));
+
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(carlaId, color);
+                    } else if (carlaXmlRpcClient != null) {
+                        carlaXmlRpcClient.setTrafficLightState(carlaId, color);
                     }
 
-                    double remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
-                    if (remainingSec > 0.0) {
-                        applyTimerToCarla(tlLogicId, stateMask, remainingSec);
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(carlaId, 
+                            (nextSwitchNs > grantTimeNs) ? (nextSwitchNs - grantTimeNs) / (long)1e9 : 0L);
+                    } else if (carlaXmlRpcClient != null) {
+                        carlaXmlRpcClient.setTrafficLightTimer(carlaId, 
+                            (nextSwitchNs > grantTimeNs) ? (nextSwitchNs - grantTimeNs) / (long)1e9 : 0L);
                     }
-                    break;
-                    
-                case ProgramId:
-                    log.debug("Ignoring ProgramId change for '{}' (no mask provided)", tlLogicId);
-                    break;
-                    
-                case ChangeProgramWithPhase:
-                    log.info("Changing traffic light '{}' to program '{}' with phase: {}", 
-                            tlLogicId, interaction.getProgramId(), interaction.getPhaseIndex());
-                    phaseIdx = interaction.getPhaseIndex();
-                    final String programId = interaction.getProgramId();
-                    stateMask = resolveStateMask(tlLogicId, programId, phaseIdx);
-                    if (stateMask == null) {
-                        log.warn("No state mask for tlLogic='{}' program='{}' phaseIndex={}",
-                                tlLogicId, programId, phaseIdx);
-                        return;
-                    }
-                    applyMaskToCarla(tlLogicId, stateMask);
-
-                    remainingSec = Math.max(0.0, interaction.getPhaseRemainingDuration() / 1000.0);
-                    if (remainingSec > 0.0) {
-                        applyTimerToCarla(tlLogicId, stateMask, remainingSec);
-                    }
-                    break;
-                    
-                case ChangeToCustomState:
-                    log.debug("Ignoring ChangeToCustomState for '{}' (not representable in CARLA API)", tlLogicId);
-                    break;
-                    
-                default:
-                    log.warn("Unknown traffic light state change parameter type: {}", interaction.getParameterType());
-                    break;
+                }
             }
-        } catch (Exception e) {
-            log.error("Failed to forward traffic light state change to CARLA: {}", e.getMessage());
+        } catch (NullPointerException e) {
+            log.error("Error while evaluating SUMO .net.xml mappings, ensure the .net.xml file in carla_config is valid.", e);
+        }
+    }
+
+    private static String charToColor(char c) {
+        switch (Character.toLowerCase(c)) {
+            case 'g': case 'p': return "Green";
+            case 'y':           return "Yellow";
+            case 'r':
+            default:            return "Red"; // default to red
         }
     }
 
@@ -1227,113 +1194,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         } catch (Exception e) {
             log.error("Failed parsing SUMO .net.xml {}", netXmlFile, e);
-        }
-    }
-
-    private String resolveStateMask(String tlLogicId, String programId, int phaseIdx) {
-        Map<String, List<String>> programs = tlLogicStatesByProgram.get(tlLogicId);
-        if (programs == null || programs.isEmpty()) {
-            log.warn("Could not resolve state mask for tlLogic:{} Program:{}", tlLogicId, programId);
-            return null;
-        }
-        
-        List<String> phases = null;
-        if (programId != null)
-            phases = programs.get(programId);
-        else
-            phases = programs.values().iterator().next();
-
-        if (phases == null || phaseIdx < 0 || phaseIdx >= phases.size()) {
-            log.warn("Could not resolve state mask for tlLogic:{}", tlLogicId);
-            return null;
-        }
-        
-        return phases.get(phaseIdx);
-    }
-
-    /**
-     * Apply a SUMO state mask to CARLA tls for a given tlLogic.
-     */
-    private void applyMaskToCarla(String tlLogicId, String stateMask) {
-        final List<String> carlaIds = tlLogicLinkSignals.get(tlLogicId);
-        if (carlaIds == null || carlaIds.isEmpty()) {
-            log.warn("No linkSignal mapping for tlLogic '{}', cannot apply mask", tlLogicId);
-            return;
-        }
-
-        final int n = Math.min(stateMask.length(), carlaIds.size());
-        for (int i = 0; i < n; i++) {
-            final String carlaId = carlaIds.get(i);
-            if (carlaId == null) continue;
-            final String color = charToColor(stateMask.charAt(i));
-            if (!setCarlaTrafficLightColor(carlaId, color)) {
-                log.debug("Failed to set CARLA TL {} -> {}", carlaId, color);
-            }
-        }
-    }
-
-    /**
-     * Applies timer to given CARLA traffic lights. (Only applies to green lights due to 
-     * API limitations)
-     */
-    private void applyTimerToCarla(String tlLogicId, String stateMask, double seconds) {
-        final List<String> carlaIds = tlLogicLinkSignals.get(tlLogicId);
-        if (carlaIds == null || carlaIds.isEmpty()) return;
-        final int n = Math.min(stateMask.length(), carlaIds.size());
-        for (int i = 0; i < n; i++) {
-            final char ch = stateMask.charAt(i);
-            if (!charToColor(ch).equals("Green")) continue;
-            final String carlaId = carlaIds.get(i);
-            if (carlaId == null) continue;
-            if (!setCarlaTrafficLightTimer(carlaId, seconds)) {
-                log.debug("Failed to set CARLA TL {} timer {}s", carlaId, seconds);
-            }
-        }
-    }
-
-    /**
-     * Send a color to CARLA via whichever client is active.
-     * Expects "Red", "Yellow" or "Green".
-     */
-    private boolean setCarlaTrafficLightColor(String tlId, String color) {
-        try {
-            if (multiXmlRpcManager != null) {
-                return multiXmlRpcManager
-                        .getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
-                        .setTrafficLightState(tlId, color);
-            } else {
-                return carlaXmlRpcClient.setTrafficLightState(tlId, color);
-            }
-        } catch (Exception e) {
-            log.error("setTrafficLightState failed for {} -> {}", tlId, color, e);
-            return false;
-        }
-    }
-
-    /**
-     * Send a green-timer value to CARLA (seconds).
-     */
-    private boolean setCarlaTrafficLightTimer(String tlId, double seconds) {
-        try {
-            if (multiXmlRpcManager != null) {
-                return multiXmlRpcManager
-                        .getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
-                        .setTrafficLightTimer(tlId, seconds);
-            } else {
-                return carlaXmlRpcClient.setTrafficLightTimer(tlId, seconds);
-            }
-        } catch (Exception e) {
-            log.error("setTrafficLightTimer failed for {} -> {}s", tlId, seconds, e);
-            return false;
-        }
-    }
-
-    private static String charToColor(char c) {
-        switch (Character.toLowerCase(c)) {
-            case 'g': case 'p': return "Green";
-            case 'y':           return "Yellow";
-            case 'r':
-            default:            return "Red"; // default to red
         }
     }
 
