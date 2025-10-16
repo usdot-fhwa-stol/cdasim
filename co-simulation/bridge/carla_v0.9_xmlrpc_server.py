@@ -677,6 +677,7 @@ class CarlaXMLRPCServer:
                             return False
                         print("Set traffic light %s to state %s", traffic_light_id, state)
                         return True
+                print("Traffic light %s not found", traffic_light_id)
                 return False
         except Exception as e:
             logger.error("set_traffic_light_state error: %s", e)
