@@ -684,15 +684,34 @@ class CarlaXMLRPCServer:
     def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
         try:
             with self.lock:
-                if not self.is_connected(): return False
+                if not self.is_connected():
+                    return False
+
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                    if str(tl.id) == str(traffic_light_id):
-                        tl.set_green_time(float(time_s))
-                        return True
+                    if str(tl.id) != str(traffic_light_id):
+                        continue
+
+                    state = tl.get_state()  # carla.TrafficLightState
+                    elapsed = float(tl.get_elapsed_time() or 0.0)
+                    desired_remaining = max(0.0, float(time_s))  # clamp to non-negative
+                    new_total = elapsed + desired_remaining
+
+                    if state.name == "Green":
+                        tl.set_green_time(new_total)
+                    elif state.name == "Yellow":
+                        tl.set_yellow_time(new_total)
+                    elif state.name == "Red":
+                        tl.set_red_time(new_total)
+                    else:
+                        return False
+
+                    return True
+
                 return False
         except Exception as e:
             logger.error("set_traffic_light_timer error: %s", e)
             return False
+
 
     # ---------- Sensors ----------
     def create_sensor(self, sensor_type: str, sensor_id: str,

@@ -1014,7 +1014,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 for (int i = 0; i < n; i++) {
                     final String carlaId = carlaIds.get(i);
                     if (carlaId == null) continue;
-                    final String color = charToColor(phase.charAt(i));
+                    final String color = _charToColor(phase.charAt(i));
 
                     if (multiXmlRpcManager != null) {
                         multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(carlaId, color);
@@ -1036,7 +1036,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
-    private static String charToColor(char c) {
+    private static String _charToColor(char c) {
         switch (Character.toLowerCase(c)) {
             case 'g': case 'p': return "Green";
             case 'y':           return "Yellow";
