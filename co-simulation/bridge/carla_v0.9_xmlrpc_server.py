@@ -68,8 +68,6 @@ class CarlaXMLRPCServer:
 
         self.lock = threading.RLock()
 
-        # Flag to track if first actor has been spawned (for automatic spectator switching)
-        self.first_actor_spawned = False
 
         # Default extent_x for vehicle center calculation
         self.default_extent_x = 2.0
@@ -250,7 +248,6 @@ class CarlaXMLRPCServer:
                     except Exception: pass
                 self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
                 self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
-                self.first_actor_spawned = False  # Reset flag for next session
                 self.world = None; self.client = None
                 logger.info("Disconnected from CARLA")
                 return True
@@ -325,16 +322,14 @@ class CarlaXMLRPCServer:
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
                 
-                # Automatically switch spectator to first actor
-                if not self.first_actor_spawned:
-                    self.first_actor_spawned = True
-                    try:
-                        # Switch spectator to follow the first spawned actor
-                        self.set_spectator_to_actor(actor_id, 'follow', 12.0, 6.0, -15.0)
-                        print(f"========Spectator switched to follow first actor: {actor_id}========")
-                    except Exception as e:
-                        print(f"Failed to switch spectator to actor {actor_id}: {e}")
-                        logger.error("Failed to switch spectator to first actor: %s", e)
+                # Automatically switch spectator to each spawned actor
+                try:
+                    # Switch spectator to follow the newly spawned actor
+                    self.set_spectator_to_actor(actor_id, 'follow', 12.0, 6.0, -15.0)
+                    print(f"========Spectator switched to follow actor: {actor_id}========")
+                except Exception as e:
+                    print(f"Failed to switch spectator to actor {actor_id}: {e}")
+                    logger.error("Failed to switch spectator to actor: %s", e)
                 
                 print(f"========spawn_actor success========")
                 return True

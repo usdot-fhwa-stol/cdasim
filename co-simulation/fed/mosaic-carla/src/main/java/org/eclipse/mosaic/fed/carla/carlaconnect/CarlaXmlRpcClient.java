@@ -981,6 +981,7 @@ public class CarlaXmlRpcClient {
         try {
             // Get current actors
             Map<String, Map<String, Object>> currentActors = getAllActors();
+            log.debug("getActorChanges: Retrieved {} current actors", currentActors.size());
             
             // Find added and updated actors
             for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
@@ -1008,6 +1009,7 @@ public class CarlaXmlRpcClient {
                     removed.add(previousActorId);
                 }
             }
+            log.debug("getActorChanges: Found added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
             if (!added.isEmpty() || !updated.isEmpty() || !removed.isEmpty()) {
                 log.info("Actor changes: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
             } 
@@ -1021,7 +1023,7 @@ public class CarlaXmlRpcClient {
             changes.put("removed", removed);
             
         } catch (Exception e) {
-            log.error("Failed to get actor changes: {}", e.getMessage());
+            log.error("Failed to get actor changes: {}", e.getMessage(), e);
         }
         
         return changes;
@@ -1082,77 +1084,6 @@ public class CarlaXmlRpcClient {
         }
         
         return changes;
-    }
-
-    /**
-     * Convert CARLA actor information to VehicleData
-     * @param actorId Actor ID
-     * @param actorInfo Actor information from CARLA
-     * @return VehicleData object or null if conversion fails
-     */
-    public org.eclipse.mosaic.lib.objects.vehicle.VehicleData createVehicleDataFromActor(String actorId, Map<String, Object> actorInfo) {
-        try {
-            // Extract position and rotation from transform
-            List<Double> location = null;
-            List<Double> rotation = null;
-            
-            Object transform = actorInfo.get("transform");
-            if (transform instanceof Map) {
-                Object loc = ((Map<?,?>) transform).get("location");
-                Object rot = ((Map<?,?>) transform).get("rotation");
-                
-                if (loc instanceof List) {
-                    location = new ArrayList<>();
-                    for (Object o : (List<?>) loc) {
-                        if (o instanceof Number) location.add(((Number)o).doubleValue());
-                    }
-                }
-                
-                if (rot instanceof List) {
-                    rotation = new ArrayList<>();
-                    for (Object o : (List<?>) rot) {
-                        if (o instanceof Number) rotation.add(((Number)o).doubleValue());
-                    }
-                }
-            }
-            
-            if (location != null && location.size() >= 2) {
-                // Create position from location using static factory method
-                org.eclipse.mosaic.lib.geo.CartesianPoint position = org.eclipse.mosaic.lib.geo.CartesianPoint.xy(location.get(0), location.get(1));
-                
-                // Create heading from rotation (yaw)
-                double heading = 0.0;
-                if (rotation != null && rotation.size() >= 2) {
-                    heading = rotation.get(1); // yaw is typically the second element
-                }
-                
-                // Extract velocity if available
-                double speed = 0.0;
-                Object velocity = actorInfo.get("velocity");
-                if (velocity instanceof Map) {
-                    Object vel = ((Map<?,?>) velocity).get("linear");
-                    if (vel instanceof List) {
-                        List<?> velList = (List<?>) vel;
-                        if (velList.size() >= 3) {
-                            double vx = velList.get(0) instanceof Number ? ((Number)velList.get(0)).doubleValue() : 0.0;
-                            double vy = velList.get(1) instanceof Number ? ((Number)velList.get(1)).doubleValue() : 0.0;
-                            speed = Math.sqrt(vx * vx + vy * vy);
-                        }
-                    }
-                }
-                
-                // Create VehicleData using Builder pattern with proper route information for external vehicles
-                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
-                    .position(null, position) // No GeoPoint, just CartesianPoint
-                    .movement(speed, 0.0, 0.0) // speed, acceleration, distance
-                    .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, heading, 0.0) // drive direction, heading, slope
-                    .route("default_route") // Use default route for external vehicles
-                    .create();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to create VehicleData for actor {}: {}", actorId, e.getMessage());
-        }
-        return null;
     }
 
     /**
