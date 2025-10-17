@@ -14,6 +14,19 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "Error: Docker is not installed. Please install Docker and try again."
+    exit 1
+fi
+
+# Pull the required carlasim/carla:0.10.0 image
+echo "Pulling carlasim/carla:0.10.0 Docker image..."
+if ! docker pull carlasim/carla:0.10.0; then
+    echo "Error: Failed to pull carlasim/carla:0.10.0 image."
+    exit 1
+fi
+
 USERNAME=usdotfhwastol
 
 cd "$(dirname "$0")"
