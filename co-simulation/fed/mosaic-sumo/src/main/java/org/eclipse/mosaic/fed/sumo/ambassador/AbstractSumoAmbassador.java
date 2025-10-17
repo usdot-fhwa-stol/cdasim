@@ -1243,7 +1243,48 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 log.debug("Abstract Sumo Ambassador Vehicle updates: {}", simulationStepResult.getVehicleUpdates().toString());
                 rti.triggerInteraction(simulationStepResult.getVehicleUpdates());
                 rti.triggerInteraction(simulationStepResult.getTrafficDetectorUpdates());
-                this.rti.triggerInteraction(simulationStepResult.getTrafficLightUpdates());
+                // Manual TrafficLightUpdates creation
+                // Manually query and log traffic light states for all groups
+                Map<String, TrafficLightGroupInfo> updatedTrafficLightGroups = new HashMap<>();
+                String programId;
+                int phaseIndex;
+                long assumedNextTimeSwitch;
+                List<String> tlgIds = traci.getSimulationControl().getTrafficLightGroupIds();
+                for (String groupId : tlgIds) {
+                    try {
+                        programId = traci.getTrafficLightControl().getCurrentProgram(groupId);
+                        phaseIndex = traci.getTrafficLightControl().getCurrentPhase(groupId);
+                        assumedNextTimeSwitch = (long) (traci.getTrafficLightControl().getNextSwitchTime(groupId) * 1e9);
+                        List<TrafficLightState> states = traci.getTrafficLightControl().getCurrentStates(groupId);
+
+                        updatedTrafficLightGroups.put(groupId,
+                                new TrafficLightGroupInfo(groupId, programId, phaseIndex, assumedNextTimeSwitch, states));
+                        
+                        // Convert states to SUMO-compatible string (e.g., "grgr")
+                        StringBuilder stateString = new StringBuilder();
+                        for (TrafficLightState state : states) {
+                            if (state.isGreen()) {
+                                stateString.append('g'); // Permissive green
+                            } else if (state.isYellow()) {
+                                stateString.append('y');
+                            } else if (state.isRed()) {
+                                stateString.append('r');
+                            } else if (state.isRedYellow()) {
+                                stateString.append('u');
+                            } else {
+                                stateString.append('o'); // Off
+                            }
+                        }
+                        
+                        log.info("Manual Traffic Light Query at time {}: groupId={}, programId={}, phaseIndex={}, nextSwitchTime={}, state={}",
+                                TIME.format(time), groupId, programId, phaseIndex,
+                                TIME.format(assumedNextTimeSwitch), stateString.toString());
+                    } catch (InternalFederateException e) {
+                        log.warn("Could not query traffic light state for groupId={}", groupId, e);
+                    }
+                }
+
+                this.rti.triggerInteraction(new TrafficLightUpdates(time, updatedTrafficLightGroups));
                 receivedSimulationStep = false;
                 firstAttemptToAdvanceToNextStep = true;
             }
