@@ -138,6 +138,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Cache of current CARLA actor ids for quick existence checks during synchronization.
      */
     private final Set<String> currentActorIds = new HashSet<>();
+    /**
+     * Snapshot of CARLA actor ids from previous tick to detect externally spawned actors.
+     */
+    private final Set<String> lastActorIds = new HashSet<>();
 
     /**
      * SUMO net offset parsed from scenario .net.xml (x, y) in meters.
@@ -550,8 +554,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
                         
                         // Convert to VehicleData objects
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicles = new java.util.ArrayList<>();
-                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicles = new java.util.ArrayList<>();
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicleData = new java.util.ArrayList<>();
+                        java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicleData = new java.util.ArrayList<>();
+                        java.util.Set<String> addedIds = new java.util.HashSet<>();
+                        java.util.Set<String> updatedIds = new java.util.HashSet<>();
                         
                         // Convert added actors
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
@@ -560,6 +566,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                 org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
                                 if (vehicleData != null) {
                                     addedVehicleData.add(vehicleData);
+                                    addedIds.add(actorId);
                                     log.debug("Converted external CARLA actor '{}' to VehicleData for SUMO sync", actorId);
                                 }
                             }
@@ -572,39 +579,48 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                 org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
                                 if (vehicleData != null) {
                                     updatedVehicleData.add(vehicleData);
+                                    updatedIds.add(actorId);
                                     log.debug("Converted updated CARLA actor '{}' to VehicleData for SUMO sync", actorId);
                                 }
                             }
                         }
-                        
-                        currentActorIds.clear();
+
+                        // Merge-in a full scan of all current CARLA actors to ensure externally spawned actors are included
                         java.util.Map<String, java.util.Map<String, Object>> allActors = actorClient.getAllActors();
+                        java.util.Set<String> previousIds = new java.util.HashSet<>(currentActorIds);
+                        currentActorIds.clear();
                         currentActorIds.addAll(allActors.keySet());
+
+                        for (java.util.Map.Entry<String, java.util.Map<String, Object>> e : allActors.entrySet()) {
+                            String aid = e.getKey();
+                            java.util.Map<String, Object> ainfo = e.getValue();
+                            // Ensure the actor id is present in the info map for conversion
+                            ainfo.put("id", aid);
+                            org.eclipse.mosaic.lib.objects.vehicle.VehicleData vd = convertCarlaActorToVehicleData(aid, ainfo);
+                            if (vd == null) continue;
+                            if (!previousIds.contains(aid) && !addedIds.contains(aid)) {
+                                addedVehicleData.add(vd);
+                                addedIds.add(aid);
+                            } else if (!updatedIds.contains(aid)) {
+                                updatedVehicleData.add(vd);
+                                updatedIds.add(aid);
+                            }
+                        }
                         
                         // Publish VehicleUpdates with converted VehicleData if there are changes
                         if (!addedVehicleData.isEmpty() || !updatedVehicleData.isEmpty() || !removedActors.isEmpty()) {
                             VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicleData, updatedVehicleData, removedActors);
                             this.rti.triggerInteraction(vehicleUpdates);
                             log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
-                                addedVehicles.size(), updatedVehicles.size(), removedActors.size());
+                                addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
                             
                             // Log each vehicle being sent to SUMO
-                            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicle : addedVehicles) {
-                                log.info("CARLA->SUMO SYNC: Sending new vehicle to SUMO - ID={}, Position=({}, {}), Speed={}", 
-                                    vehicle.getName(), 
-                                    vehicle.getPosition().toCartesian().getX(), 
-                                    vehicle.getPosition().toCartesian().getY(),
-                                    vehicle.getSpeed());
-                            }
-                            
-                            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicle : updatedVehicles) {
-                                log.info("CARLA->SUMO SYNC: Sending vehicle update to SUMO - ID={}, Position=({}, {}), Speed={}", 
-                                    vehicle.getName(), 
-                                    vehicle.getPosition().toCartesian().getX(), 
-                                    vehicle.getPosition().toCartesian().getY(),
-                                    vehicle.getSpeed());
-                            }
+    
                         }
+
+                        // Update last known actor id snapshot after publishing
+                        lastActorIds.clear();
+                        lastActorIds.addAll(currentActorIds);
 
                         // Handle traffic lights using Client's change detection
                         java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
@@ -967,8 +983,69 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
             }
             
+            // Derive extentX (half length) when available to compensate front-bumper vs center reference
+            Double extentX = null;
+            try {
+                Object extentObj = actorInfo.get("extent");
+                if (extentObj instanceof java.util.Map) {
+                    @SuppressWarnings("rawtypes")
+                    java.util.Map m = (java.util.Map) extentObj;
+                    Object ex = m.get("x");
+                    if (ex instanceof Number) {
+                        extentX = ((Number) ex).doubleValue();
+                    }
+                }
+                // Try nested bounding box: bounding_box.extent.x
+                if (extentX == null) {
+                    Object bbObj = actorInfo.get("bounding_box");
+                    if (bbObj instanceof java.util.Map) {
+                        @SuppressWarnings("rawtypes")
+                        java.util.Map bb = (java.util.Map) bbObj;
+                        Object bbExt = bb.get("extent");
+                        if (bbExt instanceof java.util.Map) {
+                            @SuppressWarnings("rawtypes")
+                            java.util.Map m = (java.util.Map) bbExt;
+                            Object ex = m.get("x");
+                            if (ex instanceof Number) {
+                                extentX = ((Number) ex).doubleValue();
+                            }
+                        }
+                    }
+                }
+                // Sometimes raw length is provided (full length)
+                if (extentX == null) {
+                    Object lengthObj = actorInfo.get("length");
+                    if (lengthObj instanceof Number) {
+                        extentX = ((Number) lengthObj).doubleValue() / 2.0;
+                    }
+                }
+                // Attributes bag may carry extent/length
+                if (extentX == null) {
+                    Object attrsObj = actorInfo.get("attributes");
+                    if (attrsObj instanceof java.util.Map) {
+                        @SuppressWarnings("rawtypes")
+                        java.util.Map attrs = (java.util.Map) attrsObj;
+                        Object ext = attrs.get("extent");
+                        if (ext instanceof java.util.Map) {
+                            @SuppressWarnings("rawtypes")
+                            java.util.Map m = (java.util.Map) ext;
+                            Object ex = m.get("x");
+                            if (ex instanceof Number) {
+                                extentX = ((Number) ex).doubleValue();
+                            }
+                        }
+                        if (extentX == null) {
+                            Object l = attrs.get("length");
+                            if (l instanceof Number) {
+                                extentX = ((Number) l).doubleValue() / 2.0;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignore) { }
+
             // Convert CARLA coordinates to SUMO coordinates
-            Transform sumoTransform = sumoTransformFromCarla(xCarla, yCarla, zCarla, yawDeg, null);
+            Transform sumoTransform = sumoTransformFromCarla(xCarla, yCarla, zCarla, yawDeg, extentX);
             
             // Extract velocity information
             double speed = 0.0;
@@ -992,13 +1069,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             org.eclipse.mosaic.lib.geo.CartesianPoint projectedPosition = 
                 org.eclipse.mosaic.lib.geo.CartesianPoint.xy(sumoTransform.x, sumoTransform.y);
             
-            // Create VehicleData using Builder pattern
-            return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(time, actorId)
-                .position(null, projectedPosition) // No GeoPoint, just CartesianPoint
-                .movement(speed, 0.0, 0.0) // speed, acceleration, distance
-                .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, sumoTransform.yaw, 0.0) // drive direction, heading, slope
-                .route("external_carla_route") // Use special route for external CARLA vehicles
-                .create();
+            // Create VehicleData via local factory to avoid direct Builder usage at call site
+            return createVehicleData(this.nextTimeStep, actorId, projectedPosition, speed, sumoTransform.yaw, "external_carla_route");
                 
         } catch (Exception e) {
             log.warn("Failed to convert CARLA actor '{}' to VehicleData: {}", actorId, e.getMessage());
@@ -1081,6 +1153,24 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             r.add(pitch); r.add(yaw); r.add(roll);
             return r;
         }
+    }
+
+    /**
+     * Local helper to create VehicleData without exposing Builder at call sites.
+     */
+    private org.eclipse.mosaic.lib.objects.vehicle.VehicleData createVehicleData(
+            long timestampNs,
+            String vehicleId,
+            org.eclipse.mosaic.lib.geo.CartesianPoint projectedPosition,
+            double speed,
+            Double headingDeg,
+            String routeId) {
+        return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(timestampNs, vehicleId)
+                .position(null, projectedPosition)
+                .movement(speed, 0.0, 0.0)
+                .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, headingDeg, 0.0)
+                .route(routeId)
+                .create();
     }
     /**
      * This method is called by the {@link AbstractFederateAmbassador}s whenever the

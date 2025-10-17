@@ -166,13 +166,10 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
         VehicleGetParameter veh = new VehicleGetParameter();
         String trafficEvent  = "";
         Set<String> vehicleData = traci.getSimulationControl().getKnownVehicles();
-        log.debug("Vehicles list: {}", vehicleData.toString());
         try {
-            log.debug("Vehicle info: {}", interaction.toString());
             if(!vehicleData.contains(interaction.vehicleId())){return;}
             trafficEvent = veh.execute(traci, interaction.vehicleId(), interaction.getParameterName());
             if (trafficEvent.equals("")) {
-                log.debug("No traffic event found");
                 rti.triggerInteraction(new MsgerResponseTrafficEvent(interaction.getTime(), null));
             } else{
                 String[] parameters = trafficEvent.split(";");
@@ -212,6 +209,19 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             vehiclesAddedViaRti.add(vehicleMapping.getName());
             notYetAddedVehicles.add(interaction);
             logMessage = "VehicleRegistration from RTI \"{}\" received at simulation time {} ns";
+            // Additional log for externally requested (RTI) vehicles to be generated
+            try {
+                String vehicleType = vehicleMapping.getVehicleType() != null ? vehicleMapping.getVehicleType().getName() : "unknown";
+                String routeId = interaction.getDeparture() != null ? interaction.getDeparture().getRouteId() : "unknown";
+                double departPosVal = interaction.getDeparture() != null ? interaction.getDeparture().getDeparturePos() : Double.NaN;
+                String departPos = String.format(Locale.ENGLISH, "%.2f", departPosVal);
+                String departSpeedMode = interaction.getDeparture() != null ? interaction.getDeparture().getDepartSpeedMode().name() : "UNKNOWN";
+                String laneSelectionMode = interaction.getDeparture() != null ? interaction.getDeparture().getLaneSelectionMode().name() : "UNKNOWN";
+                log.info("External vehicle requested (from RTI): id={}, time={} ns, type={}, routeId={}, departPos={}, departSpeedMode={}, laneMode={}",
+                        vehicleId, interaction.getTime(), vehicleType, routeId, departPos, departSpeedMode, laneSelectionMode);
+            } catch (Exception e) {
+                log.warn("Failed to log external vehicle request details for {}: {}", vehicleId, e.getMessage());
+            }
         } else { // still subscribe to vehicles with apps
             logMessage = "VehicleRegistration for SUMO vehicle \"{}\" received at simulation time {} ns";
         }
@@ -511,10 +521,10 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
     }
 
     /**
-     * This processes a {@link CarlarTraciRequest} that have been dynamically
+     * This processes a {@link CarlaTraciRequest} that have been dynamically
      * created.
      *
-     * @param interaction Interaction containing information about carla request.
+     * @param interaction Interaction containing information about CARLA request.
      */
     private void receiveInteraction(CarlaTraciRequest interaction) throws InternalFederateException {
         try {

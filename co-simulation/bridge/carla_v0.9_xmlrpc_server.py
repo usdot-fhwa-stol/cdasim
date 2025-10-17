@@ -445,6 +445,14 @@ class CarlaXMLRPCServer:
                 try:
                     for actor in self.world.get_actors():
                         world_actors[str(actor.id)] = actor
+                    # Count only vehicles in CARLA world
+                    vehicle_world_count = 0
+                    try:
+                        for a in world_actors.values():
+                            if 'vehicle.' in str(getattr(a, 'type_id', '')):
+                                vehicle_world_count += 1
+                    except Exception:
+                        vehicle_world_count = 0
                 except Exception as e:
                     logger.warning("Failed to get world actors: %s", e)
                     world_actors = {}
@@ -475,18 +483,7 @@ class CarlaXMLRPCServer:
                                 }
                             }
                             
-                            # Add velocity information if available
-                            if hasattr(actor, 'get_velocity'):
-                                try:
-                                    v = actor.get_velocity()
-                                    actor_data['velocity'] = {
-                                        'linear': [float(v.x), float(v.y), float(v.z)]
-                                    }
-                                except Exception as e:
-                                    logger.debug("Failed to get velocity for actor %s: %s", alias, e)
-                                    actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
-                            else:
-                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            # Velocity not required for synchronization; omit from output
                             
                             out[alias] = actor_data
                         else:

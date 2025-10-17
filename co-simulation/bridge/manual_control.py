@@ -82,7 +82,6 @@ class ManualControl:
         
         # Control state
         self.running = False
-        self.spawned_by_us = False
         self.control_thread: Optional[threading.Thread] = None
         self.input_queue = []
         self.input_lock = threading.Lock()
@@ -146,36 +145,9 @@ class ManualControl:
             logger.error(f"Failed to connect to XML-RPC bridge: {e}")
             return False
 
-    def _find_existing_manual_vehicle(self) -> Optional[carla.Vehicle]:
-        """Return existing vehicle with role_name 'manual_control_vehicle' if present."""
-        if not self.world:
-            return None
-        try:
-            actors = self.world.get_actors()
-            for actor in actors:
-                # Some actors may not have attributes
-                role = getattr(getattr(actor, 'attributes', {}), 'get', lambda *_: None)('role_name')
-                if role == 'manual_control_vehicle':
-                    return actor
-        except Exception as e:
-            logger.debug(f"Failed to search for existing manual control vehicle: {e}")
-        return None
-
     def spawn_vehicle(self) -> bool:
         """Spawn a controllable vehicle in CARLA"""
         try:
-            # Reuse existing manual control vehicle if present
-            existing = self._find_existing_manual_vehicle()
-            if existing:
-                self.vehicle = existing
-                self.vehicle_id = str(existing.id)
-                self.spawned_by_us = False
-                logger.info(f"Reusing existing manual control vehicle with ID: {self.vehicle_id}")
-                # Initialize position tracking
-                self.last_position = self.vehicle.get_transform()
-                self.last_position_update = time.time()
-                return True
-
             # Use fixed spawn position (298, -172) with proper ground height
             spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
             
@@ -247,7 +219,6 @@ class ManualControl:
                     return False
             
             self.vehicle_id = str(self.vehicle.id)
-            self.spawned_by_us = True
             logger.info(f"Spawned vehicle with ID: {self.vehicle_id} at position: {spawn_point.location}")
             
             # Set initial position for tracking
@@ -266,18 +237,6 @@ class ManualControl:
             if not self.xmlrpc_client:
                 logger.error("XML-RPC client not connected")
                 return False
-
-            # Reuse existing manual control vehicle if present
-            existing = self._find_existing_manual_vehicle()
-            if existing:
-                self.vehicle = existing
-                self.vehicle_id = str(existing.id)
-                self.spawned_by_us = False
-                logger.info(f"Reusing existing manual control vehicle with ID: {self.vehicle_id}")
-                # Initialize position tracking
-                self.last_position = self.vehicle.get_transform()
-                self.last_position_update = time.time()
-                return True
             
             # Use fixed spawn position (298, -172) with proper ground height
             spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
@@ -308,7 +267,6 @@ class ManualControl:
                     if hasattr(actor, 'attributes') and actor.attributes.get('role_name') == 'manual_control_vehicle':
                         self.vehicle = actor
                         self.vehicle_id = str(actor.id)
-                        self.spawned_by_us = True
                         logger.info(f"Found spawned vehicle with ID: {self.vehicle_id}")
                         return True
             
@@ -375,43 +333,40 @@ class ManualControl:
         logger.info("Controls: W/A/S/D - Move, SPACE - Reverse, R - Reset, H - Help, Q/X/ESC - Exit")
         logger.info("Note: In Docker, press Enter after each key press")
         
-        # No Docker dependency - use pygame only
+        # Check if we're in a Docker environment
+        is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+        input_thread = None
+        
+        if is_docker:
+            logger.info("Docker environment detected - using line-based input")
+            # Start input thread for Docker
+            input_thread = threading.Thread(target=self._input_thread, daemon=True)
+            input_thread.start()
         
         try:
             import pygame
             pygame.init()
-            
-            # Create a proper window for better user experience
-            screen = pygame.display.set_mode((400, 300))
-            pygame.display.set_caption("CARLA Manual Control")
-            clock = pygame.time.Clock()
-            font = pygame.font.Font(None, 24)
-            
+            pygame.display.set_mode((100, 100))  # Small window for input focus
             logger.info("Using pygame for input handling")
             
         except ImportError:
-            logger.error("pygame not available. Please install: pip install pygame")
-            return
+            logger.warning("pygame not available, using keyboard input fallback")
+            pygame = None
         
         # Initialize input method
-        logger.info("Input method: pygame")
+        input_method = "pygame" if pygame else ("docker_input" if is_docker else "keyboard")
+        logger.info(f"Input method: {input_method}")
         
         while self.running:
             try:
-                # Handle pygame events
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.running = False
-                    elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
-                            self.running = False
-                        elif event.key == pygame.K_r:
-                            self._reset_vehicle_position()
-                        elif event.key == pygame.K_h:
-                            self._print_help()
-                
-                # Update controls based on key states
-                self._update_pygame_controls()
+                # Handle input
+                if pygame:
+                    self._handle_pygame_input(pygame)
+                elif is_docker:
+                    # Process queued input from input thread
+                    self._process_queued_input()
+                else:
+                    self._handle_keyboard_input()
                 
                 # Update vehicle control
                 self.update_vehicle_control()
@@ -419,95 +374,12 @@ class ManualControl:
                 # Update position tracking
                 self.update_position_tracking()
                 
-                # Draw HUD
-                self._draw_pygame_hud(screen, font)
-                
-                # Limit frame rate
-                clock.tick(60)
+                # Small delay to prevent excessive CPU usage
+                time.sleep(0.01)
                 
             except Exception as e:
                 logger.error(f"Error in control loop: {e}")
                 time.sleep(0.1)
-        
-        pygame.quit()
-
-    def _update_pygame_controls(self):
-        """Update control state based on currently pressed keys"""
-        import pygame
-        keys = pygame.key.get_pressed()
-        
-        # Throttle/Brake
-        if keys[pygame.K_w]:
-            self.throttle = min(1.0, self.throttle + self.throttle_speed * 0.016)  # 60 FPS
-            self.brake = max(0.0, self.brake - self.brake_speed * 0.016)
-        elif keys[pygame.K_s]:
-            self.brake = min(1.0, self.brake + self.brake_speed * 0.016)
-            self.throttle = max(0.0, self.throttle - self.throttle_speed * 0.016)
-        else:
-            # Gradual release
-            self.throttle = max(0.0, self.throttle - self.throttle_speed * 0.016)
-            self.brake = max(0.0, self.brake - self.brake_speed * 0.016)
-        
-        # Steering
-        if keys[pygame.K_a]:
-            self.steer = max(-1.0, self.steer - self.steer_speed * 0.016)
-        elif keys[pygame.K_d]:
-            self.steer = min(1.0, self.steer + self.steer_speed * 0.016)
-        else:
-            # Gradual return to center
-            if self.steer > 0:
-                self.steer = max(0.0, self.steer - self.steer_speed * 0.016)
-            else:
-                self.steer = min(0.0, self.steer + self.steer_speed * 0.016)
-        
-        # Reverse
-        self.reverse = keys[pygame.K_SPACE]
-
-    def _draw_pygame_hud(self, screen, font):
-        """Draw heads-up display with vehicle information"""
-        import pygame
-        # Clear screen
-        screen.fill((0, 0, 0))
-        
-        # Get vehicle information
-        speed = 0.0
-        position = "N/A"
-        if self.vehicle:
-            try:
-                velocity = self.vehicle.get_velocity()
-                speed = math.sqrt(velocity.x**2 + velocity.y**2 + velocity.z**2) * 3.6  # Convert to km/h
-                transform = self.vehicle.get_transform()
-                position = f"({transform.location.x:.1f}, {transform.location.y:.1f})"
-            except:
-                pass
-        
-        # Draw information
-        y_offset = 20
-        info_lines = [
-            "CARLA Manual Control",
-            "",
-            f"Speed: {speed:.1f} km/h",
-            f"Position: {position}",
-            f"Throttle: {self.throttle:.2f}",
-            f"Brake: {self.brake:.2f}",
-            f"Steer: {self.steer:.2f}",
-            "",
-            "Controls:",
-            "W/S: Throttle/Brake",
-            "A/D: Steering",
-            "SPACE: Reverse",
-            "R: Reset Position",
-            "H: Help",
-            "ESC/Q: Exit"
-        ]
-        
-        for line in info_lines:
-            if line:
-                text = font.render(line, True, (255, 255, 255))
-                screen.blit(text, (10, y_offset))
-            y_offset += 25
-        
-        pygame.display.flip()
 
     def _handle_pygame_input(self, pygame):
         """Handle input using pygame"""
@@ -689,7 +561,7 @@ class ManualControl:
 
     def destroy_vehicle(self):
         """Destroy the controlled vehicle"""
-        if self.vehicle and self.spawned_by_us:
+        if self.vehicle:
             try:
                 vehicle_id = self.vehicle_id
                 self.vehicle.destroy()
@@ -710,7 +582,7 @@ class ManualControl:
 
     def destroy_vehicle_via_xmlrpc(self):
         """Destroy vehicle via XML-RPC bridge"""
-        if self.vehicle_id and self.xmlrpc_client and self.spawned_by_us:
+        if self.vehicle_id and self.xmlrpc_client:
             try:
                 success = self.xmlrpc_client.destroy_actor(self.vehicle_id)
                 if success:
@@ -734,8 +606,15 @@ class ManualControl:
         # Try XML-RPC destruction as backup
         self.destroy_vehicle_via_xmlrpc()
         
-        # Close connections
-        # Avoid triggering server-side global cleanup; do not call disconnect here
+        # Close local XML-RPC client proxy without disconnecting the server
+        if self.xmlrpc_client:
+            try:
+                if hasattr(self.xmlrpc_client, 'close'):
+                    self.xmlrpc_client.close()
+            except Exception:
+                pass
+            finally:
+                self.xmlrpc_client = None
         
         logger.info("Cleanup completed")
 

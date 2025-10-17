@@ -87,7 +87,6 @@ public class CarlaXmlRpcClient {
     private static final String LOAD_MAP = "load_map";
 
     // Coordinate transform configuration
-    private static final String SET_INPUT_FRAME_MODE = "set_input_frame_mode";
     private static final String SET_NET_OFFSET_XY = "set_net_offset_xy";
 
     // V2X Communication
@@ -189,12 +188,7 @@ public class CarlaXmlRpcClient {
                         isConnected = true;
                         log.info("Successfully connected to CARLA XML-RPC server");
 
-                        // Default input frame for MOSAIC/SUMO-driven positioning is 'sumo'
-                        try {
-                            setInputFrameMode("sumo");
-                        } catch (Exception e) {
-                            log.warn("Unable to set input_frame to 'sumo' on connect: {}", e.getMessage());
-                        }
+                        // Input frame configuration removed on server; assuming CARLA-frame inputs
                     } else {
                         log.warn("Connection attempt {} returned unexpected result: {}", currentAttempt, result);
                     }
@@ -213,21 +207,7 @@ public class CarlaXmlRpcClient {
         }
     }
 
-    /**
-     * Configure server input frame mode ('sumo' or 'carla').
-     * @param mode input frame mode
-     * @return true if accepted
-     */
-    public boolean setInputFrameMode(String mode) {
-        try {
-            Object[] params = new Object[]{mode};
-            Object result = executeWithRetry(SET_INPUT_FRAME_MODE, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.error("Failed to set input frame mode to {}: {}", mode, e.getMessage());
-            return false;
-        }
-    }
+    // Input frame mode configuration removed; client now assumes CARLA-frame inputs
 
     /**
      * Configure server SUMO net offset (x, y) applied before transform.
@@ -919,11 +899,9 @@ public class CarlaXmlRpcClient {
         while (attempt < maxRetries) {
             try {
                 int requestId = requestCounter.incrementAndGet();
-                log.debug("Executing XML-RPC call {} (request #{})", methodName, requestId);
-                
+                // log.debug("Executing XML-RPC call {} (request #{})", methodName, requestId);
                 Object result = client.execute(methodName, params);
-                
-                log.debug("XML-RPC call {} completed successfully (request #{})", methodName, requestId);
+                // log.debug("XML-RPC call {} completed successfully (request #{})", methodName, requestId);
                 return result;
                 
             } catch (XmlRpcException e) {
@@ -1030,6 +1008,9 @@ public class CarlaXmlRpcClient {
                     removed.add(previousActorId);
                 }
             }
+            if (!added.isEmpty() || !updated.isEmpty() || !removed.isEmpty()) {
+                log.info("Actor changes: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
+            } 
             
             // Update cache
             previousActorStates.clear();

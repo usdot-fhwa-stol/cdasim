@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.EOFException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -1289,6 +1290,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
 
             lastAdvanceTime = time;
         } catch (InternalFederateException | IOException | IllegalValueException e) {
+            if (e instanceof IOException && (e instanceof EOFException || (e.getCause() instanceof EOFException))) {
+                log.error("SUMO TraCI connection closed (EOF) during simulateUntil({}). SUMO may have crashed or exited. Check SUMO logs and configuration.", time);
+            }
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
         }
