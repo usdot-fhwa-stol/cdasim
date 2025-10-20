@@ -1315,26 +1315,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 java.util.List<Double> location = tf.toLocationList();
                 java.util.List<Double> rotation = tf.toRotationList();
                 
-                // Calculate velocity vector from speed and heading
-                java.util.List<Double> velocity = new java.util.ArrayList<>();
-                if (speed > 0.0 && heading != null) {
-                    // Convert heading from degrees to radians
-                    double headingRad = Math.toRadians(heading);
-                    // Calculate velocity components in CARLA coordinate system
-                    // Note: CARLA uses left-handed coordinate system, SUMO uses right-handed
-                    double vx = speed * Math.cos(headingRad);
-                    double vy = speed * Math.sin(headingRad);
-                    double vz = 0.0; // Assume no vertical velocity
-                    velocity.add(vx);
-                    velocity.add(vy);
-                    velocity.add(vz);
-                } else {
-                    // Zero velocity
-                    velocity.add(0.0);
-                    velocity.add(0.0);
-                    velocity.add(0.0);
-                }
-
                 boolean ok;
                 if (!currentActorIds.contains(id)) {
                     // Spawn a basic vehicle actor if missing
@@ -1402,48 +1382,25 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
                                 id, location.get(0), location.get(1), rotation.get(1), speed);
                         currentActorIds.add(id);
-                        
-                        // Set initial velocity after spawning
-                        if (multiXmlRpcManager != null) {
-                            boolean velocityOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorVelocity(id, velocity);
-                            if (velocityOk) {
-                                log.debug("Successfully set initial velocity for spawned actor '{}': {}", id, velocity);
-                            } else {
-                                log.debug("Failed to set initial velocity for spawned actor '{}'", id);
-                            }
-                        } else {
-                            boolean velocityOk = carlaXmlRpcClient.updateActorVelocity(id, velocity);
-                            if (velocityOk) {
-                                log.debug("Successfully set initial velocity for spawned actor '{}': {}", id, velocity);
-                            } else {
-                                log.debug("Failed to set initial velocity for spawned actor '{}'", id);
-                            }
-                        }
                     } else {
                         log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned false", id);
                     }
                 } else {
                     // Update transform and velocity for existing actors
                     boolean transformOk = false;
-                    boolean velocityOk = false;
                     
                     if (multiXmlRpcManager != null) {
                         transformOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorTransform(id, location, rotation);
-                        velocityOk = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).updateActorVelocity(id, velocity);
                     } else {
                         transformOk = carlaXmlRpcClient.updateActorTransform(id, location, rotation);
-                        velocityOk = carlaXmlRpcClient.updateActorVelocity(id, velocity);
                     }
                     
                     if (!transformOk) {
                         log.debug("Failed to update CARLA actor transform for {}", id);
                     }
-                    if (!velocityOk) {
-                        log.debug("Failed to update CARLA actor velocity for {}", id);
-                    }
                     
-                    if (transformOk && velocityOk) {
-                        log.debug("Successfully updated CARLA actor '{}' transform and velocity (speed: {} m/s)", id, speed);
+                    if (transformOk) {
+                        log.debug("Successfully updated CARLA actor '{}' transform (speed: {} m/s)", id, speed);
                     }
                 }
             };
