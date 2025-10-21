@@ -62,6 +62,9 @@ class CarlaXMLRPCServer:
         self.sensor_data: Dict[str, Any] = {}
         self.sensor_blueprints: Dict[str, carla.ActorBlueprint] = {}
 
+        self._odr_to_tl = {} 
+        self._odr_to_tls = {}
+
         self.lock = threading.RLock()
 
         # External-to-CARLA coordinate transform settings (SUMO/MOSAIC frame → CARLA frame)
@@ -289,6 +292,7 @@ class CarlaXMLRPCServer:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
+                self._odr_to_tl, self._odr_to_tls = self.build_light_index(self.world)
                 logger.info("Connected to CARLA at %s:%s | map=%s",
                             self.carla_host, self.carla_port, self.world.get_map().name)
                 return True
@@ -664,21 +668,24 @@ class CarlaXMLRPCServer:
     def set_traffic_light_state(self, traffic_light_id: ActorKey, state: str) -> bool:
         try:
             with self.lock:
-                if not self.is_connected(): return False
-                for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                    if str(tl.id) == str(traffic_light_id):
-                        if state == 'Red':
-                            tl.set_state(carla.TrafficLightState.Red)
-                        elif state == 'Yellow':
-                            tl.set_state(carla.TrafficLightState.Yellow)
-                        elif state == 'Green':
-                            tl.set_state(carla.TrafficLightState.Green)
-                        else:
-                            return False
-                        print("Set traffic light %s to state %s", traffic_light_id, state)
-                        return True
-                print("Traffic light %s not found", traffic_light_id)
-                return False
+                if not self.is_connected():
+                    return False
+                tl = self._odr_to_tl.get(str(traffic_light_id))
+                if not tl:
+                    print("Traffic light %s not found" % traffic_light_id)
+                    return False
+
+                if   state == 'Red':
+                    tl.set_state(carla.TrafficLightState.Red)
+                elif state == 'Yellow':
+                    tl.set_state(carla.TrafficLightState.Yellow)
+                elif state == 'Green':
+                    tl.set_state(carla.TrafficLightState.Green)
+                else:
+                    return False
+                
+                print("Set traffic light %s to %s" % (traffic_light_id, state))
+                return True
         except Exception as e:
             logger.error("set_traffic_light_state error: %s", e)
             return False
@@ -688,28 +695,26 @@ class CarlaXMLRPCServer:
             with self.lock:
                 if not self.is_connected():
                     return False
+                tl = self._odr_to_tl.get(str(traffic_light_id))
+                if not tl:
+                    print("Traffic light %s not found" % traffic_light_id)
+                    return False
 
-                for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                    if str(tl.id) != str(traffic_light_id):
-                        continue
+                state = tl.get_state()
+                elapsed = float(tl.get_elapsed_time() or 0.0)
+                desired_remaining = max(0.0, float(time_s))
+                new_total = elapsed + desired_remaining
 
-                    state = tl.get_state()  # carla.TrafficLightState
-                    elapsed = float(tl.get_elapsed_time() or 0.0)
-                    desired_remaining = max(0.0, float(time_s))  # clamp to non-negative
-                    new_total = elapsed + desired_remaining
+                if   state == carla.TrafficLightState.Green:
+                    tl.set_green_time(new_total)
+                elif state == carla.TrafficLightState.Yellow:
+                    tl.set_yellow_time(new_total)
+                elif state == carla.TrafficLightState.Red:
+                    tl.set_red_time(new_total)
+                else:
+                    return False
 
-                    if state.name == "Green":
-                        tl.set_green_time(new_total)
-                    elif state.name == "Yellow":
-                        tl.set_yellow_time(new_total)
-                    elif state.name == "Red":
-                        tl.set_red_time(new_total)
-                    else:
-                        return False
-
-                    return True
-
-                return False
+                return True
         except Exception as e:
             logger.error("set_traffic_light_timer error: %s", e)
             return False
@@ -977,6 +982,25 @@ class CarlaXMLRPCServer:
         finally:
             self.disconnect()
 
+def build_light_index(world):
+    odr_to_tl = {}
+    multi = {}
+    mp = world.get_map()
+
+    for lm in mp.get_all_landmarks():
+        if getattr(lm, "type", None) == getattr(carla, "LandmarkType", None) and \
+        lm.type != carla.LandmarkType.TrafficLight:
+            continue
+
+        tl = world.get_traffic_light(lm)
+        if tl is None:
+            continue
+
+        odr = str(lm.id)  # OpenDRIVE signal id
+        odr_to_tl.setdefault(odr, tl)
+        multi.setdefault(odr, []).append(tl)
+
+    return odr_to_tl, multi
 
 def main():
     parser = argparse.ArgumentParser(description='CARLA XML-RPC Server (Unified)')
