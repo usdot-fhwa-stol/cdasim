@@ -104,7 +104,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     /**
      * flag for simulation step
      */
-    boolean isSimulationStep = false;
 
     /**
      * Sleep after each connection try. Unit: [ms].
@@ -477,9 +476,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
-            if (isSimulationStep) {
+        
                 
                 // Handle sensor operations
+                log.info("Simulation step");
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
                     sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
@@ -521,6 +521,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 
                 if (actorConnected) {
+                    log.info("actor connected");
                     // Publish CARLA state updates to SUMO using VehicleUpdates and TrafficLightUpdates
                     try {
                         CarlaXmlRpcClient actorClient = null;
@@ -661,9 +662,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
-                isSimulationStep = false;
                 rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
-            }
+        
             
         } 
         catch (IllegalValueException e) {
@@ -759,55 +759,55 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         return true;
     }
 
-    /**
-     * Trigger interactions based on commands received from CARLA simulator.
-     * Now uses XML-RPC for simulation advancement instead of TraCI.
-     *
-     * @param length  command length
-     * @param command command
-     */
-    public synchronized void triggerInteraction(int length, byte[] command) throws InternalFederateException {
-        try {
-            // Handle different command types using XML-RPC approach
-            if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
-                // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
-                boolean advanced = false;
-                if (multiXmlRpcManager != null) {
-                    advanced = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).advanceSimulation();
-                } else if (carlaXmlRpcClient != null) {
-                    advanced = carlaXmlRpcClient.advanceSimulation();
-                }
+    // /**
+    //  * Trigger interactions based on commands received from CARLA simulator.
+    //  * Now uses XML-RPC for simulation advancement instead of TraCI.
+    //  *
+    //  * @param length  command length
+    //  * @param command command
+    //  */
+    // public synchronized void triggerInteraction(int length, byte[] command) throws InternalFederateException {
+    //     try {
+    //         // Handle different command types using XML-RPC approach
+    //         if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
+    //             // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
+    //             boolean advanced = false;
+    //             if (multiXmlRpcManager != null) {
+    //                 advanced = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).advanceSimulation();
+    //             } else if (carlaXmlRpcClient != null) {
+    //                 advanced = carlaXmlRpcClient.advanceSimulation();
+    //             }
                 
-                if (advanced) {
-                    // Trigger internal simulation step coordination
-                    triggerInternalSimulationStep();
-                    log.debug("CARLA simulation advanced via XML-RPC at time: {}", this.nextTimeStep);
-                } else {
-                    log.warn("Failed to advance CARLA simulation via XML-RPC");
-                }
-            } else if (command[5] == 0x0d) {
-                // send received V2X message to CARLA simulator
-                sendReceivedV2xMessageToCarla();
-                // log.debug("Carla ambassador sends V2X messages to bridge client.");
-            } else if (command[5] == 0x2f) {
-                // receive message from CARLA simulator
-                String[] message = processReceivedV2xMessageFromCarla(length, command);
-                if (message != null) {
-                    rti.triggerInteraction(new ExternalMessage(this.nextTimeStep, message[1], message[0]));
-                    // log.debug("received message from CARLA simulator: message is sent by {};
-                    // message: {}", message[0],
-                    // message: {}", message[1]);
-                }
-            } else if (command[5] == 0x85) {
-                log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
-            } else {
-                log.debug("Ignoring legacy TraCI request path in favor of XML-RPC interactions");
-            }
+    //             if (advanced) {
+    //                 // Trigger internal simulation step coordination
+    //                 triggerInternalSimulationStep();
+    //                 log.debug("CARLA simulation advanced via XML-RPC at time: {}", this.nextTimeStep);
+    //             } else {
+    //                 log.warn("Failed to advance CARLA simulation via XML-RPC");
+    //             }
+    //         } else if (command[5] == 0x0d) {
+    //             // send received V2X message to CARLA simulator
+    //             sendReceivedV2xMessageToCarla();
+    //             // log.debug("Carla ambassador sends V2X messages to bridge client.");
+    //         } else if (command[5] == 0x2f) {
+    //             // receive message from CARLA simulator
+    //             String[] message = processReceivedV2xMessageFromCarla(length, command);
+    //             if (message != null) {
+    //                 rti.triggerInteraction(new ExternalMessage(this.nextTimeStep, message[1], message[0]));
+    //                 // log.debug("received message from CARLA simulator: message is sent by {};
+    //                 // message: {}", message[0],
+    //                 // message: {}", message[1]);
+    //             }
+    //         } else if (command[5] == 0x85) {
+    //             log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
+    //         } else {
+    //             log.debug("Ignoring legacy TraCI request path in favor of XML-RPC interactions");
+    //         }
 
-        } catch (IllegalValueException e) {
-            throw new InternalFederateException(e);
-        }
-    }
+    //     } catch (IllegalValueException e) {
+    //         throw new InternalFederateException(e);
+    //     }
+    // }
 
     /**
      * Internal method to trigger simulation step coordination.
@@ -815,7 +815,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private void triggerInternalSimulationStep() {
         // Set simulation step flag to trigger state updates and time advancement
-        isSimulationStep = true;
         
         // Optionally, we can still trigger a SimulationStep interaction for other federates
         // that might need to know about simulation advancement
