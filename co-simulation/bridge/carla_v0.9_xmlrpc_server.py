@@ -322,14 +322,17 @@ class CarlaXMLRPCServer:
                 self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
                 
-                # Automatically switch spectator to each spawned actor
-                try:
-                    # Switch spectator to follow the newly spawned actor
-                    self.set_spectator_to_actor(actor_id, 'follow', 12.0, 6.0, -15.0)
-                    print(f"========Spectator switched to follow actor: {actor_id}========")
-                except Exception as e:
-                    print(f"Failed to switch spectator to actor {actor_id}: {e}")
-                    logger.error("Failed to switch spectator to actor: %s", e)
+                # Only switch spectator to the first spawned actor
+                if len(self.actors) == 1:  # Only for the first vehicle
+                    try:
+                        # Switch spectator to follow the first spawned actor
+                        self.set_spectator_to_actor(actor_id, 'follow', 0, 0, 0)
+                        print(f"========Spectator switched to follow first actor: {actor_id}========")
+                    except Exception as e:
+                        print(f"Failed to switch spectator to first actor {actor_id}: {e}")
+                        logger.error("Failed to switch spectator to first actor: %s", e)
+                else:
+                    print(f"========Actor {actor_id} spawned (spectator not moved)========")
                 
                 print(f"========spawn_actor success========")
                 return True
@@ -448,10 +451,11 @@ class CarlaXMLRPCServer:
                                 vehicle_world_count += 1
                     except Exception:
                         vehicle_world_count = 0
+                    logger.info(f"Number of vehicle in the world:{vehicle_world_count}")
                 except Exception as e:
                     logger.warning("Failed to get world actors: %s", e)
                     world_actors = {}
-                
+
                 # Clean up actors that no longer exist in CARLA world
                 actors_to_remove = []
                 for alias, actor in self.actors.items():

@@ -14,26 +14,18 @@
 # Contact: Zongtan.Li@uga.edu
 
 """
-Manual Control Script for CARLA-SUMO Co-simulation
+Automatic Vehicle Control Script for CARLA-SUMO Co-simulation
 
-This script creates a keyboard-controlled vehicle in CARLA to test position synchronization
-with SUMO. When the script stops, the vehicle is properly removed from CARLA, and the
-CARLA Ambassador will detect the removal and send VehicleUpdates with removedNames to SUMO.
+This script creates an automatically controlled vehicle in CARLA that drives at a constant
+speed to test position synchronization with SUMO. When the script stops, the vehicle is 
+properly removed from CARLA, and the CARLA Ambassador will detect the removal and send 
+VehicleUpdates with removedNames to SUMO.
 
 Usage:
     python manual_control.py [--carla-host localhost] [--carla-port 2000] [--xmlrpc-host localhost] [--xmlrpc-port 8090]
 
-Controls:
-    W - Accelerate forward
-    S - Brake/Reverse
-    A - Steer left
-    D - Steer right
-    SPACE - Engage reverse
-    R - Reset position
-    H - Show help
-    Q/X/ESC - Exit
-    
-Note: In Docker environments, press Enter after each key press
+The vehicle will automatically drive at a constant speed (30% throttle) in a straight line.
+Press Ctrl+C to stop the vehicle and exit the script.
 """
 
 import argparse
@@ -83,12 +75,10 @@ class ManualControl:
         # Control state
         self.running = False
         self.control_thread: Optional[threading.Thread] = None
-        self.input_queue = []
-        self.input_lock = threading.Lock()
         
-        # Vehicle control parameters
-        self.steer = 0.0
-        self.throttle = 0.0
+        # Vehicle control parameters - set to constant values for automatic driving
+        self.steer = 0.0  # Straight ahead
+        self.throttle = 0.3  # Constant moderate speed
         self.brake = 0.0
         self.reverse = False
         
@@ -99,6 +89,11 @@ class ManualControl:
         self.steer_speed = 3.0
         self.throttle_speed = 3.0
         self.brake_speed = 3.0
+        
+        # Auto-driving parameters
+        self.auto_driving = True
+        self.target_speed = 0.3  # 30% throttle for reasonable speed
+        self.steering_adjustment = 0.0  # No steering adjustment for straight driving
         
         # Position tracking for synchronization testing
         self.last_position = None
@@ -328,213 +323,26 @@ class ManualControl:
                 logger.error(f"Failed to update position tracking: {e}")
 
     def control_loop(self):
-        """Main control loop"""
-        logger.info("Starting control loop...")
-        logger.info("Controls: W/A/S/D - Move, SPACE - Reverse, R - Reset, H - Help, Q/X/ESC - Exit")
-        logger.info("Note: In Docker, press Enter after each key press")
-        
-        # Check if we're in a Docker environment
-        is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
-        input_thread = None
-        
-        if is_docker:
-            logger.info("Docker environment detected - using line-based input")
-            # Start input thread for Docker
-            input_thread = threading.Thread(target=self._input_thread, daemon=True)
-            input_thread.start()
-        
-        try:
-            import pygame
-            pygame.init()
-            pygame.display.set_mode((100, 100))  # Small window for input focus
-            logger.info("Using pygame for input handling")
-            
-        except ImportError:
-            logger.warning("pygame not available, using keyboard input fallback")
-            pygame = None
-        
-        # Initialize input method
-        input_method = "pygame" if pygame else ("docker_input" if is_docker else "keyboard")
-        logger.info(f"Input method: {input_method}")
+        """Main control loop - automatic driving mode"""
+        logger.info("Starting automatic control loop...")
+        logger.info("Vehicle will drive automatically at constant speed")
+        logger.info("Press Ctrl+C to stop")
         
         while self.running:
             try:
-                # Handle input
-                if pygame:
-                    self._handle_pygame_input(pygame)
-                elif is_docker:
-                    # Process queued input from input thread
-                    self._process_queued_input()
-                else:
-                    self._handle_keyboard_input()
-                
-                # Update vehicle control
+                # Update vehicle control with constant values
                 self.update_vehicle_control()
                 
                 # Update position tracking
                 self.update_position_tracking()
                 
                 # Small delay to prevent excessive CPU usage
-                time.sleep(0.01)
+                time.sleep(0.1)  # 10Hz update rate
                 
             except Exception as e:
                 logger.error(f"Error in control loop: {e}")
                 time.sleep(0.1)
 
-    def _handle_pygame_input(self, pygame):
-        """Handle input using pygame"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-                return
-        
-        keys = pygame.key.get_pressed()
-        
-        # Throttle/Brake
-        if keys[pygame.K_w]:
-            self.throttle = min(self.throttle + self.throttle_speed * 0.01, self.max_throttle)
-            self.brake = 0.0
-        elif keys[pygame.K_s]:
-            self.brake = min(self.brake + self.brake_speed * 0.01, self.max_brake)
-            self.throttle = 0.0
-        else:
-            self.throttle = max(self.throttle - self.throttle_speed * 0.01, 0.0)
-            self.brake = max(self.brake - self.brake_speed * 0.01, 0.0)
-        
-        # Steering
-        if keys[pygame.K_a]:
-            self.steer = max(self.steer - self.steer_speed * 0.01, -self.max_steer_angle)
-        elif keys[pygame.K_d]:
-            self.steer = min(self.steer + self.steer_speed * 0.01, self.max_steer_angle)
-        else:
-            self.steer = 0.0
-        
-        # Reverse
-        self.reverse = keys[pygame.K_SPACE]
-        
-        # Reset position
-        if keys[pygame.K_r]:
-            self._reset_vehicle_position()
-        
-        # Exit
-        if keys[pygame.K_ESCAPE]:
-            self.running = False
-
-    def _handle_keyboard_input(self):
-        """Fallback keyboard input handler"""
-        if os.name == 'nt':  # Windows
-            import msvcrt
-            if msvcrt.kbhit():
-                key = msvcrt.getch().decode('utf-8').lower()
-                self._process_key(key)
-        else:  # Linux/Mac/Docker
-            try:
-                import select
-                import tty
-                import termios
-                
-                # Check if stdin is available and has data
-                if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-                    # Set terminal to raw mode for single character input
-                    old_settings = termios.tcgetattr(sys.stdin)
-                    try:
-                        tty.setraw(sys.stdin.fileno())
-                        key = sys.stdin.read(1).lower()
-                        self._process_key(key)
-                    finally:
-                        # Restore terminal settings
-                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-            except (ImportError, OSError, termios.error) as e:
-                # Fallback for environments where termios doesn't work (like some Docker setups)
-                logger.debug(f"Termios not available, using alternative input method: {e}")
-                self._handle_alternative_input()
-
-    def _handle_alternative_input(self):
-        """Alternative input method for Docker environments"""
-        try:
-            # Try to read from stdin without blocking
-            import select
-            if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-                # Read a line and process the first character
-                line = sys.stdin.readline().strip()
-                if line:
-                    key = line[0].lower()
-                    self._process_key(key)
-        except Exception as e:
-            logger.debug(f"Alternative input method failed: {e}")
-            # If all else fails, just continue without input
-            pass
-
-    def _input_thread(self):
-        """Separate thread for handling input in Docker environments"""
-        logger.info("Starting input thread for Docker environment")
-        try:
-            while self.running:
-                try:
-                    # Read input from stdin
-                    line = input().strip()
-                    if line:
-                        key = line[0].lower()
-                        with self.input_lock:
-                            self.input_queue.append(key)
-                except EOFError:
-                    logger.info("Input stream closed")
-                    break
-                except Exception as e:
-                    logger.debug(f"Input thread error: {e}")
-                    time.sleep(0.1)
-        except Exception as e:
-            logger.error(f"Input thread failed: {e}")
-
-    def _process_queued_input(self):
-        """Process queued input from the input thread"""
-        with self.input_lock:
-            while self.input_queue:
-                key = self.input_queue.pop(0)
-                self._process_key(key)
-
-    def _process_key(self, key):
-        """Process individual key press"""
-        if key == 'w':
-            self.throttle = min(self.throttle + 0.1, self.max_throttle)
-            self.brake = 0.0
-            logger.debug("Throttle increased")
-        elif key == 's':
-            self.brake = min(self.brake + 0.1, self.max_brake)
-            self.throttle = 0.0
-            logger.debug("Brake applied")
-        elif key == 'a':
-            self.steer = max(self.steer - 0.1, -self.max_steer_angle)
-            logger.debug("Steer left")
-        elif key == 'd':
-            self.steer = min(self.steer + 0.1, self.max_steer_angle)
-            logger.debug("Steer right")
-        elif key == ' ':
-            self.reverse = True
-            logger.debug("Reverse engaged")
-        elif key == 'r':
-            self._reset_vehicle_position()
-            logger.info("Vehicle position reset")
-        elif key == '\x1b' or key == 'q' or key == 'x':  # ESC, Q, or X to exit
-            logger.info("Exit command received")
-            self.running = False
-        elif key == 'h':
-            self._print_help()
-        else:
-            logger.debug(f"Unknown key: {key}")
-
-    def _print_help(self):
-        """Print control help"""
-        logger.info("=== Manual Control Help ===")
-        logger.info("W - Accelerate forward")
-        logger.info("S - Brake/Reverse")
-        logger.info("A - Steer left")
-        logger.info("D - Steer right")
-        logger.info("SPACE - Engage reverse")
-        logger.info("R - Reset vehicle position")
-        logger.info("H - Show this help")
-        logger.info("Q/X/ESC - Exit")
-        logger.info("========================")
 
     def _reset_vehicle_position(self):
         """Reset vehicle to spawn point"""
@@ -620,7 +428,7 @@ class ManualControl:
 
     def run(self):
         """Main run method"""
-        logger.info("Starting Manual Control for CARLA-SUMO Co-simulation")
+        logger.info("Starting Automatic Vehicle Control for CARLA-SUMO Co-simulation")
         
         # Connect to CARLA
         if not self.connect_carla():
@@ -654,7 +462,7 @@ class ManualControl:
             return True
 
 def main():
-    parser = argparse.ArgumentParser(description='Manual Control for CARLA-SUMO Co-simulation')
+    parser = argparse.ArgumentParser(description='Automatic Vehicle Control for CARLA-SUMO Co-simulation')
     parser.add_argument('--carla-host', default='localhost', help='CARLA server host')
     parser.add_argument('--carla-port', type=int, default=2000, help='CARLA server port')
     parser.add_argument('--xmlrpc-host', default='localhost', help='XML-RPC bridge host')

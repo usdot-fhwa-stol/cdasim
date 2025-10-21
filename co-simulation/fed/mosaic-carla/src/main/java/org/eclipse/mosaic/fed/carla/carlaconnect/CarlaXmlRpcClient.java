@@ -97,6 +97,11 @@ public class CarlaXmlRpcClient {
     private static final long DEFAULT_RETRY_DELAY_MS = 1000;
     private static final int DEFAULT_REPLY_TIMEOUT_MS = 10000;
     private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 15000;
+    
+    // Performance optimization constants
+    private static final double LOCATION_TOLERANCE = 0.01; // 1cm tolerance for location changes
+    private static final double VELOCITY_TOLERANCE = 0.1;  // 0.1 m/s tolerance for velocity changes
+    private static final int MAX_RETRY_DELAY_MULTIPLIER = 16; // Cap exponential backoff
 
     private XmlRpcClient client;
     private final URL serverUrl;
@@ -262,13 +267,30 @@ public class CarlaXmlRpcClient {
      * @return true if connected
      */
     public boolean isConnected() {
-        try {
-            Object[] params = new Object[]{};
-            Object result = executeWithRetry(IS_CONNECTED, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.debug("Connection check failed: {}", e.getMessage());
-            return false;
+        synchronized (connectionLock) {
+            // First check local state
+            if (!isConnected) {
+                return false;
+            }
+            
+            // Then verify with server
+            try {
+                Object[] params = new Object[]{};
+                Object result = executeWithRetry(IS_CONNECTED, params, 1); // Use minimal retries for status check
+                boolean serverConnected = result instanceof Boolean && (Boolean) result;
+                
+                // Update local state if server disagrees
+                if (!serverConnected && isConnected) {
+                    log.warn("Server reports disconnected, updating local state");
+                    isConnected = false;
+                }
+                
+                return serverConnected;
+            } catch (Exception e) {
+                log.debug("Connection check failed: {}", e.getMessage());
+                // Don't update local state on network errors, just return false
+                return false;
+            }
         }
     }
 
@@ -885,7 +907,7 @@ public class CarlaXmlRpcClient {
     }
 
     /**
-     * Execute XML-RPC call with retry logic
+     * Execute XML-RPC call with retry logic and connection recovery
      * @param methodName Name of the XML-RPC method
      * @param params Method parameters
      * @param maxRetries Maximum number of retry attempts
@@ -908,10 +930,21 @@ public class CarlaXmlRpcClient {
                 lastException = e;
                 attempt++;
                 
+                // Check if this is a connection-related error
+                boolean isConnectionError = isConnectionError(e);
+                if (isConnectionError) {
+                    synchronized (connectionLock) {
+                        isConnected = false;
+                        log.warn("Connection lost during XML-RPC call {}, marking as disconnected", methodName);
+                    }
+                }
+                
                 if (attempt < maxRetries) {
                     log.warn("XML-RPC call {} failed (attempt {}/{}): {}", methodName, attempt, maxRetries, e.getMessage());
                     try {
-                        Thread.sleep(DEFAULT_RETRY_DELAY_MS);
+                        // Use exponential backoff for retries
+                        long delay = DEFAULT_RETRY_DELAY_MS * (1L << Math.min(attempt - 1, 4)); // Cap at MAX_RETRY_DELAY_MULTIPLIER
+                        Thread.sleep(delay);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw new XmlRpcException("Interrupted during retry", ie);
@@ -923,6 +956,21 @@ public class CarlaXmlRpcClient {
         }
         
         throw new XmlRpcException("Failed after " + maxRetries + " attempts", lastException);
+    }
+    
+    /**
+     * Check if an exception indicates a connection problem
+     */
+    private boolean isConnectionError(XmlRpcException e) {
+        String message = e.getMessage();
+        if (message == null) return false;
+        
+        String lowerMessage = message.toLowerCase();
+        return lowerMessage.contains("connection") || 
+               lowerMessage.contains("timeout") || 
+               lowerMessage.contains("refused") ||
+               lowerMessage.contains("unreachable") ||
+               lowerMessage.contains("broken pipe");
     }
 
     /**
@@ -1097,7 +1145,12 @@ public class CarlaXmlRpcClient {
             return true;
         }
         
-        // Compare transform information
+        // Quick reference equality check first
+        if (previousState == currentState) {
+            return false;
+        }
+        
+        // Compare transform information with optimized checks
         Object prevTransform = previousState.get("transform");
         Object currTransform = currentState.get("transform");
         
@@ -1105,23 +1158,29 @@ public class CarlaXmlRpcClient {
             Map<?,?> prevMap = (Map<?,?>) prevTransform;
             Map<?,?> currMap = (Map<?,?>) currTransform;
             
+            // Check location changes with tolerance for floating point precision
             Object prevLoc = prevMap.get("location");
             Object currLoc = currMap.get("location");
-            Object prevRot = prevMap.get("rotation");
-            Object currRot = currMap.get("rotation");
-            
-            // Compare locations
             if (!Objects.equals(prevLoc, currLoc)) {
-                return true;
+                // Additional check for floating point precision
+                if (prevLoc instanceof List && currLoc instanceof List) {
+                    if (!isLocationEqual((List<?>) prevLoc, (List<?>) currLoc)) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
             }
             
-            // Compare rotations
+            // Check rotation changes
+            Object prevRot = prevMap.get("rotation");
+            Object currRot = currMap.get("rotation");
             if (!Objects.equals(prevRot, currRot)) {
                 return true;
             }
         }
         
-        // Compare velocity information
+        // Compare velocity information with tolerance
         Object prevVelocity = previousState.get("velocity");
         Object currVelocity = currentState.get("velocity");
         
@@ -1132,13 +1191,61 @@ public class CarlaXmlRpcClient {
             Object prevLinear = prevVelMap.get("linear");
             Object currLinear = currVelMap.get("linear");
             
-            // Compare linear velocities
+            // Compare linear velocities with tolerance
             if (!Objects.equals(prevLinear, currLinear)) {
-                return true;
+                if (prevLinear instanceof List && currLinear instanceof List) {
+                    if (!isVelocityEqual((List<?>) prevLinear, (List<?>) currLinear)) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
             }
         }
         
         return false;
+    }
+    
+    /**
+     * Check if two location lists are equal within tolerance
+     */
+    private boolean isLocationEqual(List<?> loc1, List<?> loc2) {
+        if (loc1.size() != loc2.size()) return false;
+        
+        final double TOLERANCE = LOCATION_TOLERANCE;
+        for (int i = 0; i < loc1.size(); i++) {
+            if (loc1.get(i) instanceof Number && loc2.get(i) instanceof Number) {
+                double val1 = ((Number) loc1.get(i)).doubleValue();
+                double val2 = ((Number) loc2.get(i)).doubleValue();
+                if (Math.abs(val1 - val2) > TOLERANCE) {
+                    return false;
+                }
+            } else if (!Objects.equals(loc1.get(i), loc2.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Check if two velocity lists are equal within tolerance
+     */
+    private boolean isVelocityEqual(List<?> vel1, List<?> vel2) {
+        if (vel1.size() != vel2.size()) return false;
+        
+        final double TOLERANCE = VELOCITY_TOLERANCE;
+        for (int i = 0; i < vel1.size(); i++) {
+            if (vel1.get(i) instanceof Number && vel2.get(i) instanceof Number) {
+                double val1 = ((Number) vel1.get(i)).doubleValue();
+                double val2 = ((Number) vel2.get(i)).doubleValue();
+                if (Math.abs(val1 - val2) > TOLERANCE) {
+                    return false;
+                }
+            } else if (!Objects.equals(vel1.get(i), vel2.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1164,5 +1271,44 @@ public class CarlaXmlRpcClient {
      */
     public Map<String, Map<String, Object>> getCachedTrafficLightStates() {
         return new HashMap<>(previousTrafficLightStates);
+    }
+    
+    /**
+     * Clean up resources and close connections
+     * This method should be called when the client is no longer needed
+     */
+    public void cleanup() {
+        synchronized (connectionLock) {
+            if (isConnected) {
+                try {
+                    disconnect();
+                } catch (Exception e) {
+                    log.warn("Error during cleanup disconnect: {}", e.getMessage());
+                }
+            }
+        }
+        
+        // Clear caches to free memory
+        clearStateCache();
+        
+        // Reset request counter
+        requestCounter.set(0);
+        
+        log.debug("CARLA XML-RPC client cleanup completed");
+    }
+    
+    /**
+     * Get connection statistics for monitoring
+     * @return Map containing connection statistics
+     */
+    public Map<String, Object> getConnectionStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("isConnected", isConnected);
+        stats.put("serverType", serverType);
+        stats.put("serverUrl", serverUrl.toString());
+        stats.put("requestCount", requestCounter.get());
+        stats.put("cachedActorStates", previousActorStates.size());
+        stats.put("cachedTrafficLightStates", previousTrafficLightStates.size());
+        return stats;
     }
 }
