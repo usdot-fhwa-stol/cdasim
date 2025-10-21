@@ -345,83 +345,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     }
 
-    /**
-     * Connects to CARLA simulator using the given host and port.
-     *
-     * @param host host on which CARLA simulator is running.
-     * @param port port on which CARLA client is listening.
-     */
-    @Override
-    public void connectToFederate(String host, int port) {
-        // Start the Carla connection server
-        String bridgePath = null;
-        int carlaConnectionPort = 8913;
-        
-        if (carlaConfig.carlaConnectionPort != 0)
-            carlaConnectionPort = carlaConfig.carlaConnectionPort; // set the carla connection port
-
-        // get the connection bridge file
-        if (carlaConfig.bridgePath != null) {
-            bridgePath = carlaConfig.bridgePath;
-            log.info("Use connection bridge path from configuration file: " + carlaConfig.bridgePath);
-        } else {
-            log.error("Could not find connection bridge.");
-            return;
-        }
-        if (carlaConnection == null) {
-            // start the carla connection
-
-            carlaConnection = new CarlaConnection("localhost", carlaConnectionPort, this);
-            Thread carlaThread = new Thread(carlaConnection);
-            carlaThread.start();
-        }
-
-        String[] bridgePathArray = bridgePath.split(";");
-
-        String path = bridgePathArray[0];
-        String command = bridgePathArray[1];
-
-        // check the current operating system
-        boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-
-        if (isWindows) {
-            command = "cmd.exe /c start " + command;
-        } else {
-            command = "sh " + command;
-        }
-        // connect carla client
-        while (connectionAttempts-- > 0) {
-            boolean connected = true;
-
-            try {
-                connectionProcess = Runtime.getRuntime().exec(command, null, new File(path));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                if (connectionAttempts == 0) {
-                    log.info("Maximum connection attempts reached and connecting to CARLA simulator failed.");
-                } else {
-                    log.warn("Error while connecting to CARLA simulator. Retrying.");
-                }
-
-                try {
-                    Thread.sleep(SLEEP_AFTER_ATTEMPT);
-                } catch (InterruptedException e) {
-                    log.error("Could not execute Thread.sleep({}). Reason: {}", SLEEP_AFTER_ATTEMPT, e.getMessage());
-                }
-                connected = false;
-            }
-
-            if (connected) {
-                log.info("Client connected");
-                break;
-            }
-        }
-    }
-
-    @Override
-    public void connectToFederate(String host, InputStream in, InputStream err) {
-        this.connectToFederate(host, carlaSimulatorClientPort);
-    }
 
     /**
      * Starts the CARLA binary locally.
@@ -437,7 +360,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         try {
             Process p = federateExecutor.startLocalFederate(dir);
-            connectToFederate("localhost", p.getInputStream(), p.getErrorStream());
             // read error output of process in an extra thread
             new ProcessLoggingThread(log, p.getInputStream(), "carla", ProcessLoggingThread.Level.Info).start();
             new ProcessLoggingThread(log, p.getErrorStream(), "carla", ProcessLoggingThread.Level.Error).start();
