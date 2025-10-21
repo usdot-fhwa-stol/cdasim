@@ -1106,9 +1106,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // Use the same yaw calculation as in carlaTransformFromSumo for consistency
             double yaw = -1 * yawDeg + 90; // Consistent with carlaTransformFromSumo
             double yawRad = Math.toRadians(yaw);
-            // Python: out_location = (in_location.x + math.cos(math.radians(yaw)) * extent.x,
-            //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
-            //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
+
             carlaX += Math.cos(yawRad) * extentX;
             carlaY -= Math.sin(yawRad) * extentX;
             // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
@@ -1120,14 +1118,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         double yWithOffset = carlaY - sumoNetOffsetXY[1];
         double zWithOffset = carlaZ;
         
-        // Transform to sumo reference system (right-handed)
-        // Python: carla.Location(out_location[0], -out_location[1], out_location[2])
+
         double sumoX = xWithOffset;
         double sumoY = -yWithOffset; // Flip Y for right-handed system
         double sumoZ = zWithOffset;
         
-        // Convert CARLA yaw to SUMO heading
-        // Fixed: Ensure consistent angle conversion
         double sumoHeadingDeg = yawDeg != null ? (yawDeg + 90.0) : 0.0;
         
         // Normalize heading to [0, 360) range
@@ -1295,12 +1290,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             currentActorIds.clear();
             currentActorIds.addAll(actors.keySet());
 
-            // Create a local copy for lambda use and track newly spawned actors
+            // Create a local copy for lambda use
             final java.util.Set<String> localCurrentActorIds = new java.util.HashSet<>(currentActorIds);
-            final java.util.Set<String> newlySpawnedActors = new java.util.HashSet<>();
+            
+            // Track actors that need to be spawned
+            final java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> actorsToSpawn = new java.util.ArrayList<>();
+            final java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> actorsToUpdate = new java.util.ArrayList<>();
 
-            // Helper to spawn/update
-            java.util.function.Consumer<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> applyVehicle = vd -> {
+            // Helper to categorize vehicles
+            java.util.function.Consumer<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> categorizeVehicle = vd -> {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
@@ -1329,92 +1327,159 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
                 if (!localCurrentActorIds.contains(id)) {
-                    // Spawn a basic vehicle actor if missing
-                    log.info("Attempting to spawn CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
-                            id, location.get(0), location.get(1), rotation.get(1), speed);
-                    final String blueprint = carlaConfig != null && StringUtils.isNotBlank(carlaConfig.defaultVehicleBlueprint)
-                            ? carlaConfig.defaultVehicleBlueprint
-                            : "vehicle.tesla.model3";
-                    
-                    // Attach SUMO vehicle extent to attributes if available (so server can correct front-bumper reference)
-                    final java.util.Map<String, Object> attributes = new java.util.HashMap<>();
-                    try {
-                        Object extra = vd.getAdditionalData();
-                        // Prefer structured Size additional data
-                        if (extra instanceof org.eclipse.mosaic.lib.objects.detector.Size) {
-                            org.eclipse.mosaic.lib.objects.detector.Size sz = (org.eclipse.mosaic.lib.objects.detector.Size) extra;
-                            double length = sz.getLength();
-                            double width = sz.getWidth();
-                            double height = sz.getHeight();
-                            java.util.Map<String, Object> extent = new java.util.HashMap<>();
-                            extent.put("x", length / 2.0);
-                            extent.put("y", width / 2.0);
-                            extent.put("z", height / 2.0);
-                            attributes.put("extent", extent);
-                            attributes.put("length", length);
-                        } else if (extra instanceof java.util.Map) {
-                            @SuppressWarnings("rawtypes")
-                            java.util.Map m = (java.util.Map) extra;
-                            Object l = m.get("length");
-                            Object w = m.get("width");
-                            Object h = m.get("height");
-                            if (l instanceof Number || w instanceof Number || h instanceof Number) {
-                                double length = l instanceof Number ? ((Number) l).doubleValue() : 0.0;
-                                double width = w instanceof Number ? ((Number) w).doubleValue() : 0.0;
-                                double height = h instanceof Number ? ((Number) h).doubleValue() : 0.0;
-                                java.util.Map<String, Object> extent = new java.util.HashMap<>();
-                                extent.put("x", length / 2.0);
-                                extent.put("y", width / 2.0);
-                                extent.put("z", height / 2.0);
-                                attributes.put("extent", extent);
-                                if (length > 0.0) {
-                                    attributes.put("length", length);
-                                }
-                            }
-                        }
-                    } catch (Exception ignore) {
-                        // Best-effort; attributes remain empty if no size info
-                    }
-                    
-                    // Apply a small Z-lift to reduce spawn collisions with ground (client/server do no conversion)
-                    final double SPAWN_Z_LIFT = 2; // meters
-                    final java.util.List<Double> finalLocation = new java.util.ArrayList<>(location);
-                    if (finalLocation != null && finalLocation.size() >= 3) {
-                        try {
-                            double z = finalLocation.get(2) != null ? finalLocation.get(2) : 0.0;
-                            finalLocation.set(2, z + SPAWN_Z_LIFT);
-                        } catch (Exception ignore) { /* keep original if any issue */ }
-                    }
-
-                    log.info("Spawning actor (z+{} m)", SPAWN_Z_LIFT);
-                    final boolean ok = actorClient.spawnActor(blueprint, id, finalLocation, rotation, attributes);
-                    if (ok) {
-                        log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
-                                id, finalLocation.get(0), finalLocation.get(1), rotation.get(1), speed);
-                        newlySpawnedActors.add(id);
-                    } else {
-                        log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned false", id);
-                    }
+                    // Add to spawn list
+                    actorsToSpawn.add(vd);
                 } else {
-                    // Update transform and velocity for existing actors
-                    final boolean transformOk = actorClient.updateActorTransform(id, location, rotation);
-                    
-                    if (!transformOk) {
-                        log.debug("Failed to update CARLA actor transform for {}", id);
-                    }
-                    
-                    if (transformOk) {
-                        log.debug("Successfully updated CARLA actor '{}' transform (speed: {} m/s)", id, speed);
-                    }
+                    // Add to update list
+                    actorsToUpdate.add(vd);
                 }
             };
 
             // Apply to added and updated vehicles
             for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData v : interaction.getAdded()) {
-                applyVehicle.accept(v);
+                categorizeVehicle.accept(v);
             }
             for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData v : interaction.getUpdated()) {
-                applyVehicle.accept(v);
+                categorizeVehicle.accept(v);
+            }
+
+            // Process actors to spawn
+            final java.util.Set<String> newlySpawnedActors = new java.util.HashSet<>();
+            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vd : actorsToSpawn) {
+                final String id = vd.getName();
+                final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
+                final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                final double speed = vd.getSpeed();
+                
+                // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
+                Double extentX = null;
+                try {
+                    Object extra = vd.getAdditionalData();
+                    if (extra instanceof org.eclipse.mosaic.lib.objects.detector.Size) {
+                        org.eclipse.mosaic.lib.objects.detector.Size sz = (org.eclipse.mosaic.lib.objects.detector.Size) extra;
+                        extentX = sz.getLength() / 2.0;
+                    } else if (extra instanceof java.util.Map) {
+                        @SuppressWarnings("rawtypes")
+                        java.util.Map m = (java.util.Map) extra;
+                        Object l = m.get("length");
+                        if (l instanceof Number) {
+                            extentX = ((Number) l).doubleValue() / 2.0;
+                        }
+                    }
+                } catch (Exception ignore) { }
+                
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final java.util.List<Double> location = tf.toLocationList();
+                final java.util.List<Double> rotation = tf.toRotationList();
+                
+                // Spawn a basic vehicle actor if missing
+                log.info("Attempting to spawn CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
+                        id, location.get(0), location.get(1), rotation.get(1), speed);
+                final String blueprint = carlaConfig != null && StringUtils.isNotBlank(carlaConfig.defaultVehicleBlueprint)
+                        ? carlaConfig.defaultVehicleBlueprint
+                        : "vehicle.tesla.model3";
+                
+                // Attach SUMO vehicle extent to attributes if available (so server can correct front-bumper reference)
+                final java.util.Map<String, Object> attributes = new java.util.HashMap<>();
+                try {
+                    Object extra = vd.getAdditionalData();
+                    // Prefer structured Size additional data
+                    if (extra instanceof org.eclipse.mosaic.lib.objects.detector.Size) {
+                        org.eclipse.mosaic.lib.objects.detector.Size sz = (org.eclipse.mosaic.lib.objects.detector.Size) extra;
+                        double length = sz.getLength();
+                        double width = sz.getWidth();
+                        double height = sz.getHeight();
+                        java.util.Map<String, Object> extent = new java.util.HashMap<>();
+                        extent.put("x", length / 2.0);
+                        extent.put("y", width / 2.0);
+                        extent.put("z", height / 2.0);
+                        attributes.put("extent", extent);
+                        attributes.put("length", length);
+                    } else if (extra instanceof java.util.Map) {
+                        @SuppressWarnings("rawtypes")
+                        java.util.Map m = (java.util.Map) extra;
+                        Object l = m.get("length");
+                        Object w = m.get("width");
+                        Object h = m.get("height");
+                        if (l instanceof Number || w instanceof Number || h instanceof Number) {
+                            double length = l instanceof Number ? ((Number) l).doubleValue() : 0.0;
+                            double width = w instanceof Number ? ((Number) w).doubleValue() : 0.0;
+                            double height = h instanceof Number ? ((Number) h).doubleValue() : 0.0;
+                            java.util.Map<String, Object> extent = new java.util.HashMap<>();
+                            extent.put("x", length / 2.0);
+                            extent.put("y", width / 2.0);
+                            extent.put("z", height / 2.0);
+                            attributes.put("extent", extent);
+                            if (length > 0.0) {
+                                attributes.put("length", length);
+                            }
+                        }
+                    }
+                } catch (Exception ignore) {
+                    // Best-effort; attributes remain empty if no size info
+                }
+                
+                // Apply a small Z-lift to reduce spawn collisions with ground (client/server do no conversion)
+                final double SPAWN_Z_LIFT = 2; // meters
+                final java.util.List<Double> finalLocation = new java.util.ArrayList<>(location);
+                if (finalLocation != null && finalLocation.size() >= 3) {
+                    try {
+                        double z = finalLocation.get(2) != null ? finalLocation.get(2) : 0.0;
+                        finalLocation.set(2, z + SPAWN_Z_LIFT);
+                    } catch (Exception ignore) { /* keep original if any issue */ }
+                }
+
+                log.info("Spawning actor (z+{} m)", SPAWN_Z_LIFT);
+                final boolean ok = actorClient.spawnActor(blueprint, id, finalLocation, rotation, attributes);
+                if (ok) {
+                    log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
+                            id, finalLocation.get(0), finalLocation.get(1), rotation.get(1), speed);
+                    newlySpawnedActors.add(id);
+                } else {
+                    log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned false", id);
+                }
+            }
+
+            // Process actors to update
+            for (org.eclipse.mosaic.lib.objects.vehicle.VehicleData vd : actorsToUpdate) {
+                final String id = vd.getName();
+                final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
+                final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                final double speed = vd.getSpeed();
+                
+                // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
+                Double extentX = null;
+                try {
+                    Object extra = vd.getAdditionalData();
+                    if (extra instanceof org.eclipse.mosaic.lib.objects.detector.Size) {
+                        org.eclipse.mosaic.lib.objects.detector.Size sz = (org.eclipse.mosaic.lib.objects.detector.Size) extra;
+                        extentX = sz.getLength() / 2.0;
+                    } else if (extra instanceof java.util.Map) {
+                        @SuppressWarnings("rawtypes")
+                        java.util.Map m = (java.util.Map) extra;
+                        Object l = m.get("length");
+                        if (l instanceof Number) {
+                            extentX = ((Number) l).doubleValue() / 2.0;
+                        }
+                    }
+                } catch (Exception ignore) { }
+                
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final java.util.List<Double> location = tf.toLocationList();
+                final java.util.List<Double> rotation = tf.toRotationList();
+                
+                // Update transform and velocity for existing actors
+                final boolean transformOk = actorClient.updateActorTransform(id, location, rotation);
+                
+                if (!transformOk) {
+                    log.debug("Failed to update CARLA actor transform for {}", id);
+                }
+                
+                if (transformOk) {
+                    log.debug("Successfully updated CARLA actor '{}' transform (speed: {} m/s)", id, speed);
+                }
             }
 
             // Update currentActorIds with newly spawned actors
