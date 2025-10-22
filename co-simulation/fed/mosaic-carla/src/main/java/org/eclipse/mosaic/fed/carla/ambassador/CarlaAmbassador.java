@@ -400,7 +400,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         
                 
                 // Handle sensor operations
-                log.info("Simulation step");
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
                     sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
@@ -442,7 +441,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 
                 if (actorConnected) {
-                    log.info("actor connected");
                     // Publish CARLA state updates to SUMO using VehicleUpdates and TrafficLightUpdates
                     try {
                         CarlaXmlRpcClient actorClient = null;
@@ -486,9 +484,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
                             String actorId = (String) actorInfo.get("id");
                             if (actorId != null) {
-                                org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
-                                if (vehicleData != null) {
-                                    addedVehicleData.add(vehicleData);
+                                // Check if actor has required transform data before attempting conversion
+                                Object transformObj = actorInfo.get("transform");
+                                if (transformObj instanceof java.util.Map) {
+                                    org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
+                                    if (vehicleData != null) {
+                                        addedVehicleData.add(vehicleData);
+                                    }
+                                } else {
+                                    log.warn("Skipping actor '{}' - missing transform data. Available keys: {}", actorId, actorInfo.keySet());
                                 }
                             }
                         }
@@ -497,9 +501,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         for (java.util.Map<String, Object> actorInfo : updatedActors) {
                             String actorId = (String) actorInfo.get("id");
                             if (actorId != null) {
-                                org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
-                                if (vehicleData != null) {
-                                    updatedVehicleData.add(vehicleData);
+                                // Check if actor has required transform data before attempting conversion
+                                Object transformObj = actorInfo.get("transform");
+                                if (transformObj instanceof java.util.Map) {
+                                    org.eclipse.mosaic.lib.objects.vehicle.VehicleData vehicleData = convertCarlaActorToVehicleData(actorId, actorInfo);
+                                    if (vehicleData != null) {
+                                        updatedVehicleData.add(vehicleData);
+                                    }
+                                } else {
+                                    log.warn("Skipping actor '{}' - missing transform data. Available keys: {}", actorId, actorInfo.keySet());
                                 }
                             }
                         }
@@ -817,10 +827,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     private org.eclipse.mosaic.lib.objects.vehicle.VehicleData convertCarlaActorToVehicleData(String actorId, java.util.Map<String, Object> actorInfo) {
         try {
+            // Debug: Log the full actorInfo structure to understand what's available
+            log.debug("Converting CARLA actor '{}' with data: {}", actorId, actorInfo);
+            
             // Extract transform information
             Object transformObj = actorInfo.get("transform");
             if (!(transformObj instanceof java.util.Map)) {
-                log.warn("No transform information found for CARLA actor '{}'", actorId);
+                log.warn("No transform information found for CARLA actor '{}'. Available keys: {}", actorId, actorInfo.keySet());
+                log.warn("Transform object type: {}, value: {}", 
+                    transformObj != null ? transformObj.getClass().getSimpleName() : "null", transformObj);
+                
+                // Try to get basic actor info for debugging
+                Object typeObj = actorInfo.get("type");
+                if (typeObj != null) {
+                    log.warn("Actor type: {}", typeObj);
+                }
+                
                 return null;
             }
             
@@ -829,13 +851,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             
             // Extract location
             Object locationObj = transform.get("location");
-            if (!(locationObj instanceof java.util.List)) {
-                log.warn("No location information found for CARLA actor '{}'", actorId);
+            java.util.List<Object> locationList = null;
+            
+            if (locationObj instanceof java.util.List) {
+                @SuppressWarnings("unchecked")
+                java.util.List<Object> list = (java.util.List<Object>) locationObj;
+                locationList = list;
+            } else if (locationObj instanceof Object[]) {
+                // Handle Java array from XML-RPC deserialization
+                Object[] array = (Object[]) locationObj;
+                locationList = java.util.Arrays.asList(array);
+            } else {
+                log.warn("No location information found for CARLA actor '{}'. Transform keys: {}", actorId, transform.keySet());
+                log.warn("Location object type: {}, value: {}", 
+                    locationObj != null ? locationObj.getClass().getSimpleName() : "null", locationObj);
                 return null;
             }
-            
-            @SuppressWarnings("unchecked")
-            java.util.List<Object> locationList = (java.util.List<Object>) locationObj;
             if (locationList.size() < 3) {
                 log.warn("Insufficient location data for CARLA actor '{}'", actorId);
                 return null;
@@ -848,12 +879,20 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // Extract rotation
             Object rotationObj = transform.get("rotation");
             double yawDeg = 0.0;
+            java.util.List<Object> rotationList = null;
+            
             if (rotationObj instanceof java.util.List) {
                 @SuppressWarnings("unchecked")
-                java.util.List<Object> rotationList = (java.util.List<Object>) rotationObj;
-                if (rotationList.size() >= 2) {
-                    yawDeg = ((Number) rotationList.get(1)).doubleValue(); // yaw is typically the second element
-                }
+                java.util.List<Object> list = (java.util.List<Object>) rotationObj;
+                rotationList = list;
+            } else if (rotationObj instanceof Object[]) {
+                // Handle Java array from XML-RPC deserialization
+                Object[] array = (Object[]) rotationObj;
+                rotationList = java.util.Arrays.asList(array);
+            }
+            
+            if (rotationList != null && rotationList.size() >= 2) {
+                yawDeg = ((Number) rotationList.get(1)).doubleValue(); // yaw is typically the second element
             }
             
             // Derive extentX (half length) when available to compensate front-bumper vs center reference
@@ -1508,20 +1547,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 log.info("Attempting to load configured map: {}", carlaConfig.mapName);
                 
                 // Wait a bit for CARLA to be ready
-                Thread.sleep(2000);
-                
-                // First, check available maps
-                List<String> availableMaps = getAvailableMaps();
-                log.info("Available maps: {}", availableMaps);
-                
-                if (!availableMaps.contains(carlaConfig.mapName)) {
-                    log.warn("Requested map '{}' not in available maps: {}", carlaConfig.mapName, availableMaps);
-                    log.warn("Will attempt to load anyway in case map name format differs");
-                }
-                
-                // Get current map before loading
-                String currentMap = getCurrentMapName();
-                log.info("Current map before loading: {}", currentMap);
+                Thread.sleep(1000);
                 
                 boolean mapLoaded = false;
                 int maxRetries = 3;
@@ -1570,11 +1596,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (mapLoaded) {
                     // Verify the map was actually loaded
                     String newMap = getCurrentMapName();
-                    log.info("Map loading completed. Current map: {} (requested: {})", newMap, carlaConfig.mapName);
-                    
-                    if (!newMap.equals(carlaConfig.mapName)) {
-                        log.warn("Map name mismatch: requested '{}', got '{}'", carlaConfig.mapName, newMap);
-                    }
+                    log.info("Map loading completed. Current map: {}", newMap);
                 } else {
                     log.error("Failed to load configured map '{}' after {} attempts. Using default map.", 
                              carlaConfig.mapName, maxRetries);
@@ -1613,31 +1635,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         return "";
     }
 
-    /**
-     * Get list of available maps from CARLA server
-     * @return List of available map names
-     */
-    public List<String> getAvailableMaps() {
-        try {
-            if (multiXmlRpcManager != null) {
-                // Try actor client first
-                CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                if (actorClient != null && actorClient.isConnected()) {
-                    return actorClient.getAvailableMaps();
-                }
-                // If actor client failed, try sensor client
-                CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                if (sensorClient != null && sensorClient.isConnected()) {
-                    return sensorClient.getAvailableMaps();
-                }
-            } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
-                return carlaXmlRpcClient.getAvailableMaps();
-            }
-        } catch (Exception e) {
-            log.error("Error getting available maps: {}", e.getMessage());
-        }
-        return new ArrayList<>();
-    }
 
     /**
      * Load a specific map in CARLA

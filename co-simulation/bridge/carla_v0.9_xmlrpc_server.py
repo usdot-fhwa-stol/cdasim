@@ -230,8 +230,26 @@ class CarlaXMLRPCServer:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
-                logger.info("Connected to CARLA at %s:%s | map=%s",
-                            self.carla_host, self.carla_port, self.world.get_map().name)
+                
+                # Get current map name
+                current_map = self.world.get_map().name
+                logger.info("Connected to CARLA at %s:%s | current map=%s",
+                            self.carla_host, self.carla_port, current_map)
+                
+                # Automatically load Town04 if not already loaded
+                if current_map != "Town04":
+                    logger.info("Current map is not Town04, attempting to load Town04...")
+                    try:
+                        self.world = self.client.load_world("Town04")
+                        new_map = self.world.get_map().name
+                        logger.info("Successfully loaded Town04 map: %s", new_map)
+                    except Exception as load_error:
+                        logger.error("Failed to load Town04 map: %s", load_error)
+                        # Continue with current map if Town04 loading fails
+                        logger.warning("Continuing with current map: %s", current_map)
+                else:
+                    logger.info("Town04 map is already loaded")
+                
                 return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
@@ -438,62 +456,28 @@ class CarlaXMLRPCServer:
                     return {}
                 
                 out = {}
-                # Get actual actors from CARLA world to detect externally removed actors
-                world_actors = {}
-                try:
-                    for actor in self.world.get_actors():
-                        world_actors[str(actor.id)] = actor
-                    # Count only vehicles in CARLA world
-                    vehicle_world_count = 0
+                # Simply get all vehicles from CARLA world
+                for actor in self.world.get_actors():
                     try:
-                        for a in world_actors.values():
-                            if 'vehicle.' in str(getattr(a, 'type_id', '')):
-                                vehicle_world_count += 1
-                    except Exception:
-                        vehicle_world_count = 0
-                    logger.info(f"Number of vehicle in the world:{vehicle_world_count}")
-                except Exception as e:
-                    logger.warning("Failed to get world actors: %s", e)
-                    world_actors = {}
-
-                # Clean up actors that no longer exist in CARLA world
-                actors_to_remove = []
-                for alias, actor in self.actors.items():
-                    if str(actor.id) not in world_actors:
-                        actors_to_remove.append(alias)
-                        logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
-                
-                for alias in actors_to_remove:
-                    self.actors.pop(alias, None)
-                    self.actor_types.pop(alias, None)
-                    self.actor_blueprints.pop(alias, None)
-                
-                # Build output with currently existing actors
-                for alias, actor in self.actors.items():
-                    try:
-                        # Double-check actor still exists and is valid
-                        if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
-                            t = actor.get_transform()
-                            actor_data = {
-                                'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
-                                'transform': {
-                                    'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
-                                    'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                        # Only include vehicles
+                        if hasattr(actor, 'type_id') and 'vehicle.' in str(actor.type_id):
+                            if hasattr(actor, 'get_transform'):
+                                t = actor.get_transform()
+                                # Use actor ID as key
+                                actor_id = str(actor.id)
+                                actor_data = {
+                                    'type': str(actor.type_id),
+                                    'transform': {
+                                        'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                        'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                                    }
                                 }
-                            }
-                            
-                            # Velocity not required for synchronization; omit from output
-                            
-                            out[alias] = actor_data
-                        else:
-                            logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
+                                out[actor_id] = actor_data
                     except Exception as e:
-                        logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e)
-                        # Remove invalid actor from tracking
-                        self.actors.pop(alias, None)
-                        self.actor_types.pop(alias, None)
-                        self.actor_blueprints.pop(alias, None)
+                        logger.warning("Failed to get data for actor %s: %s", actor.id, e)
+                        continue
                 
+                logger.debug("get_all_actors returning %d actors: %s", len(out), list(out.keys()))
                 return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
@@ -940,34 +924,15 @@ class CarlaXMLRPCServer:
                     logger.error("load_map failed: Not connected to CARLA")
                     return False
                 
-                # Log current map before loading
-                current_map = ""
-                try:
-                    current_map = self.world.get_map().name
-                    logger.info("Current map before loading: %s", current_map)
-                except Exception as e:
-                    logger.warning("Could not get current map name: %s", e)
-                
-                # Log available maps for debugging
-                try:
-                    available_maps = list(self.client.get_available_maps())
-                    logger.info("Available maps: %s", available_maps)
-                    if map_name not in available_maps:
-                        logger.warning("Requested map '%s' not in available maps: %s", map_name, available_maps)
-                except Exception as e:
-                    logger.warning("Could not get available maps: %s", e)
-                
                 logger.info("Attempting to load map: %s", map_name)
                 
-                # Try to load the map
+                # Try to load the map directly
                 self.world = self.client.load_world(map_name)
                 
                 # Verify the map was loaded successfully
                 try:
                     new_map = self.world.get_map().name
-                    logger.info("Successfully loaded map: %s (was: %s)", new_map, current_map)
-                    if new_map != map_name:
-                        logger.warning("Map name mismatch: requested '%s', got '%s'", map_name, new_map)
+                    logger.info("Successfully loaded map: %s", new_map)
                 except Exception as e:
                     logger.error("Could not verify loaded map: %s", e)
                     return False
@@ -975,7 +940,6 @@ class CarlaXMLRPCServer:
                 return True
         except Exception as e:
             logger.error("load_map error for map '%s': %s", map_name, e)
-            logger.error("load_map error details: %s", str(e))
             return False
 
     # ---------- Server lifecycle ----------
