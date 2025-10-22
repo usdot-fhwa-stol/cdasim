@@ -42,7 +42,6 @@ public class CarlaConfiguration implements Serializable {
     /**
      * path to connection bridge
      */
-    public String bridgePath;
 
     /**
      * Carla connection port
@@ -73,6 +72,17 @@ public class CarlaConfiguration implements Serializable {
      * Directory where SUMO .net.xml located
      */
     public String sumoNetXmlPath;
+
+    /**
+     * CARLA map name to load. If null, uses default map.
+     * Examples: "Town01", "Town02", "Town03", "Town04", "Town05", "Town10HD"
+     */
+    public String mapName;
+
+    /**
+     * Whether to automatically load the specified map on initialization
+     */
+    public Boolean autoLoadMap = Boolean.TRUE;
 
 
 }

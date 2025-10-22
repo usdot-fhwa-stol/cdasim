@@ -17,7 +17,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.xmlrpc.XmlRpcException;
-import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaConnection;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMultiXmlRpcManager;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
@@ -71,10 +70,6 @@ import java.io.IOException;
  */
 public class CarlaAmbassador extends AbstractFederateAmbassador {
 
-    /**
-     * Connection between CARLA federate and CARLA simulator.
-     */
-    private CarlaConnection carlaConnection = null;
 
     /**
      * Connection between CARLA federate and CARLA simulator with xmlrpc connection.
@@ -281,6 +276,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Start the CARLA simulator
         startCarlaLocal();
         
+        // Load specified map if configured
+        
         // Initialize XML-RPC connections
         if (carlaConfig.carlaSensorLibRPCUrl != null || carlaConfig.carlaActorLibRPCUrl != null) {
             // Use multi-server manager for separate sensor and actor connections
@@ -342,6 +339,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
             }
         }
+        loadConfiguredMap();
+
 
     }
 
@@ -609,9 +608,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     public void finishSimulation() throws InternalFederateException {
         log.info("Closing CARLA connection.");
 
-        if (carlaConnection != null) {
-            carlaConnection.closeSocket();
-        }
 
         // Disconnect from XML-RPC servers and cleanup resources
         if (multiXmlRpcManager != null) {
@@ -682,54 +678,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     // /**
-    //  * Trigger interactions based on commands received from CARLA simulator.
-    //  * Now uses XML-RPC for simulation advancement instead of TraCI.
-    //  *
-    //  * @param length  command length
-    //  * @param command command
-    //  */
-    // public synchronized void triggerInteraction(int length, byte[] command) throws InternalFederateException {
-    //     try {
-    //         // Handle different command types using XML-RPC approach
-    //         if (command[5] == CommandSimulationControl.COMMAND_SIMULATION_STEP) {
-    //             // Use XML-RPC to advance simulation instead of TraCI-based SimulationStep
-    //             boolean advanced = false;
-    //             if (multiXmlRpcManager != null) {
-    //                 advanced = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).advanceSimulation();
-    //             } else if (carlaXmlRpcClient != null) {
-    //                 advanced = carlaXmlRpcClient.advanceSimulation();
-    //             }
-                
-    //             if (advanced) {
-    //                 // Trigger internal simulation step coordination
-    //                 triggerInternalSimulationStep();
-    //                 log.debug("CARLA simulation advanced via XML-RPC at time: {}", this.nextTimeStep);
-    //             } else {
-    //                 log.warn("Failed to advance CARLA simulation via XML-RPC");
-    //             }
-    //         } else if (command[5] == 0x0d) {
-    //             // send received V2X message to CARLA simulator
-    //             sendReceivedV2xMessageToCarla();
-    //             // log.debug("Carla ambassador sends V2X messages to bridge client.");
-    //         } else if (command[5] == 0x2f) {
-    //             // receive message from CARLA simulator
-    //             String[] message = processReceivedV2xMessageFromCarla(length, command);
-    //             if (message != null) {
-    //                 rti.triggerInteraction(new ExternalMessage(this.nextTimeStep, message[1], message[0]));
-    //                 // log.debug("received message from CARLA simulator: message is sent by {};
-    //                 // message: {}", message[0],
-    //                 // message: {}", message[1]);
-    //             }
-    //         } else if (command[5] == 0x85) {
-    //             log.info("Received vehicle add command from CARLA " + Hex.encodeHex(command));
-    //         } else {
-    //             log.debug("Ignoring legacy TraCI request path in favor of XML-RPC interactions");
-    //         }
-
-    //     } catch (IllegalValueException e) {
-    //         throw new InternalFederateException(e);
-    //     }
-    // }
 
     /**
      * Internal method to trigger simulation step coordination.
@@ -1526,28 +1474,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         if (totoalBytesSent > 255) {
             totoalBytesSent += 4;
         }
-        try {
-            // send messages to client
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().writeInt(totoalBytesSent + 11);
-                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x00 });
-                if (totoalBytesSent - 4 > 255) {
-                    carlaConnection.getDataOutputStream().writeByte(0);
-                    carlaConnection.getDataOutputStream().writeInt(totoalBytesSent);
-                } else {
-                    carlaConnection.getDataOutputStream().writeByte(totoalBytesSent);
-                }
-                carlaConnection.getDataOutputStream().writeByte(0x0d);
-                if (!v2xMessageSent.isEmpty()) {
-                    ListTraciWriter<String> listTraci = new ListTraciWriter<String>(new StringTraciWriter());
-                    listTraci.writeVariableArgument(carlaConnection.getDataOutputStream(), v2xMessageSent);
-                } else {
-                    carlaConnection.getDataOutputStream().writeInt(0);
-                }
-            }
-        } catch (Exception e) {
-            log.error("error occurs during sending messages to bridge: {}", e.getMessage());
-        }
+        // Note: V2X message sending is now handled via XML-RPC connections
+        log.debug("V2X messages would be sent via XML-RPC connections: {} messages", v2xMessageSent.size());
     }
 
     /**
@@ -1565,16 +1493,192 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } else {
             message = new String(Arrays.copyOfRange(command, 11, length));
         }
+        // Note: Response handling is now done via XML-RPC connections
+        log.debug("Processing received V2X message: {}", message);
+        return message.split(";");
+    }
+
+    /**
+     * Load the configured map if specified in configuration
+     */
+    private void loadConfiguredMap() {
+        if (carlaConfig.mapName != null && !carlaConfig.mapName.trim().isEmpty() && 
+            Boolean.TRUE.equals(carlaConfig.autoLoadMap)) {
+            try {
+                log.info("Attempting to load configured map: {}", carlaConfig.mapName);
+                
+                // Wait a bit for CARLA to be ready
+                Thread.sleep(2000);
+                
+                // First, check available maps
+                List<String> availableMaps = getAvailableMaps();
+                log.info("Available maps: {}", availableMaps);
+                
+                if (!availableMaps.contains(carlaConfig.mapName)) {
+                    log.warn("Requested map '{}' not in available maps: {}", carlaConfig.mapName, availableMaps);
+                    log.warn("Will attempt to load anyway in case map name format differs");
+                }
+                
+                // Get current map before loading
+                String currentMap = getCurrentMapName();
+                log.info("Current map before loading: {}", currentMap);
+                
+                boolean mapLoaded = false;
+                int maxRetries = 3;
+                
+                for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                    log.info("Map loading attempt {}/{}", attempt, maxRetries);
+                    
+                    if (multiXmlRpcManager != null) {
+                        // Try actor client first
+                        CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                        if (actorClient != null && actorClient.isConnected()) {
+                            log.info("Trying to load map via actor client");
+                            mapLoaded = actorClient.loadMap(carlaConfig.mapName);
+                            if (mapLoaded) {
+                                log.info("Map loaded successfully via actor client");
+                                break;
+                            }
+                        }
+                        // If actor client failed, try sensor client
+                        if (!mapLoaded) {
+                            CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                            if (sensorClient != null && sensorClient.isConnected()) {
+                                log.info("Trying to load map via sensor client");
+                                mapLoaded = sensorClient.loadMap(carlaConfig.mapName);
+                                if (mapLoaded) {
+                                    log.info("Map loaded successfully via sensor client");
+                                    break;
+                                }
+                            }
+                        }
+                    } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
+                        log.info("Trying to load map via single XML-RPC client");
+                        mapLoaded = carlaXmlRpcClient.loadMap(carlaConfig.mapName);
+                        if (mapLoaded) {
+                            log.info("Map loaded successfully via single client");
+                            break;
+                        }
+                    }
+                    
+                    if (!mapLoaded && attempt < maxRetries) {
+                        log.warn("Map loading attempt {} failed, retrying in 1 second...", attempt);
+                        Thread.sleep(1000);
+                    }
+                }
+                
+                if (mapLoaded) {
+                    // Verify the map was actually loaded
+                    String newMap = getCurrentMapName();
+                    log.info("Map loading completed. Current map: {} (requested: {})", newMap, carlaConfig.mapName);
+                    
+                    if (!newMap.equals(carlaConfig.mapName)) {
+                        log.warn("Map name mismatch: requested '{}', got '{}'", carlaConfig.mapName, newMap);
+                    }
+                } else {
+                    log.error("Failed to load configured map '{}' after {} attempts. Using default map.", 
+                             carlaConfig.mapName, maxRetries);
+                }
+            } catch (Exception e) {
+                log.error("Error loading configured map {}: {}", carlaConfig.mapName, e.getMessage(), e);
+            }
+        } else {
+            log.info("No map specified in configuration, using default map");
+        }
+    }
+
+    /**
+     * Get current map name from CARLA server
+     * @return Current map name or empty string if failed
+     */
+    public String getCurrentMapName() {
         try {
-            // send response to client
-            if (carlaConnection.getDataOutputStream() != null) {
-                carlaConnection.getDataOutputStream().writeInt(11);
-                carlaConnection.getDataOutputStream().write(new byte[] { 0x07, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x00 });
+            if (multiXmlRpcManager != null) {
+                // Try actor client first
+                CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                if (actorClient != null && actorClient.isConnected()) {
+                    return actorClient.getMapName();
+                }
+                // If actor client failed, try sensor client
+                CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                if (sensorClient != null && sensorClient.isConnected()) {
+                    return sensorClient.getMapName();
+                }
+            } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
+                return carlaXmlRpcClient.getMapName();
             }
         } catch (Exception e) {
-            log.error("error occurs during process received messages: {}",  e.getMessage());
+            log.error("Error getting current map name: {}", e.getMessage());
         }
-        return message.split(";");
+        return "";
+    }
+
+    /**
+     * Get list of available maps from CARLA server
+     * @return List of available map names
+     */
+    public List<String> getAvailableMaps() {
+        try {
+            if (multiXmlRpcManager != null) {
+                // Try actor client first
+                CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                if (actorClient != null && actorClient.isConnected()) {
+                    return actorClient.getAvailableMaps();
+                }
+                // If actor client failed, try sensor client
+                CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                if (sensorClient != null && sensorClient.isConnected()) {
+                    return sensorClient.getAvailableMaps();
+                }
+            } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
+                return carlaXmlRpcClient.getAvailableMaps();
+            }
+        } catch (Exception e) {
+            log.error("Error getting available maps: {}", e.getMessage());
+        }
+        return new ArrayList<>();
+    }
+
+    /**
+     * Load a specific map in CARLA
+     * @param mapName Name of the map to load
+     * @return true if successful
+     */
+    public boolean loadMap(String mapName) {
+        try {
+            log.info("Attempting to load map: {}", mapName);
+            
+            boolean mapLoaded = false;
+            if (multiXmlRpcManager != null) {
+                // Try actor client first
+                CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                if (actorClient != null && actorClient.isConnected()) {
+                    mapLoaded = actorClient.loadMap(mapName);
+                }
+                // If actor client failed, try sensor client
+                if (!mapLoaded) {
+                    CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    if (sensorClient != null && sensorClient.isConnected()) {
+                        mapLoaded = sensorClient.loadMap(mapName);
+                    }
+                }
+            } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
+                mapLoaded = carlaXmlRpcClient.loadMap(mapName);
+            }
+            
+            if (mapLoaded) {
+                log.info("Successfully loaded map: {}", mapName);
+                // Update configuration
+                carlaConfig.mapName = mapName;
+            } else {
+                log.error("Failed to load map: {}", mapName);
+            }
+            
+            return mapLoaded;
+        } catch (Exception e) {
+            log.error("Error loading map {}: {}", mapName, e.getMessage());
+            return false;
+        }
     }
 
 }

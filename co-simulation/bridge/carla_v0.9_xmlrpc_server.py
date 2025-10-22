@@ -936,11 +936,46 @@ class CarlaXMLRPCServer:
     def load_map(self, map_name: str) -> bool:
         try:
             with self.lock:
-                if not self.is_connected(): return False
+                if not self.is_connected(): 
+                    logger.error("load_map failed: Not connected to CARLA")
+                    return False
+                
+                # Log current map before loading
+                current_map = ""
+                try:
+                    current_map = self.world.get_map().name
+                    logger.info("Current map before loading: %s", current_map)
+                except Exception as e:
+                    logger.warning("Could not get current map name: %s", e)
+                
+                # Log available maps for debugging
+                try:
+                    available_maps = list(self.client.get_available_maps())
+                    logger.info("Available maps: %s", available_maps)
+                    if map_name not in available_maps:
+                        logger.warning("Requested map '%s' not in available maps: %s", map_name, available_maps)
+                except Exception as e:
+                    logger.warning("Could not get available maps: %s", e)
+                
+                logger.info("Attempting to load map: %s", map_name)
+                
+                # Try to load the map
                 self.world = self.client.load_world(map_name)
+                
+                # Verify the map was loaded successfully
+                try:
+                    new_map = self.world.get_map().name
+                    logger.info("Successfully loaded map: %s (was: %s)", new_map, current_map)
+                    if new_map != map_name:
+                        logger.warning("Map name mismatch: requested '%s', got '%s'", map_name, new_map)
+                except Exception as e:
+                    logger.error("Could not verify loaded map: %s", e)
+                    return False
+                
                 return True
         except Exception as e:
-            logger.error("load_map error: %s", e)
+            logger.error("load_map error for map '%s': %s", map_name, e)
+            logger.error("load_map error details: %s", str(e))
             return False
 
     # ---------- Server lifecycle ----------

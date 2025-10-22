@@ -85,7 +85,8 @@ The federate implements the following tick-loop integration pattern:
   "carlaServerUrl": "http://localhost:8090",
   "connectionRetries": 5,
   "timeStep": 0.1,
-  "mapName": "Town01"
+  "mapName": "Town01",
+  "autoLoadMap": true
 }
 ```
 
@@ -95,7 +96,8 @@ The federate implements the following tick-loop integration pattern:
   "carlaServerUrl": "http://localhost:8090",
   "connectionRetries": 5,
   "timeStep": 0.1,
-  "mapName": "Town01",
+  "mapName": "Town04",
+  "autoLoadMap": true,
   "logLevel": "INFO",
   "enableActorManagement": true,
   "enableTrafficLightControl": true,
@@ -144,6 +146,25 @@ for (Integer actorId : actorIds) {
 
 // Disconnect
 client.disconnect();
+```
+
+### Map Management
+```java
+// Get current map name
+String currentMap = client.getMapName();
+System.out.println("Current map: " + currentMap);
+
+// Get available maps
+List<String> availableMaps = client.getAvailableMaps();
+System.out.println("Available maps: " + availableMaps);
+
+// Load a specific map
+boolean success = client.loadMap("Town04");
+if (success) {
+    System.out.println("Successfully loaded Town04 map");
+} else {
+    System.out.println("Failed to load Town04 map");
+}
 ```
 
 ### Actor Management

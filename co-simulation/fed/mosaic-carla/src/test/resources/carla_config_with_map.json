@@ -1,0 +1,12 @@
+{
+  "updateInterval": 1000,
+  "carlaUE4Path": "/opt/carla",
+  "carlaConnectionPort": 8913,
+  "carlaSensorLibRPCUrl": "http://localhost:8090",
+  "carlaActorLibRPCUrl": "http://localhost:8091",
+  "defaultVehicleBlueprint": "vehicle.tesla.model3",
+  "useDirectBinary": false,
+  "sumoNetXmlPath": "/opt/carma/maps/vector_map.net.xml",
+  "mapName": "Town04",
+  "autoLoadMap": true
+}
