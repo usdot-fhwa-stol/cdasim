@@ -293,6 +293,11 @@ class CarlaXMLRPCServer:
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
                 self._odr_to_tl, self._odr_to_tls = self.build_light_index(self.world)
+
+                # Freeze all traffic lights
+                for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                    tl.freeze(True)
+                    
                 logger.info("Connected to CARLA at %s:%s | map=%s",
                             self.carla_host, self.carla_port, self.world.get_map().name)
                 return True
