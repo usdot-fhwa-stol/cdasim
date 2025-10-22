@@ -28,6 +28,8 @@ import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
+import org.eclipse.mosaic.interactions.traffic.TrafficLightStateChange;
+import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -148,6 +150,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Mapping of SUMO net tlLogic ids to CARLA linkSignalID/traffic light ids.
      */
     private Map<String, List<String>> tlLogicLinkSignals = new HashMap<>();
+
+    // Optional: cache to suppress redundant publications (simple hash of last custom state)
+    private final Map<String, String> lastCustomStateMask = new HashMap<>();
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -1197,4 +1202,62 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
+    /** 
+     * Translate a CARLA color string to MOSAIC TrafficLightState. 
+     */
+    private TrafficLightState toMosaicState(int carlaColor) {
+        // Fallback to all-red if unknown
+        boolean r = true, y = false, g = false;
+        switch (carlaColor) {
+            case 0: break;
+            case 1: r = false; y = true; break;
+            case 2: r = false; g = true; break;
+            case 3: r = false; break;
+        }
+        return new TrafficLightState(r, g, y);
+    }
+
+    private int asInt(Object o, int fallback) {
+        try {
+            if (o instanceof Number) return ((Number) o).intValue();
+            if (o != null) return Integer.parseInt(String.valueOf(o));
+        } catch (Exception ignore) {}
+        return fallback;
+    }
+
+    private List<TrafficLightStateChange> buildTlStateChangesFromCarla(long time, CarlaXmlRpcClient actorClient) {
+        List<Map<String, Object>> carlaStates = actorClient.getAllTrafficLightStates();
+
+        // carlaId -> int state
+        Map<Integer, Integer> carlaIdToState = new HashMap<>(carlaStates.size());
+        for (Map<String, Object> m : carlaStates) {
+            int id = asInt(m.get("openDriveId"), 0);
+            int st = asInt(m.get("state"), 0);
+            carlaIdToState.put(id, st);
+        }
+
+        List<TrafficLightStateChange> tlStates = new ArrayList<>();
+        for (Map.Entry<String, List<String>> e : tlLogicLinkSignals.entrySet()) {
+            String tlGroupId = e.getKey();
+            List<String> orderedOpenDriveIds = e.getValue();
+
+            List<TrafficLightState> customStates = new ArrayList<>(orderedOpenDriveIds.size());
+            StringBuilder stateMaskBuilder = new StringBuilder(orderedOpenDriveIds.size() * 2);
+
+            for (String openDriveId : orderedOpenDriveIds) {
+                int st = carlaIdToState.getOrDefault(Integer.parseInt(openDriveId), 0);
+                customStates.add(toMosaicState(st));
+                stateMaskBuilder.append(st).append('|');
+            }
+
+            String stateMask = stateMaskBuilder.toString();
+            if (stateMask.equals(lastCustomStateMask.get(tlGroupId))) continue;
+
+            TrafficLightStateChange change = new TrafficLightStateChange(time, tlGroupId);
+            change.setCustomState(customStates);
+            tlStates.add(change);
+            lastCustomStateMask.put(tlGroupId, stateMask);
+        }
+        return tlStates;
+    }
 }
