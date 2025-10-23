@@ -653,7 +653,7 @@ class CarlaXMLRPCServer:
                     try:
                         state = tl.get_state()
                         item = {
-                            'id': int(tl.id),
+                            'opendrive_id': tl.get_opendrive_id(),
                             'state': int(self._tl_state_to_int(state)),
                             'elapsed_time': float(getattr(tl, 'get_elapsed_time', lambda: 0.0)()),
                             'timestamp': ts

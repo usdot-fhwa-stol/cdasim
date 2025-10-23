@@ -1229,11 +1229,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         List<Map<String, Object>> carlaStates = actorClient.getAllTrafficLightStates();
 
         // carlaId -> int state
-        Map<Integer, Integer> carlaIdToState = new HashMap<>(carlaStates.size());
+        Map<String, Integer> carlaIdToState = new HashMap<>(carlaStates.size());
         for (Map<String, Object> m : carlaStates) {
-            int id = asInt(m.get("openDriveId"), 0);
+            Object id = m.getOrDefault("opendrive_id", null);
             int st = asInt(m.get("state"), 0);
-            carlaIdToState.put(id, st);
+            carlaIdToState.put(String.valueOf(id), st);
         }
 
         List<TrafficLightStateChange> tlStates = new ArrayList<>();
@@ -1245,7 +1245,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             StringBuilder stateMaskBuilder = new StringBuilder(orderedOpenDriveIds.size() * 2);
 
             for (String openDriveId : orderedOpenDriveIds) {
-                int st = carlaIdToState.getOrDefault(Integer.parseInt(openDriveId), 0);
+                int st = carlaIdToState.getOrDefault(openDriveId, 0);
                 customStates.add(toMosaicState(st));
                 stateMaskBuilder.append(st).append('|');
             }
