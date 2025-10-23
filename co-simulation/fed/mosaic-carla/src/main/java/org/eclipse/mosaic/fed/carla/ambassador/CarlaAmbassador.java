@@ -154,6 +154,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     // Optional: cache to suppress redundant publications (simple hash of last custom state)
     private final Map<String, String> lastCustomStateMask = new HashMap<>();
 
+    private boolean initialConnectAttempted = false;
+
     /**
      * Creates a new {@link CarlaAmbassador} object.
      *
@@ -450,22 +452,30 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
+        log.info("[PTAG] enter: time={} nextTimeStep={} isSimulationStep={}", time, nextTimeStep, isSimulationStep);
 
         if (time < nextTimeStep) {
-            // process time advance only if time is equal or greater than the next
-            // simulation time step
+            log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
 
         try {
-            if (time == 0) {
-                // Try to connect to XML-RPC servers on first timestep
+            if (!initialConnectAttempted) {
+            initialConnectAttempted = true;
+            try {
                 if (multiXmlRpcManager != null) {
+                    log.info("[PTAG] attempting multiXmlRpcManager.connectAll(60)...");
                     multiXmlRpcManager.connectAll(60);
                 } else if (carlaXmlRpcClient != null) {
+                    log.info("[PTAG] attempting single carlaXmlRpcClient.connect(60)...");
                     carlaXmlRpcClient.connect(60);
+                } else {
+                    log.info("[PTAG] no XML-RPC client(s) configured.");
                 }
+            } catch (Exception ce) {
+                log.warn("[PTAG] initial connect failed: {}", ce.toString());
             }
+        }
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
@@ -474,15 +484,19 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     boolean advancedTick = false;
                     if (multiXmlRpcManager != null) {
                         CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                        if (actorClient != null && multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB)) {
+                        boolean mgrConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                        log.info("[PTAG] mgrConnected(ACTOR_LIB)={} actorClient!=null={}", mgrConnected, actorClient != null);
+                        if (actorClient != null && mgrConnected) {
                             advancedTick = actorClient.advanceSimulation();
                         }
-                    } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB && carlaXmlRpcClient.isConnected()) {
-                        advancedTick = carlaXmlRpcClient.advanceSimulation();
+                    } else if (carlaXmlRpcClient != null) {
+                        boolean singleConnected = carlaXmlRpcClient.isConnected();
+                        log.info("[PTAG] singleClient type={} connected={}", carlaXmlRpcClient.getServerType(), singleConnected);
+                        if (carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB && singleConnected) {
+                            advancedTick = carlaXmlRpcClient.advanceSimulation();
+                        }
                     }
-                    if (!advancedTick) {
-                        log.debug("Skipped CARLA tick in processTimeAdvanceGrant (no ACTOR_LIB connection or tick failed)");
-                    }
+                    log.info("[PTAG] advancedTick={}", advancedTick);
                 } catch (Exception e) {
                     log.warn("Failed to advance CARLA simulation tick in processTimeAdvanceGrant: {}", e.getMessage());
                 }
@@ -491,8 +505,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
                     sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    log.info("[PTAG] mgrConnected(SENSOR_LIB)={}", sensorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
                     sensorConnected = carlaXmlRpcClient.isConnected();
+                    log.info("[PTAG] single SENSOR_LIB connected={}", sensorConnected);
                 }
                 
                 if (sensorConnected) {
@@ -521,8 +537,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean actorConnected = false;
                 if (multiXmlRpcManager != null) {
                     actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
+                    log.info("[PTAG] mgrConnected(ACTOR_LIB)={}", actorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
                     actorConnected = carlaXmlRpcClient.isConnected();
+                    log.info("[PTAG] single ACTOR_LIB connected={}", actorConnected);
                 }
                 
                 if (actorConnected) {
@@ -579,38 +597,35 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Handle traffic lights using Client's change detection
-                        log.debug("Processing traffic light state changes for time: {}", time);
+                        log.info("[PTAG] Processing traffic light state changes for time: {}", time);
                         try {
                             List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
+                            log.info("[PTAG] buildTlStateChangesFromCarla returned {} changes", (changes == null ? -1 : changes.size()));
                             for (TrafficLightStateChange c : changes) {
                                 rti.triggerInteraction(c);
                             }
                         } catch (Exception ex) {
-                            log.warn("TL publish failed: {}", ex.toString());
+                            log.warn("[PTAG] TL publish failed: {}", ex.toString());
                         }
 
                     } catch (Exception e) {
-                        log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
+                        log.warn("[PTAG] poll/emit CARLA state updates failed: {}", e.getMessage());
                     }
                 } else {
-                    log.debug("Skipped CARLA actor polling in processTimeAdvanceGrant (no ACTOR_LIB connection)");
+                    log.info("[PTAG] Skipped CARLA actor polling (no ACTOR_LIB connection)");
                 }
+
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
+                log.info("[PTAG] requestAdvanceTime nextTimeStep={}", nextTimeStep);
                 isSimulationStep = false;
-                rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
+                rti.requestAdvanceTime(nextTimeStep, 0, (byte) 2);
+            } else {
+                log.info("[PTAG] isSimulationStep==false; skipping body.");
             }
-            
-        } 
-        catch (IllegalValueException e) {
+        } catch (IllegalValueException e) {
             log.error("Failed to process advance time grant due to : ", e);
-        }
-        catch (XmlRpcException e ) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
-                        + "Adapter connection! Check carla_config.json!", e);
-        }
-        catch (InterruptedException e) {
-            log.error("Failed to process advance time grant due to failed thread sleep!", e);
-            Thread.currentThread().interrupt();
+        } catch (XmlRpcException e) {
+            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim Adapter connection! Check carla_config.json!", e);
         }
     }
 
