@@ -458,6 +458,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
+        isSimulationStep = true;
 
         try {
             if (!initialConnectAttempted) {
