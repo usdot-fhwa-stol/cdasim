@@ -136,6 +136,21 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * Snapshot of CARLA actor ids from previous tick to detect externally spawned actors.
      */
     private final Set<String> lastActorIds = new HashSet<>();
+    
+    /**
+     * Mapping between SUMO vehicle IDs (spawn_actor calls) and CARLA internal actor IDs
+     * Key: SUMO vehicle ID (String), Value: CARLA internal actor ID (String)
+     */
+    private final Map<String, String> sumoToCarlaIdMapping = new HashMap<>();
+    
+    /**
+     * Get the current mapping between SUMO vehicle IDs and CARLA internal actor IDs
+     * @return Map of SUMO ID -> CARLA ID
+     */
+    public Map<String, String> getSumoToCarlaIdMapping() {
+        return new HashMap<>(sumoToCarlaIdMapping);
+    }
+
 
     /**
      * SUMO net offset parsed from scenario .net.xml (x, y) in meters.
@@ -450,14 +465,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             actorClient = carlaXmlRpcClient;
                         }
                         
-                        // Use Client's high-level change detection
-                        java.util.Map<String, Object> actorChanges = actorClient.getActorChanges();
+                        // Use Client's high-level change detection, excluding SUMO-managed vehicles
+                        java.util.Map<String, Object> actorChanges = actorClient.getActorChanges(sumoToCarlaIdMapping);
                         java.util.List<java.util.Map<String, Object>> addedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("added");
                         java.util.List<java.util.Map<String, Object>> updatedActors = (java.util.List<java.util.Map<String, Object>>) actorChanges.get("updated");
                         java.util.List<String> removedActors = (java.util.List<String>) actorChanges.get("removed");
                         
                         log.info("EXTERNAL VEHICLE DETECTION: Detected changes - Added: {}, Updated: {}, Removed: {}", 
                                 addedActors.size(), updatedActors.size(), removedActors.size());
+                        log.info("SUMO->CARLA MAPPING: Currently tracking {} SUMO vehicles", sumoToCarlaIdMapping.size());
                         
                         // Log detailed information about added actors
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
@@ -515,7 +531,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Update current actor IDs cache for next iteration
-                        // Note: Removed the redundant full scan as getActorChanges() already handles this efficiently
                         java.util.Set<String> previousIds = new java.util.HashSet<>(currentActorIds);
                         currentActorIds.clear();
                         
@@ -594,7 +609,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
-        
+                log.info("Next time step: {}", nextTimeStep);
             
         } 
         catch (IllegalValueException e) {
@@ -718,6 +733,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
         } catch (Exception ignore) { }
         // Default to Town04 netOffset if not found in environment
+        // Note: This may need adjustment based on the actual SUMO network being used
+        log.warn("Using default Town04 netOffset. If vehicles appear far from roads, check if this matches your SUMO network.");
         return new double[]{503.02, 423.76};
     }
 
@@ -1008,6 +1025,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         double carlaY = yCarla;
         double carlaZ = zCarla;
         
+        // Log the input coordinates for debugging
+        log.debug("Converting CARLA position to SUMO: carlaX={}, carlaY={}, yawDeg={}, extentX={}", 
+                 carlaX, carlaY, yawDeg, extentX);
+        
         // From center to front-center-bumper (carla reference system)
         // Fixed: Use consistent yaw calculation with carlaTransformFromSumo
         if (extentX != null && extentX > 0.0 && yawDeg != null) {
@@ -1026,10 +1047,27 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         double yWithOffset = carlaY - sumoNetOffsetXY[1];
         double zWithOffset = carlaZ;
         
+        // Log the offset application for debugging
+        log.debug("Applied netOffset: offsetX={}, offsetY={}, xWithOffset={}, yWithOffset={}", 
+                 sumoNetOffsetXY[0], sumoNetOffsetXY[1], xWithOffset, yWithOffset);
 
         double sumoX = xWithOffset;
         double sumoY = -yWithOffset; // Flip Y for right-handed system
         double sumoZ = zWithOffset;
+        
+        // Log the final SUMO coordinates for debugging
+        log.debug("Final SUMO coordinates: sumoX={}, sumoY={}, sumoZ={}", sumoX, sumoY, sumoZ);
+        
+        // Check if coordinates are reasonable (not too far from origin)
+        double distanceFromOrigin = Math.sqrt(sumoX * sumoX + sumoY * sumoY);
+        if (distanceFromOrigin > 10000) { // More than 10km from origin
+            log.warn("SUMO coordinates seem too far from origin (distance: {}), using simplified conversion", distanceFromOrigin);
+            // Use a simplified conversion without extentX adjustment
+            double simpleSumoX = xCarla + sumoNetOffsetXY[0];
+            double simpleSumoY = -yCarla - sumoNetOffsetXY[1];
+            log.debug("Using simplified coordinates: sumoX={}, sumoY={}", simpleSumoX, simpleSumoY);
+            return new Transform(simpleSumoX, simpleSumoY, zCarla, 0.0, yawDeg != null ? (yawDeg + 90.0) : 0.0, 0.0);
+        }
         
         double sumoHeadingDeg = yawDeg != null ? (yawDeg + 90.0) : 0.0;
         
@@ -1074,7 +1112,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             Double headingDeg,
             String routeId) {
         return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(timestampNs, vehicleId)
-                .position(null, projectedPosition)
+                .position(projectedPosition.toGeo(), projectedPosition)  // 修复：第一个参数是GeoPoint，第二个是CartesianPoint
                 .movement(speed, 0.0, 0.0)
                 .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, headingDeg, 0.0)
                 .route(routeId)
@@ -1187,16 +1225,18 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 actorClient = carlaXmlRpcClient;
             }
             
+            
             // Log incoming sync request counts
             int numAdded = interaction.getAdded() != null ? interaction.getAdded().size() : 0;
             int numUpdated = interaction.getUpdated() != null ? interaction.getUpdated().size() : 0;
             int numRemoved = interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0;
             log.info("Starting SUMO->CARLA vehicle sync: added={}, updated={}, removed={}", numAdded, numUpdated, numRemoved);
 
-            // Ensure we have up-to-date list of CARLA actors
-            java.util.Map<String, java.util.Map<String, Object>> actors = actorClient.getAllActors();
+            // Ensure we have up-to-date list of CARLA actors (excluding SUMO-managed vehicles)
+            java.util.Map<String, java.util.Map<String, Object>> actors = actorClient.getAllActorsExcludingSumo(sumoToCarlaIdMapping);
             currentActorIds.clear();
             currentActorIds.addAll(actors.keySet());
+            log.debug("Current CARLA actors (excluding SUMO): {}", currentActorIds.size());
 
             // Create a local copy for lambda use
             final java.util.Set<String> localCurrentActorIds = new java.util.HashSet<>(currentActorIds);
@@ -1259,6 +1299,14 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
                 final double speed = vd.getSpeed();
+                
+                // Check if vehicle already exists in mapping - if so, skip spawn and move to update
+                if (sumoToCarlaIdMapping.containsKey(id)) {
+                    log.debug("SUMO vehicle '{}' already exists in mapping with CARLA ID '{}', skipping spawn", id, sumoToCarlaIdMapping.get(id));
+                    // Move this vehicle to update list instead of spawning
+                    actorsToUpdate.add(vd);
+                    continue; // Skip the spawn process
+                }
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
                 Double extentX = null;
@@ -1339,13 +1387,33 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
 
                 log.info("Spawning actor (z+{} m)", SPAWN_Z_LIFT);
-                final boolean ok = actorClient.spawnActor(blueprint, id, finalLocation, rotation, attributes);
-                if (ok) {
-                    log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' at ({}, {}) yaw {} speed {}", 
-                            id, finalLocation.get(0), finalLocation.get(1), rotation.get(1), speed);
-                    newlySpawnedActors.add(id);
-                } else {
-                    log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned false", id);
+                
+                // Spawn actor with basic error handling
+                String carlaId = null;
+                try {
+                    carlaId = actorClient.spawnActor(blueprint, id, finalLocation, rotation, attributes);
+                    
+                    if (carlaId != null) {
+                        // Create mapping after successful spawn
+                        sumoToCarlaIdMapping.put(id, carlaId);
+                        newlySpawnedActors.add(id);
+                        log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' with CARLA ID '{}' at ({}, {}) yaw {} speed {}", 
+                                id, carlaId, finalLocation.get(0), finalLocation.get(1), rotation.get(1), speed);
+                    } else {
+                        log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned null", id);
+                    }
+                } catch (Exception e) {
+                    log.error("Exception during spawn_actor for SUMO vehicle '{}': {}", id, e.getMessage());
+                    // Clean up any partial state
+                    if (carlaId != null) {
+                        try {
+                            actorClient.destroyActor(carlaId);
+                        } catch (Exception cleanupException) {
+                            log.debug("Failed to clean up CARLA actor '{}' after spawn exception: {}", carlaId, cleanupException.getMessage());
+                        }
+                    }
+                    // Ensure mapping is not created for failed spawns
+                    sumoToCarlaIdMapping.remove(id);
                 }
             }
 
@@ -1378,15 +1446,20 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
-                // Update transform and velocity for existing actors
-                final boolean transformOk = actorClient.updateActorTransform(id, location, rotation);
-                
-                if (!transformOk) {
-                    log.debug("Failed to update CARLA actor transform for {}", id);
-                }
-                
-                if (transformOk) {
-                    log.debug("Successfully updated CARLA actor '{}' transform (speed: {} m/s)", id, speed);
+                // Update transform and velocity for existing actors using CARLA ID
+                String carlaId = sumoToCarlaIdMapping.get(id);
+                if (carlaId != null) {
+                    final boolean transformOk = actorClient.updateActorTransform(carlaId, location, rotation);
+                    
+                    if (!transformOk) {
+                        log.debug("Failed to update CARLA actor transform for SUMO vehicle {} (CARLA ID: {})", id, carlaId);
+                    }
+                    
+                    if (transformOk) {
+                        log.debug("Successfully updated CARLA actor '{}' (SUMO: '{}') transform (speed: {} m/s)", carlaId, id, speed);
+                    }
+                } else {
+                    log.warn("No CARLA ID found for SUMO vehicle '{}' during update", id);
                 }
             }
 
@@ -1396,11 +1469,24 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // Handle removals
             for (String removedId : interaction.getRemovedNames()) {
                 if (currentActorIds.contains(removedId)) {
-                    boolean ok = actorClient.destroyActor(removedId);
-                    if (ok) {
-                        currentActorIds.remove(removedId);
+                    // Get the CARLA ID for this SUMO vehicle
+                    String carlaId = sumoToCarlaIdMapping.get(removedId);
+                    if (carlaId != null) {
+                        boolean destroyed = actorClient.destroyActor(carlaId);
+                        if (destroyed) {
+                            currentActorIds.remove(removedId);
+                            sumoToCarlaIdMapping.remove(removedId);
+                            log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
+                        } else {
+                            log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
+                            // Still remove from mapping to prevent inconsistent state
+                            currentActorIds.remove(removedId);
+                            sumoToCarlaIdMapping.remove(removedId);
+                        }
                     } else {
-                        log.debug("Failed to destroy CARLA actor {} for SUMO removal", removedId);
+                        log.warn("No CARLA ID found for SUMO vehicle '{}' during removal, cleaning up from currentActorIds", removedId);
+                        // Still remove from currentActorIds to maintain consistency
+                        currentActorIds.remove(removedId);
                     }
                 }
             }

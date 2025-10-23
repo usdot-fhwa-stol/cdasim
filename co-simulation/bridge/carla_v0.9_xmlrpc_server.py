@@ -49,11 +49,13 @@ SensorKey = Union[int, str]
 
 class CarlaXMLRPCServer:
     def __init__(self, host: str = 'localhost', port: int = 8090,
-                 carla_host: str = 'localhost', carla_port: int = 2000):
+                 carla_host: str = 'localhost', carla_port: int = 2000,
+                 phase: float = 0.1):
         self.host = host
         self.port = port
         self.carla_host = carla_host
         self.carla_port = carla_port
+        self.phase = phase
 
         self.client: Optional[carla.Client] = None
         self.world: Optional[carla.World] = None
@@ -231,6 +233,13 @@ class CarlaXMLRPCServer:
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
                 
+                # Set CARLA simulation to passive mode (synchronous mode)
+                settings = self.world.get_settings()
+                settings.synchronous_mode = True
+                settings.fixed_delta_seconds = self.phase
+                self.world.apply_settings(settings)
+                logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
+                
                 # Get current map name
                 current_map = self.world.get_map().name
                 logger.info("Connected to CARLA at %s:%s | current map=%s",
@@ -298,7 +307,7 @@ class CarlaXMLRPCServer:
     # ---------- Actor Lifecycle ----------
     def spawn_actor(self, actor_type: str, actor_id: str,
                     location: List[float], rotation: List[float],
-                    attributes: Dict[str, Any] = None) -> bool:
+                    attributes: Dict[str, Any] = None) -> Union[bool, str]:
         try:
             with self.lock:
                 if not self.is_connected(): return False
@@ -353,7 +362,8 @@ class CarlaXMLRPCServer:
                     print(f"========Actor {actor_id} spawned (spectator not moved)========")
                 
                 print(f"========spawn_actor success========")
-                return True
+                # Return the CARLA internal actor ID instead of boolean
+                return str(actor.id)
         except Exception as e:
             print("spawn_actor error:", e)
             logger.error("spawn_actor error:", e)
@@ -966,12 +976,13 @@ def main():
     parser.add_argument('--port', type=int, default=8090)
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
+    parser.add_argument('--phase', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.phase)
     try:
         server.start()
     except KeyboardInterrupt:

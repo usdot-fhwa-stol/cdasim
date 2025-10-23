@@ -1323,6 +1323,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 }
                 if (latestVehicleData != null) {
                     try {
+                        // 添加空指针检查 - 检查position是否为null
+                        if (latestVehicleData.getPosition() == null) {
+                            log.warn("VehicleData position is null for external vehicle {}, skipping position update", external.getKey());
+                            continue;
+                        }
+                        
                         // Check if vehicle exists in SUMO, if not, add it first
                         if (!traci.getSimulationControl().getKnownVehicles().contains(external.getKey())) {
                             // Add external vehicle to SUMO at the specified position

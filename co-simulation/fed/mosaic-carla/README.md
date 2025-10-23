@@ -290,25 +290,43 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 - MOSAIC RTI API
 
 ## License
-114.5 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project mosaic-carla: Compilation failure
-114.5 [ERROR] /home/carma/src/co-simulation/fed/mosaic-carla/src/main/java/org/eclipse/mosaic/fed/carla/ambassador/CarlaAmbassador.java:[1021,21] cannot find symbol
-114.5 [ERROR]   symbol:   method projectedPosition(org.eclipse.mosaic.lib.geo.CartesianPoint)
-114.5 [ERROR]   location: class org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder
-114.5 [ERROR] 
-114.5 [ERROR] -> [Help 1]
-114.5 [ERROR] 
-114.5 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-114.5 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-114.5 [ERROR] 
-114.5 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-114.5 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-114.5 [ERROR] 
-114.5 [ERROR] After correcting the problems, you can resume the build with the command
-114.5 [ERROR]   mvn <args> -rf :mosaic-carla
+
+Error: Answered with error to command 0xc4: Could not map vehicle '209', distance to road is 634.23.
+Error: Answered with error to command 0xc4: Could not map vehicle '209', distance to road is 634.23.
+Error: Answered with error to command 0xc4: Could not map vehicle '209', distance to road is 634.23.
+Error: Answered with error to command 0xc4: Could not map vehicle '209', distance to road is 634.23.
+Error: Answered with error to command 0xc4: Could not map vehicle '209', distance to road is 634.23.
+Error: Answered with error to command 0xc4: Could not map vehicle '209', distance to road is 634.23.
+
+2025-10-23 18:19:39,288 DEBUG AbstractSumoAmbassador:1279 - Abstract Sumo Ambassador Vehicle updates: VehicleUpdates[added=,updated=veh_0,removed=[]]
+2025-10-23 18:19:39,288 TRACE AbstractSumoAmbassador:475 - Got new interaction VehicleUpdates with time 17400000000 ns
+2025-10-23 18:19:39,296 TRACE AbstractSumoAmbassador:475 - Got new interaction VehicleUpdates with time 17400000000 ns
+2025-10-23 18:19:39,296 INFO  AbstractSumoAmbassador:567 - Adding external vehicle '208' from carla to SUMO
+2025-10-23 18:19:39,296 DEBUG AbstractSumoAmbassador:587 - Sent VehicleFederateAssignment for external vehicle '208'
+2025-10-23 18:19:39,296 TRACE AbstractSumoAmbassador:475 - Got new interaction VehicleFederateAssignment with time 17400000000 ns
+2025-10-23 18:19:39,302 TRACE AbstractSumoAmbassador:475 - Got new interaction VehicleUpdates with time 17500000000 ns
+2025-10-23 18:19:39,302 INFO  AbstractSumoAmbassador:1244 - Simulation Time: 17500 where current system time is: 1761243579302 and nextTimeStep: 17500000000 and ambasador id: sumo
+2025-10-23 18:19:39,302 DEBUG SumoAmbassador:337 - traci getDepartedVehicles list: []
+2025-10-23 18:19:39,303 DEBUG SumoAmbassador:340 - After add vehicle to vehiclesAddedViaRouteFile: [veh_0]
+2025-10-23 18:19:39,303 DEBUG AbstractSumoAmbassador:1255 - scheduled 0 events at time 17.500,000,000 s
+2025-10-23 18:19:39,303 TRACE AbstractSumoAmbassador:1259 - Simulate traffic until 17500000000
+
+2025-10-23 18:19:39,300 DEBUG CarlaXmlRpcClient:675 - getAllActorsExcludingSumo: 2 total actors, 1 after filtering SUMO vehicles
+2025-10-23 18:19:39,300 DEBUG CarlaXmlRpcClient:1080 - getActorChanges: Retrieved 1 current actors (excluding SUMO-managed)
+2025-10-23 18:19:39,300 DEBUG CarlaXmlRpcClient:1120 - getActorChanges: Found added=0, updated=1, removed=0
+2025-10-23 18:19:39,300 INFO  CarlaXmlRpcClient:1122 - Actor changes: added=0, updated=1, removed=0
+2025-10-23 18:19:39,300 INFO  CarlaAmbassador:474 - EXTERNAL VEHICLE DETECTION: Detected changes - Added: 0, Updated: 1, Removed: 0
+2025-10-23 18:19:39,300 INFO  CarlaAmbassador:476 - SUMO->CARLA MAPPING: Currently tracking 1 SUMO vehicles
+2025-10-23 18:19:39,300 INFO  CarlaAmbassador:487 - EXTERNAL VEHICLE UPDATED: Actor ID=208, Info={type=vehicle.tesla.model3, transform={rotation=[Ljava.lang.Object;@3e3861d7, location=[Ljava.lang.Object;@5e2a3040}, id=208}
+2025-10-23 18:19:39,300 DEBUG CarlaAmbassador:846 - Converting CARLA actor '208' with data: {type=vehicle.tesla.model3, transform={rotation=[Ljava.lang.Object;@3e3861d7, location=[Ljava.lang.Object;@5e2a3040}, id=208}
+2025-10-23 18:19:39,300 INFO  CarlaAmbassador:560 - CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added=0, updated=1, removed=0
+2025-10-23 18:19:39,302 INFO  CarlaAmbassador:612 - Next time step: 17600000000
+
 
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
-python carla_v0.9_xmlrpc_server.py
+python carla_v0.9_xmlrpc_server.py --debug
+python manual_control.py
 ./mosaic.sh -s Town04
 ```

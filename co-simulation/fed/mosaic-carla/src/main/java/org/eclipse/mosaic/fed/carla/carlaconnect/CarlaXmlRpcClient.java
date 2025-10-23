@@ -541,9 +541,9 @@ public class CarlaXmlRpcClient {
      * @param location Location [x, y, z]
      * @param rotation Rotation [pitch, yaw, roll]
      * @param attributes Additional attributes
-     * @return true if successful
+     * @return CARLA internal actor ID if successful, null otherwise
      */
-    public boolean spawnActor(String actorType, String actorId, List<Double> location, 
+    public String spawnActor(String actorType, String actorId, List<Double> location, 
                              List<Double> rotation, Map<String, Object> attributes) {
         try {
             log.info("XML-RPC spawn_actor call: type={}, id={}, location={}, rotation={}, attributes={}", 
@@ -552,14 +552,27 @@ public class CarlaXmlRpcClient {
             Object[] params = new Object[]{actorType, actorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
             Object result = executeWithRetry(SPAWN_ACTOR, params, DEFAULT_RETRY_ATTEMPTS);
             
-            boolean success = result instanceof Boolean && (Boolean) result;
-            log.info("XML-RPC spawn_actor result: {} (result type: {}, value: {})", 
-                    success, result != null ? result.getClass().getSimpleName() : "null", result);
-            
-            return success;
+            if (result instanceof String) {
+                String carlaId = (String) result;
+                log.info("XML-RPC spawn_actor result: CARLA ID={} (String)", carlaId);
+                return carlaId;
+            } else if (result instanceof Number) {
+                // Handle integer ID from server
+                String carlaId = String.valueOf(result);
+                log.info("XML-RPC spawn_actor result: CARLA ID={} (converted from {})", carlaId, result.getClass().getSimpleName());
+                return carlaId;
+            } else if (result instanceof Boolean && (Boolean) result) {
+                // Fallback: if server still returns boolean true, return the actorId as the internal ID
+                log.info("XML-RPC spawn_actor result: boolean true, using actorId as CARLA ID");
+                return actorId;
+            } else {
+                log.warn("XML-RPC spawn_actor result: unexpected type {} with value {}", 
+                        result != null ? result.getClass().getSimpleName() : "null", result);
+                return null;
+            }
         } catch (Exception e) {
             log.error("Failed to spawn actor {} of type {}: {}", actorId, actorType, e.getMessage());
-            return false;
+            return null;
         }
     }
 
@@ -630,6 +643,40 @@ public class CarlaXmlRpcClient {
             return new HashMap<>();
         } catch (Exception e) {
             log.error("Failed to get all actors: {}", e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    /**
+     * Get all actors excluding SUMO-managed vehicles
+     * @param sumoToCarlaMapping Mapping of SUMO vehicle IDs to CARLA internal IDs to exclude
+     * @return Map of actor ID to actor information (excluding SUMO-managed vehicles)
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Map<String, Object>> getAllActorsExcludingSumo(Map<String, String> sumoToCarlaMapping) {
+        try {
+            Map<String, Map<String, Object>> allActors = getAllActors();
+            Map<String, Map<String, Object>> filteredActors = new HashMap<>();
+            
+            if (sumoToCarlaMapping == null || sumoToCarlaMapping.isEmpty()) {
+                return allActors;
+            }
+            
+            // Filter out SUMO-managed vehicles
+            for (Map.Entry<String, Map<String, Object>> entry : allActors.entrySet()) {
+                String actorId = entry.getKey();
+                if (!sumoToCarlaMapping.containsValue(actorId)) {
+                    filteredActors.put(actorId, entry.getValue());
+                } else {
+                    log.debug("Excluding SUMO-managed actor '{}' from getAllActors result", actorId);
+                }
+            }
+            
+            log.debug("getAllActorsExcludingSumo: {} total actors, {} after filtering SUMO vehicles", 
+                     allActors.size(), filteredActors.size());
+            return filteredActors;
+        } catch (Exception e) {
+            log.error("Failed to get actors excluding SUMO: {}", e.getMessage());
             return new HashMap<>();
         }
     }
@@ -1017,19 +1064,20 @@ public class CarlaXmlRpcClient {
     /**
      * Get actor changes since last call (added, updated, removed)
      * This method provides high-level change detection functionality
+     * @param sumoToCarlaMapping Mapping of SUMO vehicle IDs to CARLA internal IDs to exclude from changes
      * @return Map containing "added", "updated", "removed" lists
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getActorChanges() {
+    public Map<String, Object> getActorChanges(Map<String, String> sumoToCarlaMapping) {
         Map<String, Object> changes = new HashMap<>();
         List<Map<String, Object>> added = new ArrayList<>();
         List<Map<String, Object>> updated = new ArrayList<>();
         List<String> removed = new ArrayList<>();
         
         try {
-            // Get current actors
-            Map<String, Map<String, Object>> currentActors = getAllActors();
-            log.debug("getActorChanges: Retrieved {} current actors", currentActors.size());
+            // Get current actors excluding SUMO-managed vehicles
+            Map<String, Map<String, Object>> currentActors = getAllActorsExcludingSumo(sumoToCarlaMapping);
+            log.debug("getActorChanges: Retrieved {} current actors (excluding SUMO-managed)", currentActors.size());
             
             // Find added and updated actors
             for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
@@ -1038,6 +1086,12 @@ public class CarlaXmlRpcClient {
                 
                 // Add actor ID to the state map so it can be retrieved later
                 currentState.put("id", actorId);
+                
+                // Skip actors that are already managed by SUMO (exclude from changes)
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(actorId)) {
+                    log.debug("Skipping actor {} as it's managed by SUMO", actorId);
+                    continue;
+                }
                 
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
@@ -1053,6 +1107,12 @@ public class CarlaXmlRpcClient {
             
             // Find removed actors
             for (String previousActorId : previousActorStates.keySet()) {
+                // Skip actors that are managed by SUMO
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(previousActorId)) {
+                    log.debug("Skipping removal check for actor {} as it's managed by SUMO", previousActorId);
+                    continue;
+                }
+                
                 if (!currentActors.containsKey(previousActorId)) {
                     removed.add(previousActorId);
                 }
