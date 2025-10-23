@@ -579,6 +579,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Handle traffic lights using Client's change detection
+                        log.debug("Processing traffic light state changes for time: {}", time);
                         try {
                             List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
                             for (TrafficLightStateChange c : changes) {
@@ -591,6 +592,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     } catch (Exception e) {
                         log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
                     }
+                } else {
+                    log.debug("Skipped CARLA actor polling in processTimeAdvanceGrant (no ACTOR_LIB connection)");
                 }
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 isSimulationStep = false;
