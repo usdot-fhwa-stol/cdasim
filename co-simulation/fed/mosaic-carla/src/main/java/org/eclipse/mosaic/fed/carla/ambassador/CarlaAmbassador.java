@@ -1201,11 +1201,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     private List<TrafficLightStateChange> buildTlStateChangesFromCarla(long time, CarlaXmlRpcClient actorClient) {
         List<Map<String, Object>> carlaStates = actorClient.getAllTrafficLightStates();
-
+        log.info("buildTlStateChangesFromCarla: Got carla tl states at time {}", time);
         // carlaId -> int state
         Map<String, Integer> carlaIdToState = new HashMap<>(carlaStates.size());
         for (Map<String, Object> m : carlaStates) {
             Object id = m.getOrDefault("opendrive_id", null);
+            log.info("buildTlStateChangesFromCarla: processing tl state for id {} at time {}", String.valueOf(id), time);
             int st = asInt(m.get("state"), 0);
             carlaIdToState.put(String.valueOf(id), st);
         }
@@ -1223,7 +1224,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 customStates.add(toMosaicState(st));
                 stateMaskBuilder.append(st).append('|');
             }
-
+            log.info("buildTlStateChangesFromCarla: got custom states for group {}: {}", tlGroupId, customStates);
             String stateMask = stateMaskBuilder.toString();
             if (stateMask.equals(lastCustomStateMask.get(tlGroupId))) continue;
 

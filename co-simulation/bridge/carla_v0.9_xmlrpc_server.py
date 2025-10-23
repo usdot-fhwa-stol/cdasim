@@ -292,7 +292,7 @@ class CarlaXMLRPCServer:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
-                self._odr_to_tl, self._odr_to_tls = self.build_light_index(self.world)
+                self._odr_to_tl, self._odr_to_tls = build_light_index(self.world)
 
                 # Freeze all traffic lights
                 #for tl in self.world.get_actors().filter('traffic.traffic_light'):
@@ -665,6 +665,7 @@ class CarlaXMLRPCServer:
                         out.append(item)
                     except Exception:
                         continue
+                logger.info("Processed get_all_traffic_light_states request.")
                 return out
         except Exception as e:
             logger.error("get_all_traffic_light_states error: %s", e)
