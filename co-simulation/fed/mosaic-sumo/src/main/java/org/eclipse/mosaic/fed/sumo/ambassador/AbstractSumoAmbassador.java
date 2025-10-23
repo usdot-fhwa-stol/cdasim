@@ -1276,9 +1276,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             }
                         }
                         
-                        log.info("Manual Traffic Light Query at time {}: groupId={}, programId={}, phaseIndex={}, nextSwitchTime={}, state={}",
+                        /*log.info("Manual Traffic Light Query at time {}: groupId={}, programId={}, phaseIndex={}, nextSwitchTime={}, state={}",
                                 TIME.format(time), groupId, programId, phaseIndex,
-                                TIME.format(assumedNextTimeSwitch), stateString.toString());
+                                TIME.format(assumedNextTimeSwitch), stateString.toString());*/
                     } catch (InternalFederateException e) {
                         log.warn("Could not query traffic light state for groupId={}", groupId, e);
                     }

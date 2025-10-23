@@ -579,41 +579,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Handle traffic lights using Client's change detection
-                        java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
-                        
-                        if (!trafficLightChanges.isEmpty()) {
-                            java.util.Map<String, org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo> updatedTrafficLights = new java.util.HashMap<>();
-                            
-                            for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : trafficLightChanges.entrySet()) {
-                                String id = entry.getKey();
-                                java.util.Map<String, Object> tlInfo = entry.getValue();
-                                
-                                String state = tlInfo.get("state") != null ? tlInfo.get("state").toString() : "Unknown";
-                                Double timer = tlInfo.get("timer") instanceof Number ? ((Number) tlInfo.get("timer")).doubleValue() : null;
-                                
-                                // Create a simple TrafficLightGroupInfo with basic information
-                                // Since we don't have full SUMO traffic light program details from CARLA,
-                                // we'll create a minimal representation
-                                java.util.List<org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState> states = new java.util.ArrayList<>();
-                                // Add a basic state representation - TrafficLightState constructor takes (red, green, yellow) booleans
-                                states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState(true, false, false)); // Red state
-                                
-                                org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
-                                    new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(
-                                        id, 
-                                        "default", // program ID
-                                        0, // phase index
-                                        timer != null ? (long)(timer * 1e9) : 0, // convert seconds to nanoseconds
-                                        states
-                                    );
-                                updatedTrafficLights.put(id, tlGroupInfo);
+                        try {
+                            List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
+                            for (TrafficLightStateChange c : changes) {
+                                rti.triggerInteraction(c);
                             }
-                            
-                            TrafficLightUpdates trafficLightUpdates = new TrafficLightUpdates(time, updatedTrafficLights);
-                            this.rti.triggerInteraction(trafficLightUpdates);
-                            log.debug("Published TrafficLightUpdates: {} traffic lights updated", updatedTrafficLights.size());
+                        } catch (Exception ex) {
+                            log.warn("TL publish failed: {}", ex.toString());
                         }
-                        
+
                     } catch (Exception e) {
                         log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
                     }
@@ -1000,7 +974,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @param interaction TrafficLightStateChange interaction
      */
     private void receiveInteraction(TrafficLightUpdates interaction) {
-        log.info("Received TrafficLightUpdates interaction for {} traffic lights", interaction.getUpdated().size());
+        //log.info("Received TrafficLightUpdates interaction for {} traffic lights", interaction.getUpdated().size());
 
         final long grantTimeNs = interaction.getTime();
         try {
