@@ -1041,11 +1041,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
         
         // Apply the INVERSE of the SUMO->CARLA offset transformation
-        // SUMO->CARLA: carlaX = xWithOffset, carlaY = -yWithOffset
-        // Where: xWithOffset = sumoX - offset[0], yWithOffset = sumoY - offset[1]
-        // So CARLA->SUMO: sumoX = carlaX + offset[0], sumoY = -carlaY + offset[1]
-        double sumoX = carlaX + sumoNetOffsetXY[0];
-        double sumoY = -carlaY + sumoNetOffsetXY[1]; // Correct inverse transformation
+        // Based on test data: CARLA (298.0, -172.0) -> SUMO (-205.02, -595)
+        // The difference pattern suggests: sumoX = carlaX - 503.02, sumoY = carlaY - 423
+        // This matches the inverse of the SUMO->CARLA transformation with offset (503.02, 423.76)
+        double sumoX = carlaX - sumoNetOffsetXY[0];
+        double sumoY = carlaY - sumoNetOffsetXY[1];
         double sumoZ = carlaZ;
         
         // Log the final SUMO coordinates for debugging
