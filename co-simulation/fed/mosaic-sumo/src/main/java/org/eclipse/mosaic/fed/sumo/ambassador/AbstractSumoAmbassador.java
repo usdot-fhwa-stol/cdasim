@@ -1284,7 +1284,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     }
                 }
 
-                this.rti.triggerInteraction(new TrafficLightUpdates(time, updatedTrafficLightGroups));
+                //this.rti.triggerInteraction(new TrafficLightUpdates(time, updatedTrafficLightGroups));
                 receivedSimulationStep = false;
                 firstAttemptToAdvanceToNextStep = true;
             }
