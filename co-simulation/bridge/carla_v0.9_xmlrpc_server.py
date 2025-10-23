@@ -352,8 +352,9 @@ class CarlaXMLRPCServer:
                 # Only switch spectator to the first spawned actor
                 if len(self.actors) == 1:  # Only for the first vehicle
                     try:
-                        # Switch spectator to follow the first spawned actor
-                        self.set_spectator_to_actor(actor_id, 'follow', 0, 0, 0)
+                        # Switch spectator to follow the first spawned actor with proper offset
+                        # Use the actual actor object for more reliable positioning
+                        self._set_spectator_to_actor_object(actor, 'follow', 8.0, 3.0, -20.0)
                         print(f"========Spectator switched to follow first actor: {actor_id}========")
                     except Exception as e:
                         print(f"Failed to switch spectator to first actor {actor_id}: {e}")
@@ -876,6 +877,51 @@ class CarlaXMLRPCServer:
         return json.dumps([])
 
     # ---------- Spectator Utilities ----------
+    def _set_spectator_to_actor_object(self, actor: carla.Actor, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
+        """
+        Set spectator to follow a specific actor object directly (internal use).
+        This avoids the need to resolve actor by ID and is more reliable.
+        """
+        try:
+            with self.lock:
+                if not self.is_connected():
+                    return False
+                if actor is None:
+                    return False
+                t = actor.get_transform()
+                spectator = self.world.get_spectator()
+                if spectator is None:
+                    return False
+
+                # Ensure minimum values to avoid camera being too close to vehicle
+                back = max(3.0, float(back))  # Minimum 3 meters back
+                up = max(1.0, float(up))      # Minimum 1 meter up
+                pitch = float(pitch)
+
+                preset_l = str(preset).strip().lower()
+                if preset_l == 'topdown':
+                    cam_loc = carla.Location(t.location.x, t.location.y, t.location.z + abs(up))
+                    cam_rot = carla.Rotation(pitch=-90.0, yaw=t.rotation.yaw, roll=0.0)
+                else:  # 'follow' default
+                    try:
+                        # Calculate camera position behind the vehicle
+                        # CARLA uses right-handed coordinate system: +X forward, +Y right, +Z up
+                        yaw_rad = math.radians(t.rotation.yaw)
+                        # Position camera behind the vehicle (opposite to vehicle's forward direction)
+                        dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
+                        dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
+                    except Exception:
+                        dx, dy = -back, 0.0
+                    cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
+                    cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)
+
+                spectator.set_transform(carla.Transform(cam_loc, cam_rot))
+                logger.info("Spectator positioned to actor object: back=%.1f, up=%.1f, pitch=%.1f", back, up, pitch)
+                return True
+        except Exception as e:
+            logger.error("_set_spectator_to_actor_object error: %s", e)
+            return False
+
     def set_spectator_to_actor(self, actor_key: ActorKey, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
         try:
             with self.lock:
@@ -889,21 +935,30 @@ class CarlaXMLRPCServer:
                 if spectator is None:
                     return False
 
+                # Ensure minimum values to avoid camera being too close to vehicle
+                back = max(3.0, float(back))  # Minimum 3 meters back
+                up = max(1.0, float(up))      # Minimum 1 meter up
+                pitch = float(pitch)
+
                 preset_l = str(preset).strip().lower()
                 if preset_l == 'topdown':
                     cam_loc = carla.Location(t.location.x, t.location.y, t.location.z + abs(up))
                     cam_rot = carla.Rotation(pitch=-90.0, yaw=t.rotation.yaw, roll=0.0)
                 else:  # 'follow' default
                     try:
+                        # Calculate camera position behind the vehicle
+                        # CARLA uses right-handed coordinate system: +X forward, +Y right, +Z up
                         yaw_rad = math.radians(t.rotation.yaw)
-                        dx = float(back) * math.cos(yaw_rad)
-                        dy = float(back) * math.sin(yaw_rad)
+                        # Position camera behind the vehicle (opposite to vehicle's forward direction)
+                        dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
+                        dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
                     except Exception:
-                        dx, dy = float(back), 0.0
-                    cam_loc = carla.Location(t.location.x - dx, t.location.y - dy, t.location.z + float(up))
-                    cam_rot = carla.Rotation(pitch=float(pitch), yaw=t.rotation.yaw, roll=0.0)
+                        dx, dy = -back, 0.0
+                    cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
+                    cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)
 
                 spectator.set_transform(carla.Transform(cam_loc, cam_rot))
+                logger.info("Spectator positioned: back=%.1f, up=%.1f, pitch=%.1f", back, up, pitch)
                 return True
         except Exception as e:
             logger.error("set_spectator_to_actor error: %s", e)

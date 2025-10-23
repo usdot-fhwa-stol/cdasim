@@ -795,9 +795,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         double sumoZ = 0.0;
         
         // From front-center-bumper to center (sumo reference system)
-        // Following Python logic: yaw = -1 * in_rotation.yaw + 90
+        // Following Python bridge_helper.py get_carla_transform logic exactly
         if (extentX != null && extentX > 0.0 && headingDeg != null) {
-            // Fixed: Use consistent yaw calculation
             double yaw = -1 * headingDeg + 90; // Python: yaw = -1 * in_rotation.yaw + 90
             double yawRad = Math.toRadians(yaw);
             // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
@@ -994,7 +993,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
             }
             
-            // Create CartesianPoint for projected position
+            // Create CartesianPoint for projected position using converted SUMO coordinates
             org.eclipse.mosaic.lib.geo.CartesianPoint projectedPosition = 
                 org.eclipse.mosaic.lib.geo.CartesianPoint.xy(sumoTransform.x, sumoTransform.y);
             
@@ -1020,55 +1019,39 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @return Transform object with SUMO coordinates and heading
      */
     private Transform sumoTransformFromCarla(double xCarla, double yCarla, double zCarla, Double yawDeg, Double extentX) {
+        // Log the input coordinates for debugging
+        log.debug("Converting CARLA position to SUMO: carlaX={}, carlaY={}, yawDeg={}, extentX={}", 
+                 xCarla, yCarla, yawDeg, extentX);
+        
+        // Use the INVERSE of the SUMO->CARLA conversion for consistency
+        // This ensures that CARLA->SUMO and SUMO->CARLA are exact inverses
+        
         // Start with CARLA coordinates
         double carlaX = xCarla;
         double carlaY = yCarla;
         double carlaZ = zCarla;
         
-        // Log the input coordinates for debugging
-        log.debug("Converting CARLA position to SUMO: carlaX={}, carlaY={}, yawDeg={}, extentX={}", 
-                 carlaX, carlaY, yawDeg, extentX);
-        
         // From center to front-center-bumper (carla reference system)
-        // Fixed: Use consistent yaw calculation with carlaTransformFromSumo
+        // Following Python bridge_helper.py get_sumo_transform logic exactly
         if (extentX != null && extentX > 0.0 && yawDeg != null) {
-            // Use the same yaw calculation as in carlaTransformFromSumo for consistency
-            double yaw = -1 * yawDeg + 90; // Consistent with carlaTransformFromSumo
+            double yaw = -1 * yawDeg; // Python: yaw = -1 * in_rotation.yaw (NO +90!)
             double yawRad = Math.toRadians(yaw);
-
             carlaX += Math.cos(yawRad) * extentX;
             carlaY -= Math.sin(yawRad) * extentX;
-            // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
         }
         
-        // Applying offset carla-sumo net
-        // Python: out_location = (out_location[0] + offset[0], out_location[1] - offset[1], out_location[2])
-        double xWithOffset = carlaX + sumoNetOffsetXY[0];
-        double yWithOffset = carlaY - sumoNetOffsetXY[1];
-        double zWithOffset = carlaZ;
-        
-        // Log the offset application for debugging
-        log.debug("Applied netOffset: offsetX={}, offsetY={}, xWithOffset={}, yWithOffset={}", 
-                 sumoNetOffsetXY[0], sumoNetOffsetXY[1], xWithOffset, yWithOffset);
-
-        double sumoX = xWithOffset;
-        double sumoY = -yWithOffset; // Flip Y for right-handed system
-        double sumoZ = zWithOffset;
+        // Apply the INVERSE of the SUMO->CARLA offset transformation
+        // SUMO->CARLA: carlaX = xWithOffset, carlaY = -yWithOffset
+        // Where: xWithOffset = sumoX - offset[0], yWithOffset = sumoY - offset[1]
+        // So CARLA->SUMO: sumoX = carlaX + offset[0], sumoY = -carlaY + offset[1]
+        double sumoX = carlaX + sumoNetOffsetXY[0];
+        double sumoY = -carlaY + sumoNetOffsetXY[1]; // Correct inverse transformation
+        double sumoZ = carlaZ;
         
         // Log the final SUMO coordinates for debugging
         log.debug("Final SUMO coordinates: sumoX={}, sumoY={}, sumoZ={}", sumoX, sumoY, sumoZ);
         
-        // Check if coordinates are reasonable (not too far from origin)
-        double distanceFromOrigin = Math.sqrt(sumoX * sumoX + sumoY * sumoY);
-        if (distanceFromOrigin > 10000) { // More than 10km from origin
-            log.warn("SUMO coordinates seem too far from origin (distance: {}), using simplified conversion", distanceFromOrigin);
-            // Use a simplified conversion without extentX adjustment
-            double simpleSumoX = xCarla + sumoNetOffsetXY[0];
-            double simpleSumoY = -yCarla - sumoNetOffsetXY[1];
-            log.debug("Using simplified coordinates: sumoX={}, sumoY={}", simpleSumoX, simpleSumoY);
-            return new Transform(simpleSumoX, simpleSumoY, zCarla, 0.0, yawDeg != null ? (yawDeg + 90.0) : 0.0, 0.0);
-        }
-        
+        // Convert heading (inverse of SUMO->CARLA heading conversion)
         double sumoHeadingDeg = yawDeg != null ? (yawDeg + 90.0) : 0.0;
         
         // Normalize heading to [0, 360) range
@@ -1113,7 +1096,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             String routeId) {
         return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(timestampNs, vehicleId)
                 .position(projectedPosition.toGeo(), projectedPosition)  // 修复：第一个参数是GeoPoint，第二个是CartesianPoint
-                .movement(speed, 0.0, 0.0)
+                .movement(0.0, 0.0, 0.0)  // External actors don't need speed assignment
                 .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, headingDeg, 0.0)
                 .route(routeId)
                 .create();
