@@ -569,7 +569,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 // Add to external vehicle map
                 ExternalVehicleState vehicleState = new ExternalVehicleState();
                 vehicleState.setLastMovementInfo(addedVehicle);
-                vehicleState.setAdded(true);
+                vehicleState.setAdded(false); // Mark as not yet added to SUMO
                 externalVehicleMap.put(vehicleId, vehicleState);
                 
                 // Send VehicleFederateAssignment to mark this vehicle as externally simulated
@@ -588,6 +588,11 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 } catch (IllegalValueException e) {
                     log.error("Failed to send VehicleFederateAssignment for vehicle '{}': {}", vehicleId, e.getMessage());
                 }
+            } else {
+                // Update existing external vehicle with new data
+                ExternalVehicleState existingState = externalVehicleMap.get(vehicleId);
+                existingState.setLastMovementInfo(addedVehicle);
+                log.debug("Updated external vehicle '{}' with new position data", vehicleId);
             }
         }
 
@@ -1315,13 +1320,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
     private void setExternalVehiclesToLatestPositions() {
         VehicleData latestVehicleData;
         for (Map.Entry<String, ExternalVehicleState> external : externalVehicleMap.entrySet()) {
-            if (external.getValue().isAdded()) {
                 latestVehicleData = external.getValue().getLastMovementInfo();
                 if (latestVehicleData == null) {
                     log.warn("No position data available for external vehicle {}", external.getKey());
-                    latestVehicleData = traci.getSimulationControl().getLastKnownVehicleData(external.getKey());
+                continue;
                 }
-                if (latestVehicleData != null) {
+            
                     try {
                         // 添加空指针检查 - 检查position是否为null
                         if (latestVehicleData.getPosition() == null) {
@@ -1329,11 +1333,14 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             continue;
                         }
                         
-                        // Check if vehicle exists in SUMO, if not, add it first
-                        if (!traci.getSimulationControl().getKnownVehicles().contains(external.getKey())) {
+                String vehicleId = external.getKey();
+                boolean vehicleExistsInSumo = traci.getSimulationControl().getKnownVehicles().contains(vehicleId);
+                
+                // Only add vehicle if it doesn't exist in SUMO and hasn't been added before
+                if (!vehicleExistsInSumo && !external.getValue().isAdded()) {
                             // Add external vehicle to SUMO at the specified position
                             log.info("Adding external vehicle '{}' to SUMO at position ({}, {})", 
-                                external.getKey(), 
+                        vehicleId, 
                                 latestVehicleData.getPosition().toCartesian().getX(),
                                 latestVehicleData.getPosition().toCartesian().getY());
                             
@@ -1364,22 +1371,38 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             }
                             
                             if (routeCache.containsKey(defaultRoute)) {
-                                traci.getSimulationControl().addVehicle(external.getKey(), defaultRoute, defaultVehicleType, "random", "0", "0");
-                                log.info("Successfully added external vehicle '{}' to SUMO", external.getKey());
+                        try {
+                            traci.getSimulationControl().addVehicle(vehicleId, defaultRoute, defaultVehicleType, "random", "0", "0");
+                            log.info("Successfully added external vehicle '{}' to SUMO", vehicleId);
+                            // Mark as added to prevent duplicate additions
+                            external.getValue().setAdded(true);
+                        } catch (InternalFederateException e) {
+                            // If vehicle already exists, just log and continue
+                            if (e.getMessage().contains("already exists")) {
+                                log.debug("Vehicle '{}' already exists in SUMO, continuing with position update", vehicleId);
+                                external.getValue().setAdded(true);
                             } else {
-                                log.warn("Could not add external vehicle '{}' to SUMO - no default route available", external.getKey());
+                                log.warn("Could not add external vehicle '{}' to SUMO: {}", vehicleId, e.getMessage());
+                                continue;
+                            }
+                        }
+                    } else {
+                        log.warn("Could not add external vehicle '{}' to SUMO - no default route available", vehicleId);
                                 continue;
                             }
                         }
                         
-                        // Now move the vehicle to the correct position
-                        traci.getVehicleControl().moveToXY(external.getKey(),
+                // Only update position if vehicle exists in SUMO
+                if (traci.getSimulationControl().getKnownVehicles().contains(vehicleId)) {
+                    // Move the vehicle to the correct position
+                    traci.getVehicleControl().moveToXY(vehicleId,
                                 latestVehicleData.getPosition().toCartesian(), latestVehicleData.getHeading(),
                                 VehicleSetMoveToXY.Mode.KEEP_ROUTE);
-                    } catch (InternalFederateException e) {
-                        log.warn("Could not set position of vehicle " + external.getKey(), e);
-                    }
+                } else {
+                    log.debug("Vehicle '{}' not found in SUMO, skipping position update", vehicleId);
                 }
+                    } catch (InternalFederateException e) {
+                log.warn("Could not set position of vehicle " + external.getKey() + ": " + e.getMessage());
             }
         }
     }

@@ -143,8 +143,8 @@ class ManualControl:
     def spawn_vehicle(self) -> bool:
         """Spawn a controllable vehicle in CARLA"""
         try:
-            # Use fixed spawn position (298, -172) with proper ground height
-            spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            # Use fixed spawn position (200, -169) with proper ground height
+            spawn_location = carla.Location(x=200.0, y=-169.0, z=0.0)
             
             # Get the ground height at this location
             waypoint = self.world.get_map().get_waypoint(spawn_location)
@@ -155,12 +155,12 @@ class ManualControl:
                 spawn_points = self.world.get_map().get_spawn_points()
                 if spawn_points:
                     # Find the closest spawn point to our target location
-                    target_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+                    target_location = carla.Location(x=200.0, y=-169.0, z=0.0)
                     closest_point = min(spawn_points, 
                                       key=lambda p: p.location.distance(target_location))
                     spawn_location = closest_point.location
-                    spawn_location.x = 298.0  # Keep our target X coordinate
-                    spawn_location.y = -172.0  # Keep our target Y coordinate
+                    spawn_location.x = 200.0  # Keep our target X coordinate
+                    spawn_location.y = -169.0  # Keep our target Y coordinate
                     spawn_location.z += 0.5  # Add small offset above ground
                 else:
                     spawn_location.z = 1.0  # Default height if no waypoints found
@@ -233,8 +233,8 @@ class ManualControl:
                 logger.error("XML-RPC client not connected")
                 return False
             
-            # Use fixed spawn position (298, -172) with proper ground height
-            spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            # Use fixed spawn position (200, -169) with proper ground height
+            spawn_location = carla.Location(x=200.0, y=-169.0, z=0.0)
             
             # Get the ground height at this location
             waypoint = self.world.get_map().get_waypoint(spawn_location)
@@ -350,8 +350,8 @@ class ManualControl:
             return
         
         try:
-            # Reset to fixed spawn position (298, -172) with proper ground height
-            spawn_location = carla.Location(x=298.0, y=-172.0, z=0.0)
+            # Reset to fixed spawn position (200, -169) with proper ground height
+            spawn_location = carla.Location(x=200.0, y=-169.0, z=0.0)
             
             # Get the ground height at this location
             waypoint = self.world.get_map().get_waypoint(spawn_location)
