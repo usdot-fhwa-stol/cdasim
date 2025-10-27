@@ -1220,7 +1220,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     private List<TrafficLightStateChange> buildTlStateChangesFromCarla(long time, CarlaXmlRpcClient actorClient) {
         List<Map<String, Object>> carlaStates = actorClient.getAllTrafficLightStates();
-        log.info("buildTlStateChangesFromCarla: Got carla tl states at time {}", time);
+        log.info("buildTlStateChangesFromCarla: Got {} carla tl states at time {}", carlaStates.size(), time);
         // carlaId -> int state
         Map<String, Integer> carlaIdToState = new HashMap<>(carlaStates.size());
         for (Map<String, Object> m : carlaStates) {
@@ -1229,6 +1229,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             int st = asInt(m.get("state"), 0);
             carlaIdToState.put(String.valueOf(id), st);
         }
+
+        log.debug("buildTlStateChangesFromCarla at time {}: carlaIdToState map: {}", time, carlaIdToState);
 
         List<TrafficLightStateChange> tlStates = new ArrayList<>();
         for (Map.Entry<String, List<String>> e : tlLogicLinkSignals.entrySet()) {
