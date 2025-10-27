@@ -1397,7 +1397,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     // Move the vehicle to the correct position
                     traci.getVehicleControl().moveToXY(vehicleId,
                                 latestVehicleData.getPosition().toCartesian(), latestVehicleData.getHeading(),
-                                VehicleSetMoveToXY.Mode.KEEP_ROUTE);
+                                VehicleSetMoveToXY.Mode.EXACT_POSITION);
                 } else {
                     log.debug("Vehicle '{}' not found in SUMO, skipping position update", vehicleId);
                 }
