@@ -698,11 +698,20 @@ public class CarlaXmlRpcClient {
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getAllTrafficLightStates() {
         try {
-            Object[] params = new Object[]{};
-            Object result = executeWithRetry(GET_ALL_TRAFFIC_LIGHT_STATES, params, DEFAULT_RETRY_ATTEMPTS);
-            
+            Object result = executeWithRetry(GET_ALL_TRAFFIC_LIGHT_STATES, new Object[]{}, DEFAULT_RETRY_ATTEMPTS);
+
+            List<Map<String, Object>> states = new ArrayList<>();
+
+            if (result instanceof Object[]) {
+                for (Object item : (Object[]) result) {
+                    if (item instanceof Map) {
+                        states.add((Map<String, Object>) item);
+                    }
+                }
+                return states;
+            }
+
             if (result instanceof List) {
-                List<Map<String, Object>> states = new ArrayList<>();
                 for (Object item : (List<?>) result) {
                     if (item instanceof Map) {
                         states.add((Map<String, Object>) item);
@@ -710,9 +719,13 @@ public class CarlaXmlRpcClient {
                 }
                 return states;
             }
-            return new ArrayList<>();
+
+            log.warn("getAllTrafficLightStates: unexpected result type {}", 
+                    (result == null ? "null" : result.getClass().getName()));
+            return states;
+
         } catch (Exception e) {
-            log.error("Failed to get all traffic light states: {}", e.getMessage());
+            log.error("Failed to get all traffic light states: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
     }

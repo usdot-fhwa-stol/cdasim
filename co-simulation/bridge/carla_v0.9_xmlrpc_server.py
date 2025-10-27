@@ -652,14 +652,14 @@ class CarlaXMLRPCServer:
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
                     try:
                         state = tl.get_state()
-                        odr = self.tl_to_odr.get(tl.id)
+                        odr = self._tl_id_to_odr.get(tl.id)
                         if odr is None:
                             continue
                         item = {
                             'opendrive_id': odr,
                             'state': int(self._tl_state_to_int(state)),
                             'elapsed_time': float(getattr(tl, 'get_elapsed_time', lambda: 0.0)()),
-                            'timestamp': ts
+                            'timestamp': float(ts)
                         }
                         try: item['is_frozen'] = bool(tl.is_frozen())
                         except Exception: pass
