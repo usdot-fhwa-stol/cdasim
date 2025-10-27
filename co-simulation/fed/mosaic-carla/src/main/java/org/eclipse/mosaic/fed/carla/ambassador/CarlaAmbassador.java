@@ -108,6 +108,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     boolean isSimulationStep = false;
 
+    boolean isTlManager = false;
+
     /**
      * Sleep after each connection try. Unit: [ms].
      */
@@ -598,15 +600,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Handle traffic lights using Client's change detection
-                        log.info("[PTAG] Processing traffic light state changes for time: {}", time);
-                        try {
-                            List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
-                            log.info("[PTAG] buildTlStateChangesFromCarla returned {} changes", (changes == null ? -1 : changes.size()));
-                            for (TrafficLightStateChange c : changes) {
-                                rti.triggerInteraction(c);
+                        if (isTlManager) {
+                            log.info("[PTAG] Processing traffic light state changes for time: {}", time);
+                            try {
+                                List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
+                                log.info("[PTAG] buildTlStateChangesFromCarla returned {} changes", (changes == null ? -1 : changes.size()));
+                                for (TrafficLightStateChange c : changes) {
+                                    rti.triggerInteraction(c);
+                                }
+                            } catch (Exception ex) {
+                                log.warn("[PTAG] TL publish failed: {}", ex.toString());
                             }
-                        } catch (Exception ex) {
-                            log.warn("[PTAG] TL publish failed: {}", ex.toString());
                         }
 
                     } catch (Exception e) {
