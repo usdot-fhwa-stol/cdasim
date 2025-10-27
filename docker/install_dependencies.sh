@@ -18,7 +18,10 @@ set -e
 
 # Install software-proprties-common to be able to setup PPA repos
 sudo apt-get update
-sudo apt-get install -y software-properties-common
+sudo apt-get install -y software-properties-common apt-transport-https ca-certificates curl software-properties-common
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -32,8 +35,12 @@ sudo apt-get install -y --allow-unauthenticated gcc-7 g++-7 python3.6 unzip tar 
   python3.7-distutils x11-xserver-utils dconf-editor dbus-x11 libglvnd0 libgl1 \
   libglx0 libegl1 libxext6 libx11-6 python3-dev \
   build-essential pkg-config lbzip2 libprotobuf-dev protobuf-compiler patch rsync \
-  wget vim nano xterm libprotobuf-dev
+  wget vim nano xterm libprotobuf-dev \
+  docker-ce
+  
 sudo rm -rf /var/lib/apt/lists/*
+
+
 
 sudo apt-get clean
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 20 --slave /usr/bin/g++ g++ /usr/bin/g++-7
@@ -55,20 +62,6 @@ sudo make install
 # Install python3.7 and lxml
 python3.7 -m pip install pip
 python3.7 -m pip install lxml==4.5.0
-
-# Install CARLA
-CARLA_TAR="CARLA_0.9.10.tar.gz"
-cd /home/carma/src/
-if [[ ! -f "$CARLA_TAR" ]]; then
-    echo "!!! $CARLA_TAR not present in the installation directory, downloading automatically instead. This could take a long time, consider downloading the file manually and placing it in the installation directory. !!!"
-    wget -q "https://carla-releases.s3.us-east-005.backblazeb2.com/Linux/CARLA_0.9.10.tar.gz"
-fi
-
-sudo mkdir -p /opt/carla
-sudo chown -R carma:carma /opt/carla
-tar xzvf "$CARLA_TAR" -C /opt/carla
-# Adding configuration file to fix error output from CARLA (https://github.com/carla-simulator/carla/issues/2820)
-echo $'pcm.!default {\n  type plug\n  slave.pcm \"null\"\n}' | sudo tee /etc/asound.conf
 
 # Installation of maven
 wget -q "https://archive.apache.org/dist/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz"
