@@ -56,12 +56,13 @@ SensorKey = Union[int, str]
 class CarlaXMLRPCServer:
     def __init__(self, host: str = 'localhost', port: int = 8090,
                  carla_host: str = 'localhost', carla_port: int = 2000,
-                 tls_manager: str = 'none'):
+                 tls_manager: str = 'none', phase: float = 0.1):
         self.host = host
         self.port = port
         self.carla_host = carla_host
         self.carla_port = carla_port
         self.tls_manager = tls_manager
+        self.phase = phase
 
         self.client: Optional[carla.Client] = None
         self.world: Optional[carla.World] = None
@@ -82,6 +83,9 @@ class CarlaXMLRPCServer:
         self.input_frame: str = 'sumo'
         self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
 
+        # Default extent_x for vehicle center calculation
+        self.default_extent_x = 2.0
+
         self.server = SimpleXMLRPCServer(
             (host, port),
             requestHandler=SimpleXMLRPCRequestHandler,
@@ -89,6 +93,34 @@ class CarlaXMLRPCServer:
         )
         self._register_methods()
         logger.info("XML-RPC methods registered")
+
+    def _safe_try_spawn(self, bp: carla.ActorBlueprint, base_transform: carla.Transform) -> Optional[carla.Actor]:
+        """
+        Try to spawn an actor safely by attempting multiple height offsets and small XY jitters
+        using world.try_spawn_actor. Returns the actor on success or None if all attempts fail.
+        """
+        if not self.world:
+            return None
+        # Heights (meters) to try to avoid ground collisions; small to large
+        height_offsets = [0.0, 0.2, 0.5, 1.0]
+        # Small xy jitters (meters)
+        xy_jitters = [(0.0, 0.0), (0.2, 0.0), (-0.2, 0.0), (0.0, 0.2), (0.0, -0.2), (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2)]
+
+        for dz in height_offsets:
+            for dx, dy in xy_jitters:
+                try:
+                    t = carla.Transform(
+                        carla.Location(base_transform.location.x + dx,
+                                       base_transform.location.y + dy,
+                                       base_transform.location.z + dz),
+                        base_transform.rotation
+                    )
+                    actor = self.world.try_spawn_actor(bp, t)
+                    if actor is not None:
+                        return actor
+                except Exception:
+                    continue
+        return None
 
     # ---------- Registration ----------
     def _register_methods(self):
@@ -294,12 +326,35 @@ class CarlaXMLRPCServer:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
+                
+                # Set CARLA simulation to passive mode (synchronous mode)
+                settings = self.world.get_settings()
+                settings.synchronous_mode = True
+                settings.fixed_delta_seconds = self.phase
+                self.world.apply_settings(settings)
+                logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
+                
+                # Get current map name
                 try:
                     current_map = self.world.get_map().name
                 except Exception:
                     current_map = "<unknown>"
-                logger.info("Connected to CARLA %s at %s:%s | map=%s",
+                logger.info("Connected to CARLA %s at %s:%s | current map=%s",
                             CARLA_VERSION, self.carla_host, self.carla_port, current_map)
+                
+                # Automatically load Town04 if not already loaded
+                if current_map != "Town04":
+                    logger.info("Current map is not Town04, attempting to load Town04...")
+                    try:
+                        self.world = self.client.load_world("Town04")
+                        new_map = self.world.get_map().name
+                        logger.info("Successfully loaded Town04 map: %s", new_map)
+                    except Exception as load_error:
+                        logger.error("Failed to load Town04 map: %s", load_error)
+                        # Continue with current map if Town04 loading fails
+                        logger.warning("Continuing with current map: %s", current_map)
+                else:
+                    logger.info("Town04 map is already loaded")
                 
                 # Configure TLS manager after successful connection
                 self._configure_tls_manager()
@@ -387,7 +442,7 @@ class CarlaXMLRPCServer:
     # ---------- Actor Lifecycle ----------
     def spawn_actor(self, actor_type: str, actor_id: str,
                     location: List[float], rotation: List[float],
-                    attributes: Dict[str, Any] = None) -> bool:
+                    attributes: Dict[str, Any] = None) -> Union[bool, str]:
         try:
             with self.lock:
                 if not self.is_connected():
@@ -452,18 +507,41 @@ class CarlaXMLRPCServer:
                     loc = carla.Location(lx, ly, lz)
                     rot = carla.Rotation(rp, ry, rr)
                 transform = carla.Transform(loc, rot)
-
-                # Prefer try_spawn_actor to validate location; returns None if blocked/invalid
-                logger.info("[XMLRPC v0.10] spawn_actor received: type=%s id=%s loc=%s rot=%s attrs=%s", actor_type, actor_id, location, rotation, list((attributes or {}).keys()))
-
-                actor = self.world.try_spawn_actor(bp, transform)
+                loc = transform.location
+                rot = transform.rotation
+                
+                print(
+                    f"========spawn_actor received: actor {actor_id} of type {actor_type} "
+                    f"loc=({loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}) "
+                    f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
+                    f"attributes={attributes}========"
+                )
+                print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
+                # Attempt safe spawn with collision avoidance (height offsets and slight jitters)
+                actor = self._safe_try_spawn(bp, transform)
                 if actor is None:
                     logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
                     return False
                 self.actors[actor_id] = actor
-                self.actor_types[actor_id] = getattr(bp, "id", req) or req
+                self.actor_types[actor_id] = actor_type
                 self.actor_blueprints[actor_id] = bp
-                return True
+                
+                # Only switch spectator to the first spawned actor
+                if len(self.actors) == 1:  # Only for the first vehicle
+                    try:
+                        # Switch spectator to follow the first spawned actor with proper offset
+                        # Use the actual actor object for more reliable positioning
+                        self._set_spectator_to_actor_object(actor, 'follow', 8.0, 3.0, -20.0)
+                        print(f"========Spectator switched to follow first actor: {actor_id}========")
+                    except Exception as e:
+                        print(f"Failed to switch spectator to first actor {actor_id}: {e}")
+                        logger.error("Failed to switch spectator to first actor: %s", e)
+                else:
+                    print(f"========Actor {actor_id} spawned (spectator not moved)========")
+                
+                print(f"========spawn_actor success========")
+                # Return the CARLA internal actor ID instead of boolean
+                return str(actor.id)
         except Exception as e:
             logger.error("spawn_actor error: %s", e)
             return False
@@ -1039,6 +1117,51 @@ class CarlaXMLRPCServer:
         return json.dumps([])
 
     # ---------- Spectator Utilities ----------
+    def _set_spectator_to_actor_object(self, actor: carla.Actor, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
+        """
+        Set spectator to follow a specific actor object directly (internal use).
+        This avoids the need to resolve actor by ID and is more reliable.
+        """
+        try:
+            with self.lock:
+                if not self.is_connected():
+                    return False
+                if actor is None:
+                    return False
+                t = actor.get_transform()
+                spectator = self.world.get_spectator()
+                if spectator is None:
+                    return False
+
+                # Ensure minimum values to avoid camera being too close to vehicle
+                back = max(3.0, float(back))  # Minimum 3 meters back
+                up = max(1.0, float(up))      # Minimum 1 meter up
+                pitch = float(pitch)
+
+                preset_l = str(preset).strip().lower()
+                if preset_l == 'topdown':
+                    cam_loc = carla.Location(t.location.x, t.location.y, t.location.z + abs(up))
+                    cam_rot = carla.Rotation(pitch=-90.0, yaw=t.rotation.yaw, roll=0.0)
+                else:  # 'follow' default
+                    try:
+                        # Calculate camera position behind the vehicle
+                        # CARLA uses right-handed coordinate system: +X forward, +Y right, +Z up
+                        yaw_rad = math.radians(t.rotation.yaw)
+                        # Position camera behind the vehicle (opposite to vehicle's forward direction)
+                        dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
+                        dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
+                    except Exception:
+                        dx, dy = -back, 0.0
+                    cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
+                    cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)
+
+                spectator.set_transform(carla.Transform(cam_loc, cam_rot))
+                logger.info("Spectator positioned to actor object: back=%.1f, up=%.1f, pitch=%.1f", back, up, pitch)
+                return True
+        except Exception as e:
+            logger.error("_set_spectator_to_actor_object error: %s", e)
+            return False
+
     def set_spectator_to_actor(self, actor_key: ActorKey, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
         try:
             with self.lock:
@@ -1139,6 +1262,7 @@ def main():
     parser.add_argument('--port', type=int, default=8090)
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
+    parser.add_argument('--phase', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
     parser.add_argument('--tls-manager',
                        type=str,
                        choices=['none', 'sumo', 'carla', 'EVC'],
@@ -1149,7 +1273,7 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.phase)
     try:
         server.start()
     except KeyboardInterrupt:

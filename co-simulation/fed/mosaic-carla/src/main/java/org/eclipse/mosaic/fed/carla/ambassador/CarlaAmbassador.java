@@ -1095,7 +1095,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             Double headingDeg,
             String routeId) {
         return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(timestampNs, vehicleId)
-                .position(projectedPosition.toGeo(), projectedPosition)  // 修复：第一个参数是GeoPoint，第二个是CartesianPoint
+                .position(projectedPosition.toGeo(), projectedPosition)  // Fix: first parameter is GeoPoint, second is CartesianPoint
                 .movement(0.0, 0.0, 0.0)  // External actors don't need speed assignment
                 .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, headingDeg, 0.0)
                 .route(routeId)

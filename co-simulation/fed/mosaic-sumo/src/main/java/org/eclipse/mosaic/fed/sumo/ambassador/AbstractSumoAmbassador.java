@@ -1327,7 +1327,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 }
             
                     try {
-                        // 添加空指针检查 - 检查position是否为null
+                // Add null pointer check - check if position is null
                         if (latestVehicleData.getPosition() == null) {
                             log.warn("VehicleData position is null for external vehicle {}, skipping position update", external.getKey());
                             continue;
@@ -1347,7 +1347,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             // Use a default route and vehicle type for external vehicles
                             String defaultRoute = "default_route";
                             String defaultVehicleType = "DEFAULT_VEHTYPE";
-                            
                             // Ensure default route exists
                             if (!routeCache.containsKey(defaultRoute)) {
                                 // Create a simple default route if it doesn't exist
