@@ -292,7 +292,7 @@ class CarlaXMLRPCServer:
                     self.client = carla.Client(self.carla_host, self.carla_port)
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
-                self._odr_to_tl, self._odr_to_tls = build_light_index(self.world)
+                self._odr_to_tl, self._odr_to_tls, self._tl_id_to_odr = build_light_index(self.world)
 
                 # Freeze all traffic lights
                 #for tl in self.world.get_actors().filter('traffic.traffic_light'):
@@ -652,8 +652,11 @@ class CarlaXMLRPCServer:
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
                     try:
                         state = tl.get_state()
+                        odr = self.tl_to_odr.get(tl.id)
+                        if odr is None:
+                            continue
                         item = {
-                            'opendrive_id': tl.get_opendrive_id(),
+                            'opendrive_id': odr,
                             'state': int(self._tl_state_to_int(state)),
                             'elapsed_time': float(getattr(tl, 'get_elapsed_time', lambda: 0.0)()),
                             'timestamp': ts
@@ -663,7 +666,8 @@ class CarlaXMLRPCServer:
                         try: item['pole_index'] = int(tl.get_pole_index())
                         except Exception: pass
                         out.append(item)
-                    except Exception:
+                    except Exception as e:
+                        logger.error("Error processing traffic light %s: %s", tl.id, e)
                         continue
                 logger.info("Processed get_all_traffic_light_states request.")
                 return out
@@ -990,6 +994,7 @@ class CarlaXMLRPCServer:
 
 def build_light_index(world):
     odr_to_tl = {}
+    tl_id_to_odr = {}
     multi = {}
     mp = world.get_map()
 
@@ -1004,9 +1009,10 @@ def build_light_index(world):
 
         odr = str(lm.id)  # OpenDRIVE signal id
         odr_to_tl.setdefault(odr, tl)
+        tl_id_to_odr[tl.id] = odr
         multi.setdefault(odr, []).append(tl)
 
-    return odr_to_tl, multi
+    return odr_to_tl, multi, tl_id_to_odr
 
 def main():
     parser = argparse.ArgumentParser(description='CARLA XML-RPC Server (Unified)')
