@@ -997,12 +997,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         final long grantTimeNs = interaction.getTime();
         try {
             for (Map.Entry<String, TrafficLightGroupInfo> updatedTrafficLights : interaction.getUpdated().entrySet()) {
-                final String                tlGroupId     = updatedTrafficLights.getKey();
-                final TrafficLightGroupInfo tlGroupInfo   = updatedTrafficLights.getValue();
-                final long                  nextSwitchNs  = tlGroupInfo.getAssumedTimeOfNextSwitch();
-                
-                final List<TrafficLightState> states = tlGroupInfo.getCurrentState();
-                List<String> carlaIds = tlLogicLinkSignals.get(tlGroupId);
+                final String                  tlGroupId     = updatedTrafficLights.getKey();
+                final TrafficLightGroupInfo   tlGroupInfo   = updatedTrafficLights.getValue();
+                final long                    nextSwitchNs  = tlGroupInfo.getAssumedTimeOfNextSwitch();
+                final List<TrafficLightState> states        = tlGroupInfo.getCurrentState();
+                final List<String>            carlaIds      = tlLogicLinkSignals.get(tlGroupId);
 
                 final int n = Math.min(states.size(), carlaIds.size());
                 for (int i = 0; i < n; i++) {
