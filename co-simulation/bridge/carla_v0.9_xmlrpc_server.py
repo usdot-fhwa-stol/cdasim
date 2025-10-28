@@ -84,6 +84,24 @@ class CarlaXMLRPCServer:
         self._register_methods()
         logger.info("XML-RPC methods registered")
 
+    def _apply_sync_settings(self) -> bool:
+        """
+        Ensure CARLA runs in synchronous mode with the configured fixed delta.
+        Must be called after any map/world reload as settings reset on load.
+        """
+        try:
+            if self.world is None:
+                return False
+            settings = self.world.get_settings()
+            settings.synchronous_mode = True
+            settings.fixed_delta_seconds = self.phase
+            self.world.apply_settings(settings)
+            logger.debug("Applied synchronous settings (fixed_delta_seconds=%.3f)", self.phase)
+            return True
+        except Exception as e:
+            logger.error("Failed to apply synchronous settings: %s", e)
+            return False
+
     def _safe_try_spawn(self, bp: carla.ActorBlueprint, base_transform: carla.Transform) -> Optional[carla.Actor]:
         """
         Try to spawn an actor safely by attempting multiple height offsets and small XY jitters
@@ -234,10 +252,7 @@ class CarlaXMLRPCServer:
                 self.world = self.client.get_world()
                 
                 # Set CARLA simulation to passive mode (synchronous mode)
-                settings = self.world.get_settings()
-                settings.synchronous_mode = True
-                settings.fixed_delta_seconds = self.phase
-                self.world.apply_settings(settings)
+                self._apply_sync_settings()
                 logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
                 
                 # Get current map name
@@ -250,6 +265,8 @@ class CarlaXMLRPCServer:
                     logger.info("Current map is not Town04, attempting to load Town04...")
                     try:
                         self.world = self.client.load_world("Town04")
+                        # Re-apply synchronous settings after world reload
+                        self._apply_sync_settings()
                         new_map = self.world.get_map().name
                         logger.info("Successfully loaded Town04 map: %s", new_map)
                     except Exception as load_error:
@@ -993,6 +1010,8 @@ class CarlaXMLRPCServer:
                 
                 # Try to load the map directly
                 self.world = self.client.load_world(map_name)
+                # Re-apply synchronous settings after world reload
+                self._apply_sync_settings()
                 
                 # Verify the map was loaded successfully
                 try:
