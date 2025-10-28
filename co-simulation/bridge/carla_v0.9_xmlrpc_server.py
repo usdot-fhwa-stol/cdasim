@@ -685,11 +685,11 @@ class CarlaXMLRPCServer:
                     print("Traffic light %s not found" % traffic_light_id)
                     return False
 
-                if   state == 'Red':
+                if   state == 'red':
                     tl.set_state(carla.TrafficLightState.Red)
-                elif state == 'Yellow':
+                elif state == 'yellow':
                     tl.set_state(carla.TrafficLightState.Yellow)
-                elif state == 'Green':
+                elif state == 'green':
                     tl.set_state(carla.TrafficLightState.Green)
                 else:
                     return False

@@ -144,11 +144,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private final Set<String> currentActorIds = new HashSet<>();
 
     /**
-     * Mapping of SUMO net tlLogic ids to corresponding phase programs.
-     */
-    private Map<String, Map<String, List<String>>> tlLogicStatesByProgram = new HashMap<>();
-
-    /**
      * Mapping of SUMO net tlLogic ids to CARLA linkSignalID/traffic light ids.
      */
     private Map<String, List<String>> tlLogicLinkSignals = new HashMap<>();
@@ -1004,19 +999,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             for (Map.Entry<String, TrafficLightGroupInfo> updatedTrafficLights : interaction.getUpdated().entrySet()) {
                 final String                tlGroupId     = updatedTrafficLights.getKey();
                 final TrafficLightGroupInfo tlGroupInfo   = updatedTrafficLights.getValue();
-                final String                programId     = tlGroupInfo.getCurrentProgramId();
-                final int                   phaseIndex    = tlGroupInfo.getCurrentPhaseIndex();
                 final long                  nextSwitchNs  = tlGroupInfo.getAssumedTimeOfNextSwitch();
                 
+                final List<TrafficLightState> states = tlGroupInfo.getCurrentState();
                 List<String> carlaIds = tlLogicLinkSignals.get(tlGroupId);
-                List<String> phases   = tlLogicStatesByProgram.get(tlGroupId).get(programId);
-                String phase          = phases.get(phaseIndex);
 
-                final int n = Math.min(phase.length(), carlaIds.size());
+                final int n = Math.min(states.size(), carlaIds.size());
                 for (int i = 0; i < n; i++) {
                     final String carlaId = carlaIds.get(i);
                     if (carlaId == null) continue;
-                    final String color = _charToColor(phase.charAt(i));
+                    final String color = states.get(i).toString().toLowerCase();
 
                     if (multiXmlRpcManager != null) {
                         multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(carlaId, color);
@@ -1035,15 +1027,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
         } catch (NullPointerException e) {
             log.error("Error while evaluating SUMO .net.xml mappings, ensure the .net.xml file in carla_config is valid.", e);
-        }
-    }
-
-    private static String _charToColor(char c) {
-        switch (Character.toLowerCase(c)) {
-            case 'g': case 'p': return "Green";
-            case 'y':           return "Yellow";
-            case 'r':
-            default:            return "Red"; // default to red
         }
     }
 
@@ -1122,8 +1105,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Pareses SUMO .net.xml file to create mappings between tlLogic ids, program ids, state phases 
-     * and CARLA traffic light ids.
+     * Pareses SUMO .net.xml file to create mappings between tlLogic ids
+     * and CARLA traffic light OpenDrive ids.
      * @param netXmlFile Sumo .net.xml file to be parsed.
      * @throws ParseException Exception to be thrown if parsing is unsuccessfull.
      */
@@ -1139,24 +1122,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 Element tl = (Element) tlLogics.item(i);
 
                 final String tlId = tl.getAttribute("id");
-                // programID falls back to 0 (default SUMO value)
-                final String programId = tl.hasAttribute("programID") ? tl.getAttribute("programID") : "0";
-
-                // tlLogic ID -> programID -> phases
-                NodeList phases = tl.getElementsByTagName("phase");
-                List<String> stateList = new ArrayList<>(phases.getLength());
-                for (int p = 0; p < phases.getLength(); p++) {
-                    Element ph = (Element) phases.item(p);
-                    stateList.add(ph.getAttribute("state")); // e.g., "rGyG"
-                }
-                if (!stateList.isEmpty()) {
-                    tlLogicStatesByProgram
-                        .computeIfAbsent(tlId, __ -> new HashMap<>())
-                        .put(programId, Collections.unmodifiableList(stateList));
-                }
 
                 // linkSignalID:i -> CARLA/ODR id mapping
-                if (!tlLogicLinkSignals.containsKey(tlId)) {
+                if (!this.tlLogicLinkSignals.containsKey(tlId)) {
                     NodeList params = tl.getElementsByTagName("param");
                     int maxIndex = -1;
                     Map<Integer, String> tmp = new HashMap<>();
@@ -1180,22 +1148,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             int k = e.getKey();
                             if (k >= 0 && k < ordered.size()) ordered.set(k, e.getValue());
                         }
-                        tlLogicLinkSignals.put(tlId, Collections.unmodifiableList(ordered));
+                        this.tlLogicLinkSignals.put(tlId, Collections.unmodifiableList(ordered));
                     }
                 }
             }
 
-            log.info("Parsed tlLogic states for {} controllers; with programs: {}",
-                    tlLogicStatesByProgram.size(),
-                    tlLogicStatesByProgram.entrySet().stream()
-                            .collect(java.util.stream.Collectors.toMap(
-                                    Map.Entry::getKey,
-                                    e -> e.getValue().keySet())));
-
             log.info("Parsed tlLogic link mappings for {} controllers", tlLogicLinkSignals.size());
 
         } catch (Exception e) {
-            log.error("Failed parsing SUMO .net.xml {}", netXmlFile, e);
+            log.error("Failed parsing SUMO net (should be <netFileName>.net.xml) {}", netXmlFile, e);
         }
     }
 
