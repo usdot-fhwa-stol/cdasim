@@ -217,7 +217,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
      */
     protected boolean sumoCarlaCoSimulation = false;
 
-    protected boolean isTlManager = true;
+    protected boolean isTlManager = false;
 
     /**
      * Creates a new {@link AbstractSumoAmbassador} object.
