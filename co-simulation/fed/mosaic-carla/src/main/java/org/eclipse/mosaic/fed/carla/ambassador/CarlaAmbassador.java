@@ -153,6 +153,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     private boolean initialConnectAttempted = false;
 
+    private volatile boolean frozeCarlaTL = false;
+
+
     /**
      * Creates a new {@link CarlaAmbassador} object.
      *
@@ -333,23 +336,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
             }
         }
-
-        if (!isTlManager) { // freeze all CARLA traffic lights if not TL manager
-            try {
-                if (multiXmlRpcManager != null && multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB)) {
-                    int n = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
-                                            .freezeAllTrafficLights(true);
-                    log.info("Froze {} CARLA traffic lights (CARLA not TL manager).", n);
-                } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
-                    int n = carlaXmlRpcClient.freezeAllTrafficLights(true);
-                    log.info("Froze {} CARLA traffic lights (legacy client).", n);
-                } else {
-                    log.warn("Could not freeze CARLA TLs: ACTOR_LIB not connected.");
-                }
-            } catch (Exception e) {
-                log.error("Failed to freeze CARLA traffic lights", e);
-            }
-        }
     }
 
     /**
@@ -475,21 +461,37 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
         try {
             if (!initialConnectAttempted) {
-            initialConnectAttempted = true;
-            try {
-                if (multiXmlRpcManager != null) {
-                    log.info("[PTAG] attempting multiXmlRpcManager.connectAll(60)...");
-                    multiXmlRpcManager.connectAll(60);
-                } else if (carlaXmlRpcClient != null) {
-                    log.info("[PTAG] attempting single carlaXmlRpcClient.connect(60)...");
-                    carlaXmlRpcClient.connect(60);
-                } else {
-                    log.info("[PTAG] no XML-RPC client(s) configured.");
+                initialConnectAttempted = true;
+                try {
+                    if (multiXmlRpcManager != null) {
+                        log.info("[PTAG] attempting multiXmlRpcManager.connectAll(60)...");
+                        multiXmlRpcManager.connectAll(60);
+                    } else if (carlaXmlRpcClient != null) {
+                        log.info("[PTAG] attempting single carlaXmlRpcClient.connect(60)...");
+                        carlaXmlRpcClient.connect(60);
+                    } else {
+                        log.info("[PTAG] no XML-RPC client(s) configured.");
+                    }
+                } catch (Exception ce) {
+                    log.warn("[PTAG] initial connect failed: {}", ce.toString());
                 }
-            } catch (Exception ce) {
-                log.warn("[PTAG] initial connect failed: {}", ce.toString());
             }
-        }
+            if (!isTlManager && !frozeCarlaTL) {
+                try {
+                    if (multiXmlRpcManager != null) {
+                        int n = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                                                .freezeAllTrafficLights(true);
+                        log.info("Froze {} CARLA traffic lights (CARLA not TL manager).", n);
+                    } else if (carlaXmlRpcClient != null) {
+                        int n = carlaXmlRpcClient.freezeAllTrafficLights(true);
+                        log.info("Froze {} CARLA traffic lights (legacy client).", n);
+                    }
+                    this.frozeCarlaTL = true; // ensure it runs only once
+                } catch (Exception e) {
+                    log.error("Failed to freeze CARLA traffic lights", e);
+                }
+            }
+            
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
