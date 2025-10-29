@@ -1267,6 +1267,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                                     new TrafficLightGroupInfo(groupId, programId, phaseIndex, assumedNextTimeSwitch, states));
                             
                             // Convert states to SUMO-compatible string (e.g., "grgr")
+                            /*
                             StringBuilder stateString = new StringBuilder();
                             for (TrafficLightState state : states) {
                                 if (state.isGreen()) {
@@ -1285,6 +1286,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             log.info("Manual Traffic Light Query at time {}: groupId={}, programId={}, phaseIndex={}, nextSwitchTime={}, state={}",
                                     TIME.format(time), groupId, programId, phaseIndex,
                                     TIME.format(assumedNextTimeSwitch), stateString.toString());
+                            */
                         } catch (InternalFederateException e) {
                             log.warn("Could not query traffic light state for groupId={}", groupId, e);
                         }

@@ -451,8 +451,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
-        log.info("[PTAG] enter: time={} nextTimeStep={} isSimulationStep={}", time, nextTimeStep, isSimulationStep);
-
         if (time < nextTimeStep) {
             log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
@@ -464,10 +462,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 initialConnectAttempted = true;
                 try {
                     if (multiXmlRpcManager != null) {
-                        log.info("[PTAG] attempting multiXmlRpcManager.connectAll(60)...");
                         multiXmlRpcManager.connectAll(60);
                     } else if (carlaXmlRpcClient != null) {
-                        log.info("[PTAG] attempting single carlaXmlRpcClient.connect(60)...");
                         carlaXmlRpcClient.connect(60);
                     } else {
                         log.info("[PTAG] no XML-RPC client(s) configured.");
@@ -501,18 +497,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     if (multiXmlRpcManager != null) {
                         CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                         boolean mgrConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                        log.info("[PTAG] mgrConnected(ACTOR_LIB)={} actorClient!=null={}", mgrConnected, actorClient != null);
                         if (actorClient != null && mgrConnected) {
                             advancedTick = actorClient.advanceSimulation();
                         }
                     } else if (carlaXmlRpcClient != null) {
                         boolean singleConnected = carlaXmlRpcClient.isConnected();
-                        log.info("[PTAG] singleClient type={} connected={}", carlaXmlRpcClient.getServerType(), singleConnected);
                         if (carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB && singleConnected) {
                             advancedTick = carlaXmlRpcClient.advanceSimulation();
                         }
                     }
-                    log.info("[PTAG] advancedTick={}", advancedTick);
                 } catch (Exception e) {
                     log.warn("Failed to advance CARLA simulation tick in processTimeAdvanceGrant: {}", e.getMessage());
                 }
@@ -521,10 +514,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
                     sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                    log.info("[PTAG] mgrConnected(SENSOR_LIB)={}", sensorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
                     sensorConnected = carlaXmlRpcClient.isConnected();
-                    log.info("[PTAG] single SENSOR_LIB connected={}", sensorConnected);
                 }
                 
                 if (sensorConnected) {
@@ -553,10 +544,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean actorConnected = false;
                 if (multiXmlRpcManager != null) {
                     actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                    log.info("[PTAG] mgrConnected(ACTOR_LIB)={}", actorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
                     actorConnected = carlaXmlRpcClient.isConnected();
-                    log.info("[PTAG] single ACTOR_LIB connected={}", actorConnected);
                 }
                 
                 if (actorConnected) {
@@ -614,10 +603,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
                         // Handle traffic lights using Client's change detection
                         if (isTlManager) {
-                            log.info("[PTAG] Processing traffic light state changes for time: {}", time);
                             try {
                                 List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
-                                log.info("[PTAG] buildTlStateChangesFromCarla returned {} changes", (changes == null ? -1 : changes.size()));
                                 for (TrafficLightStateChange c : changes) {
                                     rti.triggerInteraction(c);
                                 }
@@ -634,7 +621,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
 
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
-                log.info("[PTAG] requestAdvanceTime nextTimeStep={}", nextTimeStep);
                 isSimulationStep = false;
                 rti.requestAdvanceTime(nextTimeStep, 0, (byte) 2);
             } else {
@@ -1010,8 +996,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @param interaction TrafficLightStateChange interaction
      */
     private void receiveInteraction(TrafficLightUpdates interaction) {
-        //log.info("Received TrafficLightUpdates interaction for {} traffic lights", interaction.getUpdated().size());
-
         final long grantTimeNs = interaction.getTime();
         try {
             for (Map.Entry<String, TrafficLightGroupInfo> updatedTrafficLights : interaction.getUpdated().entrySet()) {
