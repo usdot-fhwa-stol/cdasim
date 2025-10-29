@@ -334,6 +334,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             }
         }
 
+        if (!isTlManager) { // freeze all CARLA traffic lights if not TL manager
+            try {
+                if (multiXmlRpcManager != null && multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB)) {
+                    int n = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                                            .freezeAllTrafficLights(true);
+                    log.info("Froze {} CARLA traffic lights (CARLA not TL manager).", n);
+                } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
+                    int n = carlaXmlRpcClient.freezeAllTrafficLights(true);
+                    log.info("Froze {} CARLA traffic lights (legacy client).", n);
+                } else {
+                    log.warn("Could not freeze CARLA TLs: ACTOR_LIB not connected.");
+                }
+            } catch (Exception e) {
+                log.error("Failed to freeze CARLA traffic lights", e);
+            }
+        }
     }
 
     /**

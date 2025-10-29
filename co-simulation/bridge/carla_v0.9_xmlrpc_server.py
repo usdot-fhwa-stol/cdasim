@@ -125,6 +125,7 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.get_all_traffic_light_states, 'get_all_traffic_light_states')
         self.server.register_function(self.set_traffic_light_state, 'set_traffic_light_state')
         self.server.register_function(self.set_traffic_light_timer, 'set_traffic_light_timer')
+        self.server.register_function(self.freeze_all_traffic_lights, 'freeze_traffic_lights')
 
         # Sensors
         self.server.register_function(self.create_sensor, 'create_sensor')
@@ -293,10 +294,6 @@ class CarlaXMLRPCServer:
                     self.client.set_timeout(10.0)
                 self.world = self.client.get_world()
                 self._odr_to_tl, self._odr_to_tls, self._tl_id_to_odr = build_light_index(self.world)
-
-                # Freeze all traffic lights
-                # for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                    # tl.freeze(True)
                     
                 logger.info("Connected to CARLA at %s:%s | map=%s",
                             self.carla_host, self.carla_port, self.world.get_map().name)
@@ -728,6 +725,27 @@ class CarlaXMLRPCServer:
         except Exception as e:
             logger.error("set_traffic_light_timer error: %s", e)
             return False
+        
+    def freeze_all_traffic_lights(self, frozen: bool = True) -> int:
+        """
+        Freeze or unfreeze all traffic lights. Returns count of actors updated.
+        """
+        try:
+            with self.lock:
+                if not self.is_connected():
+                    return 0
+                count = 0
+                for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                    try:
+                        tl.freeze(bool(frozen))
+                        count += 1
+                    except Exception as e:
+                        logger.warning("freeze_all_traffic_lights: failed on %s: %s", tl.id, e)
+                logger.info("freeze_all_traffic_lights: set frozen=%s on %d traffic lights", frozen, count)
+                return count
+        except Exception as e:
+            logger.error("freeze_all_traffic_lights error: %s", e)
+            return 0
 
 
     # ---------- Sensors ----------

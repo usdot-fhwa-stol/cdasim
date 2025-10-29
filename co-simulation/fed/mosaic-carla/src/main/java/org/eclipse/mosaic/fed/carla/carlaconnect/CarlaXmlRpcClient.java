@@ -76,6 +76,7 @@ public class CarlaXmlRpcClient {
     private static final String GET_ALL_TRAFFIC_LIGHT_STATES = "get_all_traffic_light_states";
     private static final String SET_TRAFFIC_LIGHT_STATE = "set_traffic_light_state";
     private static final String SET_TRAFFIC_LIGHT_TIMER = "set_traffic_light_timer";
+    private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
     private static final String CREATE_SENSOR = "create_sensor";
@@ -761,6 +762,18 @@ public class CarlaXmlRpcClient {
         } catch (Exception e) {
             log.error("Failed to set traffic light timer for {} to {}s: {}", trafficLightId, timeSeconds, e.getMessage());
             return false;
+        }
+    }
+
+    public int freezeAllTrafficLights(boolean frozen) {
+        try {
+            Object result = executeWithRetry(FREEZE_ALL_TRAFFIC_LIGHTS, new Object[]{frozen}, DEFAULT_RETRY_ATTEMPTS);
+            if (result instanceof Integer) return (Integer) result;
+            if (result instanceof Number)  return ((Number) result).intValue();
+            return 0;
+        } catch (Exception e) {
+            log.error("Failed to freeze-all TLs ({}): {}", frozen, e.getMessage());
+            return 0;
         }
     }
 
