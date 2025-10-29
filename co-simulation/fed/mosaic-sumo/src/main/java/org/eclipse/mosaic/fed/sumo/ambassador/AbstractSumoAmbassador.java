@@ -824,6 +824,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     return;
             }
 
+            if (!isTlManager) return; // Do not publish updates if not traffic light manager
             String programId = traci.getTrafficLightControl().getCurrentProgram(trafficLightGroupId);
             int phaseIndex = traci.getTrafficLightControl().getCurrentPhase(trafficLightGroupId);
             long assumedNextTimeSwitch = (long) (traci.getTrafficLightControl().getNextSwitchTime(trafficLightGroupId)
