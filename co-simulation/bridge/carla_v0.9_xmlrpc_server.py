@@ -125,7 +125,7 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.get_all_traffic_light_states, 'get_all_traffic_light_states')
         self.server.register_function(self.set_traffic_light_state, 'set_traffic_light_state')
         self.server.register_function(self.set_traffic_light_timer, 'set_traffic_light_timer')
-        self.server.register_function(self.freeze_all_traffic_lights, 'freeze_traffic_lights')
+        self.server.register_function(self.freeze_all_traffic_lights, 'freeze_all_traffic_lights')
 
         # Sensors
         self.server.register_function(self.create_sensor, 'create_sensor')

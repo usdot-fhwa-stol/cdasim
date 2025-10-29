@@ -1229,6 +1229,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             if (firstAdvanceTime) {
                 initTraci();
                 initializeTrafficLights(time);
+                if (!isTlManager) this.freezeAllTrafficLightsInSumo();
                 firstAdvanceTime = false;
             }
 
@@ -1446,6 +1447,44 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         Interaction stlRegistration = new ScenarioTrafficLightRegistration(time, tlgs, tlgLaneMap);
         rti.triggerInteraction(stlRegistration);
     }
+
+    /**
+     * Freeze all SUMO traffic lights by setting every signal head to OFF.
+     * Uses TraCI setPhase(...) with a custom state list sized to each group.
+     */
+    private void freezeAllTrafficLightsInSumo() {
+        try {
+            final java.util.List<String> tlgIds = traci.getSimulationControl().getTrafficLightGroupIds();
+            if (tlgIds == null || tlgIds.isEmpty()) {
+                log.info("freezeAllTrafficLightsInSumo: no traffic light groups found.");
+                return;
+            }
+
+            for (String groupId : tlgIds) {
+                try {
+                    final java.util.List<TrafficLightState> current =
+                            traci.getTrafficLightControl().getCurrentStates(groupId);
+                    if (current == null || current.isEmpty()) {
+                        log.debug("freezeAllTrafficLightsInSumo: group {} has no states; skipping.", groupId);
+                        continue;
+                    }
+
+                    final int n = current.size();
+                    final java.util.List<TrafficLightState> offStates =
+                            new java.util.ArrayList<>(java.util.Collections.nCopies(n, TrafficLightState.OFF));
+
+                    // Apply the custom OFF state in one shot
+                    traci.getTrafficLightControl().setPhase(groupId, offStates);
+                    log.info("Froze SUMO TL group {} ({} signals) -> OFF", groupId, n);
+                } catch (Exception perGroup) {
+                    log.warn("freezeAllTrafficLightsInSumo: failed for group {}: {}", groupId, perGroup.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("freezeAllTrafficLightsInSumo: TraCI error", e);
+        }
+    }
+
 
     /**
      * Find the first configuration file.

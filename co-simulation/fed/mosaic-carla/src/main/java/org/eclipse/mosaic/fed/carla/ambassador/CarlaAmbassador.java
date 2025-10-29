@@ -491,7 +491,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.error("Failed to freeze CARLA traffic lights", e);
                 }
             }
-            
+
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             if (isSimulationStep) {
