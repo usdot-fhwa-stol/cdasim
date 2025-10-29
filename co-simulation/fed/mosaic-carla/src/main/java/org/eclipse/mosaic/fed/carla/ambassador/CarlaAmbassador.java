@@ -108,7 +108,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     boolean isSimulationStep = false;
 
-    boolean isTlManager = true;
+    boolean isTlManager = false;
 
     /**
      * Sleep after each connection try. Unit: [ms].
