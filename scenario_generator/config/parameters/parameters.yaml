@@ -1,0 +1,132 @@
+# parameters.yaml
+# Multiple simulation scenarios
+
+test_cases:
+  - label: intersection_basic
+    runtime_seconds: 90
+    env_settings:
+      cdasim:
+        PROJECT_NAME: cdasim
+        RUNTIME_IMAGE_ORG: usdotfhwastol
+        RUNTIME_IMAGE_TAG: carma-system-4.10.0
+        CONFIG_IMAGE_FULL: usdotfhwastol/cdasim-config:carma-system-4.10.0
+        settings:
+          MAP: Town04
+
+      vehicles:
+        - PROJECT_NAME: vehicle1
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.11.0-23-g06a1723-development
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.11.0-23-g06a1723-development
+          settings:
+            ROUTE: north_route
+            START_TIME: 12
+            SPAWN_POSITION:
+              x: 10.0
+              y: 20.0
+              z: 0.0
+              yaw: 90.0
+              roll: 0.0
+              pitch: 0.0
+
+        - PROJECT_NAME: vehicle2
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.11.0-23-g06a1723-development
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.11.0-23-g06a1723-development
+          settings:
+            ROUTE: south_route
+            START_TIME: 15
+            SPAWN_POSITION:
+              x: 30.0
+              y: -20.0
+              z: 0.0
+              yaw: 270.0
+              roll: 0.0
+              pitch: 0.0
+
+      streets:
+        - PROJECT_NAME: street1
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.10.0
+          CONFIG_IMAGE_FULL: usdotfhwastol/street-config:carma-system-4.10.0
+          settings:
+            EVC:
+              enable: true
+              snmp_port: 5001
+            SPAWN_POSITION:
+              x: 0.0
+              y: 200.0
+              z: 0.0
+              yaw: 90.0
+
+        - PROJECT_NAME: street2
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.10.0
+          CONFIG_IMAGE_FULL: usdotfhwastol/street-config:carma-system-4.10.0
+          settings:
+            EVC:
+              enable: false
+              snmp_port: null
+            SENSORS:
+              enable: true
+              sensorId: "lidar_north"
+              type: "SemanticLidarSensor"
+            SPAWN_POSITION:
+              x: 100.0
+              y: 0.0
+              z: 0.0
+              yaw: 180.0
+
+  - label: highway_merge
+    runtime_seconds: 180
+    env_settings:
+      cdasim:
+        PROJECT_NAME: cdasim
+        RUNTIME_IMAGE_ORG: usdotfhwastol
+        RUNTIME_IMAGE_TAG: carma-system-4.10.0
+        CONFIG_IMAGE_FULL: usdotfhwastol/cdasim-config:carma-system-4.10.0
+        settings:
+          MAP: Highway
+
+      vehicles:
+        - PROJECT_NAME: ego_vehicle
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.11.0-23-g06a1723-development
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.11.0-23-g06a1723-development
+          settings:
+            ROUTE: merge_lane
+            START_TIME: 5
+            SPAWN_POSITION:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+              yaw: 0.0
+
+        - PROJECT_NAME: lead_vehicle
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.11.0-23-g06a1723-development
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.11.0-23-g06a1723-development
+          settings:
+            ROUTE: main_lane
+            START_TIME: 0
+            SPAWN_POSITION:
+              x: 50.0
+              y: 0.0
+              z: 0.0
+              yaw: 0.0
+
+      streets:
+        - PROJECT_NAME: ramp_sensor
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.10.0
+          CONFIG_IMAGE_FULL: usdotfhwastol/street-config:carma-system-4.10.0
+          settings:
+            SENSORS:
+              enable: true
+              sensorId: "ramp_lidar"
+              type: "SemanticLidarSensor"
+            SPAWN_POSITION:
+              x: -20.0
+              y: 10.0
+              z: 0.0
+              yaw: 45.0
