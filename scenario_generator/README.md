@@ -1,78 +1,140 @@
-# CDASim Scenario Generator
+# CDASim Scenario Runner
 
-The CDASim Scenario Generator automates Docker Compose deployments for CDASim, CARMA Streets, and vehicle services in simulation runs. The scenario_generator.py script reads a parameter.yaml file to create a sim_launch.sh bash script and .env files, streamlining setup.
-Installation
-# Prerequisites
-* Python 3.x with required packages:
-```sh
+The **CDASim Scenario Runner** automates execution of **multiple
+simulation test cases** defined in `parameters.yaml`.\
+It generates `sim_start.sh` / `sim_stop.sh`, launches scenarios, waits
+for their runtime, and cleans everything --- all inside a single
+isolated `tmp/` directory.
+
+
+------------------------------------------------------------------------
+
+## Prerequisites
+
+``` bash
+# Python packages
 python3 -m pip install pyyaml jinja2
+
+# Docker + Docker Compose
+sudo apt-get install docker.io docker-compose
 ```
 
-* Docker and Docker Compose installed.
+------------------------------------------------------------------------
 
-* Pre-existing docker-compose.yml files in:
-  * **`cdasim_config_dir`** (e.g., **`/path/to/cdasim-config`**)
-  * **`street_config_dir`** (e.g., **`/path/to/carma-street`**)
-  * **`carma_config_dir`** (e.g., **`/path/to/carma-config/basic_sim_vehicle`**)
+## Project Structure
 
+    ├── scenario_runner.py
+    ├── scenario_generator.py
+    └── config/
+        └── parameters/
+            └── parameters.yaml
+        └── templates/
+            ├── sim_start_template.sh.j2
+            └── sim_stop_template.sh.j2
 
+------------------------------------------------------------------------
 
-# Setup Files
+## parameters.yaml -- Define Your Test Cases
 
-**1.** Place the files in the following directory:
-* **`generate_scenario.py`**
-* **`config/templates/sim_launch_template.sh.j2`**
-* **`config/parameters/parameter.yaml`**
+``` yaml
+test_cases:
+  - label: intersection_basic
+    runtime_seconds: 90
+    env_settings:
+      cdasim:
+        PROJECT_NAME: cdasim
+        RUNTIME_IMAGE_ORG: usdotfhwastol
+        RUNTIME_IMAGE_TAG: carma-system-4.10.0
+        CONFIG_IMAGE_FULL: usdotfhwastol/cdasim-config:carma-system-4.10.0
+        settings:
+          MAP: Town04
 
+      vehicles:
+        - PROJECT_NAME: vehicle1
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.11.0-23-g06a1723-development
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.11.0-23-g06a1723-development
+          settings:
+            ROUTE: north_route
+            START_TIME: 12
+            SPAWN_POSITION: {x: 10.0, y: 20.0, z: 0.0, yaw: 90.0}
 
+      streets:
+        - PROJECT_NAME: street1
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.10.0
+          CONFIG_IMAGE_FULL: usdotfhwastol/street-config:carma-system-4.10.0
+          settings:
+            EVC: {enable: true, snmp_port: 5001}
 
-**2.** Configure **`config.yaml`**
+  - label: highway_merge
+    runtime_seconds: 180
+    env_settings:
+      cdasim:
+        PROJECT_NAME: cdasim
+        RUNTIME_IMAGE_ORG: usdotfhwastol
+        RUNTIME_IMAGE_TAG: carma-system-4.10.0
+        CONFIG_IMAGE_FULL: usdotfhwastol/cdasim-config:carma-system-4.10.0
+        settings:
+          MAP: Highway
 
-* Edit **`parameter.yaml`** to specify directory paths and environment settings. Example:
-```yaml
-cdasim_config_dir: /path/to/cdasim-config
-street_config_dir: /path/to/carma-street
-carma_config_dir: /path/to/carma-config/basic_sim_vehicle
-env_settings:
-  cdasim:
-    DOCKER_ORG: usdotfhwastol
-    DOCKER_TAG: carma-system-4.10.0
-    PROJECT_NAME: cdasim
-  vehicles:
-    - PROJECT_NAME: vehicle1
-      CARMA_CONFIG_PATH: /path/to/carma-config
-      DOCKER_ORG: usdotfhwastol
-      DOCKER_TAG: carma-system-4.10.0
-    - PROJECT_NAME: vehicle2
-      CARMA_CONFIG_PATH: /path/to/carma-config
-      DOCKER_ORG: usdotfhwastol
-      DOCKER_TAG: carma-system-4.10.0
-  streets:
-    - PROJECT_NAME: street1
-      DOCKER_ORG: usdotfhwastol
-      DOCKER_TAG: carma-system-4.10.0
-    - PROJECT_NAME: street2
-      DOCKER_ORG: usdotfhwastol
-      DOCKER_TAG: carma-system-4.10.0
+      vehicles:
+        - PROJECT_NAME: ego_vehicle
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.11.0-23-g06a1723-development
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.11.0-23-g06a1723-development
+          settings:
+            ROUTE: merge_lane
+            START_TIME: 5
+            SPAWN_POSITION: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}
+
+      streets:
+        - PROJECT_NAME: ramp_sensor
+          RUNTIME_IMAGE_ORG: usdotfhwastol
+          RUNTIME_IMAGE_TAG: carma-system-4.10.0
+          CONFIG_IMAGE_FULL: usdotfhwastol/street-config:carma-system-4.10.0
+          settings:
+            SENSORS:
+              enable: true
+              sensorId: "ramp_lidar"
+              type: "SemanticLidarSensor"
+            SPAWN_POSITION: {x: -20.0, y: 10.0, z: 0.0, yaw: 45.0}
 ```
 
-* Replace placeholder paths (e.g., /path/to/carma-config) with actual paths.
+------------------------------------------------------------------------
 
-# Usage
+## Usage
 
-**1.** Generate FilesRun the Python script to create the bash script and .env files:
-```sh
-python generate_scenario.py
+### Run All Test Cases
+
+``` bash
+python3 scenario_runner.py
 ```
-* **`sim_launch.sh`** in the current directory
-* **`.env.cdasim`** in **`cdasim_config_dir`**
-* **`.env.vehicle_1`**, **`.env.vehicle_2`**, etc., in **`carma_config_dir`**
-* **`.env.street_1`**, **`.env.street_2`**, etc., in **`street_config_dir`**
+
+------------------------------------------------------------------------
+
+## What Happens
+
+1.  Creates `tmp/`
+2.  Generates required scripts + configs
+3.  Runs start script
+4.  Waits for runtime
+5.  Runs stop script
+6.  Cleans `tmp/`
+
+------------------------------------------------------------------------
+
+## Example Output
+
+    === Scenario 1: intersection_basic ===
+    Generated tmp/parameter.yaml
+    Generated tmp/sim_start.sh
+    Generated tmp/sim_stop.sh
+    Launching: tmp/sim_start.sh
+    Running for 90 seconds...
+    Stopping: tmp/sim_stop.sh
+    Cleaned tmp
+
+------------------------------------------------------------------------
 
 
-**2.** Run the Bash Script
-
-Execute the generated script:
-```sh
-./sim_launch.sh
-```
