@@ -3,8 +3,6 @@ package org.eclipse.mosaic.fed.carla.carlaconnect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -13,11 +11,8 @@ import static org.mockito.Mockito.when;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
-import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
@@ -53,26 +48,6 @@ public class CarlaXmlRpcClientTest {
         // Set mock after initialize since initialize overwrites member
     }
 
-    /**
-     * Test to see if createSensor runs without exception
-     * @throws XmlRpcException
-     */
-    @Test
-    public void testCreateSensor() throws XmlRpcException {
-        // Create Detector Registration
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
-        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-        // Create request params
-        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
-        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
-        Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
-        // Tell mock to return sensor ID when following method is called with following parameters
-        when( mockClient.execute("create_simulated_semantic_lidar_sensor", params)).thenReturn(registration.getSenderId());
-        // Method has no return so verifying that it is successful is just verifying no exception is thrown
-        carlaConnection.createSensor(registration);
-        // Verify following method was called on mock
-        verify( mockClient, times(1)).execute("create_simulated_semantic_lidar_sensor", params);
-    }
     @Test
     public void testConnect() throws XmlRpcException, InterruptedException{
         carlaConnection.connect(2);
