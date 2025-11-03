@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,9 +75,6 @@ public class CarlaXmlRpcClient {
     private static final String SET_TRAFFIC_LIGHT_TIMER = "set_traffic_light_timer";
     
     // Sensors
-    private static final String CREATE_SENSOR = "create_sensor";
-    private static final String DESTROY_SENSOR = "destroy_sensor";
-    private static final String GET_SENSOR_DATA = "get_sensor_data";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
     // Maps
@@ -784,88 +780,6 @@ public class CarlaXmlRpcClient {
         } catch (Exception e) {
             log.error("Failed to send V2X message to {}: {}", receiverId, e.getMessage());
             return false;
-        }
-    }
-
-    /**
-     * Create a sensor
-     * @param sensorType Type of sensor
-     * @param sensorId Unique ID for the sensor
-     * @param location Location [x, y, z]
-     * @param rotation Rotation [pitch, yaw, roll]
-     * @param attributes Additional attributes
-     * @return true if successful
-     */
-    public boolean createSensor(String sensorType, String sensorId, List<Double> location, 
-                               List<Double> rotation, Map<String, Object> attributes) {
-        try {
-            Object[] params = new Object[]{sensorType, sensorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
-            Object result = executeWithRetry(CREATE_SENSOR, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.error("Failed to create sensor {} of type {}: {}", sensorId, sensorType, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Create sensor from DetectorRegistration (backward compatibility)
-     * @param registration DetectorRegistration interaction
-     * @throws XmlRpcException if creation fails
-     */
-    public void createSensor(DetectorRegistration registration) throws XmlRpcException {
-        List<Double> location = Arrays.asList(
-            registration.getDetector().getLocation().getX(),
-            registration.getDetector().getLocation().getY(),
-            registration.getDetector().getLocation().getZ()
-        );
-        List<Double> orientation = Arrays.asList(
-            registration.getDetector().getOrientation().getPitch(),
-            registration.getDetector().getOrientation().getRoll(),
-            registration.getDetector().getOrientation().getYaw()
-        );
-        
-        if (createSensor("sensor.camera.rgb", registration.getDetector().getSensorId(), location, orientation, null)) {
-            log.info("Created sensor: {}", registration.getDetector().getSensorId());
-        } else {
-            throw new XmlRpcException("Failed to create sensor: " + registration.getDetector().getSensorId());
-        }
-    }
-
-    /**
-     * Destroy a sensor
-     * @param sensorKey Sensor ID or name
-     * @return true if successful
-     */
-    public boolean destroySensor(Object sensorKey) {
-        try {
-            Object[] params = new Object[]{sensorKey};
-            Object result = executeWithRetry(DESTROY_SENSOR, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.error("Failed to destroy sensor {}: {}", sensorKey, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Get sensor data
-     * @param sensorKey Sensor ID or name
-     * @return Sensor data as Map, or null if failed
-     */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> getSensorData(Object sensorKey) {
-        try {
-            Object[] params = new Object[]{sensorKey};
-            Object result = executeWithRetry(GET_SENSOR_DATA, params, DEFAULT_RETRY_ATTEMPTS);
-            
-            if (result instanceof Map) {
-                return (Map<String, Object>) result;
-            }
-            return null;
-        } catch (Exception e) {
-            log.error("Failed to get sensor data for {}: {}", sensorKey, e.getMessage());
-            return null;
         }
     }
 

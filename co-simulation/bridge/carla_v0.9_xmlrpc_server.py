@@ -169,9 +169,6 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.set_traffic_light_timer, 'set_traffic_light_timer')
 
         # Sensors
-        self.server.register_function(self.create_sensor, 'create_sensor')
-        self.server.register_function(self.destroy_sensor, 'destroy_sensor')
-        self.server.register_function(self.get_sensor_data, 'get_sensor_data')
         self.server.register_function(self.get_detected_objects, 'get_detected_objects')
 
         # Spectator / camera utilities
@@ -767,47 +764,6 @@ class CarlaXMLRPCServer:
             return False
 
     # ---------- Sensors ----------
-    def create_sensor(self, sensor_type: str, sensor_id: str,
-                      location: List[float], rotation: List[float],
-                      attributes: Dict[str, Any] = None) -> bool:
-        try:
-            with self.lock:
-                if not self.is_connected(): return False
-                if sensor_id in self.sensors: return False
-                bp = self.world.get_blueprint_library().find(sensor_type)
-                if not bp: return False
-                if attributes:
-                    for k, v in attributes.items():
-                        if bp.has_attribute(k): bp.set_attribute(k, str(v))
-                transform = carla.Transform(
-                    carla.Location(*[float(v) for v in location]),
-                    carla.Rotation(*[float(v) for v in rotation])
-                )
-                sensor = self.world.spawn_actor(bp, transform)
-                sensor.listen(lambda data, sid=sensor_id: self._sensor_callback(sid, data))
-                self.sensors[sensor_id] = sensor
-                self.sensor_data[sensor_id] = None
-                self.sensor_blueprints[sensor_id] = bp
-                return True
-        except Exception as e:
-            logger.error("create_sensor error: %s", e)
-            return False
-
-    def destroy_sensor(self, sensor_key: SensorKey) -> bool:
-        try:
-            with self.lock:
-                alias, sensor = self._resolve_sensor(sensor_key)
-                if sensor is None: return False
-                sensor.destroy()
-                if alias is not None:
-                    self.sensors.pop(alias, None)
-                    self.sensor_data.pop(alias, None)
-                    self.sensor_blueprints.pop(alias, None)
-                return True
-        except Exception as e:
-            logger.error("destroy_sensor error: %s", e)
-            return False
-
     def _sensor_callback(self, alias_key: str, data: Any):
         try:
             with self.lock:
@@ -878,16 +834,6 @@ class CarlaXMLRPCServer:
         except Exception as e:
             logger.error("sensor_callback error: %s", e)
             self.sensor_data[alias_key] = {'error': str(e), 'timestamp': time.time(), 'sensor_id': -1}
-
-    def get_sensor_data(self, sensor_key: SensorKey) -> Optional[Dict[str, Any]]:
-        try:
-            with self.lock:
-                alias, _ = self._resolve_sensor(sensor_key)
-                if alias is None or alias not in self.sensor_data: return None
-                return self.sensor_data[alias]
-        except Exception as e:
-            logger.error("get_sensor_data error: %s", e)
-            return None
 
     def get_detected_objects(self, infrastructure_id: str, sensor_key: SensorKey) -> str:
         # Placeholder: return empty JSON array

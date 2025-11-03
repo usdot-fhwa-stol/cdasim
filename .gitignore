@@ -1,4 +1,5 @@
 CARLA_*.tar.gz
 .idea/
 .vscode/
+.pyc
 # co-simulation/bridge/manual_control.py

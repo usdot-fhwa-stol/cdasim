@@ -328,32 +328,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } catch (MalformedURLException m) {
                 throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!");
             }
-        } else {
-            // Legacy single connection mode
-            if (carlaXmlRpcClient == null) {
-                // For CARLA Sensor Lib Connection
-                if (carlaConfig.carlaSensorLibRPCUrl != null){
-                    try {
-                        URL xmlRpcServerUrl = new URL(carlaConfig.carlaSensorLibRPCUrl);
-                        carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl, CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                    } catch (MalformedURLException m) {
-                        throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
-                            + "connection! Check carla_config.json!", m);
-                    }
-                }
-
-                // For CARLA Actor Lib Connection
-                if (carlaConfig.carlaActorLibRPCUrl != null){
-                    try {
-                        URL xmlRpcServerUrl = new URL(carlaConfig.carlaActorLibRPCUrl);
-                        carlaXmlRpcClient = new CarlaXmlRpcClient(xmlRpcServerUrl, CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                    } catch (MalformedURLException m) {
-                        throw new InternalFederateException("Carla Ambassador initialization failed due to CARLA CDA Sim Adapter"
-                            + "connection! Check carla_config.json!", m);
-                    }
-                }
-            }
-        }
+        } 
         loadConfiguredMap();
 
 
@@ -722,21 +697,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
 
     // /**
 
-    /**
-     * Internal method to trigger simulation step coordination.
-     * This replaces the external SimulationStep interaction with internal logic.
-     */
-    private void triggerInternalSimulationStep() {
-        // Set simulation step flag to trigger state updates and time advancement
-        
-        // Optionally, we can still trigger a SimulationStep interaction for other federates
-        // that might need to know about simulation advancement
-        try {
-            rti.triggerInteraction(new SimulationStep(this.nextTimeStep));
-        } catch (Exception e) {
-            log.warn("Failed to trigger SimulationStep interaction: {}", e.getMessage());
-        }
-    }
 
     /**
      * Read SUMO netOffset from environment or scenario config if available.
@@ -1139,10 +1099,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Processing CarlaV2xMessageReception interaction");
             this.receiveInteraction((CarlaV2xMessageReception) interaction);
         }
-        else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
-            log.info("Processing DetectorRegistration interaction");
-            this.receiveInteraction((DetectorRegistration) interaction);
-        }
         else if (interaction.getTypeId().equals(VehicleUpdates.TYPE_ID)) {
             log.info("Processing VehicleUpdates interaction - this should trigger spawn_actor calls");
             this.receiveInteraction((VehicleUpdates) interaction);
@@ -1155,37 +1111,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.debug("Ignoring interaction of type: {}", type);
         }
     }
-
-    /**
-     * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
-     * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
-     * @throws InterruptedException
-     */
-    private void receiveInteraction(DetectorRegistration interaction) {
-        boolean sensorConnected = false;
-        if (multiXmlRpcManager != null) {
-            sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
-            sensorConnected = carlaXmlRpcClient.isConnected();
-        }
-        
-        if (sensorConnected) {
-            try {
-                if (multiXmlRpcManager != null) {
-                    multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB).createSensor(interaction);
-                } else {
-                    carlaXmlRpcClient.createSensor(interaction);
-                }
-                registeredDetectors.add(interaction);
-            }
-            catch(XmlRpcException e) {
-                log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
-            }
-        } else {
-            log.warn("Sensor server not connected, cannot create sensor: {}", interaction.getDetector().getSensorId());
-        }
-    }
-
 
     /**
      * Synchronize CARLA with SUMO vehicle updates.
