@@ -289,28 +289,6 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 - Gson for JSON processing
 - MOSAIC RTI API
 
-## License
-2025-10-23 19:21:27,975 DEBUG CarlaXmlRpcClient:675 - getAllActorsExcludingSumo: 3 total actors, 1 after filtering SUMO vehicles
-2025-10-23 19:21:27,975 DEBUG CarlaAmbassador:1239 - Current CARLA actors (excluding SUMO): 1
-2025-10-23 19:21:27,975 DEBUG CarlaAmbassador:1305 - SUMO vehicle 'veh_0' already exists in mapping with CARLA ID '207', skipping spawn
-2025-10-23 19:21:27,975 DEBUG CarlaAmbassador:1305 - SUMO vehicle 'veh_1' already exists in mapping with CARLA ID '208', skipping spawn
-2025-10-23 19:21:27,975 DEBUG CarlaAmbassador:1459 - Successfully updated CARLA actor '207' (SUMO: 'veh_0') transform (speed: 0.0 m/s)
-2025-10-23 19:21:27,976 DEBUG CarlaAmbassador:1459 - Successfully updated CARLA actor '208' (SUMO: 'veh_1') transform (speed: 0.0 m/s)
-2025-10-23 19:21:27,977 DEBUG CarlaXmlRpcClient:671 - Excluding SUMO-managed actor '207' from getAllActors result
-2025-10-23 19:21:27,977 DEBUG CarlaXmlRpcClient:671 - Excluding SUMO-managed actor '208' from getAllActors result
-2025-10-23 19:21:27,977 DEBUG CarlaXmlRpcClient:675 - getAllActorsExcludingSumo: 3 total actors, 1 after filtering SUMO vehicles
-2025-10-23 19:21:27,977 DEBUG CarlaXmlRpcClient:1080 - getActorChanges: Retrieved 1 current actors (excluding SUMO-managed)
-2025-10-23 19:21:27,977 DEBUG CarlaXmlRpcClient:1120 - getActorChanges: Found added=0, updated=1, removed=0
-2025-10-23 19:21:27,977 INFO  CarlaXmlRpcClient:1122 - Actor changes: added=0, updated=1, removed=0
-2025-10-23 19:21:27,977 INFO  CarlaAmbassador:474 - EXTERNAL VEHICLE DETECTION: Detected changes - Added: 0, Updated: 1, Removed: 0
-2025-10-23 19:21:27,977 INFO  CarlaAmbassador:476 - SUMO->CARLA MAPPING: Currently tracking 2 SUMO vehicles
-2025-10-23 19:21:27,977 INFO  CarlaAmbassador:487 - EXTERNAL VEHICLE UPDATED: Actor ID=209, Info={type=vehicle.tesla.model3, transform={rotation=[Ljava.lang.Object;@66420549, location=[Ljava.lang.Object;@15dc339f}, id=209}
-2025-10-23 19:21:27,977 DEBUG CarlaAmbassador:848 - Converting CARLA actor '209' with data: {type=vehicle.tesla.model3, transform={rotation=[Ljava.lang.Object;@66420549, location=[Ljava.lang.Object;@15dc339f}, id=209}
-2025-10-23 19:21:27,977 DEBUG CarlaAmbassador:1029 - Converting CARLA position to SUMO: carlaX=316.15753173828125, carlaY=-172.0, yawDeg=-2.1362301777116954E-4, extentX=null
-2025-10-23 19:21:27,977 DEBUG CarlaAmbassador:1051 - Applied netOffset: offsetX=503.02, offsetY=423.76, xWithOffset=819.1775317382812, yWithOffset=-595.76
-2025-10-23 19:21:27,977 DEBUG CarlaAmbassador:1059 - Final SUMO coordinates: sumoX=819.1775317382812, sumoY=595.76, sumoZ=0.042643431574106216
-2025-10-23 19:21:27,977 INFO  CarlaAmbassador:560 - CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added=0, updated=1, removed=0
-
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
