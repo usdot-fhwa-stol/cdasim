@@ -74,16 +74,6 @@ class CarlaXMLRPCServer:
         self.sensor_data: Dict[str, Any] = {}
         self.sensor_blueprints: Dict[str, carla.ActorBlueprint] = {}
 
-
-        # External-to-CARLA coordinate transform settings (SUMO/MOSAIC frame → CARLA frame)
-        # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
-        # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
-        self.input_frame: str = 'sumo'
-        self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
-
-        # Default extent_x for vehicle center calculation
-        self.default_extent_x = 2.0
-
         self.server = SimpleXMLRPCServer(
             (host, port),
             requestHandler=SimpleXMLRPCRequestHandler,
@@ -845,75 +835,43 @@ class CarlaXMLRPCServer:
             return None
 
     def set_actor_state_properties(self, actor_key: ActorKey, properties_to_set: Dict[str, Any]) -> bool:
-        try:
-            
-                actor = self._resolve_actor(actor_key)
-                if actor is None: return False
+        actor = self._resolve_actor(actor_key)
+        if actor is None: return False
+        t_in = properties_to_set.get('transform')
+        if t_in:
+            loc_dict = t_in.get('location', {})
+            rot_dict = t_in.get('rotation', {})
+            loc_seq = [loc_dict.get('x', 0.0), loc_dict.get('y', 0.0), loc_dict.get('z', 0.0)]
+            rot_seq = [rot_dict.get('pitch', 0.0), rot_dict.get('yaw', 0.0), rot_dict.get('roll', 0.0)]
+            lx = float(loc_seq[0]); ly = float(loc_seq[1]); lz = float(loc_seq[2]) if len(loc_seq) > 2 else 0.0
+            rp = float(rot_seq[0]) if len(rot_seq) > 0 else 0.0
+            ry = float(rot_seq[1]) if len(rot_seq) > 1 else 0.0
+            rr = float(rot_seq[2]) if len(rot_seq) > 2 else 0.0
+            loc = carla.Location(lx, ly, lz)
+            rot = carla.Rotation(rp, ry, rr)
+            transform = carla.Transform(loc, rot)
+            actor.set_transform(transform)
 
-                t_in = properties_to_set.get('transform')
-                if t_in:
-                    loc_dict = t_in.get('location', {})
-                    rot_dict = t_in.get('rotation', {})
-                    loc_seq = [loc_dict.get('x', 0.0), loc_dict.get('y', 0.0), loc_dict.get('z', 0.0)]
-                    rot_seq = [rot_dict.get('pitch', 0.0), rot_dict.get('yaw', 0.0), rot_dict.get('roll', 0.0)]
-                    
-                    # Get vehicle extent for proper center calculation
-                    extent_x = 0.0
-                    if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
-                        extent_x = float(actor.bounding_box.extent.x)
-                    
-                    if self.input_frame == 'sumo':
-                        loc = self._to_carla_location(loc_seq, rot_seq, extent_x)
-                        rot = self._to_carla_rotation(rot_seq)
-                    else:
-                        try:
-                            lx = float(loc_seq[0]); ly = float(loc_seq[1]); lz = float(loc_seq[2]) if len(loc_seq) > 2 else 0.0
-                        except Exception as e:
-                            logger.exception("Error converting location in set_actor_state_properties (loc_seq=%s): %s", loc_seq, e)
-                            lx, ly, lz = 0.0, 0.0, 0.0
-                        try:
-                            rp = float(rot_seq[0]) if len(rot_seq) > 0 else 0.0
-                            ry = float(rot_seq[1]) if len(rot_seq) > 1 else 0.0
-                            rr = float(rot_seq[2]) if len(rot_seq) > 2 else 0.0
-                        except Exception as e:
-                            logger.exception("Error converting rotation in set_actor_state_properties (rot_seq=%s): %s", rot_seq, e)
-                            rp, ry, rr = 0.0, 0.0, 0.0
-                        loc = carla.Location(lx, ly, lz)
-                        rot = carla.Rotation(rp, ry, rr)
-                    transform = carla.Transform(loc, rot)
-                    actor.set_transform(transform)
+            tv = properties_to_set.get('target_velocity')
+            if tv:
+                if isinstance(tv, dict):
+                    vx = float(tv.get('x', 0.0)); vy = float(tv.get('y', 0.0)); vz = float(tv.get('z', 0.0))
+                else:
+                    vx = float(tv[0]); vy = float(tv[1]); vz = float(tv[2])
+                    vec = carla.Vector3D(vx, vy, vz)
+                if hasattr(actor, 'set_target_velocity'):
+                    actor.set_target_velocity(vec)
+                elif hasattr(actor, 'set_velocity'):
+                    actor.set_velocity(vec)
 
-                tv = properties_to_set.get('target_velocity')
-                if tv:
-                    if self.input_frame == 'sumo':
-                        vec = self._to_carla_velocity(tv)
-                    else:
-                        if isinstance(tv, dict):
-                            try:
-                                vx = float(tv.get('x', 0.0)); vy = float(tv.get('y', 0.0)); vz = float(tv.get('z', 0.0))
-                            except Exception as e:
-                                logger.exception("Error converting target_velocity dict in set_actor_state_properties (tv=%s): %s", tv, e)
-                                vx, vy, vz = 0.0, 0.0, 0.0
-                        else:
-                            try:
-                                vx = float(tv[0]); vy = float(tv[1]); vz = float(tv[2])
-                            except Exception as e:
-                                logger.exception("Error converting target_velocity list in set_actor_state_properties (tv=%s): %s", tv, e)
-                                vx, vy, vz = 0.0, 0.0, 0.0
-                        vec = carla.Vector3D(vx, vy, vz)
-                    if hasattr(actor, 'set_target_velocity'):
-                        actor.set_target_velocity(vec)
-                    elif hasattr(actor, 'set_velocity'):
-                        actor.set_velocity(vec)
-
-                tav = properties_to_set.get('target_angular_velocity')
-                if tav:
-                    avec = carla.Vector3D(float(tav.get('x', 0.0)), float(tav.get('y', 0.0)), float(tav.get('z', 0.0)))
-                    if hasattr(actor, 'set_target_angular_velocity'):
-                        actor.set_target_angular_velocity(avec)
-                    elif hasattr(actor, 'set_angular_velocity'):
-                        actor.set_angular_velocity(avec)
-                ctrl = properties_to_set.get('control')  # {'throttle':..,'steer':..,'brake':..,'reverse':..}
+            tav = properties_to_set.get('target_angular_velocity')
+            if tav:
+                avec = carla.Vector3D(float(tav.get('x', 0.0)), float(tav.get('y', 0.0)), float(tav.get('z', 0.0)))
+                if hasattr(actor, 'set_target_angular_velocity'):
+                    actor.set_target_angular_velocity(avec)
+                elif hasattr(actor, 'set_angular_velocity'):
+                    actor.set_angular_velocity(avec)
+            ctrl = properties_to_set.get('control')  # {'throttle':..,'steer':..,'brake':..,'reverse':..}
             if ctrl and str(getattr(actor, 'type_id', '')).startswith('vehicle.'):
                 try:
                     c = carla.VehicleControl()
@@ -923,11 +881,6 @@ class CarlaXMLRPCServer:
                     actor.apply_control(c)
                 except Exception as e:
                     logger.debug("apply_control ignored: %s", e)
-
-                return True
-        except Exception as e:
-            logger.error("set_actor_state_properties error: %s", e)
-            return False
 
     # ---------- Traffic Lights ----------
     def _tl_state_to_int(self, state: carla.TrafficLightState) -> int:

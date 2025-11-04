@@ -27,8 +27,10 @@ import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightStateChange;
+import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
+import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
@@ -494,7 +496,51 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> addedVehicleData = new java.util.ArrayList<>();
                         java.util.List<org.eclipse.mosaic.lib.objects.vehicle.VehicleData> updatedVehicleData = new java.util.ArrayList<>();
                         
-                        // Convert added actors
+                        // First, trigger VehicleFederateAssignment for all newly added external vehicles
+                        for (java.util.Map<String, Object> actorInfo : addedActors) {
+                            String actorId = (String) actorInfo.get("id");
+                            if (actorId != null) {
+                                // Skip if this actor is already managed by SUMO (in our mapping)
+                                if (sumoToCarlaIdMapping.containsValue(actorId)) {
+                                    log.debug("Skipping VehicleFederateAssignment for actor '{}' - already managed by SUMO", actorId);
+                                    continue;
+                                }
+                                
+                                // Create VehicleFederateAssignment to notify other federates about this external vehicle
+                                try {
+                                    // Get vehicle type from actor info or use default
+                                    String vehicleTypeId = "DEFAULT_VEHTYPE";
+                                    Object typeObj = actorInfo.get("type");
+                                    if (typeObj != null) {
+                                        vehicleTypeId = typeObj.toString();
+                                    }
+                                    
+                                    // Create VehicleDeparture with default route
+                                    String routeId = "external_carla_route";
+                                    VehicleDeparture vehicleDeparture = new VehicleDeparture.Builder(routeId).create();
+                                    
+                                    // Create VehicleFederateAssignment
+                                    VehicleFederateAssignment assignment = new VehicleFederateAssignment(
+                                        time,
+                                        actorId,
+                                        getId(), // CARLA federate ID
+                                        0.0, // surroundingVehiclesRadius (default)
+                                        vehicleTypeId,
+                                        vehicleDeparture,
+                                        new java.util.ArrayList<>() // applications (empty list)
+                                    );
+                                    
+                                    // Trigger the interaction
+                                    this.rti.triggerInteraction(assignment);
+                                    log.info("CARLA->SUMO SYNC: Triggered VehicleFederateAssignment for external vehicle '{}' (type: {})", 
+                                        actorId, vehicleTypeId);
+                                } catch (Exception e) {
+                                    log.warn("Failed to trigger VehicleFederateAssignment for external vehicle '{}': {}", actorId, e.getMessage());
+                                }
+                            }
+                        }
+                        
+                        // Convert added actors to VehicleData
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
                             String actorId = (String) actorInfo.get("id");
                             if (actorId != null) {
