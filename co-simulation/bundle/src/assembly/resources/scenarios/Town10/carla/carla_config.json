@@ -1,0 +1,6 @@
+{
+    "updateInterval": 100,
+    "carlaCDASimAdapterUrl":"null",
+    "carlaActorLibRPCUrl": "http://127.0.0.1:8090/RPC2",
+    "sumoNetXmlPath": "/opt/carma-simulation/scenarios/Town04/sumo"
+}
