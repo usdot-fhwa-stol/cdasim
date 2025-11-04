@@ -94,6 +94,24 @@ class CarlaXMLRPCServer:
         self._register_methods()
         logger.info("XML-RPC methods registered")
 
+    def _apply_sync_settings(self) -> bool:
+        """
+        Ensure CARLA runs in synchronous mode with the configured fixed delta.
+        Must be called after any map/world reload as settings reset on load.
+        """
+        try:
+            if self.world is None:
+                return False
+            settings = self.world.get_settings()
+            settings.synchronous_mode = True
+            settings.fixed_delta_seconds = self.phase
+            self.world.apply_settings(settings)
+            logger.debug("Applied synchronous settings (fixed_delta_seconds=%.3f)", self.phase)
+            return True
+        except Exception as e:
+            logger.exception("Failed to apply synchronous settings: %s", e)
+            return False
+
     def _safe_try_spawn(self, bp: carla.ActorBlueprint, base_transform: carla.Transform) -> Optional[carla.Actor]:
         """
         Try to spawn an actor safely by attempting multiple height offsets and small XY jitters
@@ -161,9 +179,6 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.set_traffic_light_timer, 'set_traffic_light_timer')
 
         # Sensors
-        self.server.register_function(self.create_sensor, 'create_sensor')
-        self.server.register_function(self.destroy_sensor, 'destroy_sensor')
-        self.server.register_function(self.get_sensor_data, 'get_sensor_data')
         self.server.register_function(self.get_detected_objects, 'get_detected_objects')
 
         # Spectator / camera utilities
@@ -338,10 +353,7 @@ class CarlaXMLRPCServer:
                 self.world = self.client.get_world()
                 
                 # Set CARLA simulation to passive mode (synchronous mode)
-                settings = self.world.get_settings()
-                settings.synchronous_mode = True
-                settings.fixed_delta_seconds = self.phase
-                self.world.apply_settings(settings)
+                self._apply_sync_settings()
                 logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
                 
                 # Get current map name
@@ -358,6 +370,8 @@ class CarlaXMLRPCServer:
                     logger.info("Current map is not Town04, attempting to load Town04...")
                     try:
                         self.world = self.client.load_world("Town04")
+                        # Re-apply synchronous settings after world reload
+                        self._apply_sync_settings()
                         new_map = self.world.get_map().name
                         logger.info("Successfully loaded Town04 map: %s", new_map)
                     except Exception as load_error:
@@ -1021,133 +1035,6 @@ class CarlaXMLRPCServer:
             return False
 
     # ---------- Sensors ----------
-    def create_sensor(self, sensor_type: str, sensor_id: str,
-                      location: List[float], rotation: List[float],
-                      attributes: Dict[str, Any] = None) -> bool:
-        try:
-            with self.lock:
-                if not self.is_connected(): return False
-                if sensor_id in self.sensors: return False
-                bp = self.world.get_blueprint_library().find(sensor_type)
-                if not bp: return False
-                if attributes:
-                    for k, v in attributes.items():
-                        if bp.has_attribute(k): bp.set_attribute(k, str(v))
-                transform = carla.Transform(
-                    carla.Location(*[float(v) for v in location]),
-                    carla.Rotation(*[float(v) for v in rotation])
-                )
-                sensor = self.world.spawn_actor(bp, transform)
-                sensor.listen(lambda data, sid=sensor_id: self._sensor_callback(sid, data))
-                self.sensors[sensor_id] = sensor
-                self.sensor_data[sensor_id] = None
-                self.sensor_blueprints[sensor_id] = bp
-                return True
-        except Exception as e:
-            logger.error("create_sensor error: %s", e)
-            return False
-
-    def destroy_sensor(self, sensor_key: SensorKey) -> bool:
-        try:
-            with self.lock:
-                alias, sensor = self._resolve_sensor(sensor_key)
-                if sensor is None: return False
-                sensor.destroy()
-                if alias is not None:
-                    self.sensors.pop(alias, None)
-                    self.sensor_data.pop(alias, None)
-                    self.sensor_blueprints.pop(alias, None)
-                return True
-        except Exception as e:
-            logger.error("destroy_sensor error: %s", e)
-            return False
-
-    def _sensor_callback(self, alias_key: str, data: Any):
-        try:
-            with self.lock:
-                sensor = self.sensors.get(alias_key, None)
-                if sensor is None: return
-                out: Dict[str, Any] = {
-                    'sensor_id': int(getattr(sensor, 'id', -1)),
-                    'sensor_type': str(getattr(sensor, 'type_id', '')),
-                    'frame': int(getattr(data, 'frame', 0)),
-                    'timestamp': float(getattr(data, 'timestamp', self._sim_timestamp())),
-                }
-                # Transform at measurement
-                try:
-                    t = getattr(data, 'transform', None) or sensor.get_transform()
-                    out['transform_at_measurement'] = {
-                        'location': {'x': float(t.location.x), 'y': float(t.location.y), 'z': float(t.location.z)},
-                        'rotation': {'pitch': float(t.rotation.pitch), 'yaw': float(t.rotation.yaw), 'roll': float(t.rotation.roll)},
-                        'timestamp': self._sim_timestamp()
-                    }
-                except Exception as e:
-                    logger.debug("Error getting transform at measurement for sensor %s: %s", alias_key, e)
-                    pass
-
-                # Metadata from blueprint
-                meta: Dict[str, Any] = {}
-                bp = self.sensor_blueprints.get(alias_key, None)
-                if bp is not None:
-                    try:
-                        for attr in bp:
-                            try:
-                                meta[attr.id] = attr.as_string()
-                            except Exception as e:
-                                logger.debug("Error getting attribute string for sensor %s (attr=%s): %s", alias_key, attr.id, e)
-                                meta[attr.id] = str(attr)
-                    except Exception as e:
-                        logger.debug("Error iterating blueprint attributes for sensor %s: %s", alias_key, e)
-                        pass
-
-                # Camera (Image)
-                if hasattr(data, 'raw_data') and hasattr(data, 'width') and hasattr(data, 'height'):
-                    out['data_blob'] = Binary(bytes(getattr(data, 'raw_data', b'')))
-                    meta.setdefault('width', int(getattr(data, 'width', 0)))
-                    meta.setdefault('height', int(getattr(data, 'height', 0)))
-                    # fov may be in attributes
-                    try:
-                        meta.setdefault('fov', float(sensor.attributes.get('fov')))  # type: ignore
-                    except Exception as e:
-                        logger.debug("Error getting FOV for sensor %s: %s", alias_key, e)
-                        pass
-                    meta.setdefault('image_format', 'BGRA')
-                    out['metadata'] = meta
-
-                # LiDAR (v0.10 image/point cloud API remains consistent; logic unchanged here)
-                elif hasattr(data, 'raw_data') or hasattr(data, 'points'):
-                    if hasattr(data, 'raw_data'):
-                        out['data_blob'] = Binary(bytes(getattr(data, 'raw_data', b'')))
-                    else:
-                        try:
-                            pts_json = json.dumps(getattr(data, 'points', []))
-                            out['data_blob'] = Binary(pts_json.encode('utf-8'))
-                        except Exception as e:
-                            logger.exception("Error serializing LiDAR points for sensor %s: %s", alias_key, e)
-                            out['data_blob'] = Binary(b'')
-                    out['metadata'] = meta
-
-                # IMU/GNSS/others (fallback)
-                else:
-                    s = str(data)
-                    out['data_blob'] = Binary(s.encode('utf-8'))
-                    out['metadata'] = meta
-
-                self.sensor_data[alias_key] = out
-        except Exception as e:
-            logger.error("sensor_callback error: %s", e)
-            self.sensor_data[alias_key] = {'error': str(e), 'timestamp': time.time(), 'sensor_id': -1}
-
-    def get_sensor_data(self, sensor_key: SensorKey) -> Optional[Dict[str, Any]]:
-        try:
-            with self.lock:
-                alias, _ = self._resolve_sensor(sensor_key)
-                if alias is None or alias not in self.sensor_data: return None
-                return self.sensor_data[alias]
-        except Exception as e:
-            logger.error("get_sensor_data error: %s", e)
-            return None
-
     def get_detected_objects(self, infrastructure_id: str, sensor_key: SensorKey) -> str:
         # Placeholder: return empty JSON array
         return json.dumps([])
@@ -1265,16 +1152,33 @@ class CarlaXMLRPCServer:
     def load_map(self, map_name: str) -> bool:
         try:
             with self.lock:
-                if not self.is_connected(): return False
+                if not self.is_connected():
+                    logger.error("load_map failed: Not connected to CARLA")
+                    return False
+                
+                logger.info("Attempting to load map: %s", map_name)
+                
+                # Try to load the map directly
                 try:
                     self.world = self.client.load_world(map_name)
+                    # Re-apply synchronous settings after world reload
+                    self._apply_sync_settings()
+                    
+                    # Verify the map was loaded successfully
+                    try:
+                        new_map = self.world.get_map().name
+                        logger.info("Successfully loaded map: %s", new_map)
+                    except Exception as e:
+                        logger.exception("Could not verify loaded map: %s", e)
+                        return False
+                    
                     return True
                 except Exception as e:
                     # v0.10 lacks many old maps; return False instead of throwing exception when unavailable
                     logger.warning("load_map failed for %s on v0.10: %s", map_name, e)
                     return False
         except Exception as e:
-            logger.error("load_map error: %s", e)
+            logger.error("load_map error for map '%s': %s", map_name, e)
             return False
 
     # ---------- Server lifecycle ----------

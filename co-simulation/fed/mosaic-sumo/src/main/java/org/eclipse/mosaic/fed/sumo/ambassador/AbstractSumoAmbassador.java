@@ -560,39 +560,18 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
-        // Handle added vehicles from external simulators (like CARLA)
+        // Only accept added vehicles that were explicitly assigned beforehand
         for (VehicleData addedVehicle : vehicleUpdates.getAdded()) {
             String vehicleId = addedVehicle.getName();
             if (!externalVehicleMap.containsKey(vehicleId)) {
-                log.info("Adding external vehicle '{}' from {} to SUMO", vehicleId, vehicleUpdates.getSenderId());
-                
-                // Add to external vehicle map
-                ExternalVehicleState vehicleState = new ExternalVehicleState();
-                vehicleState.setLastMovementInfo(addedVehicle);
-                vehicleState.setAdded(false); // Mark as not yet added to SUMO
-                externalVehicleMap.put(vehicleId, vehicleState);
-                
-                // Send VehicleFederateAssignment to mark this vehicle as externally simulated
-                try {
-                    VehicleFederateAssignment assignment = new VehicleFederateAssignment(
-                        vehicleUpdates.getTime(), 
-                        vehicleId, 
-                        vehicleUpdates.getSenderId(),
-                        100.0, // surroundingVehiclesRadius
-                        "DEFAULT_VEHTYPE", // vehicleTypeId
-                        null, // vehicleDeparture
-                        new ArrayList<>() // applications
-                    );
-                    rti.triggerInteraction(assignment);
-                    log.debug("Sent VehicleFederateAssignment for external vehicle '{}'", vehicleId);
-                } catch (IllegalValueException e) {
-                    log.error("Failed to send VehicleFederateAssignment for vehicle '{}': {}", vehicleId, e.getMessage());
-                }
-            } else {
-                // Update existing external vehicle with new data
-                ExternalVehicleState existingState = externalVehicleMap.get(vehicleId);
+                // No explicit VehicleFederateAssignment was received for this vehicle; skip
+                log.warn("Ignoring added external vehicle '{}' from {} without prior VehicleFederateAssignment",
+                        vehicleId, vehicleUpdates.getSenderId());
+                continue;
+            }
+            ExternalVehicleState existingState = externalVehicleMap.get(vehicleId);
+            if (existingState != null) {
                 existingState.setLastMovementInfo(addedVehicle);
-                log.debug("Updated external vehicle '{}' with new position data", vehicleId);
             }
         }
 

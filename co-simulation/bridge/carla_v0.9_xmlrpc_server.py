@@ -126,7 +126,8 @@ class CarlaXMLRPCServer:
                     actor = self.world.try_spawn_actor(bp, t)
                     if actor is not None:
                         return actor
-                except Exception:
+                except Exception as e:
+                    logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
                     continue
         return None
 
@@ -190,7 +191,8 @@ class CarlaXMLRPCServer:
             if snap is None:
                 return 0.0
             return float(snap.timestamp.elapsed_seconds)
-        except Exception:
+        except Exception as e:
+            logger.exception("Error getting simulation timestamp: %s", e)
             return 0.0
 
     # (Removed) Coordinate transform helpers; Ambassador sends CARLA-frame values
@@ -205,13 +207,15 @@ class CarlaXMLRPCServer:
                 aid = int(actor_key)
                 if self.world:
                     return self.world.get_actor(aid)
-            except Exception:
+            except Exception as e:
+                logger.exception("Error resolving actor by ID (actor_key=%s): %s", actor_key, e)
                 return None
         else:
             try:
                 if self.world:
                     return self.world.get_actor(int(actor_key))
-            except Exception:
+            except Exception as e:
+                logger.exception("Error resolving actor by int key (actor_key=%s): %s", actor_key, e)
                 return None
         return None
 
@@ -227,7 +231,8 @@ class CarlaXMLRPCServer:
                         if ss.id == sid:
                             return alias, ss
                     return str(sid), s
-            except Exception:
+            except Exception as e:
+                logger.exception("Error resolving sensor by ID (sensor_key=%s): %s", sensor_key, e)
                 return None, None
         else:
             sid = int(sensor_key)
@@ -283,10 +288,12 @@ class CarlaXMLRPCServer:
             with self.lock:
                 for _, a in list(self.actors.items()):
                     try: a.destroy()
-                    except Exception: pass
+                    except Exception as e:
+                        logger.exception("Error destroying actor (actor_id=%s): %s", getattr(a, 'id', 'unknown'), e)
                 for _, s in list(self.sensors.items()):
                     try: s.destroy()
-                    except Exception: pass
+                    except Exception as e:
+                        logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
                 self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
                 self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
                 self.world = None; self.client = None
@@ -335,13 +342,15 @@ class CarlaXMLRPCServer:
                 # Build CARLA transform directly (inputs are already in CARLA frame)
                 try:
                     lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                except Exception:
+                except Exception as e:
+                    logger.exception("Error converting location in spawn_actor (location=%s): %s", location, e)
                     lx, ly, lz = 0.0, 0.0, 0.0
                 try:
                     rp = float(rotation[0]) if len(rotation) > 0 else 0.0
                     ry = float(rotation[1]) if len(rotation) > 1 else 0.0
                     rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                except Exception:
+                except Exception as e:
+                    logger.exception("Error converting rotation in spawn_actor (rotation=%s): %s", rotation, e)
                     rp, ry, rr = 0.0, 0.0, 0.0
                 transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
                 loc = transform.location
@@ -409,13 +418,15 @@ class CarlaXMLRPCServer:
                 # Directly use CARLA-frame location/rotation
                 try:
                     lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                except Exception:
+                except Exception as e:
+                    logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
                     lx, ly, lz = 0.0, 0.0, 0.0
                 try:
                     rp = float(rotation[0]) if len(rotation) > 0 else 0.0
                     ry = float(rotation[1]) if len(rotation) > 1 else 0.0
                     rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                except Exception:
+                except Exception as e:
+                    logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
                     rp, ry, rr = 0.0, 0.0, 0.0
                 transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
                 actor.set_transform(transform)
@@ -439,12 +450,14 @@ class CarlaXMLRPCServer:
                 if isinstance(velocity, dict):
                     try:
                         vx = float(velocity.get('x', 0.0)); vy = float(velocity.get('y', 0.0)); vz = float(velocity.get('z', 0.0))
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error converting velocity dict in update_actor_velocity (velocity=%s): %s", velocity, e)
                         vx, vy, vz = 0.0, 0.0, 0.0
                 else:
                     try:
                         vx = float(velocity[0]); vy = float(velocity[1]); vz = float(velocity[2])
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error converting velocity list in update_actor_velocity (velocity=%s): %s", velocity, e)
                         vx, vy, vz = 0.0, 0.0, 0.0
                 vec = carla.Vector3D(vx, vy, vz)
 
@@ -460,7 +473,8 @@ class CarlaXMLRPCServer:
                         if hasattr(actor, 'set_simulate_physics'):
                             try:
                                 actor.set_simulate_physics(True)
-                            except Exception:
+                            except Exception as e:
+                                logger.debug("Error setting simulate_physics: %s", e)
                                 pass
                         actor.set_velocity(vec)
                         return True
@@ -622,11 +636,13 @@ class CarlaXMLRPCServer:
                     rot_dict = t_in.get('rotation', {})
                     try:
                         lx = float(loc_dict.get('x', 0.0)); ly = float(loc_dict.get('y', 0.0)); lz = float(loc_dict.get('z', 0.0))
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error converting location in set_actor_state_properties (loc_dict=%s): %s", loc_dict, e)
                         lx, ly, lz = 0.0, 0.0, 0.0
                     try:
                         rp = float(rot_dict.get('pitch', 0.0)); ry = float(rot_dict.get('yaw', 0.0)); rr = float(rot_dict.get('roll', 0.0))
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error converting rotation in set_actor_state_properties (rot_dict=%s): %s", rot_dict, e)
                         rp, ry, rr = 0.0, 0.0, 0.0
                     transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
                     actor.set_transform(transform)
@@ -636,12 +652,14 @@ class CarlaXMLRPCServer:
                     if isinstance(tv, dict):
                         try:
                             vx = float(tv.get('x', 0.0)); vy = float(tv.get('y', 0.0)); vz = float(tv.get('z', 0.0))
-                        except Exception:
+                        except Exception as e:
+                            logger.exception("Error converting target_velocity dict in set_actor_state_properties (tv=%s): %s", tv, e)
                             vx, vy, vz = 0.0, 0.0, 0.0
                     else:
                         try:
                             vx = float(tv[0]); vy = float(tv[1]); vz = float(tv[2])
-                        except Exception:
+                        except Exception as e:
+                            logger.exception("Error converting target_velocity list in set_actor_state_properties (tv=%s): %s", tv, e)
                             vx, vy, vz = 0.0, 0.0, 0.0
                     vec = carla.Vector3D(vx, vy, vz)
                     if hasattr(actor, 'set_target_velocity'):
@@ -695,9 +713,11 @@ class CarlaXMLRPCServer:
                     'timestamp': self._sim_timestamp()
                 }
                 try: data['is_frozen'] = bool(tl.is_frozen())
-                except Exception: pass
+                except Exception as e:
+                    logger.debug("Error getting is_frozen for traffic light %s: %s", tid, e)
                 try: data['pole_index'] = int(tl.get_pole_index())
-                except Exception: pass
+                except Exception as e:
+                    logger.debug("Error getting pole_index for traffic light %s: %s", tid, e)
                 return data
         except Exception as e:
             logger.error("get_traffic_light_state error: %s", e)
@@ -719,11 +739,14 @@ class CarlaXMLRPCServer:
                             'timestamp': ts
                         }
                         try: item['is_frozen'] = bool(tl.is_frozen())
-                        except Exception: pass
+                        except Exception as e:
+                            logger.debug("Error getting is_frozen for traffic light %s: %s", tl.id, e)
                         try: item['pole_index'] = int(tl.get_pole_index())
-                        except Exception: pass
+                        except Exception as e:
+                            logger.debug("Error getting pole_index for traffic light %s: %s", tl.id, e)
                         out.append(item)
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error processing traffic light %s: %s", getattr(tl, 'id', 'unknown'), e)
                         continue
                 return out
         except Exception as e:
@@ -783,7 +806,8 @@ class CarlaXMLRPCServer:
                         'rotation': {'pitch': float(t.rotation.pitch), 'yaw': float(t.rotation.yaw), 'roll': float(t.rotation.roll)},
                         'timestamp': self._sim_timestamp()
                     }
-                except Exception:
+                except Exception as e:
+                    logger.debug("Error getting transform at measurement for sensor %s: %s", alias_key, e)
                     pass
 
                 # Metadata from blueprint
@@ -794,9 +818,11 @@ class CarlaXMLRPCServer:
                         for attr in bp:
                             try:
                                 meta[attr.id] = attr.as_string()
-                            except Exception:
+                            except Exception as e:
+                                logger.debug("Error getting attribute string for sensor %s (attr=%s): %s", alias_key, attr.id, e)
                                 meta[attr.id] = str(attr)
-                    except Exception:
+                    except Exception as e:
+                        logger.debug("Error iterating blueprint attributes for sensor %s: %s", alias_key, e)
                         pass
 
                 # Camera (Image)
@@ -807,7 +833,8 @@ class CarlaXMLRPCServer:
                     # fov may be in attributes
                     try:
                         meta.setdefault('fov', float(sensor.attributes.get('fov')))  # type: ignore
-                    except Exception:
+                    except Exception as e:
+                        logger.debug("Error getting FOV for sensor %s: %s", alias_key, e)
                         pass
                     meta.setdefault('image_format', 'BGRA')
                     out['metadata'] = meta
@@ -820,7 +847,8 @@ class CarlaXMLRPCServer:
                         try:
                             pts_json = json.dumps(getattr(data, 'points', []))
                             out['data_blob'] = Binary(pts_json.encode('utf-8'))
-                        except Exception:
+                        except Exception as e:
+                            logger.exception("Error serializing LiDAR points for sensor %s: %s", alias_key, e)
                             out['data_blob'] = Binary(b'')
                     out['metadata'] = meta
 
@@ -873,7 +901,8 @@ class CarlaXMLRPCServer:
                         # Position camera behind the vehicle (opposite to vehicle's forward direction)
                         dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
                         dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error calculating camera position for spectator (yaw=%s, back=%s): %s", t.rotation.yaw, back, e)
                         dx, dy = -back, 0.0
                     cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
                     cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)
@@ -915,7 +944,8 @@ class CarlaXMLRPCServer:
                         # Position camera behind the vehicle (opposite to vehicle's forward direction)
                         dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
                         dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
-                    except Exception:
+                    except Exception as e:
+                        logger.exception("Error calculating camera position for set_spectator_to_actor (yaw=%s, back=%s): %s", t.rotation.yaw, back, e)
                         dx, dy = -back, 0.0
                     cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
                     cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)

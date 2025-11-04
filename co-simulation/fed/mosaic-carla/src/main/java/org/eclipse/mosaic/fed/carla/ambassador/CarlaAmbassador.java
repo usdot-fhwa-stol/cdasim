@@ -388,12 +388,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             // Advance CARLA simulation by one tick before polling sensors/actors
+            // Note: Only ACTOR_LIB can advance simulation, not SENSOR_LIB
             try {
                 CarlaXmlRpcClient tickClient = null;
                 if (multiXmlRpcManager != null) {
                     tickClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                 } else {
-                    tickClient = carlaXmlRpcClient;
+                    // Only use carlaXmlRpcClient for tick if it's ACTOR_LIB
+                    if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
+                        tickClient = carlaXmlRpcClient;
+                    }
                 }
                 if (tickClient != null && tickClient.isConnected()) {
                     boolean advanced = tickClient.advanceSimulation();
@@ -401,7 +405,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         log.warn("Failed to advance CARLA simulation tick at time {}", time);
                     }
                 } else {
-                    log.debug("Skipping CARLA tick: XML-RPC client not connected");
+                    log.debug("Skipping CARLA tick: XML-RPC client not connected or not ACTOR_LIB type");
                 }
             } catch (Exception e) {
                 log.warn("Error advancing CARLA simulation: {}", e.getMessage());

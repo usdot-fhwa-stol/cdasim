@@ -1,7 +1,0 @@
-{
-    "updateInterval": 200,
-    "carlaUE4Path": "D:/CARLA_0.9.10/",
-    "carlaConnectionPort": 8913,
-    "carlaActorLibRPCUrl": null,
-    "carlaSensorLibRPCUrl": "http://127.0.0.1:8090/RPC2"
-}
