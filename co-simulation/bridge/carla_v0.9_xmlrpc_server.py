@@ -35,7 +35,7 @@ try:
                   (sys.version_info.major, sys.version_info.minor,
                    'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
 except IndexError:
-    print("Cannot find CARLA library .egg file")
+    logging.error("Cannot find CARLA library .egg file")
     sys.exit(1)
 
 import carla
@@ -67,10 +67,6 @@ class CarlaXMLRPCServer:
         self.sensors: Dict[str, carla.Sensor] = {}
         self.sensor_data: Dict[str, Any] = {}
         self.sensor_blueprints: Dict[str, carla.ActorBlueprint] = {}
-
-        self.lock = threading.RLock()
-
-
         # Default extent_x for vehicle center calculation
         self.default_extent_x = 2.0
 
@@ -247,58 +243,56 @@ class CarlaXMLRPCServer:
     # ---------- Connection ----------
     def connect(self) -> bool:
         try:
-            with self.lock:
-                if self.client is None:
-                    self.client = carla.Client(self.carla_host, self.carla_port)
-                    self.client.set_timeout(10.0)
-                self.world = self.client.get_world()
-                
-                # Set CARLA simulation to passive mode (synchronous mode)
-                self._apply_sync_settings()
-                logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
-                
-                # Get current map name
-                current_map = self.world.get_map().name
-                logger.info("Connected to CARLA at %s:%s | current map=%s",
-                            self.carla_host, self.carla_port, current_map)
-                
-                # Automatically load Town04 if not already loaded
-                if current_map != "Town04":
-                    logger.info("Current map is not Town04, attempting to load Town04...")
-                    try:
-                        self.world = self.client.load_world("Town04")
-                        # Re-apply synchronous settings after world reload
-                        self._apply_sync_settings()
-                        new_map = self.world.get_map().name
-                        logger.info("Successfully loaded Town04 map: %s", new_map)
-                    except Exception as load_error:
-                        logger.error("Failed to load Town04 map: %s", load_error)
-                        # Continue with current map if Town04 loading fails
-                        logger.warning("Continuing with current map: %s", current_map)
-                else:
-                    logger.info("Town04 map is already loaded")
-                
-                return True
+            if self.client is None:
+                self.client = carla.Client(self.carla_host, self.carla_port)
+                self.client.set_timeout(10.0)
+            self.world = self.client.get_world()
+            
+            # Set CARLA simulation to passive mode (synchronous mode)
+            self._apply_sync_settings()
+            logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
+            
+            # Get current map name
+            current_map = self.world.get_map().name
+            logger.info("Connected to CARLA at %s:%s | current map=%s",
+                        self.carla_host, self.carla_port, current_map)
+            
+            # Automatically load Town04 if not already loaded
+            if current_map != "Town04":
+                logger.info("Current map is not Town04, attempting to load Town04...")
+                try:
+                    self.world = self.client.load_world("Town04")
+                    # Re-apply synchronous settings after world reload
+                    self._apply_sync_settings()
+                    new_map = self.world.get_map().name
+                    logger.info("Successfully loaded Town04 map: %s", new_map)
+                except Exception as load_error:
+                    logger.error("Failed to load Town04 map: %s", load_error)
+                    # Continue with current map if Town04 loading fails
+                    logger.warning("Continuing with current map: %s", current_map)
+            else:
+                logger.info("Town04 map is already loaded")
+            
+            return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
             return False
 
     def disconnect(self) -> bool:
         try:
-            with self.lock:
-                for _, a in list(self.actors.items()):
-                    try: a.destroy()
-                    except Exception as e:
-                        logger.exception("Error destroying actor (actor_id=%s): %s", getattr(a, 'id', 'unknown'), e)
-                for _, s in list(self.sensors.items()):
-                    try: s.destroy()
-                    except Exception as e:
-                        logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
-                self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
-                self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
-                self.world = None; self.client = None
-                logger.info("Disconnected from CARLA")
-                return True
+            for _, a in list(self.actors.items()):
+                try: a.destroy()
+                except Exception as e:
+                    logger.exception("Error destroying actor (actor_id=%s): %s", getattr(a, 'id', 'unknown'), e)
+            for _, s in list(self.sensors.items()):
+                try: s.destroy()
+                except Exception as e:
+                    logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
+            self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
+            self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
+            self.world = None; self.client = None
+            logger.info("Disconnected from CARLA")
+            return True
         except Exception as e:
             logger.error("Error during disconnect: %s", e)
             return False
@@ -309,11 +303,10 @@ class CarlaXMLRPCServer:
     # ---------- Simulation ----------
     def advance_simulation(self) -> bool:
         try:
-            with self.lock:
-                if not self.is_connected():
-                    return False
-                self.world.tick()
-                return True
+            if not self.is_connected():
+                return False
+            self.world.tick()
+            return True
         except Exception as e:
             logger.error("advance_simulation error: %s", e)
             return False
@@ -330,7 +323,7 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> Union[bool, str]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return False
                 if actor_id in self.actors: return False
                 bp = self.world.get_blueprint_library().find(actor_type)
@@ -356,13 +349,14 @@ class CarlaXMLRPCServer:
                 loc = transform.location
                 rot = transform.rotation
                 
-                print(
-                    f"========spawn_actor received: actor {actor_id} of type {actor_type} "
-                    f"loc=({loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}) "
-                    f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
-                    f"attributes={attributes}========"
+                logger.info(
+                    "========spawn_actor received: actor %s of type %s "
+                    "loc=(%.3f, %.3f, %.3f) "
+                    "rot=(pitch=%.1f, yaw=%.1f, roll=%.1f) "
+                    "attributes=%s========",
+                    actor_id, actor_type, loc.x, loc.y, loc.z, rot.pitch, rot.yaw, rot.roll, attributes
                 )
-                print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
+                logger.info("spawn actor at loc=%.3f, %.3f, %.3f, rot=%.1f, %.1f, %.1f", loc.x, loc.y, loc.z, rot.pitch, rot.yaw, rot.roll)
                 # Attempt safe spawn with collision avoidance (height offsets and slight jitters)
                 actor = self._safe_try_spawn(bp, transform)
                 if actor is None:
@@ -378,66 +372,63 @@ class CarlaXMLRPCServer:
                         # Switch spectator to follow the first spawned actor with proper offset
                         # Use the actual actor object for more reliable positioning
                         self._set_spectator_to_actor_object(actor, 'follow', 8.0, 3.0, -20.0)
-                        print(f"========Spectator switched to follow first actor: {actor_id}========")
+                        logger.info("========Spectator switched to follow first actor: %s========", actor_id)
                     except Exception as e:
-                        print(f"Failed to switch spectator to first actor {actor_id}: {e}")
-                        logger.error("Failed to switch spectator to first actor: %s", e)
+                        logger.error("Failed to switch spectator to first actor %s: %s", actor_id, e)
                 else:
-                    print(f"========Actor {actor_id} spawned (spectator not moved)========")
+                    logger.info("========Actor %s spawned (spectator not moved)========", actor_id)
                 
-                print(f"========spawn_actor success========")
+                logger.info("========spawn_actor success========")
                 # Return the CARLA internal actor ID instead of boolean
                 return str(actor.id)
         except Exception as e:
-            print("spawn_actor error:", e)
-            logger.error("spawn_actor error:", e)
+            logger.error("spawn_actor error: %s", e)
             return False
 
     def destroy_actor(self, actor_key: ActorKey) -> bool:
         try:
-            with self.lock:
-                actor = self._resolve_actor(actor_key)
-                if actor is None: return False
-                for alias, a in list(self.actors.items()):
-                    if a.id == actor.id:
-                        self.actors.pop(alias, None)
-                        self.actor_types.pop(alias, None)
-                        self.actor_blueprints.pop(alias, None)
-                actor.destroy()
-                return True
+            
+            actor = self._resolve_actor(actor_key)
+            if actor is None: return False
+            for alias, a in list(self.actors.items()):
+                if a.id == actor.id:
+                    self.actors.pop(alias, None)
+                    self.actor_types.pop(alias, None)
+                    self.actor_blueprints.pop(alias, None)
+            actor.destroy()
+            return True
         except Exception as e:
             logger.error("destroy_actor error: %s", e)
             return False
 
     def update_actor_transform(self, actor_key: ActorKey, location: List[float], rotation: List[float]) -> bool:
         try:
-            with self.lock:
-                actor = self._resolve_actor(actor_key)
-                if actor is None: return False
-                
-                # Directly use CARLA-frame location/rotation
-                try:
-                    lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                except Exception as e:
-                    logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
-                    lx, ly, lz = 0.0, 0.0, 0.0
-                try:
-                    rp = float(rotation[0]) if len(rotation) > 0 else 0.0
-                    ry = float(rotation[1]) if len(rotation) > 1 else 0.0
-                    rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                except Exception as e:
-                    logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
-                    rp, ry, rr = 0.0, 0.0, 0.0
-                transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
-                actor.set_transform(transform)
-                return True
+            actor = self._resolve_actor(actor_key)
+            if actor is None: return False
+            
+            # Directly use CARLA-frame location/rotation
+            try:
+                lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+            except Exception as e:
+                logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
+                lx, ly, lz = 0.0, 0.0, 0.0
+            try:
+                rp = float(rotation[0]) if len(rotation) > 0 else 0.0
+                ry = float(rotation[1]) if len(rotation) > 1 else 0.0
+                rr = float(rotation[2]) if len(rotation) > 2 else 0.0
+            except Exception as e:
+                logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
+                rp, ry, rr = 0.0, 0.0, 0.0
+            transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
+            actor.set_transform(transform)
+            return True
         except Exception as e:
             logger.error("update_actor_transform error: %s", e)
             return False
 
     def update_actor_velocity(self, actor_key: ActorKey, velocity: List[float]) -> bool:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None:
                     return False
@@ -490,7 +481,7 @@ class CarlaXMLRPCServer:
 
     def get_all_actors(self) -> Dict[str, Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 if not self.is_connected():
                     return {}
                 
@@ -525,7 +516,7 @@ class CarlaXMLRPCServer:
     # ---------- Actor Data (spec) ----------
     def get_active_actor_ids(self, filter_pattern: str = "vehicle.*") -> List[int]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return []
                 return [int(a.id) for a in self.world.get_actors().filter(filter_pattern)]
         except Exception as e:
@@ -534,7 +525,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_basic_info(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return None
                 return {
@@ -550,7 +541,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_transform(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return None
                 t = actor.get_transform()
@@ -565,7 +556,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_velocity(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'get_velocity'): return None
                 v = actor.get_velocity()
@@ -576,7 +567,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_acceleration(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'get_acceleration'): return None
                 a = actor.get_acceleration()
@@ -587,7 +578,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_angular_velocity(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'get_angular_velocity'): return None
                 w = actor.get_angular_velocity()
@@ -598,7 +589,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_bounding_box(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'bounding_box'): return None
                 bb = actor.bounding_box
@@ -613,7 +604,7 @@ class CarlaXMLRPCServer:
 
     def get_vehicle_light_state(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return None
                 if hasattr(actor, 'get_light_state'):
@@ -626,26 +617,25 @@ class CarlaXMLRPCServer:
 
     def set_actor_state_properties(self, actor_key: ActorKey, properties_to_set: Dict[str, Any]) -> bool:
         try:
-            with self.lock:
-                actor = self._resolve_actor(actor_key)
-                if actor is None: return False
+            actor = self._resolve_actor(actor_key)
+            if actor is None: return False
 
-                t_in = properties_to_set.get('transform')
-                if t_in:
-                    loc_dict = t_in.get('location', {})
-                    rot_dict = t_in.get('rotation', {})
-                    try:
-                        lx = float(loc_dict.get('x', 0.0)); ly = float(loc_dict.get('y', 0.0)); lz = float(loc_dict.get('z', 0.0))
-                    except Exception as e:
-                        logger.exception("Error converting location in set_actor_state_properties (loc_dict=%s): %s", loc_dict, e)
-                        lx, ly, lz = 0.0, 0.0, 0.0
-                    try:
-                        rp = float(rot_dict.get('pitch', 0.0)); ry = float(rot_dict.get('yaw', 0.0)); rr = float(rot_dict.get('roll', 0.0))
-                    except Exception as e:
-                        logger.exception("Error converting rotation in set_actor_state_properties (rot_dict=%s): %s", rot_dict, e)
-                        rp, ry, rr = 0.0, 0.0, 0.0
-                    transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
-                    actor.set_transform(transform)
+            t_in = properties_to_set.get('transform')
+            if t_in:
+                loc_dict = t_in.get('location', {})
+                rot_dict = t_in.get('rotation', {})
+                try:
+                    lx = float(loc_dict.get('x', 0.0)); ly = float(loc_dict.get('y', 0.0)); lz = float(loc_dict.get('z', 0.0))
+                except Exception as e:
+                    logger.exception("Error converting location in set_actor_state_properties (loc_dict=%s): %s", loc_dict, e)
+                    lx, ly, lz = 0.0, 0.0, 0.0
+                try:
+                    rp = float(rot_dict.get('pitch', 0.0)); ry = float(rot_dict.get('yaw', 0.0)); rr = float(rot_dict.get('roll', 0.0))
+                except Exception as e:
+                    logger.exception("Error converting rotation in set_actor_state_properties (rot_dict=%s): %s", rot_dict, e)
+                    rp, ry, rr = 0.0, 0.0, 0.0
+                transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
+                actor.set_transform(transform)
 
                 tv = properties_to_set.get('target_velocity')
                 if tv:
@@ -700,7 +690,7 @@ class CarlaXMLRPCServer:
 
     def get_traffic_light_state(self, traffic_light_id: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return None
                 tid = int(traffic_light_id)
                 tl = self.world.get_actor(tid) if self.world else None
@@ -725,7 +715,7 @@ class CarlaXMLRPCServer:
 
     def get_all_traffic_light_states(self) -> List[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return []
                 out = []
                 ts = self._sim_timestamp()
@@ -755,7 +745,7 @@ class CarlaXMLRPCServer:
 
     def set_traffic_light_state(self, traffic_light_id: ActorKey, state: str) -> bool:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return False
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
                     if str(tl.id) == str(traffic_light_id):
@@ -775,13 +765,12 @@ class CarlaXMLRPCServer:
 
     def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
         try:
-            with self.lock:
-                if not self.is_connected(): return False
-                for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                    if str(tl.id) == str(traffic_light_id):
-                        tl.set_green_time(float(time_s))
-                        return True
-                return False
+            if not self.is_connected(): return False
+            for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                if str(tl.id) == str(traffic_light_id):
+                    tl.set_green_time(float(time_s))
+                    return True
+            return False
         except Exception as e:
             logger.error("set_traffic_light_timer error: %s", e)
             return False
@@ -789,7 +778,7 @@ class CarlaXMLRPCServer:
     # ---------- Sensors ----------
     def _sensor_callback(self, alias_key: str, data: Any):
         try:
-            with self.lock:
+            
                 sensor = self.sensors.get(alias_key, None)
                 if sensor is None: return
                 out: Dict[str, Any] = {
@@ -874,49 +863,48 @@ class CarlaXMLRPCServer:
         This avoids the need to resolve actor by ID and is more reliable.
         """
         try:
-            with self.lock:
-                if not self.is_connected():
-                    return False
-                if actor is None:
-                    return False
-                t = actor.get_transform()
-                spectator = self.world.get_spectator()
-                if spectator is None:
-                    return False
+            if not self.is_connected():
+                return False
+            if actor is None:
+                return False
+            t = actor.get_transform()
+            spectator = self.world.get_spectator()
+            if spectator is None:
+                return False
 
-                # Ensure minimum values to avoid camera being too close to vehicle
-                back = max(3.0, float(back))  # Minimum 3 meters back
-                up = max(1.0, float(up))      # Minimum 1 meter up
-                pitch = float(pitch)
+            # Ensure minimum values to avoid camera being too close to vehicle
+            back = max(3.0, float(back))  # Minimum 3 meters back
+            up = max(1.0, float(up))      # Minimum 1 meter up
+            pitch = float(pitch)
 
-                preset_l = str(preset).strip().lower()
-                if preset_l == 'topdown':
-                    cam_loc = carla.Location(t.location.x, t.location.y, t.location.z + abs(up))
-                    cam_rot = carla.Rotation(pitch=-90.0, yaw=t.rotation.yaw, roll=0.0)
-                else:  # 'follow' default
-                    try:
-                        # Calculate camera position behind the vehicle
-                        # CARLA uses right-handed coordinate system: +X forward, +Y right, +Z up
-                        yaw_rad = math.radians(t.rotation.yaw)
-                        # Position camera behind the vehicle (opposite to vehicle's forward direction)
-                        dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
-                        dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
-                    except Exception as e:
-                        logger.exception("Error calculating camera position for spectator (yaw=%s, back=%s): %s", t.rotation.yaw, back, e)
-                        dx, dy = -back, 0.0
-                    cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
-                    cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)
+            preset_l = str(preset).strip().lower()
+            if preset_l == 'topdown':
+                cam_loc = carla.Location(t.location.x, t.location.y, t.location.z + abs(up))
+                cam_rot = carla.Rotation(pitch=-90.0, yaw=t.rotation.yaw, roll=0.0)
+            else:  # 'follow' default
+                try:
+                    # Calculate camera position behind the vehicle
+                    # CARLA uses right-handed coordinate system: +X forward, +Y right, +Z up
+                    yaw_rad = math.radians(t.rotation.yaw)
+                    # Position camera behind the vehicle (opposite to vehicle's forward direction)
+                    dx = -back * math.cos(yaw_rad)  # Negative because we want to be behind
+                    dy = -back * math.sin(yaw_rad)  # Negative because we want to be behind
+                except Exception as e:
+                    logger.exception("Error calculating camera position for spectator (yaw=%s, back=%s): %s", t.rotation.yaw, back, e)
+                    dx, dy = -back, 0.0
+                cam_loc = carla.Location(t.location.x + dx, t.location.y + dy, t.location.z + up)
+                cam_rot = carla.Rotation(pitch=pitch, yaw=t.rotation.yaw, roll=0.0)
 
-                spectator.set_transform(carla.Transform(cam_loc, cam_rot))
-                logger.info("Spectator positioned to actor object: back=%.1f, up=%.1f, pitch=%.1f", back, up, pitch)
-                return True
+            spectator.set_transform(carla.Transform(cam_loc, cam_rot))
+            logger.info("Spectator positioned to actor object: back=%.1f, up=%.1f, pitch=%.1f", back, up, pitch)
+            return True
         except Exception as e:
             logger.error("_set_spectator_to_actor_object error: %s", e)
             return False
 
     def set_spectator_to_actor(self, actor_key: ActorKey, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
         try:
-            with self.lock:
+            
                 if not self.is_connected():
                     return False
                 actor = self._resolve_actor(actor_key)
@@ -960,9 +948,8 @@ class CarlaXMLRPCServer:
     # ---------- Maps ----------
     def get_map_name(self) -> str:
         try:
-            with self.lock:
-                if not self.is_connected(): return ""
-                return self.world.get_map().name
+            if not self.is_connected(): return ""
+            return self.world.get_map().name
         except Exception as e:
             logger.error("get_map_name error: %s", e)
             return ""
@@ -977,27 +964,26 @@ class CarlaXMLRPCServer:
 
     def load_map(self, map_name: str) -> bool:
         try:
-            with self.lock:
-                if not self.is_connected(): 
-                    logger.error("load_map failed: Not connected to CARLA")
-                    return False
-                
-                logger.info("Attempting to load map: %s", map_name)
-                
-                # Try to load the map directly
-                self.world = self.client.load_world(map_name)
-                # Re-apply synchronous settings after world reload
-                self._apply_sync_settings()
-                
-                # Verify the map was loaded successfully
-                try:
-                    new_map = self.world.get_map().name
-                    logger.info("Successfully loaded map: %s", new_map)
-                except Exception as e:
-                    logger.error("Could not verify loaded map: %s", e)
-                    return False
-                
-                return True
+            if not self.is_connected(): 
+                logger.error("load_map failed: Not connected to CARLA")
+                return False
+            
+            logger.info("Attempting to load map: %s", map_name)
+            
+            # Try to load the map directly
+            self.world = self.client.load_world(map_name)
+            # Re-apply synchronous settings after world reload
+            self._apply_sync_settings()
+            
+            # Verify the map was loaded successfully
+            try:
+                new_map = self.world.get_map().name
+                logger.info("Successfully loaded map: %s", new_map)
+            except Exception as e:
+                logger.error("Could not verify loaded map: %s", e)
+                return False
+            
+            return True
         except Exception as e:
             logger.error("load_map error for map '%s': %s", map_name, e)
             return False
@@ -1031,7 +1017,6 @@ def main():
     args = parser.parse_args()
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
-
     server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.phase)
     try:
         server.start()

@@ -156,7 +156,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * SUMO net offset parsed from scenario .net.xml (x, y) in meters.
      * Default to Town04 values if parsing fails.
      */
-    private double[] sumoNetOffsetXY = new double[]{503.02, 423.76};
+    // private double[] sumoNetOffsetXY = new double[]{503.02, 423.76};
+    private double[] sumoNetOffsetXY = new double[]{0, 0};
 
 
     /**

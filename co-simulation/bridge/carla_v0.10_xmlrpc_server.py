@@ -34,7 +34,6 @@ import logging
 import sys
 import os
 import json
-import threading
 import math
 from typing import Dict, List, Optional, Tuple, Any, Union
 from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
@@ -75,7 +74,6 @@ class CarlaXMLRPCServer:
         self.sensor_data: Dict[str, Any] = {}
         self.sensor_blueprints: Dict[str, carla.ActorBlueprint] = {}
 
-        self.lock = threading.RLock()
 
         # External-to-CARLA coordinate transform settings (SUMO/MOSAIC frame → CARLA frame)
         # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
@@ -346,65 +344,64 @@ class CarlaXMLRPCServer:
     # ---------- Connection ----------
     def connect(self) -> bool:
         try:
-            with self.lock:
-                if self.client is None:
-                    self.client = carla.Client(self.carla_host, self.carla_port)
-                    self.client.set_timeout(10.0)
-                self.world = self.client.get_world()
-                
-                # Set CARLA simulation to passive mode (synchronous mode)
-                self._apply_sync_settings()
-                logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
-                
-                # Get current map name
+            if self.client is None:
+                self.client = carla.Client(self.carla_host, self.carla_port)
+                self.client.set_timeout(10.0)
+            self.world = self.client.get_world()
+            
+            # Set CARLA simulation to passive mode (synchronous mode)
+            self._apply_sync_settings()
+            logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
+            
+            # Get current map name
+            try:
+                current_map = self.world.get_map().name
+            except Exception as e:
+                logger.exception("Error getting current map name: %s", e)
+                current_map = "<unknown>"
+            logger.info("Connected to CARLA %s at %s:%s | current map=%s",
+                        CARLA_VERSION, self.carla_host, self.carla_port, current_map)
+            
+            # Automatically load Town04 if not already loaded
+            if current_map != "Town04":
+                logger.info("Current map is not Town04, attempting to load Town04...")
                 try:
-                    current_map = self.world.get_map().name
-                except Exception as e:
-                    logger.exception("Error getting current map name: %s", e)
-                    current_map = "<unknown>"
-                logger.info("Connected to CARLA %s at %s:%s | current map=%s",
-                            CARLA_VERSION, self.carla_host, self.carla_port, current_map)
-                
-                # Automatically load Town04 if not already loaded
-                if current_map != "Town04":
-                    logger.info("Current map is not Town04, attempting to load Town04...")
-                    try:
-                        self.world = self.client.load_world("Town04")
-                        # Re-apply synchronous settings after world reload
-                        self._apply_sync_settings()
-                        new_map = self.world.get_map().name
-                        logger.info("Successfully loaded Town04 map: %s", new_map)
-                    except Exception as load_error:
-                        logger.error("Failed to load Town04 map: %s", load_error)
-                        # Continue with current map if Town04 loading fails
-                        logger.warning("Continuing with current map: %s", current_map)
-                else:
-                    logger.info("Town04 map is already loaded")
-                
-                # Configure TLS manager after successful connection
-                self._configure_tls_manager()
-                
-                return True
+                    self.world = self.client.load_world("Town04")
+                    # Re-apply synchronous settings after world reload
+                    self._apply_sync_settings()
+                    new_map = self.world.get_map().name
+                    logger.info("Successfully loaded Town04 map: %s", new_map)
+                except Exception as load_error:
+                    logger.error("Failed to load Town04 map: %s", load_error)
+                    # Continue with current map if Town04 loading fails
+                    logger.warning("Continuing with current map: %s", current_map)
+            else:
+                logger.info("Town04 map is already loaded")
+            
+            # Configure TLS manager after successful connection
+            self._configure_tls_manager()
+            
+            return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
             return False
 
     def disconnect(self) -> bool:
         try:
-            with self.lock:
-                for _, a in list(self.actors.items()):
-                    try: a.destroy()
-                    except Exception as e: 
-                        logger.exception("Error destroying actor (actor_id=%s): %s", getattr(a, 'id', 'unknown'), e)
-                for _, s in list(self.sensors.items()):
-                    try: s.destroy()
-                    except Exception as e:
-                        logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
-                self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
-                self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
-                self.world = None; self.client = None
-                logger.info("Disconnected from CARLA")
-                return True
+            
+            for _, a in list(self.actors.items()):
+                try: a.destroy()
+                except Exception as e: 
+                    logger.exception("Error destroying actor (actor_id=%s): %s", getattr(a, 'id', 'unknown'), e)
+            for _, s in list(self.sensors.items()):
+                try: s.destroy()
+                except Exception as e:
+                    logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
+            self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
+            self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
+            self.world = None; self.client = None
+            logger.info("Disconnected from CARLA")
+            return True
         except Exception as e:
             logger.error("Error during disconnect: %s", e)
             return False
@@ -450,11 +447,10 @@ class CarlaXMLRPCServer:
     # ---------- Simulation ----------
     def advance_simulation(self) -> bool:
         try:
-            with self.lock:
-                if not self.is_connected():
-                    return False
-                self.world.tick()
-                return True
+            if not self.is_connected():
+                return False
+            self.world.tick()
+            return True
         except Exception as e:
             logger.error("advance_simulation error: %s", e)
             return False
@@ -471,108 +467,106 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> Union[bool, str]:
         try:
-            with self.lock:
-                if not self.is_connected():
-                    return False
-                if actor_id in self.actors:
-                    return False
+            
+            if not self.is_connected():
+                return False
+            if actor_id in self.actors:
+                return False
 
-                lib = self.world.get_blueprint_library()
+            lib = self.world.get_blueprint_library()
 
-                bp = None
-                req = (actor_type or "").strip()
+            bp = None
+            req = (actor_type or "").strip()
 
-                if req:
-                    try:
-                        bp = lib.find(req)
-                    except Exception as e:
-                        logger.debug("Blueprint find failed for %s: %s", req, e)
-                        bp = None
+            if req:
+                try:
+                    bp = lib.find(req)
+                except Exception as e:
+                    logger.debug("Blueprint find failed for %s: %s", req, e)
+                    bp = None
 
-                if bp is None and req:
-                    cands = lib.filter(req)
+            if bp is None and req:
+                cands = lib.filter(req)
+                if cands:
+                    bp = cands[0]
+
+            if bp is None:
+                for pattern in ("vehicle.*", "walker.pedestrian.*", "*"):
+                    cands = lib.filter(pattern)
                     if cands:
                         bp = cands[0]
+                        break
 
-                if bp is None:
-                    for pattern in ("vehicle.*", "walker.pedestrian.*", "*"):
-                        cands = lib.filter(pattern)
-                        if cands:
-                            bp = cands[0]
-                            break
+            if bp is None:
+                logger.error("No blueprint available for actor_type=%r", actor_type)
+                return False
 
-                if bp is None:
-                    logger.error("No blueprint available for actor_type=%r", actor_type)
-                    return False
+            if attributes:
+                for k, v in attributes.items():
+                    if bp.has_attribute(k):
+                        bp.set_attribute(k, str(v))
 
-                if attributes:
-                    for k, v in attributes.items():
-                        if bp.has_attribute(k):
-                            bp.set_attribute(k, str(v))
+            # Get vehicle extent for proper center calculation
+            extent_x = 0.0
+            if bp.has_attribute('extent_x'):
+                try:
+                    extent_x = float(bp.get_attribute('extent_x').as_str())
+                except Exception as e:
+                    logger.debug("Error getting extent_x attribute: %s", e)
+                    pass
 
-                # Get vehicle extent for proper center calculation
-                extent_x = 0.0
-                if bp.has_attribute('extent_x'):
-                    try:
-                        extent_x = float(bp.get_attribute('extent_x').as_str())
-                    except Exception as e:
-                        logger.debug("Error getting extent_x attribute: %s", e)
-                        pass
-
-                if self.input_frame == 'sumo':
-                    loc = self._to_carla_location(location, rotation, extent_x)
-                    rot = self._to_carla_rotation(rotation)
-                else:
-                    try:
-                        lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                    except Exception as e:
-                        logger.exception("Error converting location in spawn_actor (location=%s): %s", location, e)
-                        lx, ly, lz = 0.0, 0.0, 0.0
-                    try:
-                        rp = float(rotation[0]) if len(rotation) > 0 else 0.0
-                        ry = float(rotation[1]) if len(rotation) > 1 else 0.0
-                        rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                    except Exception as e:
-                        logger.exception("Error converting rotation in spawn_actor (rotation=%s): %s", rotation, e)
-                        rp, ry, rr = 0.0, 0.0, 0.0
-                    loc = carla.Location(lx, ly, lz)
-                    rot = carla.Rotation(rp, ry, rr)
-                transform = carla.Transform(loc, rot)
-                loc = transform.location
-                rot = transform.rotation
-                
-                print(
-                    f"========spawn_actor received: actor {actor_id} of type {actor_type} "
-                    f"loc=({loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}) "
-                    f"rot=(pitch={rot.pitch:.1f}, yaw={rot.yaw:.1f}, roll={rot.roll:.1f}) "
-                    f"attributes={attributes}========"
-                )
-                print(f"spawn actor at loc={loc.x:.3f}, {loc.y:.3f}, {loc.z:.3f}, rot={rot.pitch:.1f}, {rot.yaw:.1f}, {rot.roll:.1f}")
-                # Attempt safe spawn with collision avoidance (height offsets and slight jitters)
-                actor = self._safe_try_spawn(bp, transform)
-                if actor is None:
-                    logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
-                    return False
-                self.actors[actor_id] = actor
-                self.actor_types[actor_id] = actor_type
-                self.actor_blueprints[actor_id] = bp
-                
-                # Only switch spectator to the first spawned actor
-                if len(self.actors) == 1:  # Only for the first vehicle
-                    try:
-                        # Switch spectator to follow the first spawned actor with proper offset
-                        # Use the actual actor object for more reliable positioning
-                        self._set_spectator_to_actor_object(actor, 'follow', 8.0, 3.0, -20.0)
-                        print(f"========Spectator switched to follow first actor: {actor_id}========")
-                    except Exception as e:
-                        print(f"Failed to switch spectator to first actor {actor_id}: {e}")
-                        logger.error("Failed to switch spectator to first actor: %s", e)
-                else:
-                    print(f"========Actor {actor_id} spawned (spectator not moved)========")
-                
-                print(f"========spawn_actor success========")
-                # Return the CARLA internal actor ID instead of boolean
-                return str(actor.id)
+            if self.input_frame == 'sumo':
+                loc = self._to_carla_location(location, rotation, extent_x)
+                rot = self._to_carla_rotation(rotation)
+            else:
+                try:
+                    lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+                except Exception as e:
+                    logger.exception("Error converting location in spawn_actor (location=%s): %s", location, e)
+                    lx, ly, lz = 0.0, 0.0, 0.0
+                try:
+                    rp = float(rotation[0]) if len(rotation) > 0 else 0.0
+                    ry = float(rotation[1]) if len(rotation) > 1 else 0.0
+                    rr = float(rotation[2]) if len(rotation) > 2 else 0.0
+                except Exception as e:
+                    logger.exception("Error converting rotation in spawn_actor (rotation=%s): %s", rotation, e)
+                    rp, ry, rr = 0.0, 0.0, 0.0
+                loc = carla.Location(lx, ly, lz)
+                rot = carla.Rotation(rp, ry, rr)
+            transform = carla.Transform(loc, rot)
+            loc = transform.location
+            rot = transform.rotation
+            
+            logger.info(
+                "========spawn_actor received: actor %s of type %s "
+                "loc=(%.3f, %.3f, %.3f) "
+                "rot=(pitch=%.1f, yaw=%.1f, roll=%.1f) "
+                "attributes=%s========",
+                actor_id, actor_type, loc.x, loc.y, loc.z, rot.pitch, rot.yaw, rot.roll, attributes
+            )
+            logger.info("spawn actor at loc=%.3f, %.3f, %.3f, rot=%.1f, %.1f, %.1f", loc.x, loc.y, loc.z, rot.pitch, rot.yaw, rot.roll)
+            # Attempt safe spawn with collision avoidance (height offsets and slight jitters)
+            actor = self._safe_try_spawn(bp, transform)
+            if actor is None:
+                logger.warning("spawn_actor blocked or invalid at loc=(%.2f, %.2f, %.2f)", loc.x, loc.y, loc.z)
+                return False
+            self.actors[actor_id] = actor
+            self.actor_types[actor_id] = actor_type
+            self.actor_blueprints[actor_id] = bp
+            
+            # Only switch spectator to the first spawned actor
+            if len(self.actors) == 1:  # Only for the first vehicle
+                try:
+                    self._set_spectator_to_actor_object(actor, 'follow', 8.0, 3.0, -20.0)
+                    logger.info("========Spectator switched to follow first actor: %s========", actor_id)
+                except Exception as e:
+                    logger.error("Failed to switch spectator to first actor %s: %s", actor_id, e)
+            else:
+                logger.info("========Actor %s spawned (spectator not moved)========", actor_id)
+            
+            logger.info("========spawn_actor success========")
+            # Return the CARLA internal actor ID instead of boolean
+            return str(actor.id)
         except Exception as e:
             logger.error("spawn_actor error: %s", e)
             return False
@@ -580,102 +574,100 @@ class CarlaXMLRPCServer:
 
     def destroy_actor(self, actor_key: ActorKey) -> bool:
         try:
-            with self.lock:
-                actor = self._resolve_actor(actor_key)
-                if actor is None: return False
-                for alias, a in list(self.actors.items()):
-                    if a.id == actor.id:
-                        self.actors.pop(alias, None)
-                        self.actor_types.pop(alias, None)
-                        self.actor_blueprints.pop(alias, None)
-                actor.destroy()
-                return True
+            actor = self._resolve_actor(actor_key)
+            if actor is None: return False
+            for alias, a in list(self.actors.items()):
+                if a.id == actor.id:
+                    self.actors.pop(alias, None)
+                    self.actor_types.pop(alias, None)
+                    self.actor_blueprints.pop(alias, None)
+            actor.destroy()
+            return True
         except Exception as e:
             logger.error("destroy_actor error: %s", e)
             return False
 
     def update_actor_transform(self, actor_key: ActorKey, location: List[float], rotation: List[float]) -> bool:
         try:
-            with self.lock:
-                actor = self._resolve_actor(actor_key)
-                if actor is None: return False
-                
-                # Get vehicle extent for proper center calculation
-                extent_x = 0.0
-                if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
-                    extent_x = float(actor.bounding_box.extent.x)
-                
-                if self.input_frame == 'sumo':
-                    loc = self._to_carla_location(location, rotation, extent_x)
-                    rot = self._to_carla_rotation(rotation)
-                else:
-                    try:
-                        lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                    except Exception as e:
-                        logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
-                        lx, ly, lz = 0.0, 0.0, 0.0
-                    try:
-                        rp = float(rotation[0]) if len(rotation) > 0 else 0.0
-                        ry = float(rotation[1]) if len(rotation) > 1 else 0.0
-                        rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                    except Exception as e:
-                        logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
-                        rp, ry, rr = 0.0, 0.0, 0.0
-                    loc = carla.Location(lx, ly, lz)
-                    rot = carla.Rotation(rp, ry, rr)
-                transform = carla.Transform(loc, rot)
-                actor.set_transform(transform)
-                return True
+            actor = self._resolve_actor(actor_key)
+            if actor is None: return False
+            
+            # Get vehicle extent for proper center calculation
+            extent_x = 0.0
+            if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
+                extent_x = float(actor.bounding_box.extent.x)
+            
+            if self.input_frame == 'sumo':
+                loc = self._to_carla_location(location, rotation, extent_x)
+                rot = self._to_carla_rotation(rotation)
+            else:
+                try:
+                    lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+                except Exception as e:
+                    logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
+                    lx, ly, lz = 0.0, 0.0, 0.0
+                try:
+                    rp = float(rotation[0]) if len(rotation) > 0 else 0.0
+                    ry = float(rotation[1]) if len(rotation) > 1 else 0.0
+                    rr = float(rotation[2]) if len(rotation) > 2 else 0.0
+                except Exception as e:
+                    logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
+                    rp, ry, rr = 0.0, 0.0, 0.0
+                loc = carla.Location(lx, ly, lz)
+                rot = carla.Rotation(rp, ry, rr)
+            transform = carla.Transform(loc, rot)
+            actor.set_transform(transform)
+            return True
         except Exception as e:
             logger.error("update_actor_transform error: %s", e)
             return False
 
     def update_actor_velocity(self, actor_key: ActorKey, velocity: List[float]) -> bool:
         try:
-            with self.lock:
-                actor = self._resolve_actor(actor_key)
-                if actor is None:
-                    return False
-
-                if not (hasattr(velocity, '__len__') or isinstance(velocity, dict)):
-                    logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
-                    return False
-                if self.input_frame == 'sumo':
-                    vec = self._to_carla_velocity(velocity)
-                else:
-                    if isinstance(velocity, dict):
-                        try:
-                            vx = float(velocity.get('x', 0.0)); vy = float(velocity.get('y', 0.0)); vz = float(velocity.get('z', 0.0))
-                        except Exception as e:
-                            logger.exception("Error converting velocity dict in update_actor_velocity (velocity=%s): %s", velocity, e)
-                            vx, vy, vz = 0.0, 0.0, 0.0
-                    else:
-                        try:
-                            vx = float(velocity[0]); vy = float(velocity[1]); vz = float(velocity[2])
-                        except Exception as e:
-                            logger.exception("Error converting velocity list in update_actor_velocity (velocity=%s): %s", velocity, e)
-                            vx, vy, vz = 0.0, 0.0, 0.0
-                    vec = carla.Vector3D(vx, vy, vz)
-
-                if hasattr(actor, 'set_target_velocity'):
-                    actor.set_target_velocity(vec)
-                    return True
-
-                if hasattr(actor, 'set_velocity'):
-                    try:
-                        if hasattr(actor, 'set_simulate_physics'):
-                            try:
-                                actor.set_simulate_physics(True)
-                            except Exception as e:
-                                logger.debug("Error setting simulate_physics: %s", e)
-                                pass
-                        actor.set_velocity(vec)
-                        return True
-                    except Exception as e:
-                        logger.debug("set_velocity failed: %s", e)
-                        return False
-
+            
+            actor = self._resolve_actor(actor_key)
+            if actor is None:
                 return False
+
+            if not (hasattr(velocity, '__len__') or isinstance(velocity, dict)):
+                logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
+                return False
+            if self.input_frame == 'sumo':
+                vec = self._to_carla_velocity(velocity)
+            else:
+                if isinstance(velocity, dict):
+                    try:
+                        vx = float(velocity.get('x', 0.0)); vy = float(velocity.get('y', 0.0)); vz = float(velocity.get('z', 0.0))
+                    except Exception as e:
+                        logger.exception("Error converting velocity dict in update_actor_velocity (velocity=%s): %s", velocity, e)
+                        vx, vy, vz = 0.0, 0.0, 0.0
+                else:
+                    try:
+                        vx = float(velocity[0]); vy = float(velocity[1]); vz = float(velocity[2])
+                    except Exception as e:
+                        logger.exception("Error converting velocity list in update_actor_velocity (velocity=%s): %s", velocity, e)
+                        vx, vy, vz = 0.0, 0.0, 0.0
+                vec = carla.Vector3D(vx, vy, vz)
+
+            if hasattr(actor, 'set_target_velocity'):
+                actor.set_target_velocity(vec)
+                return True
+
+            if hasattr(actor, 'set_velocity'):
+                try:
+                    if hasattr(actor, 'set_simulate_physics'):
+                        try:
+                            actor.set_simulate_physics(True)
+                        except Exception as e:
+                            logger.debug("Error setting simulate_physics: %s", e)
+                            pass
+                    actor.set_velocity(vec)
+                    return True
+                except Exception as e:
+                    logger.debug("set_velocity failed: %s", e)
+                    return False
+
+            return False
         except Exception as e:
             logger.error("update_actor_velocity error: %s", e)
             return False
@@ -683,69 +675,68 @@ class CarlaXMLRPCServer:
 
     def get_all_actors(self) -> Dict[str, Dict[str, Any]]:
         try:
-            with self.lock:
-                if not self.is_connected():
-                    return {}
-                
-                out = {}
-                # Get actual actors from CARLA world to detect externally removed actors
+            
+            if not self.is_connected():
+                return {}
+            
+            out = {}
+            # Get actual actors from CARLA world to detect externally removed actors
+            world_actors = {}
+            try:
+                for actor in self.world.get_actors():
+                    world_actors[str(actor.id)] = actor
+            except Exception as e:
+                logger.warning("Failed to get world actors: %s", e)
                 world_actors = {}
+            
+            # Clean up actors that no longer exist in CARLA world
+            actors_to_remove = []
+            for alias, actor in self.actors.items():
+                if str(actor.id) not in world_actors:
+                    actors_to_remove.append(alias)
+                    logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
+            
+            for alias in actors_to_remove:
+                self.actors.pop(alias, None)
+                self.actor_types.pop(alias, None)
+                self.actor_blueprints.pop(alias, None)
+            
+            # Build output with currently existing actors
+            for alias, actor in self.actors.items():
                 try:
-                    for actor in self.world.get_actors():
-                        world_actors[str(actor.id)] = actor
+                    # Double-check actor still exists and is valid
+                    if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
+                        t = actor.get_transform()
+                        actor_data = {
+                            'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                            'transform': {
+                                'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                            }
+                        }
+                        
+                        # Add velocity information if available
+                        if hasattr(actor, 'get_velocity'):
+                            try:
+                                v = actor.get_velocity()
+                                actor_data['velocity'] = {
+                                    'linear': [float(v.x), float(v.y), float(v.z)]
+                                }
+                            except Exception as e:
+                                logger.debug("Failed to get velocity for actor %s: %s", alias, e)
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                        else:
+                            actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                        
+                        out[alias] = actor_data
+                    else:
+                        logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
                 except Exception as e:
-                    logger.warning("Failed to get world actors: %s", e)
-                    world_actors = {}
-                
-                # Clean up actors that no longer exist in CARLA world
-                actors_to_remove = []
-                for alias, actor in self.actors.items():
-                    if str(actor.id) not in world_actors:
-                        actors_to_remove.append(alias)
-                        logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
-                
-                for alias in actors_to_remove:
+                    logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e)
+                    # Remove invalid actor from tracking
                     self.actors.pop(alias, None)
                     self.actor_types.pop(alias, None)
                     self.actor_blueprints.pop(alias, None)
-                
-                # Build output with currently existing actors
-                for alias, actor in self.actors.items():
-                    try:
-                        # Double-check actor still exists and is valid
-                        if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
-                            t = actor.get_transform()
-                            actor_data = {
-                                'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
-                                'transform': {
-                                    'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
-                                    'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
-                                }
-                            }
-                            
-                            # Add velocity information if available
-                            if hasattr(actor, 'get_velocity'):
-                                try:
-                                    v = actor.get_velocity()
-                                    actor_data['velocity'] = {
-                                        'linear': [float(v.x), float(v.y), float(v.z)]
-                                    }
-                                except Exception as e:
-                                    logger.debug("Failed to get velocity for actor %s: %s", alias, e)
-                                    actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
-                            else:
-                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
-                            
-                            out[alias] = actor_data
-                        else:
-                            logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
-                    except Exception as e:
-                        logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e)
-                        # Remove invalid actor from tracking
-                        self.actors.pop(alias, None)
-                        self.actor_types.pop(alias, None)
-                        self.actor_blueprints.pop(alias, None)
-                
                 return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
@@ -754,7 +745,7 @@ class CarlaXMLRPCServer:
     # ---------- Actor Data (spec) ----------
     def get_active_actor_ids(self, filter_pattern: str = "vehicle.*") -> List[int]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return []
                 return [int(a.id) for a in self.world.get_actors().filter(filter_pattern)]
         except Exception as e:
@@ -763,7 +754,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_basic_info(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return None
                 return {
@@ -779,7 +770,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_transform(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return None
                 t = actor.get_transform()
@@ -794,7 +785,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_velocity(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'get_velocity'): return None
                 v = actor.get_velocity()
@@ -805,7 +796,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_acceleration(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'get_acceleration'): return None
                 a = actor.get_acceleration()
@@ -816,7 +807,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_angular_velocity(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'get_angular_velocity'): return None
                 w = actor.get_angular_velocity()
@@ -827,7 +818,7 @@ class CarlaXMLRPCServer:
 
     def get_actor_bounding_box(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None or not hasattr(actor, 'bounding_box'): return None
                 bb = actor.bounding_box
@@ -842,7 +833,7 @@ class CarlaXMLRPCServer:
 
     def get_vehicle_light_state(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return None
                 if hasattr(actor, 'get_light_state'):
@@ -855,7 +846,7 @@ class CarlaXMLRPCServer:
 
     def set_actor_state_properties(self, actor_key: ActorKey, properties_to_set: Dict[str, Any]) -> bool:
         try:
-            with self.lock:
+            
                 actor = self._resolve_actor(actor_key)
                 if actor is None: return False
 
@@ -948,7 +939,7 @@ class CarlaXMLRPCServer:
 
     def get_traffic_light_state(self, traffic_light_id: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return None
                 tid = int(traffic_light_id)
                 tl = self.world.get_actor(tid) if self.world else None
@@ -973,7 +964,7 @@ class CarlaXMLRPCServer:
 
     def get_all_traffic_light_states(self) -> List[Dict[str, Any]]:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return []
                 out = []
                 ts = self._sim_timestamp()
@@ -1003,7 +994,7 @@ class CarlaXMLRPCServer:
 
     def set_traffic_light_state(self, traffic_light_id: ActorKey, state: str) -> bool:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return False
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
                     if str(tl.id) == str(traffic_light_id):
@@ -1023,7 +1014,7 @@ class CarlaXMLRPCServer:
 
     def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return False
                 for tl in self.world.get_actors().filter('traffic.traffic_light'):
                     if str(tl.id) == str(traffic_light_id):
@@ -1046,7 +1037,7 @@ class CarlaXMLRPCServer:
         This avoids the need to resolve actor by ID and is more reliable.
         """
         try:
-            with self.lock:
+            
                 if not self.is_connected():
                     return False
                 if actor is None:
@@ -1088,7 +1079,7 @@ class CarlaXMLRPCServer:
 
     def set_spectator_to_actor(self, actor_key: ActorKey, preset: str = 'follow', back: float = 10.0, up: float = 5.0, pitch: float = -15.0) -> bool:
         try:
-            with self.lock:
+            
                 if not self.is_connected():
                     return False
                 actor = self._resolve_actor(actor_key)
@@ -1123,7 +1114,7 @@ class CarlaXMLRPCServer:
     # ---------- Maps ----------
     def get_map_name(self) -> str:
         try:
-            with self.lock:
+            
                 if not self.is_connected(): return ""
                 return self.world.get_map().name
         except Exception as e:
@@ -1151,7 +1142,7 @@ class CarlaXMLRPCServer:
 
     def load_map(self, map_name: str) -> bool:
         try:
-            with self.lock:
+            
                 if not self.is_connected():
                     logger.error("load_map failed: Not connected to CARLA")
                     return False
