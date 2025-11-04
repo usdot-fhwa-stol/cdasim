@@ -55,13 +55,14 @@ SensorKey = Union[int, str]
 class CarlaXMLRPCServer:
     def __init__(self, host: str = 'localhost', port: int = 8090,
                  carla_host: str = 'localhost', carla_port: int = 2000,
-                 tls_manager: str = 'none', phase: float = 0.1):
+                 tls_manager: str = 'none', phase: float = 0.1, default_map_name: str = 'Town04'):
         self.host = host
         self.port = port
         self.carla_host = carla_host
         self.carla_port = carla_port
         self.tls_manager = tls_manager
         self.phase = phase
+        self.default_map_name = default_map_name
 
         self.client: Optional[carla.Client] = None
         self.world: Optional[carla.World] = None
@@ -352,21 +353,21 @@ class CarlaXMLRPCServer:
             logger.info("Connected to CARLA %s at %s:%s | current map=%s",
                         CARLA_VERSION, self.carla_host, self.carla_port, current_map)
             
-            # Automatically load Town04 if not already loaded
-            if current_map != "Town04":
-                logger.info("Current map is not Town04, attempting to load Town04...")
+            # Automatically load default map if not already loaded
+            if current_map != self.default_map_name:
+                logger.info("Current map is not %s, attempting to load %s...", self.default_map_name, self.default_map_name)
                 try:
-                    self.world = self.client.load_world("Town04")
+                    self.world = self.client.load_world(self.default_map_name)
                     # Re-apply synchronous settings after world reload
                     self._apply_sync_settings()
                     new_map = self.world.get_map().name
-                    logger.info("Successfully loaded Town04 map: %s", new_map)
+                    logger.info("Successfully loaded %s map: %s", self.default_map_name, new_map)
                 except Exception as load_error:
-                    logger.error("Failed to load Town04 map: %s", load_error)
-                    # Continue with current map if Town04 loading fails
+                    logger.error("Failed to load %s map: %s", self.default_map_name, load_error)
+                    # Continue with current map if default map loading fails
                     logger.warning("Continuing with current map: %s", current_map)
             else:
-                logger.info("Town04 map is already loaded")
+                logger.info("%s map is already loaded", self.default_map_name)
             
             # Configure TLS manager after successful connection
             self._configure_tls_manager()
@@ -1150,6 +1151,7 @@ def main():
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
     parser.add_argument('--phase', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
+    parser.add_argument('--map', '--map-name', dest='map_name', default='Town04', help='Default map name to load on connection (default: Town04)')
     parser.add_argument('--tls-manager',
                        type=str,
                        choices=['none', 'sumo', 'carla', 'EVC'],
@@ -1160,7 +1162,7 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.phase)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.phase, args.map_name)
     try:
         server.start()
     except KeyboardInterrupt:
