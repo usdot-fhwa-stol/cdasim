@@ -49,22 +49,22 @@ class ScenarioRunner:
         start_sh = scripts["start_script"]
         stop_sh = scripts["stop_script"]
 
-        # # 4. Start
-        # print(f"Launching: {start_sh}")
-        # proc = subprocess.Popen(["bash", start_sh])
+        # 4. Start
+        print(f"Launching: {start_sh}")
+        proc = subprocess.Popen(["bash", start_sh])
 
-        # # 5. Wait
-        # runtime = case.get("runtime_seconds", 60)
-        # print(f"Running for {runtime} seconds...")
-        # try:
-        #     proc.wait(timeout=runtime)
-        # except subprocess.TimeoutExpired:
-        #     print("Timeout — stopping.")
-        # finally:
-        #     # 6. Stop
-        #     print(f"Stopping: {stop_sh}")
-        #     subprocess.run(["bash", stop_sh], check=False)
-
+        # 5. Wait
+        runtime = case.get("runtime_seconds", 60)
+        print(f"Running for {runtime} seconds...")
+        try:
+            proc.wait(timeout=runtime)
+        except subprocess.TimeoutExpired:
+            print("Timeout — stopping.")
+        finally:
+            # 6. Stop
+            print(f"Stopping: {stop_sh}")
+            subprocess.run(["bash", stop_sh], check=False)
+        return
         # 7. ALWAYS clean tmp/
         shutil.rmtree(self.tmp_dir)
         print(f"Cleaned {self.tmp_dir}")
