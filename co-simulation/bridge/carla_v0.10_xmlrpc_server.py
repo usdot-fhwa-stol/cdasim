@@ -179,7 +179,6 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.load_map, 'load_map')
 
         # Coordinate transform configuration
-        self.server.register_function(self.set_input_frame_mode, 'set_input_frame_mode')
         self.server.register_function(self.set_net_offset_xy, 'set_net_offset_xy')
 
     # ---------- Utilities ----------
@@ -204,26 +203,7 @@ class CarlaXMLRPCServer:
         except Exception as e:
             logger.exception("Error converting location sequence to CARLA location (location_seq=%s): %s", location_seq, e)
             x_in, y_in, z_in = 0.0, 0.0, 0.0
-
-        if self.input_frame == 'sumo':
-            # Apply vehicle center offset if rotation and extent are provided
-            if rotation_seq is not None and extent_x > 0.0:
-                try:
-                    yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
-                    pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
-                    
-                    # From front-center-bumper to center (SUMO reference system)
-                    # Reference: http://sumo.sourceforge.net/userdoc/Purgatory/Vehicle_Values.html#angle
-                    yaw = -1 * yaw_in + 90
-                    x_center = x_in - math.cos(math.radians(yaw)) * extent_x
-                    y_center = y_in - math.sin(math.radians(yaw)) * extent_x
-                    z_center = z_in - math.sin(math.radians(pitch_in)) * extent_x
-                except Exception as e:
-                    logger.exception("Error calculating vehicle center offset (rotation_seq=%s, extent_x=%s): %s", rotation_seq, extent_x, e)
-                    x_center, y_center, z_center = x_in, y_in, z_in
-            else:
-                x_center, y_center, z_center = x_in, y_in, z_in
-            
+            x_center, y_center, z_center = x_in, y_in, z_in
             # Apply SUMO net offset
             x_off = x_center - float(self.net_offset_xy[0])
             y_off = y_center - float(self.net_offset_xy[1])
@@ -236,17 +216,21 @@ class CarlaXMLRPCServer:
 
     def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
         try:
-            pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else 0.0
-            yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else 0.0
-            roll_in = float(rotation_seq[2]) if len(rotation_seq) > 2 else 0.0
+            # Use None to represent missing values (out-of-band), distinguish from 0.0 (in-band)
+            pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else None
+            yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else None
+            roll_in = float(rotation_seq[2]) if len(rotation_seq) > 2 else None
         except Exception as e:
             logger.exception("Error converting rotation sequence to CARLA rotation (rotation_seq=%s): %s", rotation_seq, e)
-            pitch_in, yaw_in, roll_in = 0.0, 0.0, 0.0
+            pitch_in, yaw_in, roll_in = None, None, None
 
-        if self.input_frame == 'sumo':
-            # SUMO → CARLA yaw mapping per BridgeHelper: yaw_carla = yaw_sumo - 90
-            return carla.Rotation(pitch_in, yaw_in - 90.0, roll_in)
-        return carla.Rotation(pitch_in, yaw_in, roll_in)
+        # Convert None (missing) to 0.0 only when creating the Rotation object
+        pitch = pitch_in if pitch_in is not None else 0.0
+        yaw = yaw_in if yaw_in is not None else 0.0
+        roll = roll_in if roll_in is not None else 0.0
+
+
+        return carla.Rotation(pitch, yaw, roll)
 
     def _to_carla_velocity(self, velocity_seq_or_dict: Any) -> carla.Vector3D:
         if isinstance(velocity_seq_or_dict, dict):
@@ -262,22 +246,9 @@ class CarlaXMLRPCServer:
                 logger.exception("Error converting velocity sequence to CARLA velocity (velocity_seq_or_dict=%s): %s", velocity_seq_or_dict, e)
                 vx, vy, vz = 0.0, 0.0, 0.0
 
-        if self.input_frame == 'sumo':
-            # Flip Y to match CARLA left-handed axes
-            return carla.Vector3D(vx, -vy, vz)
         return carla.Vector3D(vx, vy, vz)
 
     # ----- Coordinate transform configuration -----
-    def set_input_frame_mode(self, mode: str) -> bool:
-        try:
-            mode_l = str(mode).strip().lower()
-            if mode_l in ('sumo', 'carla'):
-                self.input_frame = 'sumo' if mode_l == 'sumo' else 'carla'
-                return True
-            return False
-        except Exception as e:
-            logger.exception("Error setting input frame mode (mode=%s): %s", mode, e)
-            return False
 
     def set_net_offset_xy(self, x: float, y: float) -> bool:
         try:
@@ -506,27 +477,21 @@ class CarlaXMLRPCServer:
                     logger.debug("Error getting extent_x attribute: %s", e)
                     pass
 
-            if self.input_frame == 'sumo':
-                loc = self._to_carla_location(location, rotation, extent_x)
-                rot = self._to_carla_rotation(rotation)
-            else:
-                try:
-                    lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                except Exception as e:
-                    logger.exception("Error converting location in spawn_actor (location=%s): %s", location, e)
-                    lx, ly, lz = 0.0, 0.0, 0.0
-                try:
+            try:
+                lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+            except Exception as e:
+                logger.exception("Error converting location in spawn_actor (location=%s): %s", location, e)
+                lx, ly, lz = 0.0, 0.0, 0.0
+            try:
                     rp = float(rotation[0]) if len(rotation) > 0 else 0.0
                     ry = float(rotation[1]) if len(rotation) > 1 else 0.0
                     rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                except Exception as e:
+            except Exception as e:
                     logger.exception("Error converting rotation in spawn_actor (rotation=%s): %s", rotation, e)
                     rp, ry, rr = 0.0, 0.0, 0.0
-                loc = carla.Location(lx, ly, lz)
-                rot = carla.Rotation(rp, ry, rr)
+            loc = carla.Location(lx, ly, lz)
+            rot = carla.Rotation(rp, ry, rr)
             transform = carla.Transform(loc, rot)
-            loc = transform.location
-            rot = transform.rotation
             
             logger.info(
                 "========spawn_actor received: actor %s of type %s "
@@ -588,25 +553,19 @@ class CarlaXMLRPCServer:
             if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
                 extent_x = float(actor.bounding_box.extent.x)
             
-            if self.input_frame == 'sumo':
-                loc = self._to_carla_location(location, rotation, extent_x)
-                rot = self._to_carla_rotation(rotation)
-            else:
-                try:
-                    lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
-                except Exception as e:
-                    logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
-                    lx, ly, lz = 0.0, 0.0, 0.0
-                try:
-                    rp = float(rotation[0]) if len(rotation) > 0 else 0.0
-                    ry = float(rotation[1]) if len(rotation) > 1 else 0.0
-                    rr = float(rotation[2]) if len(rotation) > 2 else 0.0
-                except Exception as e:
-                    logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
-                    rp, ry, rr = 0.0, 0.0, 0.0
-                loc = carla.Location(lx, ly, lz)
-                rot = carla.Rotation(rp, ry, rr)
-            transform = carla.Transform(loc, rot)
+            try:
+                lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
+            except Exception as e:
+                logger.exception("Error converting location in update_actor_transform (location=%s): %s", location, e)
+                lx, ly, lz = 0.0, 0.0, 0.0
+            try:
+                rp = float(rotation[0]) if len(rotation) > 0 else 0.0
+                ry = float(rotation[1]) if len(rotation) > 1 else 0.0
+                rr = float(rotation[2]) if len(rotation) > 2 else 0.0
+            except Exception as e:
+                logger.exception("Error converting rotation in update_actor_transform (rotation=%s): %s", rotation, e)
+                rp, ry, rr = 0.0, 0.0, 0.0
+            transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
             actor.set_transform(transform)
             return True
         except Exception as e:
@@ -623,22 +582,12 @@ class CarlaXMLRPCServer:
             if not (hasattr(velocity, '__len__') or isinstance(velocity, dict)):
                 logger.error("update_actor_velocity expects length-3 sequence or dict {x,y,z}")
                 return False
-            if self.input_frame == 'sumo':
-                vec = self._to_carla_velocity(velocity)
-            else:
-                if isinstance(velocity, dict):
-                    try:
-                        vx = float(velocity.get('x', 0.0)); vy = float(velocity.get('y', 0.0)); vz = float(velocity.get('z', 0.0))
-                    except Exception as e:
-                        logger.exception("Error converting velocity dict in update_actor_velocity (velocity=%s): %s", velocity, e)
-                        vx, vy, vz = 0.0, 0.0, 0.0
-                else:
-                    try:
-                        vx = float(velocity[0]); vy = float(velocity[1]); vz = float(velocity[2])
-                    except Exception as e:
-                        logger.exception("Error converting velocity list in update_actor_velocity (velocity=%s): %s", velocity, e)
-                        vx, vy, vz = 0.0, 0.0, 0.0
-                vec = carla.Vector3D(vx, vy, vz)
+            try:
+                vx = float(velocity[0]); vy = float(velocity[1]); vz = float(velocity[2])
+            except Exception as e:
+                logger.exception("Error converting velocity list in update_actor_velocity (velocity=%s): %s", velocity, e)
+                vx, vy, vz = 0.0, 0.0, 0.0
+            vec = carla.Vector3D(vx, vy, vz)
 
             if hasattr(actor, 'set_target_velocity'):
                 actor.set_target_velocity(vec)
