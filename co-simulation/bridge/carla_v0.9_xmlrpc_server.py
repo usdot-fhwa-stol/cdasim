@@ -74,11 +74,6 @@ class CarlaXMLRPCServer:
         self._odr_to_tl = {} 
         self._odr_to_tls = {}
 
-        self.lock = threading.RLock()
-
-        self.input_frame: str = 'sumo'
-        self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
-
         self.server = SimpleXMLRPCServer(
             (host, port),
             requestHandler=SimpleXMLRPCRequestHandler,
@@ -162,17 +157,10 @@ class CarlaXMLRPCServer:
 
         # Lifecycle / utility
         self.server.register_function(self.spawn_actor, 'spawn_actor')
-        # SUMO-aware spawn/update helpers (apply front-bumper correction like BridgeHelper)
-        self.server.register_function(self.spawn_actor_from_sumo, 'spawn_actor_from_sumo')
         self.server.register_function(self.destroy_actor, 'destroy_actor')
         self.server.register_function(self.update_actor_transform, 'update_actor_transform')
-        self.server.register_function(self.update_actor_transform_from_sumo, 'update_actor_transform_from_sumo')
         self.server.register_function(self.update_actor_velocity, 'update_actor_velocity')
         self.server.register_function(self.get_all_actors, 'get_all_actors')
-
-        # Coordinate transforms utilities
-        self.server.register_function(self.sumo_to_carla_transform, 'sumo_to_carla_transform')
-        self.server.register_function(self.carla_to_sumo_transform, 'carla_to_sumo_transform')
 
         # Traffic lights
         self.server.register_function(self.get_traffic_light_state, 'get_traffic_light_state')
@@ -805,18 +793,17 @@ class CarlaXMLRPCServer:
         Freeze or unfreeze all traffic lights. Returns count of actors updated.
         """
         try:
-            with self.lock:
-                if not self.is_connected():
-                    return 0
-                count = 0
-                for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                    try:
-                        tl.freeze(bool(frozen))
-                        count += 1
-                    except Exception as e:
-                        logger.warning("freeze_all_traffic_lights: failed on %s: %s", tl.id, e)
-                logger.info("freeze_all_traffic_lights: set frozen=%s on %d traffic lights", frozen, count)
-                return count
+            if not self.is_connected():
+                return 0
+            count = 0
+            for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                try:
+                    tl.freeze(bool(frozen))
+                    count += 1
+                except Exception as e:
+                    logger.warning("freeze_all_traffic_lights: failed on %s: %s", tl.id, e)
+            logger.info("freeze_all_traffic_lights: set frozen=%s on %d traffic lights", frozen, count)
+            return count
         except Exception as e:
             logger.error("freeze_all_traffic_lights error: %s", e)
             return 0
