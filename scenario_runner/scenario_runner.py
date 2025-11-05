@@ -17,7 +17,7 @@ import subprocess
 import shutil
 from pathlib import Path
 from scenario_generator import ScenarioGenerator
-
+from data_collector import DataCollector
 
 class ScenarioRunner:
     """Run every scenario defined in parameters.yaml."""
@@ -26,6 +26,7 @@ class ScenarioRunner:
         self.parameters_path = Path(parameters_path)
         self.test_cases = []
         self.tmp_dir = Path("tmp").resolve()
+        self.collector = DataCollector()
 
     def load_parameters(self):
         if not self.parameters_path.exists():
@@ -40,6 +41,9 @@ class ScenarioRunner:
     def _run_one(self, idx: int, case: dict):
         label = case.get("label", f"scenario_{idx}")
         print(f"\n=== Scenario {idx}: {label} ===")
+
+        # 0. Make sure logs file exists or not
+        self.collector.ensure_directories()
 
         # 1. Clean tmp/ (fresh start)
         if self.tmp_dir.exists():
@@ -72,11 +76,16 @@ class ScenarioRunner:
         finally:
             # 6. Stop
             print(f"Stopping: {stop_sh}")
-            subprocess.run(["bash", stop_sh], check=False)
-        return
+            subprocess.run(["bash", stop_sh], check=True)
+        
+        print("Collecting data outputs...")
+        self.collector.collect(idx, case)
+
         # 7. ALWAYS clean tmp/
         shutil.rmtree(self.tmp_dir)
         print(f"Cleaned {self.tmp_dir}")
+
+        print(f"Scenario {idx} complete.\n")
 
     def run(self):
         if not self.test_cases:
