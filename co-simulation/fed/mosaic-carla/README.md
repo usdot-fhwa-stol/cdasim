@@ -85,7 +85,8 @@ The federate implements the following tick-loop integration pattern:
   "carlaServerUrl": "http://localhost:8090",
   "connectionRetries": 5,
   "timeStep": 0.1,
-  "mapName": "Town01"
+  "mapName": "Town01",
+  "autoLoadMap": true
 }
 ```
 
@@ -95,7 +96,8 @@ The federate implements the following tick-loop integration pattern:
   "carlaServerUrl": "http://localhost:8090",
   "connectionRetries": 5,
   "timeStep": 0.1,
-  "mapName": "Town01",
+  "mapName": "Town04",
+  "autoLoadMap": true,
   "logLevel": "INFO",
   "enableActorManagement": true,
   "enableTrafficLightControl": true,
@@ -144,6 +146,25 @@ for (Integer actorId : actorIds) {
 
 // Disconnect
 client.disconnect();
+```
+
+### Map Management
+```java
+// Get current map name
+String currentMap = client.getMapName();
+System.out.println("Current map: " + currentMap);
+
+// Get available maps
+List<String> availableMaps = client.getAvailableMaps();
+System.out.println("Available maps: " + availableMaps);
+
+// Load a specific map
+boolean success = client.loadMap("Town04");
+if (success) {
+    System.out.println("Successfully loaded Town04 map");
+} else {
+    System.out.println("Failed to load Town04 map");
+}
 ```
 
 ### Actor Management
@@ -268,14 +289,10 @@ Monitor XML-RPC calls and responses in the logs for detailed debugging informati
 - Gson for JSON processing
 - MOSAIC RTI API
 
-## License
-
-2025-09-29 18:06:52,249 ERROR ProcessLoggingThread:72 - Process carla : chmod: changing permissions of '/opt/carla/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping': Operation not permitted
-
-2025-09-29 19:11:20,821 - ERROR - spawn_actor error: blueprint 'vehicle.sumo' not found
 ```bash
 docker run --rm -it --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 --user=carma usdotfhwastol/cdasim:latest /bin/bash
 cd bridge
-python carla_v0.9_xmlrpc_server.py
+python carla_v0.9_xmlrpc_server.py --debug
+python manual_control.py
 ./mosaic.sh -s Town04
 ```

@@ -39,7 +39,6 @@ public class CarlaConfigurationTest {
         assertNotNull(carlaConfiguration); // assert that configuration is created
         assertEquals(Long.valueOf(200L), carlaConfiguration.updateInterval);
         assertEquals("D:/CARLA_0.9.10/", carlaConfiguration.carlaUE4Path);
-        assertEquals("./scenarios/Town04_10/carla; bridge.bat", carlaConfiguration.bridgePath);
         assertEquals(8913, carlaConfiguration.carlaConnectionPort);
         assertEquals("http://127.0.0.1:8090/RPC2",carlaConfiguration.carlaSensorLibRPCUrl);
     }

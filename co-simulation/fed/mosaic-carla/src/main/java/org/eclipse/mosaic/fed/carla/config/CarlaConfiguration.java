@@ -42,7 +42,6 @@ public class CarlaConfiguration implements Serializable {
     /**
      * path to connection bridge
      */
-    public String bridgePath;
 
     /**
      * Carla connection port
@@ -56,6 +55,7 @@ public class CarlaConfiguration implements Serializable {
      * URL where CARLACDASimAdapter XMLRPC Server is hosted
      */
     public String carlaActorLibRPCUrl;
+  
     /**
      * SUMO .net.xml file path
      */
@@ -72,6 +72,17 @@ public class CarlaConfiguration implements Serializable {
      * This avoids chmod attempts inside the launcher script on some filesystems.
      */
     public Boolean useDirectBinary = Boolean.FALSE;
+
+    /**
+     * CARLA map name to load. If null, uses default map.
+     * Examples: "Town01", "Town02", "Town03", "Town04", "Town05", "Town10HD"
+     */
+    public String mapName;
+
+    /**
+     * Whether to automatically load the specified map on initialization
+     */
+    public Boolean autoLoadMap = Boolean.TRUE;
 
 
 }

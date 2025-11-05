@@ -47,7 +47,6 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -197,27 +196,6 @@ public class CarlaAmbassadorTest {
 
     }
 
-    @Test
-    public void processDetectorRegistrationInteraction() throws XmlRpcException {
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
-        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-
-        ambassador.processInteraction(registration);
-
-        verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
-
-    }
-
-    @Test
-    public void processDetectorRegistrationInteractionException() throws XmlRpcException {
-        Detector detector = new Detector("sensorID1", DetectorType.SEMANTIC_LIDAR, new Orientation( 0.0,0.0,0.0), CartesianPoint.ORIGO);
-        DetectorRegistration registration = new DetectorRegistration(0, detector, "rsu_2");
-
-        doThrow(new XmlRpcException("")).when(carlaXmlRpcClientMock).createSensor(registration);
-        ambassador.processInteraction(registration);
-
-        verify(carlaXmlRpcClientMock, times(1)).createSensor(registration);
-    }
 
 
 

@@ -44,7 +44,10 @@ def status(ok: bool, msg: str = ""):
 def try_first(server, methods: Iterable[str]) -> Optional[str]:
     for m in methods:
         try:
-            ok = bool(server.spawn_actor(m, "test_car", [0.0, 0.0, 2.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            
+            
+            ok = bool(server.spawn_actor(m, "test_car", [817.4380151583109, 596.2112135861423, 5.0], [0.0, 0.0, 0.0], {"role_name": "autopilot"}))
+            time.sleep(2)  # Give server a moment to register actor
         except Exception:
             ok = False
         if ok:
@@ -78,6 +81,11 @@ def main():
     ok = bool(server.connect())
     print("connect():", ok)
     status(ok, "connected")
+    # Default to CARLA input frame for this test to avoid SUMO transform
+    try:
+        print("set_input_frame_mode('sumo'):", server.set_input_frame_mode('sumo'))
+    except Exception as e:
+        print("set_input_frame_mode failed:", e)
     print("is_connected():", server.is_connected())
 
     section("Simulation Control")
@@ -90,8 +98,7 @@ def main():
     print("get_map_name():", mname)
     print("get_available_maps():", pretty(server.get_available_maps()))
     if mname:
-        # Do not force reload if it fails; just report.
-        print("load_map(curr_map):", server.load_map("Town02"))
+        print("load_map(curr_map):", server.load_map("Town04"))
 
     section("Actor Lifecycle (robust spawn)")
     # Try a few common blueprints to maximize spawn success
@@ -104,17 +111,26 @@ def main():
     ]
     chosen = try_first(server, candidates)
     print("spawn_actor():", bool(chosen), "| blueprint:", chosen)
+
     print("get_all_actors():", pretty(server.get_all_actors()))
     before_ids = set(get_actor_id_list(server))
 
     # Move and set velocity only if we spawned
     if chosen:
-        ok_t = server.update_actor_transform("test_car", [5.0, 0.0, 2.0], [0.0, 0.0, 0.0])
+        # Focus spectator to our spawned actor alias 'test_car'
+
+        # ok_t = server.update_actor_transform("test_car", [0.2, 0.1, 0.8], [100.0, 200.0, 0.0])
+        # ok_t = server.update_actor_transform("test_car", [801.438383516619, 596.2112114216437, 0.0], [0.0, 270.33667004324695, 0.0])
+
         ok_v = server.update_actor_velocity("test_car", [10.0, 0.0, 0.0])
-        print("update_actor_transform():", ok_t)
+        # print("update_actor_transform():", ok_t)
         print("update_actor_velocity():", ok_v)
     else:
         print("update_actor_* skipped (no actor)")
+    try:
+        print("set_spectator_to_actor('test_car','follow'):", server.set_spectator_to_actor('test_car', 'follow', 12.0, 6.0, -18.0))
+    except Exception as e:
+        print("set_spectator_to_actor failed:", e)    
 
     section("Actor Data + state update verification")
     ids = get_actor_id_list(server, "vehicle.*")
@@ -194,6 +210,7 @@ def main():
             status(size > 0, "received at least one sensor frame")
         else:
             print("get_sensor_data(test_cam): None")
+    time.sleep(5)  # Wait a bit before destroying sensor
     print("destroy_sensor(test_cam):", server.destroy_sensor("test_cam"))
 
     section("Destroy Actor / Disconnect")

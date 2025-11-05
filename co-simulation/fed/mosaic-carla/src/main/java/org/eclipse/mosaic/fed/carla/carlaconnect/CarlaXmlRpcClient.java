@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
-import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,9 +78,6 @@ public class CarlaXmlRpcClient {
     private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
-    private static final String CREATE_SENSOR = "create_sensor";
-    private static final String DESTROY_SENSOR = "destroy_sensor";
-    private static final String GET_SENSOR_DATA = "get_sensor_data";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
     // Maps
@@ -89,9 +85,8 @@ public class CarlaXmlRpcClient {
     private static final String GET_AVAILABLE_MAPS = "get_available_maps";
     private static final String LOAD_MAP = "load_map";
 
-    // Transform utilities
-    private static final String SUMO_TO_CARLA_TRANSFORM = "sumo_to_carla_transform";
-    private static final String CARLA_TO_SUMO_TRANSFORM = "carla_to_sumo_transform";
+    // Coordinate transform configuration
+    private static final String SET_NET_OFFSET_XY = "set_net_offset_xy";
 
     // V2X Communication
     private static final String SEND_V2X_MESSAGE = "send_v2x_message";
@@ -101,6 +96,11 @@ public class CarlaXmlRpcClient {
     private static final long DEFAULT_RETRY_DELAY_MS = 1000;
     private static final int DEFAULT_REPLY_TIMEOUT_MS = 10000;
     private static final int DEFAULT_CONNECTION_TIMEOUT_MS = 15000;
+    
+    // Performance optimization constants
+    private static final double LOCATION_TOLERANCE = 0.01; // 1cm tolerance for location changes
+    private static final double VELOCITY_TOLERANCE = 0.1;  // 0.1 m/s tolerance for velocity changes
+    private static final int MAX_RETRY_DELAY_MULTIPLIER = 16; // Cap exponential backoff
 
     private XmlRpcClient client;
     private final URL serverUrl;
@@ -191,6 +191,8 @@ public class CarlaXmlRpcClient {
                         connected = true;
                         isConnected = true;
                         log.info("Successfully connected to CARLA XML-RPC server");
+
+                        // Input frame configuration removed on server; assuming CARLA-frame inputs
                     } else {
                         log.warn("Connection attempt {} returned unexpected result: {}", currentAttempt, result);
                     }
@@ -206,6 +208,25 @@ public class CarlaXmlRpcClient {
             if (!connected) {
                 throw new XmlRpcException("Failed to connect to CARLA XML-RPC server after " + retryAttempts + " attempts");
             }
+        }
+    }
+
+    // Input frame mode configuration removed; client now assumes CARLA-frame inputs
+
+    /**
+     * Configure server SUMO net offset (x, y) applied before transform.
+     * @param x offset x
+     * @param y offset y
+     * @return true if accepted
+     */
+    public boolean setNetOffsetXY(double x, double y) {
+        try {
+            Object[] params = new Object[]{x, y};
+            Object result = executeWithRetry(SET_NET_OFFSET_XY, params, DEFAULT_RETRY_ATTEMPTS);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception e) {
+            log.error("Failed to set net offset ({}, {}): {}", x, y, e.getMessage());
+            return false;
         }
     }
 
@@ -245,13 +266,30 @@ public class CarlaXmlRpcClient {
      * @return true if connected
      */
     public boolean isConnected() {
-        try {
-            Object[] params = new Object[]{};
-            Object result = executeWithRetry(IS_CONNECTED, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.debug("Connection check failed: {}", e.getMessage());
-            return false;
+        synchronized (connectionLock) {
+            // First check local state
+            if (!isConnected) {
+                return false;
+            }
+            
+            // Then verify with server
+            try {
+                Object[] params = new Object[]{};
+                Object result = executeWithRetry(IS_CONNECTED, params, 1); // Use minimal retries for status check
+                boolean serverConnected = result instanceof Boolean && (Boolean) result;
+                
+                // Update local state if server disagrees
+                if (!serverConnected && isConnected) {
+                    log.warn("Server reports disconnected, updating local state");
+                    isConnected = false;
+                }
+                
+                return serverConnected;
+            } catch (Exception e) {
+                log.debug("Connection check failed: {}", e.getMessage());
+                // Don't update local state on network errors, just return false
+                return false;
+            }
         }
     }
 
@@ -502,9 +540,9 @@ public class CarlaXmlRpcClient {
      * @param location Location [x, y, z]
      * @param rotation Rotation [pitch, yaw, roll]
      * @param attributes Additional attributes
-     * @return true if successful
+     * @return CARLA internal actor ID if successful, null otherwise
      */
-    public boolean spawnActor(String actorType, String actorId, List<Double> location, 
+    public String spawnActor(String actorType, String actorId, List<Double> location, 
                              List<Double> rotation, Map<String, Object> attributes) {
         try {
             log.info("XML-RPC spawn_actor call: type={}, id={}, location={}, rotation={}, attributes={}", 
@@ -513,14 +551,27 @@ public class CarlaXmlRpcClient {
             Object[] params = new Object[]{actorType, actorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
             Object result = executeWithRetry(SPAWN_ACTOR, params, DEFAULT_RETRY_ATTEMPTS);
             
-            boolean success = result instanceof Boolean && (Boolean) result;
-            log.info("XML-RPC spawn_actor result: {} (result type: {}, value: {})", 
-                    success, result != null ? result.getClass().getSimpleName() : "null", result);
-            
-            return success;
+            if (result instanceof String) {
+                String carlaId = (String) result;
+                log.info("XML-RPC spawn_actor result: CARLA ID={} (String)", carlaId);
+                return carlaId;
+            } else if (result instanceof Number) {
+                // Handle integer ID from server
+                String carlaId = String.valueOf(result);
+                log.info("XML-RPC spawn_actor result: CARLA ID={} (converted from {})", carlaId, result.getClass().getSimpleName());
+                return carlaId;
+            } else if (result instanceof Boolean && (Boolean) result) {
+                // Fallback: if server still returns boolean true, return the actorId as the internal ID
+                log.info("XML-RPC spawn_actor result: boolean true, using actorId as CARLA ID");
+                return actorId;
+            } else {
+                log.warn("XML-RPC spawn_actor result: unexpected type {} with value {}", 
+                        result != null ? result.getClass().getSimpleName() : "null", result);
+                return null;
+            }
         } catch (Exception e) {
             log.error("Failed to spawn actor {} of type {}: {}", actorId, actorType, e.getMessage());
-            return false;
+            return null;
         }
     }
 
@@ -672,6 +723,40 @@ public class CarlaXmlRpcClient {
     }
 
     /**
+     * Get all actors excluding SUMO-managed vehicles
+     * @param sumoToCarlaMapping Mapping of SUMO vehicle IDs to CARLA internal IDs to exclude
+     * @return Map of actor ID to actor information (excluding SUMO-managed vehicles)
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Map<String, Object>> getAllActorsExcludingSumo(Map<String, String> sumoToCarlaMapping) {
+        try {
+            Map<String, Map<String, Object>> allActors = getAllActors();
+            Map<String, Map<String, Object>> filteredActors = new HashMap<>();
+            
+            if (sumoToCarlaMapping == null || sumoToCarlaMapping.isEmpty()) {
+                return allActors;
+            }
+            
+            // Filter out SUMO-managed vehicles
+            for (Map.Entry<String, Map<String, Object>> entry : allActors.entrySet()) {
+                String actorId = entry.getKey();
+                if (!sumoToCarlaMapping.containsValue(actorId)) {
+                    filteredActors.put(actorId, entry.getValue());
+                } else {
+                    log.debug("Excluding SUMO-managed actor '{}' from getAllActors result", actorId);
+                }
+            }
+            
+            log.debug("getAllActorsExcludingSumo: {} total actors, {} after filtering SUMO vehicles", 
+                     allActors.size(), filteredActors.size());
+            return filteredActors;
+        } catch (Exception e) {
+            log.error("Failed to get actors excluding SUMO: {}", e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    /**
      * Get traffic light state
      * @param trafficLightId Traffic light ID
      * @return Traffic light state data as Map, or null if failed
@@ -803,88 +888,6 @@ public class CarlaXmlRpcClient {
     }
 
     /**
-     * Create a sensor
-     * @param sensorType Type of sensor
-     * @param sensorId Unique ID for the sensor
-     * @param location Location [x, y, z]
-     * @param rotation Rotation [pitch, yaw, roll]
-     * @param attributes Additional attributes
-     * @return true if successful
-     */
-    public boolean createSensor(String sensorType, String sensorId, List<Double> location, 
-                               List<Double> rotation, Map<String, Object> attributes) {
-        try {
-            Object[] params = new Object[]{sensorType, sensorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
-            Object result = executeWithRetry(CREATE_SENSOR, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.error("Failed to create sensor {} of type {}: {}", sensorId, sensorType, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Create sensor from DetectorRegistration (backward compatibility)
-     * @param registration DetectorRegistration interaction
-     * @throws XmlRpcException if creation fails
-     */
-    public void createSensor(DetectorRegistration registration) throws XmlRpcException {
-        List<Double> location = Arrays.asList(
-            registration.getDetector().getLocation().getX(),
-            registration.getDetector().getLocation().getY(),
-            registration.getDetector().getLocation().getZ()
-        );
-        List<Double> orientation = Arrays.asList(
-            registration.getDetector().getOrientation().getPitch(),
-            registration.getDetector().getOrientation().getRoll(),
-            registration.getDetector().getOrientation().getYaw()
-        );
-        
-        if (createSensor("sensor.camera.rgb", registration.getDetector().getSensorId(), location, orientation, null)) {
-            log.info("Created sensor: {}", registration.getDetector().getSensorId());
-        } else {
-            throw new XmlRpcException("Failed to create sensor: " + registration.getDetector().getSensorId());
-        }
-    }
-
-    /**
-     * Destroy a sensor
-     * @param sensorKey Sensor ID or name
-     * @return true if successful
-     */
-    public boolean destroySensor(Object sensorKey) {
-        try {
-            Object[] params = new Object[]{sensorKey};
-            Object result = executeWithRetry(DESTROY_SENSOR, params, DEFAULT_RETRY_ATTEMPTS);
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Exception e) {
-            log.error("Failed to destroy sensor {}: {}", sensorKey, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Get sensor data
-     * @param sensorKey Sensor ID or name
-     * @return Sensor data as Map, or null if failed
-     */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> getSensorData(Object sensorKey) {
-        try {
-            Object[] params = new Object[]{sensorKey};
-            Object result = executeWithRetry(GET_SENSOR_DATA, params, DEFAULT_RETRY_ATTEMPTS);
-            
-            if (result instanceof Map) {
-                return (Map<String, Object>) result;
-            }
-            return null;
-        } catch (Exception e) {
-            log.error("Failed to get sensor data for {}: {}", sensorKey, e.getMessage());
-            return null;
-        }
-    }
-
-    /**
      * Get detected objects from sensor (backward compatibility)
      * @param infrastructureId Infrastructure ID
      * @param sensorId Sensor ID
@@ -969,7 +972,7 @@ public class CarlaXmlRpcClient {
     }
 
     /**
-     * Execute XML-RPC call with retry logic
+     * Execute XML-RPC call with retry logic and connection recovery
      * @param methodName Name of the XML-RPC method
      * @param params Method parameters
      * @param maxRetries Maximum number of retry attempts
@@ -983,21 +986,30 @@ public class CarlaXmlRpcClient {
         while (attempt < maxRetries) {
             try {
                 int requestId = requestCounter.incrementAndGet();
-                log.debug("Executing XML-RPC call {} (request #{})", methodName, requestId);
-                
+                // log.debug("Executing XML-RPC call {} (request #{})", methodName, requestId);
                 Object result = client.execute(methodName, params);
-                
-                log.debug("XML-RPC call {} completed successfully (request #{})", methodName, requestId);
+                // log.debug("XML-RPC call {} completed successfully (request #{})", methodName, requestId);
                 return result;
                 
             } catch (XmlRpcException e) {
                 lastException = e;
                 attempt++;
                 
+                // Check if this is a connection-related error
+                boolean isConnectionError = isConnectionError(e);
+                if (isConnectionError) {
+                    synchronized (connectionLock) {
+                        isConnected = false;
+                        log.warn("Connection lost during XML-RPC call {}, marking as disconnected", methodName);
+                    }
+                }
+                
                 if (attempt < maxRetries) {
                     log.warn("XML-RPC call {} failed (attempt {}/{}): {}", methodName, attempt, maxRetries, e.getMessage());
                     try {
-                        Thread.sleep(DEFAULT_RETRY_DELAY_MS);
+                        // Use exponential backoff for retries
+                        long delay = DEFAULT_RETRY_DELAY_MS * (1L << Math.min(attempt - 1, 4)); // Cap at MAX_RETRY_DELAY_MULTIPLIER
+                        Thread.sleep(delay);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw new XmlRpcException("Interrupted during retry", ie);
@@ -1009,6 +1021,21 @@ public class CarlaXmlRpcClient {
         }
         
         throw new XmlRpcException("Failed after " + maxRetries + " attempts", lastException);
+    }
+    
+    /**
+     * Check if an exception indicates a connection problem
+     */
+    private boolean isConnectionError(XmlRpcException e) {
+        String message = e.getMessage();
+        if (message == null) return false;
+        
+        String lowerMessage = message.toLowerCase();
+        return lowerMessage.contains("connection") || 
+               lowerMessage.contains("timeout") || 
+               lowerMessage.contains("refused") ||
+               lowerMessage.contains("unreachable") ||
+               lowerMessage.contains("broken pipe");
     }
 
     /**
@@ -1055,23 +1082,34 @@ public class CarlaXmlRpcClient {
     /**
      * Get actor changes since last call (added, updated, removed)
      * This method provides high-level change detection functionality
+     * @param sumoToCarlaMapping Mapping of SUMO vehicle IDs to CARLA internal IDs to exclude from changes
      * @return Map containing "added", "updated", "removed" lists
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getActorChanges() {
+    public Map<String, Object> getActorChanges(Map<String, String> sumoToCarlaMapping) {
         Map<String, Object> changes = new HashMap<>();
         List<Map<String, Object>> added = new ArrayList<>();
         List<Map<String, Object>> updated = new ArrayList<>();
         List<String> removed = new ArrayList<>();
         
         try {
-            // Get current actors
-            Map<String, Map<String, Object>> currentActors = getAllActors();
+            // Get current actors excluding SUMO-managed vehicles
+            Map<String, Map<String, Object>> currentActors = getAllActorsExcludingSumo(sumoToCarlaMapping);
+            log.debug("getActorChanges: Retrieved {} current actors (excluding SUMO-managed)", currentActors.size());
             
             // Find added and updated actors
             for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
                 String actorId = entry.getKey();
-                Map<String, Object> currentState = entry.getValue();
+                Map<String, Object> currentState = new HashMap<>(entry.getValue());
+                
+                // Add actor ID to the state map so it can be retrieved later
+                currentState.put("id", actorId);
+                
+                // Skip actors that are already managed by SUMO (exclude from changes)
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(actorId)) {
+                    log.debug("Skipping actor {} as it's managed by SUMO", actorId);
+                    continue;
+                }
                 
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
@@ -1087,10 +1125,20 @@ public class CarlaXmlRpcClient {
             
             // Find removed actors
             for (String previousActorId : previousActorStates.keySet()) {
+                // Skip actors that are managed by SUMO
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(previousActorId)) {
+                    log.debug("Skipping removal check for actor {} as it's managed by SUMO", previousActorId);
+                    continue;
+                }
+                
                 if (!currentActors.containsKey(previousActorId)) {
                     removed.add(previousActorId);
                 }
             }
+            log.debug("getActorChanges: Found added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
+            if (!added.isEmpty() || !updated.isEmpty() || !removed.isEmpty()) {
+                log.info("Actor changes: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
+            } 
             
             // Update cache
             previousActorStates.clear();
@@ -1101,7 +1149,7 @@ public class CarlaXmlRpcClient {
             changes.put("removed", removed);
             
         } catch (Exception e) {
-            log.error("Failed to get actor changes: {}", e.getMessage());
+            log.error("Failed to get actor changes: {}", e.getMessage(), e);
         }
         
         return changes;
@@ -1165,61 +1213,6 @@ public class CarlaXmlRpcClient {
     }
 
     /**
-     * Convert CARLA actor information to VehicleData
-     * @param actorId Actor ID
-     * @param actorInfo Actor information from CARLA
-     * @return VehicleData object or null if conversion fails
-     */
-    public org.eclipse.mosaic.lib.objects.vehicle.VehicleData createVehicleDataFromActor(String actorId, Map<String, Object> actorInfo) {
-        try {
-            // Extract position and rotation from transform
-            List<Double> location = null;
-            List<Double> rotation = null;
-            
-            Object transform = actorInfo.get("transform");
-            if (transform instanceof Map) {
-                Object loc = ((Map<?,?>) transform).get("location");
-                Object rot = ((Map<?,?>) transform).get("rotation");
-                
-                if (loc instanceof List) {
-                    location = new ArrayList<>();
-                    for (Object o : (List<?>) loc) {
-                        if (o instanceof Number) location.add(((Number)o).doubleValue());
-                    }
-                }
-                
-                if (rot instanceof List) {
-                    rotation = new ArrayList<>();
-                    for (Object o : (List<?>) rot) {
-                        if (o instanceof Number) rotation.add(((Number)o).doubleValue());
-                    }
-                }
-            }
-            
-            if (location != null && location.size() >= 2) {
-                // Create position from location using static factory method
-                org.eclipse.mosaic.lib.geo.CartesianPoint position = org.eclipse.mosaic.lib.geo.CartesianPoint.xy(location.get(0), location.get(1));
-                
-                // Create heading from rotation (yaw)
-                double heading = 0.0;
-                if (rotation != null && rotation.size() >= 2) {
-                    heading = rotation.get(1); // yaw is typically the second element
-                }
-                
-                // Create VehicleData using Builder pattern
-                return new org.eclipse.mosaic.lib.objects.vehicle.VehicleData.Builder(0L, actorId)
-                    .position(null, position) // No GeoPoint, just CartesianPoint
-                    .movement(0.0, 0.0, 0.0) // speed, acceleration, distance
-                    .orientation(org.eclipse.mosaic.lib.enums.DriveDirection.UNAVAILABLE, heading, 0.0) // drive direction, heading, slope
-                    .create();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to create VehicleData for actor {}: {}", actorId, e.getMessage());
-        }
-        return null;
-    }
-
-    /**
      * Check if actor state has changed between two states
      * @param previousState Previous actor state
      * @param currentState Current actor state
@@ -1230,7 +1223,12 @@ public class CarlaXmlRpcClient {
             return true;
         }
         
-        // Compare transform information
+        // Quick reference equality check first
+        if (previousState == currentState) {
+            return false;
+        }
+        
+        // Compare transform information with optimized checks
         Object prevTransform = previousState.get("transform");
         Object currTransform = currentState.get("transform");
         
@@ -1238,23 +1236,94 @@ public class CarlaXmlRpcClient {
             Map<?,?> prevMap = (Map<?,?>) prevTransform;
             Map<?,?> currMap = (Map<?,?>) currTransform;
             
+            // Check location changes with tolerance for floating point precision
             Object prevLoc = prevMap.get("location");
             Object currLoc = currMap.get("location");
-            Object prevRot = prevMap.get("rotation");
-            Object currRot = currMap.get("rotation");
-            
-            // Compare locations
             if (!Objects.equals(prevLoc, currLoc)) {
-                return true;
+                // Additional check for floating point precision
+                if (prevLoc instanceof List && currLoc instanceof List) {
+                    if (!isLocationEqual((List<?>) prevLoc, (List<?>) currLoc)) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
             }
             
-            // Compare rotations
+            // Check rotation changes
+            Object prevRot = prevMap.get("rotation");
+            Object currRot = currMap.get("rotation");
             if (!Objects.equals(prevRot, currRot)) {
                 return true;
             }
         }
         
+        // Compare velocity information with tolerance
+        Object prevVelocity = previousState.get("velocity");
+        Object currVelocity = currentState.get("velocity");
+        
+        if (prevVelocity instanceof Map && currVelocity instanceof Map) {
+            Map<?,?> prevVelMap = (Map<?,?>) prevVelocity;
+            Map<?,?> currVelMap = (Map<?,?>) currVelocity;
+            
+            Object prevLinear = prevVelMap.get("linear");
+            Object currLinear = currVelMap.get("linear");
+            
+            // Compare linear velocities with tolerance
+            if (!Objects.equals(prevLinear, currLinear)) {
+                if (prevLinear instanceof List && currLinear instanceof List) {
+                    if (!isVelocityEqual((List<?>) prevLinear, (List<?>) currLinear)) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+        }
+        
         return false;
+    }
+    
+    /**
+     * Check if two location lists are equal within tolerance
+     */
+    private boolean isLocationEqual(List<?> loc1, List<?> loc2) {
+        if (loc1.size() != loc2.size()) return false;
+        
+        final double TOLERANCE = LOCATION_TOLERANCE;
+        for (int i = 0; i < loc1.size(); i++) {
+            if (loc1.get(i) instanceof Number && loc2.get(i) instanceof Number) {
+                double val1 = ((Number) loc1.get(i)).doubleValue();
+                double val2 = ((Number) loc2.get(i)).doubleValue();
+                if (Math.abs(val1 - val2) > TOLERANCE) {
+                    return false;
+                }
+            } else if (!Objects.equals(loc1.get(i), loc2.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Check if two velocity lists are equal within tolerance
+     */
+    private boolean isVelocityEqual(List<?> vel1, List<?> vel2) {
+        if (vel1.size() != vel2.size()) return false;
+        
+        final double TOLERANCE = VELOCITY_TOLERANCE;
+        for (int i = 0; i < vel1.size(); i++) {
+            if (vel1.get(i) instanceof Number && vel2.get(i) instanceof Number) {
+                double val1 = ((Number) vel1.get(i)).doubleValue();
+                double val2 = ((Number) vel2.get(i)).doubleValue();
+                if (Math.abs(val1 - val2) > TOLERANCE) {
+                    return false;
+                }
+            } else if (!Objects.equals(vel1.get(i), vel2.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1280,5 +1349,44 @@ public class CarlaXmlRpcClient {
      */
     public Map<String, Map<String, Object>> getCachedTrafficLightStates() {
         return new HashMap<>(previousTrafficLightStates);
+    }
+    
+    /**
+     * Clean up resources and close connections
+     * This method should be called when the client is no longer needed
+     */
+    public void cleanup() {
+        synchronized (connectionLock) {
+            if (isConnected) {
+                try {
+                    disconnect();
+                } catch (Exception e) {
+                    log.warn("Error during cleanup disconnect: {}", e.getMessage());
+                }
+            }
+        }
+        
+        // Clear caches to free memory
+        clearStateCache();
+        
+        // Reset request counter
+        requestCounter.set(0);
+        
+        log.debug("CARLA XML-RPC client cleanup completed");
+    }
+    
+    /**
+     * Get connection statistics for monitoring
+     * @return Map containing connection statistics
+     */
+    public Map<String, Object> getConnectionStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("isConnected", isConnected);
+        stats.put("serverType", serverType);
+        stats.put("serverUrl", serverUrl.toString());
+        stats.put("requestCount", requestCounter.get());
+        stats.put("cachedActorStates", previousActorStates.size());
+        stats.put("cachedTrafficLightStates", previousTrafficLightStates.size());
+        return stats;
     }
 }
