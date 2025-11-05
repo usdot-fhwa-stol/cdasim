@@ -67,9 +67,6 @@ class CarlaXMLRPCServer:
 
         self.lock = threading.RLock()
 
-        # External-to-CARLA coordinate transform settings (SUMO/MOSAIC frame → CARLA frame)
-        # - input_frame: 'sumo' applies BridgeHelper-like conversion (y inversion, yaw - 90 deg, offset)
-        # - net_offset_xy: offset from SUMO net (x, y) applied before handedness flip
         self.input_frame: str = 'sumo'
         self.net_offset_xy: Tuple[float, float] = (0.0, 0.0)
 
