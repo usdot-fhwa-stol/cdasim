@@ -13,7 +13,9 @@
 
 try:
     CARLA_VERSION = getattr(carla, "__version__", "unknown")
-except Exception:
+except Exception as e:
+    # Logger not yet initialized, use basic logging
+    logging.warning("Failed to get CARLA version: %s", e)
     CARLA_VERSION = "unknown"
 
 """
@@ -125,8 +127,10 @@ class CarlaXMLRPCServer:
                     actor = self.world.try_spawn_actor(bp, t)
                     if actor is not None:
                         return actor
-                except Exception:
+                except Exception as e:
+                    logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
                     continue
+        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", height_offsets, xy_jitters)
         return None
 
     # ---------- Registration ----------

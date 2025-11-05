@@ -230,6 +230,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             sumoConfig = new ObjectInstantiation<>(CSumo.class, log).readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
+            throw new RuntimeException("Failed to instantiate SUMO configuration. Cannot continue simulation.", e);
         }
 
         log.info("sumoConfig.updateInterval: " + sumoConfig.updateInterval);
@@ -374,7 +375,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             log.debug("    Keep alive: " + socket.getKeepAlive());
             log.debug("    TCP NoDelay: " + socket.getTcpNoDelay());
         } catch (UnknownHostException ex) {
-            log.error("Unknown host: {}", ex.getMessage());
+            log.error("Unknown host: {}", ex.getMessage(), ex);
+            // Socket connection failed, but retry logic in IOException handler will attempt to reconnect
         } catch (IOException ex) {
             log.warn("Error while connecting to SUMO. Retrying.");
             if (connectionAttempts-- > 0) {
@@ -455,7 +457,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             File sumoWorkingDir = new File(descriptor.getHost().workingDirectory, descriptor.getId());
             trafficSignManager.configure(traci, sumoWorkingDir);
         } catch (Exception e) {
-            log.error("Could not load TrafficSignManager. No traffic signs will be displayed.");
+            log.error("Could not load TrafficSignManager. No traffic signs will be displayed.", e);
         }
 
     }
@@ -646,7 +648,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
 
             stopVehicleAt(vehicleStop.getVehicleId(), stopPos, stopFlag, vehicleStop.getDuration());
         } catch (InternalFederateException e) {
-            log.warn("Vehicle {} could not be stopped", vehicleStop.getVehicleId());
+            log.warn("Vehicle {} could not be stopped: {}", vehicleStop.getVehicleId(), e.getMessage(), e);
+            // Note: Exception is logged but not rethrown to allow simulation to continue
+            // Stopping a vehicle is not critical enough to fail the entire simulation
         }
     }
 
@@ -1380,7 +1384,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     log.debug("Vehicle '{}' not found in SUMO, skipping position update", vehicleId);
                 }
                     } catch (InternalFederateException e) {
-                log.warn("Could not set position of vehicle " + external.getKey() + ": " + e.getMessage());
+                log.warn("Could not set position of vehicle {}: {}", external.getKey(), e.getMessage(), e);
+                // Note: Exception is logged but not rethrown to allow simulation to continue
+                // Position update failure for external vehicles should not fail the entire simulation
             }
         }
     }

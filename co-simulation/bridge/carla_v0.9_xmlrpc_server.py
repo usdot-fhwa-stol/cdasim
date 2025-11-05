@@ -126,6 +126,7 @@ class CarlaXMLRPCServer:
                 except Exception as e:
                     logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
                     continue
+        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", height_offsets, xy_jitters)
         return None
 
     # ---------- Registration ----------

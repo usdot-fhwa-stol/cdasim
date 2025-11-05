@@ -760,7 +760,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             if (xStr != null && yStr != null) {
                 return new double[]{Double.parseDouble(xStr), Double.parseDouble(yStr)};
             }
-        } catch (Exception ignore) { }
+        } catch (Exception e) {
+            log.warn("Failed to read SUMO netOffset from environment variables: {}", e.getMessage());
+        }
         // Default to Town04 netOffset if not found in environment
         // Note: This may need adjustment based on the actual SUMO network being used
         log.warn("Using default Town04 netOffset. If vehicles appear far from roads, check if this matches your SUMO network.");
@@ -999,7 +1001,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
                     }
                 }
-            } catch (Exception ignore) { }
+            } catch (Exception e) {
+                log.debug("Failed to extract extentX from actor info for actor '{}': {}", actorId, e.getMessage());
+            }
 
             // Convert CARLA coordinates to SUMO coordinates
             Transform sumoTransform = sumoTransformFromCarla(xCarla, yCarla, zCarla, yawDeg, extentX);
@@ -1245,7 +1249,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             extentX = ((Number) l).doubleValue() / 2.0;
                         }
                     }
-                } catch (Exception ignore) { }
+                } catch (Exception e) {
+                    log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during categorization: {}", vd.getName(), e.getMessage());
+                }
                 
                 final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
@@ -1300,7 +1306,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             extentX = ((Number) l).doubleValue() / 2.0;
                         }
                     }
-                } catch (Exception ignore) { }
+                } catch (Exception e) {
+                    log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during spawn: {}", id, e.getMessage());
+                }
                 
                 final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
@@ -1349,8 +1357,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             }
                         }
                     }
-                } catch (Exception ignore) {
+                } catch (Exception e) {
                     // Best-effort; attributes remain empty if no size info
+                    log.debug("Failed to extract vehicle size attributes for vehicle '{}': {}", id, e.getMessage());
                 }
                 
                 // Apply a small Z-lift to reduce spawn collisions with ground (client/server do no conversion)
@@ -1360,7 +1369,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     try {
                         double z = finalLocation.get(2) != null ? finalLocation.get(2) : 0.0;
                         finalLocation.set(2, z + SPAWN_Z_LIFT);
-                    } catch (Exception ignore) { /* keep original if any issue */ }
+                    } catch (Exception e) {
+                        log.debug("Failed to apply Z-lift for vehicle '{}': {}", id, e.getMessage());
+                        // keep original if any issue
+                    }
                 }
 
                 log.info("Spawning actor (z+{} m)", SPAWN_Z_LIFT);
@@ -1417,7 +1429,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             extentX = ((Number) l).doubleValue() / 2.0;
                         }
                     }
-                } catch (Exception ignore) { }
+                } catch (Exception e) {
+                    log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during update: {}", id, e.getMessage());
+                }
                 
                 final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
