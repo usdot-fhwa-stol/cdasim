@@ -55,13 +55,13 @@ SensorKey = Union[int, str]
 class CarlaXMLRPCServer:
     def __init__(self, host: str = 'localhost', port: int = 8090,
                  carla_host: str = 'localhost', carla_port: int = 2000,
-                 tls_manager: str = 'none', phase: float = 0.1, default_map_name: str = 'Town04'):
+                 tls_manager: str = 'none', timestep_size : float = 0.1, default_map_name: str = 'Town04'):
         self.host = host
         self.port = port
         self.carla_host = carla_host
         self.carla_port = carla_port
         self.tls_manager = tls_manager
-        self.phase = phase
+        self.timestep_size  = timestep_size 
         self.default_map_name = default_map_name
 
         self.client: Optional[carla.Client] = None
@@ -93,9 +93,9 @@ class CarlaXMLRPCServer:
                 return False
             settings = self.world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = self.phase
+            settings.fixed_delta_seconds = self.timestep_size 
             self.world.apply_settings(settings)
-            logger.debug("Applied synchronous settings (fixed_delta_seconds=%.3f)", self.phase)
+            logger.debug("Applied synchronous settings (fixed_delta_seconds=%.3f)", self.timestep_size )
             return True
         except Exception as e:
             logger.exception("Failed to apply synchronous settings: %s", e)
@@ -342,7 +342,7 @@ class CarlaXMLRPCServer:
             
             # Set CARLA simulation to passive mode (synchronous mode)
             self._apply_sync_settings()
-            logger.info("CARLA simulation mode set to passive (synchronous) with phase=%.3f", self.phase)
+            logger.info("CARLA simulation mode set to passive (synchronous) with timestep_size =%.3f", self.timestep_size )
             
             # Get current map name
             try:
@@ -1150,7 +1150,7 @@ def main():
     parser.add_argument('--port', type=int, default=8090)
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
-    parser.add_argument('--phase', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
+    parser.add_argument('--timestep_size ', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
     parser.add_argument('--map', '--map-name', dest='map_name', default='Town04', help='Default map name to load on connection (default: Town04)')
     parser.add_argument('--tls-manager',
                        type=str,
@@ -1162,7 +1162,7 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.phase, args.map_name)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.timestep_size , args.map_name)
     try:
         server.start()
     except KeyboardInterrupt:

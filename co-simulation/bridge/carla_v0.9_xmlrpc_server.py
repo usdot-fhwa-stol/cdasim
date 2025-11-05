@@ -91,9 +91,9 @@ class CarlaXMLRPCServer:
                 return False
             settings = self.world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = self.phase
+            settings.delta_t = self.phase
             self.world.apply_settings(settings)
-            logger.debug("Applied synchronous settings (fixed_delta_seconds=%.3f)", self.phase)
+            logger.debug("Applied synchronous settings (delta_t=%.3f)", self.phase)
             return True
         except Exception as e:
             logger.error("Failed to apply synchronous settings: %s", e)
