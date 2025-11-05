@@ -160,10 +160,8 @@ class CarlaXMLRPCServer:
 
         # Lifecycle / utility
         self.server.register_function(self.spawn_actor, 'spawn_actor')
-        self.server.register_function(self.spawn_actor_from_sumo, 'spawn_actor_from_sumo')
         self.server.register_function(self.destroy_actor, 'destroy_actor')
         self.server.register_function(self.update_actor_transform, 'update_actor_transform')
-        self.server.register_function(self.update_actor_transform_from_sumo, 'update_actor_transform_from_sumo')
         self.server.register_function(self.update_actor_velocity, 'update_actor_velocity')
         self.server.register_function(self.get_all_actors, 'get_all_actors')
 
@@ -186,9 +184,6 @@ class CarlaXMLRPCServer:
 
         # Coordinate transform configuration
         self.server.register_function(self.set_net_offset_xy, 'set_net_offset_xy')
-        # Transform utilities
-        self.server.register_function(self.sumo_to_carla_transform, 'sumo_to_carla_transform')
-        self.server.register_function(self.carla_to_sumo_transform, 'carla_to_sumo_transform')
 
     # ---------- Utilities ----------
     def _sim_timestamp(self) -> float:
@@ -256,23 +251,6 @@ class CarlaXMLRPCServer:
                 vx, vy, vz = 0.0, 0.0, 0.0
 
         return carla.Vector3D(vx, vy, vz)
-
-    def _apply_front_bumper_offset_if_needed(self, sumo_loc: List[float], sumo_rot: List[float], maybe_extent_x: Optional[float]) -> Tuple[List[float], List[float]]:
-        try:
-            if maybe_extent_x is None:
-                return sumo_loc, sumo_rot
-            import math
-            pitch = float(sumo_rot[0]) if len(sumo_rot) > 0 else 0.0
-            yaw = float(sumo_rot[1]) if len(sumo_rot) > 1 else 0.0
-            roll = float(sumo_rot[2]) if len(sumo_rot) > 2 else 0.0
-            x = float(sumo_loc[0]); y = float(sumo_loc[1]); z = float(sumo_loc[2] if len(sumo_loc) > 2 else 0.0)
-            yaw_prime_deg = -1.0 * yaw + 90.0
-            dx = math.cos(math.radians(yaw_prime_deg)) * float(maybe_extent_x)
-            dy = math.sin(math.radians(yaw_prime_deg)) * float(maybe_extent_x)
-            dz = math.sin(math.radians(pitch)) * float(maybe_extent_x)
-            return [x - dx, y - dy, z - dz], [pitch, yaw, roll]
-        except Exception:
-            return sumo_loc, sumo_rot
 
     # ----- Coordinate transform configuration -----
 
@@ -1025,97 +1003,6 @@ class CarlaXMLRPCServer:
         except Exception as e:
             logger.error("set_spectator_to_actor error: %s", e)
             return False
-
-    # ---------- SUMO-aware helpers ----------
-    def spawn_actor_from_sumo(self, actor_type: str, actor_id: str,
-                               sumo_location: List[float], sumo_rotation: List[float],
-                               extent_x: Optional[float] = None,
-                               attributes: Dict[str, Any] = None,
-                               reference: str = 'sumo_front_bumper') -> bool:
-        try:
-            if not self.is_connected(): return False
-            if actor_id in self.actors: return False
-            lib = self.world.get_blueprint_library()
-            bp = None
-            try:
-                bp = lib.find(actor_type)
-            except Exception:
-                bp = None
-            if bp is None:
-                cands = lib.filter(actor_type)
-                if cands:
-                    bp = cands[0]
-            if not bp: return False
-            if attributes:
-                for k, v in attributes.items():
-                    if bp.has_attribute(k): bp.set_attribute(k, str(v))
-            loc_seq, rot_seq = list(sumo_location), list(sumo_rotation)
-            if self.input_frame == 'sumo' and reference == 'sumo_front_bumper' and extent_x is not None:
-                loc_seq, rot_seq = self._apply_front_bumper_offset_if_needed(loc_seq, rot_seq, extent_x)
-            transform = carla.Transform(self._to_carla_location(loc_seq), self._to_carla_rotation(rot_seq))
-            actor = self.world.spawn_actor(bp, transform)
-            self.actors[actor_id] = actor
-            self.actor_types[actor_id] = getattr(bp, 'id', actor_type) or actor_type
-            self.actor_blueprints[actor_id] = bp
-            return True
-        except Exception as e:
-            logger.error("spawn_actor_from_sumo error: %s", e)
-            return False
-
-    def update_actor_transform_from_sumo(self, actor_key: ActorKey,
-                                          sumo_location: List[float], sumo_rotation: List[float],
-                                          extent_x: Optional[float] = None,
-                                          reference: str = 'sumo_front_bumper') -> bool:
-        try:
-            actor = self._resolve_actor(actor_key)
-            if actor is None: return False
-            loc_seq, rot_seq = list(sumo_location), list(sumo_rotation)
-            if self.input_frame == 'sumo' and reference == 'sumo_front_bumper' and extent_x is not None:
-                loc_seq, rot_seq = self._apply_front_bumper_offset_if_needed(loc_seq, rot_seq, extent_x)
-            actor.set_transform(carla.Transform(self._to_carla_location(loc_seq), self._to_carla_rotation(rot_seq)))
-            return True
-        except Exception as e:
-            logger.error("update_actor_transform_from_sumo error: %s", e)
-            return False
-
-    def sumo_to_carla_transform(self, sumo_location: List[float], sumo_rotation: List[float],
-                                extent_x: Optional[float] = None,
-                                reference: str = 'sumo_front_bumper') -> Dict[str, List[float]]:
-        try:
-            loc_seq, rot_seq = list(sumo_location), list(sumo_rotation)
-            if self.input_frame == 'sumo' and reference == 'sumo_front_bumper' and extent_x is not None:
-                loc_seq, rot_seq = self._apply_front_bumper_offset_if_needed(loc_seq, rot_seq, extent_x)
-            c_loc = self._to_carla_location(loc_seq)
-            c_rot = self._to_carla_rotation(rot_seq)
-            return {
-                'location': [float(c_loc.x), float(c_loc.y), float(c_loc.z)],
-                'rotation': [float(c_rot.pitch), float(c_rot.yaw), float(c_rot.roll)]
-            }
-        except Exception:
-            return {'location': [0.0, 0.0, 0.0], 'rotation': [0.0, 0.0, 0.0]}
-
-    def carla_to_sumo_transform(self, location: List[float], rotation: List[float],
-                                extent_x: Optional[float] = None) -> Dict[str, List[float]]:
-        try:
-            import math
-            in_x = float(location[0]); in_y = float(location[1]); in_z = float(location[2] if len(location) > 2 else 0.0)
-            pitch = float(rotation[0] if len(rotation) > 0 else 0.0)
-            yaw = float(rotation[1] if len(rotation) > 1 else 0.0)
-            roll = float(rotation[2] if len(rotation) > 2 else 0.0)
-            out_x = in_x + float(self.net_offset_xy[0])
-            out_y = -in_y + float(self.net_offset_xy[1])
-            out_z = in_z
-            if extent_x is not None:
-                dx = math.cos(math.radians(-1.0 * yaw)) * float(extent_x)
-                dy = -math.sin(math.radians(-1.0 * yaw)) * float(extent_x)
-                dz = -math.sin(math.radians(pitch)) * float(extent_x)
-                out_x += dx; out_y += dy; out_z += dz
-            return {
-                'location': [out_x, out_y, out_z],
-                'rotation': [pitch, yaw, roll]
-            }
-        except Exception:
-            return {'location': [0.0, 0.0, 0.0], 'rotation': [0.0, 0.0, 0.0]}
 
     # ---------- Maps ----------
     def get_map_name(self) -> str:
