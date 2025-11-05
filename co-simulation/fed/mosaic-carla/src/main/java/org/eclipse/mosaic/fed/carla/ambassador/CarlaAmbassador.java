@@ -14,15 +14,11 @@
 package org.eclipse.mosaic.fed.carla.ambassador;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMultiXmlRpcManager;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
-import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
-import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
-import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
 import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
@@ -50,7 +46,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,19 +57,9 @@ import java.util.Collections;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Map;
-import java.util.HashMap;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.io.FileNotFoundException;
 import java.text.ParseException;
-import java.io.IOException;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -114,17 +99,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
 
     boolean isTlManager = false;
-
-    /**
-     * Sleep after each connection try. Unit: [ms].
-     */
-    private final static long SLEEP_AFTER_ATTEMPT = 1000L;
-
-    /**
-     * Maximum amount of attempts to connect to CARLA simulator.
-     */
-    private int connectionAttempts = 5;
-
 
     /**
      * Carla simulator client port
@@ -410,7 +384,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
-        isSimulationStep = true;
 
         try {
             if (!initialConnectAttempted) {
