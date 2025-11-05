@@ -649,43 +649,6 @@ public class CarlaXmlRpcClient {
     }
 
     /**
-     * Convert SUMO transform to CARLA transform via server utility.
-     */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> sumoToCarlaTransform(List<Double> sumoLocation, List<Double> sumoRotation,
-                                                    Double extentX, String reference) {
-        try {
-            Object[] params = new Object[]{sumoLocation, sumoRotation, extentX, reference != null ? reference : "sumo_front_bumper"};
-            Object result = executeWithRetry(SUMO_TO_CARLA_TRANSFORM, params, DEFAULT_RETRY_ATTEMPTS);
-            if (result instanceof Map) {
-                return (Map<String, Object>) result;
-            }
-            return new HashMap<>();
-        } catch (Exception e) {
-            log.error("Failed to convert SUMO to CARLA transform: {}", e.getMessage());
-            return new HashMap<>();
-        }
-    }
-
-    /**
-     * Convert CARLA transform to SUMO transform via server utility.
-     */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> carlaToSumoTransform(List<Double> location, List<Double> rotation, Double extentX) {
-        try {
-            Object[] params = new Object[]{location, rotation, extentX};
-            Object result = executeWithRetry(CARLA_TO_SUMO_TRANSFORM, params, DEFAULT_RETRY_ATTEMPTS);
-            if (result instanceof Map) {
-                return (Map<String, Object>) result;
-            }
-            return new HashMap<>();
-        } catch (Exception e) {
-            log.error("Failed to convert CARLA to SUMO transform: {}", e.getMessage());
-            return new HashMap<>();
-        }
-    }
-
-    /**
      * Update actor velocity
      * @param actorKey Actor ID or name
      * @param velocity New velocity [x, y, z]
