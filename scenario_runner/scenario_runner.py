@@ -76,6 +76,7 @@ class ScenarioRunner:
         finally:
             # 6. Stop
             print(f"Stopping: {stop_sh}")
+            ## check=True: blocks until the shell script is fully done
             subprocess.run(["bash", stop_sh], check=True)
         
         print("Collecting data outputs...")
