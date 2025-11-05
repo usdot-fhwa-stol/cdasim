@@ -427,19 +427,6 @@ public class TraciSimulationFacade {
             LaneAreaDetectorInfo laneAreaDetectorInfo;
             TrafficLightSubscriptionResult trafficLightSubscriptionResult;
 
-            boolean gotTrafficLightSubscriptionResult = false;
-            for (AbstractSubscriptionResult subscriptionResult : subscriptions) {
-                if (subscriptionResult instanceof TrafficLightSubscriptionResult) {
-                    gotTrafficLightSubscriptionResult = true;
-                    break;
-                }
-            }
-            if (!gotTrafficLightSubscriptionResult) {
-                log.warn("No traffic light subscription result received at time {}.", time);
-            } else {
-                log.debug("Received traffic light subscription result at time {}.", time);
-            }
-                // in case no traffic light subscription result was received, we still want to provide the current
             for (AbstractSubscriptionResult subscriptionResult : subscriptions) {
                 if (subscriptionResult instanceof InductionLoopSubscriptionResult) {
                     inductionLoop = (InductionLoopSubscriptionResult) subscriptionResult;
