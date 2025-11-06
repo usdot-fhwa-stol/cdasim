@@ -1,5 +1,4 @@
-# parameters.yaml
-# Multiple simulation scenarios
+# This is a template for the parameters.yaml for multiple simulation test cases
 
 test_cases:
   - label: intersection_basic
@@ -81,7 +80,7 @@ test_cases:
       collect:
         mosaic_logs: true
         rosbags: true
-        
+
   - label: highway_merge
     runtime_seconds: 180
     env_settings:
