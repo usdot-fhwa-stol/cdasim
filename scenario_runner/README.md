@@ -81,7 +81,7 @@ Each test case in `parameters.yaml` defines simulation settings under `env_setti
   ${RUNTIME_IMAGE_ORG}/cdasim:${RUNTIME_IMAGE_TAG}
   ```
 
-- **`CONFIG_IMAGE_FULL`** specifies a configuration-only image that contains the `docker-compose.yml` file.  
+- **`CONFIG_IMAGE_FULL`** specifies a configuration image that contains the `docker-compose.yml` file.  
   The Scenario Generator temporarily runs this image, extracts the compose file from inside it, and uses it to define the simulation stack.
 
 Together, they decouple **what image to run** from **how it is configured**, providing flexible version control and easier upgrades.
