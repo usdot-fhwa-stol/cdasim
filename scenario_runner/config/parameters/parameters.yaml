@@ -76,7 +76,12 @@ test_cases:
               y: 0.0
               z: 0.0
               yaw: 180.0
-
+    data_output:
+      output_directory: /tests/output/intersection
+      collect:
+        mosaic_logs: true
+        rosbags: true
+        
   - label: highway_merge
     runtime_seconds: 180
     env_settings:
@@ -130,3 +135,8 @@ test_cases:
               y: 10.0
               z: 0.0
               yaw: 45.0
+    data_output:
+      output_directory: /tests/output/highway_merge
+      collect:
+        mosaic_logs: false
+        rosbags: true
