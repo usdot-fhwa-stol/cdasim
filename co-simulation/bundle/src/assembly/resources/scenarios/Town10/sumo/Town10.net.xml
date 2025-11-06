@@ -603,24 +603,24 @@
         <phase duration="41" state="GGGgrrrrGGGggrrrrr"/>
         <phase duration="3"  state="yyyyrrrryyyyyrrrrr"/>
         <phase duration="1"  state="rrrrrrrrrrrrrrrrrr"/>
-        <param key="linkSignalID:0" value="949"/>
+        <param key="linkSignalID:0" value="952"/>
         <param key="linkSignalID:1" value="952"/>
-        <param key="linkSignalID:10" value="951 950 949"/>
-        <param key="linkSignalID:11" value="952 949 949"/>
-        <param key="linkSignalID:12" value="952 949 949"/>
-        <param key="linkSignalID:13" value="952"/>
-        <param key="linkSignalID:14" value="951"/>
-        <param key="linkSignalID:15" value="951"/>
-        <param key="linkSignalID:16" value="952"/>
-        <param key="linkSignalID:17" value="952"/>
         <param key="linkSignalID:2" value="952"/>
-        <param key="linkSignalID:3" value="949"/>
+        <param key="linkSignalID:3" value="952"/>
         <param key="linkSignalID:4" value="950"/>
         <param key="linkSignalID:5" value="950"/>
         <param key="linkSignalID:6" value="950"/>
         <param key="linkSignalID:7" value="950"/>
-        <param key="linkSignalID:8" value="952 949 949"/>
-        <param key="linkSignalID:9" value="951 950 949"/>
+        <param key="linkSignalID:8" value="949"/>
+        <param key="linkSignalID:9" value="949"/>
+        <param key="linkSignalID:10" value="949"/>
+        <param key="linkSignalID:11" value="949"/>
+        <param key="linkSignalID:12" value="949"/>
+        <param key="linkSignalID:13" value="951"/>
+        <param key="linkSignalID:14" value="951"/>
+        <param key="linkSignalID:15" value="951"/>
+        <param key="linkSignalID:16" value="951"/>
+        <param key="linkSignalID:17" value="951"/>
     </tlLogic>
     <tlLogic id="23" type="static" programID="0" offset="0">
         <phase duration="42" state="GGgrrrrGGG"/>
@@ -629,14 +629,14 @@
         <phase duration="3"  state="rrryyyyGrr"/>
         <param key="linkSignalID:0" value="943"/>
         <param key="linkSignalID:1" value="943"/>
-        <param key="linkSignalID:2" value="944 944 944"/>
-        <param key="linkSignalID:3" value="944 944 945"/>
-        <param key="linkSignalID:4" value="944 944 945"/>
-        <param key="linkSignalID:5" value="944 944 945"/>
-        <param key="linkSignalID:6" value="944 944 945"/>
-        <param key="linkSignalID:7" value="943 945"/>
-        <param key="linkSignalID:8" value="943 945"/>
-        <param key="linkSignalID:9" value="943 945"/>
+        <param key="linkSignalID:2" value="943"/>
+        <param key="linkSignalID:3" value="944"/>
+        <param key="linkSignalID:4" value="944"/>
+        <param key="linkSignalID:5" value="945"/>
+        <param key="linkSignalID:6" value="945"/>
+        <param key="linkSignalID:7" value="945"/>
+        <param key="linkSignalID:8" value="945"/>
+        <param key="linkSignalID:9" value="945"/>
     </tlLogic>
     <tlLogic id="468" type="static" programID="0" offset="0">
         <phase duration="41" state="GGGGGGrr"/>
@@ -645,14 +645,16 @@
         <phase duration="41" state="GGrrGGGG"/>
         <phase duration="3"  state="yyrryyyy"/>
         <phase duration="1"  state="rrrrrrrr"/>
-        <param key="linkSignalID:0" value="953 954"/>
-        <param key="linkSignalID:1" value="953 954"/>
-        <param key="linkSignalID:2" value="953 954"/>
-        <param key="linkSignalID:3" value="953 954"/>
-        <param key="linkSignalID:4" value="955"/>
+        <param key="linkSignalID:0" value="954"/>
+        <param key="linkSignalID:1" value="954"/>
+        <param key="linkSignalID:2" value="954"/>
+        <param key="linkSignalID:3" value="954"/>
+        <!-- 4 and 5 are eastbound and have no associated TL -->
+        <!-- Assuming that ID 956 in middle of intersection maps to it -->
+        <param key="linkSignalID:4" value="956"/>
         <param key="linkSignalID:5" value="956"/>
-        <param key="linkSignalID:6" value="954"/>
-        <param key="linkSignalID:7" value="954"/>
+        <param key="linkSignalID:6" value="953"/>
+        <param key="linkSignalID:7" value="953"/>
     </tlLogic>
     <tlLogic id="532" type="static" programID="0" offset="0">
         <phase duration="41" state="GGGGGggrrrr"/>
@@ -663,15 +665,15 @@
         <phase duration="1"  state="rrrrrrrrrrr"/>
         <param key="linkSignalID:0" value="957"/>
         <param key="linkSignalID:1" value="957"/>
-        <param key="linkSignalID:10" value="959 959"/>
         <param key="linkSignalID:2" value="957"/>
-        <param key="linkSignalID:3" value="959 958 958"/>
-        <param key="linkSignalID:4" value="959 958 958"/>
-        <param key="linkSignalID:5" value="958 957 958"/>
-        <param key="linkSignalID:6" value="958 957 958"/>
-        <param key="linkSignalID:7" value="959 959"/>
-        <param key="linkSignalID:8" value="959 959"/>
-        <param key="linkSignalID:9" value="959 959"/>
+        <param key="linkSignalID:3" value="958"/>
+        <param key="linkSignalID:4" value="958"/>
+        <param key="linkSignalID:5" value="958"/>
+        <param key="linkSignalID:6" value="958"/>
+        <param key="linkSignalID:7" value="959"/>
+        <param key="linkSignalID:8" value="959"/>
+        <param key="linkSignalID:9" value="959"/>
+        <param key="linkSignalID:10" value="959"/>
     </tlLogic>
     <tlLogic id="719" type="static" programID="0" offset="0">
         <phase duration="41" state="GGggrrrrGGG"/>
@@ -682,11 +684,15 @@
         <phase duration="1"  state="rrrrrrrrrrr"/>
         <param key="linkSignalID:0" value="962"/>
         <param key="linkSignalID:1" value="962"/>
-        <param key="linkSignalID:10" value="962 960 961"/>
-        <param key="linkSignalID:2" value="960 960"/>
-        <param key="linkSignalID:3" value="960 960"/>
+        <param key="linkSignalID:2" value="962"/>
+        <param key="linkSignalID:3" value="962"/>
+        <param key="linkSignalID:4" value="960"/>
+        <param key="linkSignalID:5" value="960"/>
+        <param key="linkSignalID:6" value="960"/>
+        <param key="linkSignalID:7" value="960"/>
         <param key="linkSignalID:8" value="961"/>
-        <param key="linkSignalID:9" value="961 961 961"/>
+        <param key="linkSignalID:9" value="961"/>
+        <param key="linkSignalID:10" value="961"/>
     </tlLogic>
 
     <junction id="10.0" type="priority" x="214.07" y="158.64" incLanes="-0_0 -0_1 10_0 10_1" intLanes=":10.0_0_0 :10.0_0_1 :10.0_2_0 :10.0_2_1" shape="221.07,158.41 207.07,158.61 221.07,158.85">
