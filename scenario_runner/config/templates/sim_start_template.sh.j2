@@ -1,0 +1,47 @@
+#!/bin/bash
+#  Copyright (C) 2025 LEIDOS.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+#  use this file except in compliance with the License. You may obtain a copy of
+#  the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations under
+#  the License.
+
+CURRENT_DIR=$(pwd)
+PROJECT_NAMES=()
+
+cleanup() {
+    echo "Cleaning up..."
+    for p in "${PROJECT_NAMES[@]}"; do
+        [ -n "$p" ] && docker compose -p "$p" down
+    done
+    docker network rm sim_net 2>/dev/null || true
+    rm -rf "{{ temp_dir }}" 2>/dev/null || true
+    cd "$CURRENT_DIR" || exit 1
+    exit 1
+}
+trap cleanup ERR
+
+docker network create sim_net 2>/dev/null || true
+
+{% for c in scenario %}
+{% if c.platform_net %}
+docker network create {{ c.platform_net }} 2>/dev/null || true
+{% elif c.street_net %}
+docker network create {{ c.street_net }} 2>/dev/null || true
+{% endif %}
+
+docker compose -f "{{ c.compose_file }}" \
+               --env-file "{{ c.env_file }}" \
+               -p "{{ c.PROJECT_NAME }}" \
+               up -d && PROJECT_NAMES+=("{{ c.PROJECT_NAME }}")
+{% endfor %}
+
+echo "Scenario started."
+cd "$CURRENT_DIR" || exit 1
