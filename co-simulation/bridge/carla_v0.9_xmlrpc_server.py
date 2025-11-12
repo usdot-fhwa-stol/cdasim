@@ -251,7 +251,6 @@ class CarlaXMLRPCServer:
                 self.client = carla.Client(self.carla_host, self.carla_port)
                 self.client.set_timeout(10.0)
             self.world = self.client.get_world()
-            self._odr_to_tl, self._odr_to_tls, self._tl_id_to_odr = build_light_index(self.world)
             
             # Set CARLA simulation to passive mode (synchronous mode)
             self._apply_sync_settings()
@@ -278,6 +277,7 @@ class CarlaXMLRPCServer:
             else:
                 logger.info("%s map is already loaded", self.default_map_name)
             
+            self._odr_to_tl, self._odr_to_tls, self._tl_id_to_odr = build_light_index(self.world)
             return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
