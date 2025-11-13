@@ -91,9 +91,9 @@ class CarlaXMLRPCServer:
                 return False
             settings = self.world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = self.phase
+            settings.delta_t = self.phase
             self.world.apply_settings(settings)
-            logger.debug("Applied synchronous settings (fixed_delta_seconds=%.3f)", self.phase)
+            logger.debug("Applied synchronous settings (delta_t=%.3f)", self.phase)
             return True
         except Exception as e:
             logger.error("Failed to apply synchronous settings: %s", e)
@@ -126,6 +126,7 @@ class CarlaXMLRPCServer:
                 except Exception as e:
                     logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
                     continue
+        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", height_offsets, xy_jitters)
         return None
 
     # ---------- Registration ----------

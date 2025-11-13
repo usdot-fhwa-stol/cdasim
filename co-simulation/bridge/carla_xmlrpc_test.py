@@ -82,10 +82,6 @@ def main():
     print("connect():", ok)
     status(ok, "connected")
     # Default to CARLA input frame for this test to avoid SUMO transform
-    try:
-        print("set_input_frame_mode('sumo'):", server.set_input_frame_mode('sumo'))
-    except Exception as e:
-        print("set_input_frame_mode failed:", e)
     print("is_connected():", server.is_connected())
 
     section("Simulation Control")

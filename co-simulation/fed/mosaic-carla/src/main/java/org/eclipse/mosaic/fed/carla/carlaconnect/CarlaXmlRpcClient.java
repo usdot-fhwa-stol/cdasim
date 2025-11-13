@@ -109,7 +109,7 @@ public class CarlaXmlRpcClient {
     private final Object connectionLock = new Object();
     
     // State management for change detection
-    private final Map<String, Map<String, Object>> previousActorStates = new ConcurrentHashMap<>();
+    private final Map<String, ActorState> previousActorStates = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Object>> previousTrafficLightStates = new ConcurrentHashMap<>();
     
     // Server type for identification
@@ -993,13 +993,16 @@ public class CarlaXmlRpcClient {
             Map<String, Map<String, Object>> currentActors = getAllActorsExcludingSumo(sumoToCarlaMapping);
             log.debug("getActorChanges: Retrieved {} current actors (excluding SUMO-managed)", currentActors.size());
             
+            // Convert current actors to ActorState and cache them
+            Map<String, ActorState> currentActorStates = new HashMap<>();
+            
             // Find added and updated actors
             for (Map.Entry<String, Map<String, Object>> entry : currentActors.entrySet()) {
                 String actorId = entry.getKey();
-                Map<String, Object> currentState = new HashMap<>(entry.getValue());
+                Map<String, Object> currentStateMap = new HashMap<>(entry.getValue());
                 
                 // Add actor ID to the state map so it can be retrieved later
-                currentState.put("id", actorId);
+                currentStateMap.put("id", actorId);
                 
                 // Skip actors that are already managed by SUMO (exclude from changes)
                 if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(actorId)) {
@@ -1007,14 +1010,23 @@ public class CarlaXmlRpcClient {
                     continue;
                 }
                 
+                // Convert to typed ActorState
+                ActorState currentState = ActorState.fromMap(actorId, currentStateMap);
+                if (currentState == null) {
+                    log.warn("Failed to convert actor state to ActorState for actor {}", actorId);
+                    continue;
+                }
+                
+                currentActorStates.put(actorId, currentState);
+                
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
-                    added.add(currentState);
+                    added.add(currentStateMap);
                 } else {
                     // Existing actor - check for changes
-                    Map<String, Object> previousState = previousActorStates.get(actorId);
+                    ActorState previousState = previousActorStates.get(actorId);
                     if (hasActorStateChanged(previousState, currentState)) {
-                        updated.add(currentState);
+                        updated.add(currentStateMap);
                     }
                 }
             }
@@ -1027,7 +1039,7 @@ public class CarlaXmlRpcClient {
                     continue;
                 }
                 
-                if (!currentActors.containsKey(previousActorId)) {
+                if (!currentActorStates.containsKey(previousActorId)) {
                     removed.add(previousActorId);
                 }
             }
@@ -1036,9 +1048,9 @@ public class CarlaXmlRpcClient {
                 log.info("Actor changes: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
             } 
             
-            // Update cache
+            // Update cache with typed ActorState objects
             previousActorStates.clear();
-            previousActorStates.putAll(currentActors);
+            previousActorStates.putAll(currentActorStates);
             
             changes.put("added", added);
             changes.put("updated", updated);
@@ -1114,7 +1126,7 @@ public class CarlaXmlRpcClient {
      * @param currentState Current actor state
      * @return true if state has changed
      */
-    private boolean hasActorStateChanged(Map<String, Object> previousState, Map<String, Object> currentState) {
+    private boolean hasActorStateChanged(ActorState previousState, ActorState currentState) {
         if (previousState == null || currentState == null) {
             return true;
         }
@@ -1125,56 +1137,51 @@ public class CarlaXmlRpcClient {
         }
         
         // Compare transform information with optimized checks
-        Object prevTransform = previousState.get("transform");
-        Object currTransform = currentState.get("transform");
+        ActorState.Transform prevTransform = previousState.getTransform();
+        ActorState.Transform currTransform = currentState.getTransform();
         
-        if (prevTransform instanceof Map && currTransform instanceof Map) {
-            Map<?,?> prevMap = (Map<?,?>) prevTransform;
-            Map<?,?> currMap = (Map<?,?>) currTransform;
-            
+        if (prevTransform != null && currTransform != null) {
             // Check location changes with tolerance for floating point precision
-            Object prevLoc = prevMap.get("location");
-            Object currLoc = currMap.get("location");
-            if (!Objects.equals(prevLoc, currLoc)) {
-                // Additional check for floating point precision
-                if (prevLoc instanceof List && currLoc instanceof List) {
-                    if (!isLocationEqual((List<?>) prevLoc, (List<?>) currLoc)) {
-                        return true;
-                    }
-                } else {
+            List<Double> prevLoc = prevTransform.getLocation();
+            List<Double> currLoc = currTransform.getLocation();
+            if (prevLoc != null && currLoc != null) {
+                if (!isLocationEqual(prevLoc, currLoc)) {
                     return true;
                 }
+            } else if (!Objects.equals(prevLoc, currLoc)) {
+                return true;
             }
             
             // Check rotation changes
-            Object prevRot = prevMap.get("rotation");
-            Object currRot = currMap.get("rotation");
+            List<Double> prevRot = prevTransform.getRotation();
+            List<Double> currRot = currTransform.getRotation();
             if (!Objects.equals(prevRot, currRot)) {
                 return true;
             }
+        } else if (prevTransform != currTransform) {
+            // One is null and the other is not
+            return true;
         }
         
         // Compare velocity information with tolerance
-        Object prevVelocity = previousState.get("velocity");
-        Object currVelocity = currentState.get("velocity");
+        ActorState.Velocity prevVelocity = previousState.getVelocity();
+        ActorState.Velocity currVelocity = currentState.getVelocity();
         
-        if (prevVelocity instanceof Map && currVelocity instanceof Map) {
-            Map<?,?> prevVelMap = (Map<?,?>) prevVelocity;
-            Map<?,?> currVelMap = (Map<?,?>) currVelocity;
-            
-            Object prevLinear = prevVelMap.get("linear");
-            Object currLinear = currVelMap.get("linear");
+        if (prevVelocity != null && currVelocity != null) {
+            List<Double> prevLinear = prevVelocity.getLinear();
+            List<Double> currLinear = currVelocity.getLinear();
             
             // Compare linear velocities with tolerance
-            if (!Objects.equals(prevLinear, currLinear)) {
-                if (prevLinear instanceof List && currLinear instanceof List) {
-                    if (!isVelocityEqual((List<?>) prevLinear, (List<?>) currLinear)) {
-                        return true;
-                    }
-                } else {
+            if (prevLinear != null && currLinear != null) {
+                if (!isVelocityEqual(prevLinear, currLinear)) {
                     return true;
                 }
+            } else if (!Objects.equals(prevLinear, currLinear)) {
+                return true;
             }
+        } else if (prevVelocity != currVelocity) {
+            // One is null and the other is not
+            return true;
         }
         
         return false;
@@ -1183,18 +1190,21 @@ public class CarlaXmlRpcClient {
     /**
      * Check if two location lists are equal within tolerance
      */
-    private boolean isLocationEqual(List<?> loc1, List<?> loc2) {
+    private boolean isLocationEqual(List<Double> loc1, List<Double> loc2) {
+        if (loc1 == null || loc2 == null) {
+            return loc1 == loc2;
+        }
         if (loc1.size() != loc2.size()) return false;
         
         final double TOLERANCE = LOCATION_TOLERANCE;
         for (int i = 0; i < loc1.size(); i++) {
-            if (loc1.get(i) instanceof Number && loc2.get(i) instanceof Number) {
-                double val1 = ((Number) loc1.get(i)).doubleValue();
-                double val2 = ((Number) loc2.get(i)).doubleValue();
-                if (Math.abs(val1 - val2) > TOLERANCE) {
+            Double val1 = loc1.get(i);
+            Double val2 = loc2.get(i);
+            if (val1 == null || val2 == null) {
+                if (val1 != val2) {
                     return false;
                 }
-            } else if (!Objects.equals(loc1.get(i), loc2.get(i))) {
+            } else if (Math.abs(val1 - val2) > TOLERANCE) {
                 return false;
             }
         }
@@ -1204,18 +1214,21 @@ public class CarlaXmlRpcClient {
     /**
      * Check if two velocity lists are equal within tolerance
      */
-    private boolean isVelocityEqual(List<?> vel1, List<?> vel2) {
+    private boolean isVelocityEqual(List<Double> vel1, List<Double> vel2) {
+        if (vel1 == null || vel2 == null) {
+            return vel1 == vel2;
+        }
         if (vel1.size() != vel2.size()) return false;
         
         final double TOLERANCE = VELOCITY_TOLERANCE;
         for (int i = 0; i < vel1.size(); i++) {
-            if (vel1.get(i) instanceof Number && vel2.get(i) instanceof Number) {
-                double val1 = ((Number) vel1.get(i)).doubleValue();
-                double val2 = ((Number) vel2.get(i)).doubleValue();
-                if (Math.abs(val1 - val2) > TOLERANCE) {
+            Double val1 = vel1.get(i);
+            Double val2 = vel2.get(i);
+            if (val1 == null || val2 == null) {
+                if (val1 != val2) {
                     return false;
                 }
-            } else if (!Objects.equals(vel1.get(i), vel2.get(i))) {
+            } else if (Math.abs(val1 - val2) > TOLERANCE) {
                 return false;
             }
         }
@@ -1235,7 +1248,7 @@ public class CarlaXmlRpcClient {
      * Get current cached actor states
      * @return Map of actor ID to actor state
      */
-    public Map<String, Map<String, Object>> getCachedActorStates() {
+    public Map<String, ActorState> getCachedActorStates() {
         return new HashMap<>(previousActorStates);
     }
 

@@ -188,7 +188,9 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
                 }
             }
         } catch (Exception e) {
-            log.error("Unexpected error: " + e.getMessage());
+            log.error("Unexpected error in receiveInteraction(MsgerRequestTrafficEvent): {}", e.getMessage(), e);
+            // Note: Exception is logged but not rethrown to allow simulation to continue
+            // This is intentional as the method should not fail the entire simulation for this interaction
         }
     }
 
@@ -538,7 +540,9 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             rti.triggerInteraction(new CarlaTraciResponse(interaction.getTime(), len, messageToCarla));
 
         } catch (Exception e) {
-            log.error("error occurs during process carla request interaction: " + e.getMessage());
+            log.error("Error occurs during process carla request interaction: {}", e.getMessage(), e);
+            // Note: Exception is logged but not rethrown to allow simulation to continue
+            // This is intentional as the method should not fail the entire simulation for this interaction
         }
     }
 
@@ -560,10 +564,10 @@ public class SumoAmbassador extends AbstractSumoAmbassador {
             // set the simulation step flag
             receivedSimulationStep = true;
 
-        } catch (
-
-        Exception e) {
-            log.error("error occurs during process simulation step interaction: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error occurs during process simulation step interaction: {}", e.getMessage(), e);
+            // Note: Exception is logged but not rethrown to allow simulation to continue
+            // This is intentional as the method should not fail the entire simulation for this interaction
         }
     }
 
