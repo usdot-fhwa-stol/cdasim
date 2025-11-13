@@ -194,59 +194,7 @@ class CarlaXMLRPCServer:
             logger.exception("Error getting simulation timestamp: %s", e)
             return 0.0
 
-    # ----- Coordinate transforms (external → CARLA) -----
-    def _to_carla_location(self, location_seq: List[float], rotation_seq: List[float] = None, extent_x: float = 0.0) -> carla.Location:
-        try:
-            x_in = float(location_seq[0])
-            y_in = float(location_seq[1])
-            z_in = float(location_seq[2]) if len(location_seq) > 2 else 0.0
-        except Exception as e:
-            logger.exception("Error converting location sequence to CARLA location (location_seq=%s): %s", location_seq, e)
-            x_in, y_in, z_in = 0.0, 0.0, 0.0
-            x_center, y_center, z_center = x_in, y_in, z_in
-            # Apply SUMO net offset
-            x_off = x_center - float(self.net_offset_xy[0])
-            y_off = y_center - float(self.net_offset_xy[1])
-            z_off = z_center
-            
-            # Transform to CARLA left-handed system (invert Y)
-            return carla.Location(x_off, -y_off, z_off)
-        # Assume already in CARLA world coordinates
-        return carla.Location(x_in, y_in, z_in)
 
-    def _to_carla_rotation(self, rotation_seq: List[float]) -> carla.Rotation:
-        try:
-            # Use None to represent missing values (out-of-band), distinguish from 0.0 (in-band)
-            pitch_in = float(rotation_seq[0]) if len(rotation_seq) > 0 else None
-            yaw_in = float(rotation_seq[1]) if len(rotation_seq) > 1 else None
-            roll_in = float(rotation_seq[2]) if len(rotation_seq) > 2 else None
-        except Exception as e:
-            logger.exception("Error converting rotation sequence to CARLA rotation (rotation_seq=%s): %s", rotation_seq, e)
-            pitch_in, yaw_in, roll_in = None, None, None
-
-        # Convert None (missing) to 0.0 only when creating the Rotation object
-        pitch = pitch_in if pitch_in is not None else 0.0
-        yaw = yaw_in if yaw_in is not None else 0.0
-        roll = roll_in if roll_in is not None else 0.0
-
-
-        return carla.Rotation(pitch, yaw, roll)
-
-    def _to_carla_velocity(self, velocity_seq_or_dict: Any) -> carla.Vector3D:
-        if isinstance(velocity_seq_or_dict, dict):
-            vx = float(velocity_seq_or_dict.get('x', 0.0))
-            vy = float(velocity_seq_or_dict.get('y', 0.0))
-            vz = float(velocity_seq_or_dict.get('z', 0.0))
-        else:
-            try:
-                vx = float(velocity_seq_or_dict[0])
-                vy = float(velocity_seq_or_dict[1])
-                vz = float(velocity_seq_or_dict[2])
-            except Exception as e:
-                logger.exception("Error converting velocity sequence to CARLA velocity (velocity_seq_or_dict=%s): %s", velocity_seq_or_dict, e)
-                vx, vy, vz = 0.0, 0.0, 0.0
-
-        return carla.Vector3D(vx, vy, vz)
 
     # ----- Coordinate transform configuration -----
 

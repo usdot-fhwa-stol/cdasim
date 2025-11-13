@@ -396,11 +396,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 CarlaXmlRpcClient tickClient = null;
                 if (multiXmlRpcManager != null) {
                     tickClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-                } else {
-                    // Only use carlaXmlRpcClient for tick if it's ACTOR_LIB
-                    if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
-                        tickClient = carlaXmlRpcClient;
-                    }
                 }
                 if (tickClient != null && tickClient.isConnected()) {
                     boolean advanced = tickClient.advanceSimulation();
