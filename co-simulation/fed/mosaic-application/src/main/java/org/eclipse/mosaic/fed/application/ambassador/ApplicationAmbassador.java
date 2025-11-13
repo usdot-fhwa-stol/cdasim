@@ -212,7 +212,7 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
         if (log.isTraceEnabled()) {
             log.trace("subscribedInteractions: {}", Arrays.toString(this.rti.getSubscribedInteractions().toArray()));
         }
-        SimulationKernel.SimulationKernel.getCentralNavigationComponent().initialize(this.rti);
+        // SimulationKernel.SimulationKernel.getCentralNavigationComponent().initialize(this.rti);
         SimulationKernel.SimulationKernel.setInteractable(rti);
         SimulationKernel.SimulationKernel.setRandomNumberGenerator(rti.createRandomNumberGenerator());
     }
