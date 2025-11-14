@@ -73,6 +73,7 @@ public class CarlaXmlRpcClient {
     private static final String GET_ALL_TRAFFIC_LIGHT_STATES = "get_all_traffic_light_states";
     private static final String SET_TRAFFIC_LIGHT_STATE = "set_traffic_light_state";
     private static final String SET_TRAFFIC_LIGHT_TIMER = "set_traffic_light_timer";
+    private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
@@ -705,11 +706,20 @@ public class CarlaXmlRpcClient {
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getAllTrafficLightStates() {
         try {
-            Object[] params = new Object[]{};
-            Object result = executeWithRetry(GET_ALL_TRAFFIC_LIGHT_STATES, params, DEFAULT_RETRY_ATTEMPTS);
-            
+            Object result = executeWithRetry(GET_ALL_TRAFFIC_LIGHT_STATES, new Object[]{}, DEFAULT_RETRY_ATTEMPTS);
+
+            List<Map<String, Object>> states = new ArrayList<>();
+
+            if (result instanceof Object[]) {
+                for (Object item : (Object[]) result) {
+                    if (item instanceof Map) {
+                        states.add((Map<String, Object>) item);
+                    }
+                }
+                return states;
+            }
+
             if (result instanceof List) {
-                List<Map<String, Object>> states = new ArrayList<>();
                 for (Object item : (List<?>) result) {
                     if (item instanceof Map) {
                         states.add((Map<String, Object>) item);
@@ -717,9 +727,13 @@ public class CarlaXmlRpcClient {
                 }
                 return states;
             }
-            return new ArrayList<>();
+
+            log.warn("getAllTrafficLightStates: unexpected result type {}", 
+                    (result == null ? "null" : result.getClass().getName()));
+            return states;
+
         } catch (Exception e) {
-            log.error("Failed to get all traffic light states: {}", e.getMessage());
+            log.error("Failed to get all traffic light states: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -755,6 +769,18 @@ public class CarlaXmlRpcClient {
         } catch (Exception e) {
             log.error("Failed to set traffic light timer for {} to {}s: {}", trafficLightId, timeSeconds, e.getMessage());
             return false;
+        }
+    }
+
+    public int freezeAllTrafficLights(boolean frozen) {
+        try {
+            Object result = executeWithRetry(FREEZE_ALL_TRAFFIC_LIGHTS, new Object[]{frozen}, DEFAULT_RETRY_ATTEMPTS);
+            if (result instanceof Integer) return (Integer) result;
+            if (result instanceof Number)  return ((Number) result).intValue();
+            return 0;
+        } catch (Exception e) {
+            log.error("Failed to freeze-all TLs ({}): {}", frozen, e.getMessage());
+            return 0;
         }
     }
 

@@ -52,7 +52,7 @@
                 "CarlaV2xMessageReception",
                 "DetectorRegistration",
                 "VehicleUpdates",
-                "TrafficLightStateChange"
+                "TrafficLightUpdates"
             ],
             "javaClasspathEntries": []
         },

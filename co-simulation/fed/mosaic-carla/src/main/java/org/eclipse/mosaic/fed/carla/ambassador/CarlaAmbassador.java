@@ -14,19 +14,17 @@
 package org.eclipse.mosaic.fed.carla.ambassador;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.xmlrpc.XmlRpcException;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaXmlRpcClient;
 import org.eclipse.mosaic.fed.carla.carlaconnect.CarlaMultiXmlRpcManager;
 import org.eclipse.mosaic.fed.carla.config.CarlaConfiguration;
-import org.eclipse.mosaic.fed.sumo.traci.constants.CommandSimulationControl;
-import org.eclipse.mosaic.fed.sumo.traci.writer.ListTraciWriter;
-import org.eclipse.mosaic.fed.sumo.traci.writer.StringTraciWriter;
+import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo;
 import org.eclipse.mosaic.interactions.application.*;
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightUpdates;
 import org.eclipse.mosaic.interactions.traffic.TrafficLightStateChange;
+import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState;
 import org.eclipse.mosaic.interactions.vehicle.VehicleFederateAssignment;
 import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
@@ -42,28 +40,26 @@ import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 import org.eclipse.mosaic.rti.config.CLocalHost;
 
 import javax.annotation.Nonnull;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Map;
-import java.util.HashMap;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.text.ParseException;
 
 /**
  * Implementation of a {@link AbstractFederateAmbassador} for the vehicle
@@ -102,16 +98,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * flag for simulation step
      */
 
-    /**
-     * Sleep after each connection try. Unit: [ms].
-     */
-    private final static long SLEEP_AFTER_ATTEMPT = 1000L;
-
-    /**
-     * Maximum amount of attempts to connect to CARLA simulator.
-     */
-    private int connectionAttempts = 5;
-
+    boolean isTlManager = false;
 
     /**
      * Carla simulator client port
@@ -161,6 +148,18 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     // private double[] sumoNetOffsetXY = new double[]{503.02, 423.76};
     private double[] sumoNetOffsetXY = new double[]{0, 0};
 
+    /**
+     * Mapping of SUMO net tlLogic ids to CARLA linkSignalID/traffic light ids.
+     */
+    private Map<String, List<String>> tlLogicLinkSignals = new HashMap<>();
+
+    // Optional: cache to suppress redundant publications (simple hash of last custom state)
+    private final Map<String, String> lastCustomStateMask = new HashMap<>();
+
+    private boolean initialConnectAttempted = false;
+
+    private volatile boolean frozeCarlaTL = false;
+
 
     /**
      * Creates a new {@link CarlaAmbassador} object.
@@ -173,8 +172,18 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             // read the CARLA configuration file
             carlaConfig = new ObjectInstantiation<>(CarlaConfiguration.class, log)
                     .readFile(ambassadorParameter.configuration);
+            
+            // check for sumo network file for TL mappings
+            if (carlaConfig.sumoNetXmlPath == null || carlaConfig.sumoNetXmlPath.isEmpty())
+                throw new FileNotFoundException("carla_config.json has no 'sumoNetXmlPath' value; TL mapping will be disabled.");
+            File sumoNet = new File(carlaConfig.sumoNetXmlPath);
+            if (!sumoNet.exists())
+                throw new FileNotFoundException("carla_config.json 'sumoNetXmlPath' is invalid; TL mapping will be disabled.");
+            parseSumoNetwork(sumoNet);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
+        } catch (FileNotFoundException e) {
+            log.warn(e.getMessage());
         }
 
         log.info("carlaConfig.updateInterval: " + carlaConfig.updateInterval);
@@ -331,10 +340,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } catch (MalformedURLException m) {
                 throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!");
             }
-        } 
+        }
+
         loadConfiguredMap();
-
-
     }
 
 
@@ -372,22 +380,42 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      */
     @Override
     public synchronized void processTimeAdvanceGrant(long time) throws InternalFederateException {
-
         if (time < nextTimeStep) {
-            // process time advance only if time is equal or greater than the next
-            // simulation time step
+            log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
 
         try {
-            if (time == 0) {
-                // Try to connect to XML-RPC servers on first timestep
-                if (multiXmlRpcManager != null) {
-                    multiXmlRpcManager.connectAll(60);
-                } else if (carlaXmlRpcClient != null) {
-                    carlaXmlRpcClient.connect(60);
+            if (!initialConnectAttempted) {
+                initialConnectAttempted = true;
+                try {
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.connectAll(60);
+                    } else if (carlaXmlRpcClient != null) {
+                        carlaXmlRpcClient.connect(60);
+                    } else {
+                        log.info("[PTAG] no XML-RPC client(s) configured.");
+                    }
+                } catch (Exception ce) {
+                    log.warn("[PTAG] initial connect failed: {}", ce.toString());
                 }
             }
+            if (!isTlManager && !frozeCarlaTL) {
+                try {
+                    if (multiXmlRpcManager != null) {
+                        int n = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB)
+                                                .freezeAllTrafficLights(true);
+                        log.info("Froze {} CARLA traffic lights (CARLA not TL manager).", n);
+                    } else if (carlaXmlRpcClient != null) {
+                        int n = carlaXmlRpcClient.freezeAllTrafficLights(true);
+                        log.info("Froze {} CARLA traffic lights (legacy client).", n);
+                    }
+                    this.frozeCarlaTL = true; // ensure it runs only once
+                } catch (Exception e) {
+                    log.error("Failed to freeze CARLA traffic lights", e);
+                }
+            }
+
             // if the simulation step received from CARLA, advance CARLA federate local
             // simulation time
             // Advance CARLA simulation by one tick before polling sensors/actors
@@ -606,44 +634,22 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         lastActorIds.addAll(currentActorIds);
 
                         // Handle traffic lights using Client's change detection
-                        java.util.Map<String, java.util.Map<String, Object>> trafficLightChanges = actorClient.getTrafficLightChanges();
-                        
-                        if (!trafficLightChanges.isEmpty()) {
-                            java.util.Map<String, org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo> updatedTrafficLights = new java.util.HashMap<>();
-                            
-                            for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : trafficLightChanges.entrySet()) {
-                                String id = entry.getKey();
-                                java.util.Map<String, Object> tlInfo = entry.getValue();
-                                
-                                String state = tlInfo.get("state") != null ? tlInfo.get("state").toString() : "Unknown";
-                                Double timer = tlInfo.get("timer") instanceof Number ? ((Number) tlInfo.get("timer")).doubleValue() : null;
-                                
-                                // Create a simple TrafficLightGroupInfo with basic information
-                                // Since we don't have full SUMO traffic light program details from CARLA,
-                                // we'll create a minimal representation
-                                java.util.List<org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState> states = new java.util.ArrayList<>();
-                                // Add a basic state representation - TrafficLightState constructor takes (red, green, yellow) booleans
-                                states.add(new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightState(true, false, false)); // Red state
-                                
-                                org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo tlGroupInfo = 
-                                    new org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroupInfo(
-                                        id, 
-                                        "default", // program ID
-                                        0, // phase index
-                                        timer != null ? (long)(timer * 1e9) : 0, // convert seconds to nanoseconds
-                                        states
-                                    );
-                                updatedTrafficLights.put(id, tlGroupInfo);
+                        if (isTlManager) {
+                            try {
+                                List<TrafficLightStateChange> changes = buildTlStateChangesFromCarla(time, actorClient);
+                                for (TrafficLightStateChange c : changes) {
+                                    rti.triggerInteraction(c);
+                                }
+                            } catch (Exception ex) {
+                                log.warn("[PTAG] TL publish failed: {}", ex.toString());
                             }
-                            
-                            TrafficLightUpdates trafficLightUpdates = new TrafficLightUpdates(time, updatedTrafficLights);
-                            this.rti.triggerInteraction(trafficLightUpdates);
-                            log.debug("Published TrafficLightUpdates: {} traffic lights updated", updatedTrafficLights.size());
                         }
-                        
+
                     } catch (Exception e) {
-                        log.warn("Failed to poll and emit CARLA state updates: {}", e.getMessage());
+                        log.warn("[PTAG] poll/emit CARLA state updates failed: {}", e.getMessage());
                     }
+                } else {
+                    log.info("[PTAG] Skipped CARLA actor polling (no ACTOR_LIB connection)");
                 }
                 
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
@@ -653,14 +659,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } 
         catch (IllegalValueException e) {
             log.error("Failed to process advance time grant due to : ", e);
-        }
-        catch (XmlRpcException e ) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim "
-                        + "Adapter connection! Check carla_config.json!", e);
-        }
-        catch (InterruptedException e) {
-            log.error("Failed to process advance time grant due to failed thread sleep!", e);
-            Thread.currentThread().interrupt();
+        } catch (XmlRpcException e) {
+            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim Adapter connection! Check carla_config.json!", e);
         }
     }
 
@@ -1153,9 +1153,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Processing VehicleUpdates interaction - this should trigger spawn_actor calls");
             this.receiveInteraction((VehicleUpdates) interaction);
         }
-        else if (interaction.getTypeId().equals(TrafficLightStateChange.TYPE_ID)) {
-            log.info("Processing TrafficLightStateChange interaction - this should forward traffic light commands to CARLA");
-            this.receiveInteraction((TrafficLightStateChange) interaction);
+        else if (interaction.getTypeId().equals(TrafficLightUpdates.TYPE_ID)) {
+            log.info("Processing TrafficLightUpdates interaction - this should forward traffic light commands to CARLA");
+            this.receiveInteraction((TrafficLightUpdates) interaction);
         }
         else {
             log.debug("Ignoring interaction of type: {}", type);
@@ -1492,73 +1492,44 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Process traffic light state change commands and forward them to CARLA.
+     * Process traffic light updates and forward them to CARLA.
      * This enables other federates (like applications or SUMO) to control CARLA traffic lights.
      *
      * @param interaction TrafficLightStateChange interaction
      */
-    private void receiveInteraction(TrafficLightStateChange interaction) {
-        log.info("Received TrafficLightStateChange for traffic light group '{}' with parameter type: {}", 
-                interaction.getTrafficLightGroupId(), interaction.getParameterType());
-        
-        boolean actorConnected = false;
-        if (multiXmlRpcManager != null) {
-            actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-        } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
-            actorConnected = carlaXmlRpcClient.isConnected();
-        }
-        
-        if (!actorConnected) {
-            log.warn("Actor server not connected; cannot forward traffic light state change to CARLA");
-            return;
-        }
-        
+    private void receiveInteraction(TrafficLightUpdates interaction) {
+        final long grantTimeNs = interaction.getTime();
         try {
-            // Get actor client once to avoid repeated calls
-            CarlaXmlRpcClient actorClient = null;
-            if (multiXmlRpcManager != null) {
-                actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-            } else {
-                actorClient = carlaXmlRpcClient;
+            for (Map.Entry<String, TrafficLightGroupInfo> updatedTrafficLights : interaction.getUpdated().entrySet()) {
+                final String                  tlGroupId     = updatedTrafficLights.getKey();
+                final TrafficLightGroupInfo   tlGroupInfo   = updatedTrafficLights.getValue();
+                final long                    nextSwitchNs  = tlGroupInfo.getAssumedTimeOfNextSwitch();
+                final List<TrafficLightState> states        = tlGroupInfo.getCurrentState();
+                final List<String>            carlaIds      = tlLogicLinkSignals.get(tlGroupId);
+
+                final int n = Math.min(states.size(), carlaIds.size());
+                for (int i = 0; i < n; i++) {
+                    final String carlaId = carlaIds.get(i);
+                    if (carlaId == null) continue;
+                    final String color = states.get(i).toString().toLowerCase();
+
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightState(carlaId, color);
+                    } else if (carlaXmlRpcClient != null) {
+                        carlaXmlRpcClient.setTrafficLightState(carlaId, color);
+                    }
+
+                    if (multiXmlRpcManager != null) {
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(carlaId, 
+                            (nextSwitchNs > grantTimeNs) ? (nextSwitchNs - grantTimeNs) / (long)1e9 : 0L);
+                    } else if (carlaXmlRpcClient != null) {
+                        carlaXmlRpcClient.setTrafficLightTimer(carlaId, 
+                            (nextSwitchNs > grantTimeNs) ? (nextSwitchNs - grantTimeNs) / (long)1e9 : 0L);
+                    }
+                }
             }
-            
-            String trafficLightId = interaction.getTrafficLightGroupId();
-            
-            switch (interaction.getParameterType()) {
-                case ChangePhase:
-                    log.info("Changing traffic light '{}' to phase index: {}", trafficLightId, interaction.getPhaseIndex());
-                    actorClient.setTrafficLightState(trafficLightId, "phase_" + interaction.getPhaseIndex());
-                    break;
-                    
-                case RemainingDuration:
-                    double durationInSeconds = interaction.getPhaseRemainingDuration() / 1000.0; // ms -> s
-                    log.info("Setting traffic light '{}' remaining duration to: {} seconds", trafficLightId, durationInSeconds);
-                    actorClient.setTrafficLightTimer(trafficLightId, durationInSeconds);
-                    break;
-                    
-                case ProgramId:
-                    log.info("Changing traffic light '{}' to program: {}", trafficLightId, interaction.getProgramId());
-                    actorClient.setTrafficLightState(trafficLightId, interaction.getProgramId());
-                    break;
-                    
-                case ChangeProgramWithPhase:
-                    log.info("Changing traffic light '{}' to program '{}' with phase: {}", 
-                            trafficLightId, interaction.getProgramId(), interaction.getPhaseIndex());
-                    actorClient.setTrafficLightState(trafficLightId, interaction.getProgramId() + "_phase_" + interaction.getPhaseIndex());
-                    break;
-                    
-                case ChangeToCustomState:
-                    log.info("Setting traffic light '{}' to custom state", trafficLightId);
-                    // For custom states, we'll use a generic "custom" state
-                    actorClient.setTrafficLightState(trafficLightId, "custom");
-                    break;
-                    
-                default:
-                    log.warn("Unknown traffic light state change parameter type: {}", interaction.getParameterType());
-                    break;
-            }
-        } catch (Exception e) {
-            log.error("Failed to forward traffic light state change to CARLA: {}", e.getMessage());
+        } catch (NullPointerException e) {
+            log.error("Error while evaluating SUMO .net.xml mappings, ensure the .net.xml file in carla_config is valid.", e);
         }
     }
 
@@ -1750,4 +1721,121 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
     }
 
+    /**
+     * Pareses SUMO .net.xml file to create mappings between tlLogic ids
+     * and CARLA traffic light OpenDrive ids.
+     * @param netXmlFile Sumo .net.xml file to be parsed.
+     * @throws ParseException Exception to be thrown if parsing is unsuccessfull.
+     */
+    private void parseSumoNetwork(File netXmlFile) {
+        try {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(false);
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(netXmlFile);
+
+            NodeList tlLogics = doc.getElementsByTagName("tlLogic");
+            for (int i = 0; i < tlLogics.getLength(); i++) {
+                Element tl = (Element) tlLogics.item(i);
+
+                final String tlId = tl.getAttribute("id");
+
+                // linkSignalID:i -> CARLA/ODR id mapping
+                if (!this.tlLogicLinkSignals.containsKey(tlId)) {
+                    NodeList params = tl.getElementsByTagName("param");
+                    int maxIndex = -1;
+                    Map<Integer, String> tmp = new HashMap<>();
+                    for (int j = 0; j < params.getLength(); j++) {
+                        Element pm = (Element) params.item(j);
+                        String key = pm.getAttribute("key");
+                        if (key != null && key.startsWith("linkSignalID:")) {
+                            String idxStr = key.substring("linkSignalID:".length());
+                            try {
+                                int idx = Integer.parseInt(idxStr);
+                                String val = pm.getAttribute("value");
+                                tmp.put(idx, val);
+                                if (idx > maxIndex) maxIndex = idx;
+                            } catch (NumberFormatException ignore) {  } // ignore
+                        }
+                    }
+
+                    if (!tmp.isEmpty()) {
+                        List<String> ordered = new ArrayList<>(Collections.nCopies(maxIndex + 1, null));
+                        for (Map.Entry<Integer, String> e : tmp.entrySet()) {
+                            int k = e.getKey();
+                            if (k >= 0 && k < ordered.size()) ordered.set(k, e.getValue());
+                        }
+                        this.tlLogicLinkSignals.put(tlId, Collections.unmodifiableList(ordered));
+                    }
+                }
+            }
+
+            log.info("Parsed tlLogic link mappings for {} controllers", tlLogicLinkSignals.size());
+
+        } catch (Exception e) {
+            log.error("Failed parsing SUMO net (should be <netFileName>.net.xml) {}", netXmlFile, e);
+        }
+    }
+
+    /** 
+     * Translate a CARLA color string to MOSAIC TrafficLightState. 
+     */
+    private TrafficLightState toMosaicState(int carlaColor) {
+        // Fallback to all-red if unknown
+        boolean r = true, y = false, g = false;
+        switch (carlaColor) {
+            case 0: break;
+            case 1: r = false; y = true; break;
+            case 2: r = false; g = true; break;
+            case 3: r = false; break;
+        }
+        return new TrafficLightState(r, g, y);
+    }
+
+    private int asInt(Object o, int fallback) {
+        try {
+            if (o instanceof Number) return ((Number) o).intValue();
+            if (o != null) return Integer.parseInt(String.valueOf(o));
+        } catch (Exception ignore) {}
+        return fallback;
+    }
+
+    private List<TrafficLightStateChange> buildTlStateChangesFromCarla(long time, CarlaXmlRpcClient actorClient) {
+        List<Map<String, Object>> carlaStates = actorClient.getAllTrafficLightStates();
+        log.info("buildTlStateChangesFromCarla: Got {} carla tl states at time {}", carlaStates.size(), time);
+        // carlaId -> int state
+        Map<String, Integer> carlaIdToState = new HashMap<>(carlaStates.size());
+        for (Map<String, Object> m : carlaStates) {
+            Object id = m.getOrDefault("opendrive_id", null);
+            log.info("buildTlStateChangesFromCarla: processing tl state for id {} at time {}", String.valueOf(id), time);
+            int st = asInt(m.get("state"), 0);
+            carlaIdToState.put(String.valueOf(id), st);
+        }
+
+        log.debug("buildTlStateChangesFromCarla at time {}: carlaIdToState map: {}", time, carlaIdToState);
+
+        List<TrafficLightStateChange> tlStates = new ArrayList<>();
+        for (Map.Entry<String, List<String>> e : tlLogicLinkSignals.entrySet()) {
+            String tlGroupId = e.getKey();
+            List<String> orderedOpenDriveIds = e.getValue();
+
+            List<TrafficLightState> customStates = new ArrayList<>(orderedOpenDriveIds.size());
+            StringBuilder stateMaskBuilder = new StringBuilder(orderedOpenDriveIds.size() * 2);
+
+            for (String openDriveId : orderedOpenDriveIds) {
+                int st = carlaIdToState.getOrDefault(openDriveId, 0);
+                customStates.add(toMosaicState(st));
+                stateMaskBuilder.append(st).append('|');
+            }
+            log.info("buildTlStateChangesFromCarla: got custom states for group {}: {}", tlGroupId, customStates);
+            String stateMask = stateMaskBuilder.toString();
+            if (stateMask.equals(lastCustomStateMask.get(tlGroupId))) continue;
+
+            TrafficLightStateChange change = new TrafficLightStateChange(time, tlGroupId);
+            change.setCustomState(customStates);
+            tlStates.add(change);
+            lastCustomStateMask.put(tlGroupId, stateMask);
+        }
+        return tlStates;
+    }
 }

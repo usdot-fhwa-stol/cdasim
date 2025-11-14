@@ -218,6 +218,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
      */
     protected boolean sumoCarlaCoSimulation = false;
 
+    protected boolean isTlManager = true;
+
     /**
      * Creates a new {@link AbstractSumoAmbassador} object.
      *
@@ -846,6 +848,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     return;
             }
 
+            if (!isTlManager) return; // Do not publish updates if not traffic light manager
             String programId = traci.getTrafficLightControl().getCurrentProgram(trafficLightGroupId);
             int phaseIndex = traci.getTrafficLightControl().getCurrentPhase(trafficLightGroupId);
             long assumedNextTimeSwitch = (long) (traci.getTrafficLightControl().getNextSwitchTime(trafficLightGroupId)
@@ -1250,6 +1253,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             if (firstAdvanceTime) {
                 initTraci();
                 initializeTrafficLights(time);
+                if (!isTlManager) this.freezeAllTrafficLightsInSumo();
                 firstAdvanceTime = false;
             }
 
@@ -1267,7 +1271,53 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 log.debug("Abstract Sumo Ambassador Vehicle updates: {}", simulationStepResult.getVehicleUpdates().toString());
                 rti.triggerInteraction(simulationStepResult.getVehicleUpdates());
                 rti.triggerInteraction(simulationStepResult.getTrafficDetectorUpdates());
-                this.rti.triggerInteraction(simulationStepResult.getTrafficLightUpdates());
+
+                if (isTlManager) {
+                    // Manual TrafficLightUpdates creation
+                    // Manually query and log traffic light states for all groups
+                    Map<String, TrafficLightGroupInfo> updatedTrafficLightGroups = new HashMap<>();
+                    String programId;
+                    int phaseIndex;
+                    long assumedNextTimeSwitch;
+                    List<String> tlgIds = traci.getSimulationControl().getTrafficLightGroupIds();
+                    for (String groupId : tlgIds) {
+                        try {
+                            programId = traci.getTrafficLightControl().getCurrentProgram(groupId);
+                            phaseIndex = traci.getTrafficLightControl().getCurrentPhase(groupId);
+                            assumedNextTimeSwitch = (long) (traci.getTrafficLightControl().getNextSwitchTime(groupId) * 1e9);
+                            List<TrafficLightState> states = traci.getTrafficLightControl().getCurrentStates(groupId);
+
+                            updatedTrafficLightGroups.put(groupId,
+                                    new TrafficLightGroupInfo(groupId, programId, phaseIndex, assumedNextTimeSwitch, states));
+                            
+                            // Convert states to SUMO-compatible string (e.g., "grgr")
+                            /*
+                            StringBuilder stateString = new StringBuilder();
+                            for (TrafficLightState state : states) {
+                                if (state.isGreen()) {
+                                    stateString.append('g'); // Permissive green
+                                } else if (state.isYellow()) {
+                                    stateString.append('y');
+                                } else if (state.isRed()) {
+                                    stateString.append('r');
+                                } else if (state.isRedYellow()) {
+                                    stateString.append('u');
+                                } else {
+                                    stateString.append('o'); // Off
+                                }
+                            }
+                            
+                            log.info("Manual Traffic Light Query at time {}: groupId={}, programId={}, phaseIndex={}, nextSwitchTime={}, state={}",
+                                    TIME.format(time), groupId, programId, phaseIndex,
+                                    TIME.format(assumedNextTimeSwitch), stateString.toString());
+                            */
+                        } catch (InternalFederateException e) {
+                            log.warn("Could not query traffic light state for groupId={}", groupId, e);
+                        }
+                    }
+
+                    this.rti.triggerInteraction(new TrafficLightUpdates(time, updatedTrafficLightGroups));
+                }
                 receivedSimulationStep = false;
                 firstAttemptToAdvanceToNextStep = true;
             }
@@ -1495,6 +1545,44 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         Interaction stlRegistration = new ScenarioTrafficLightRegistration(time, tlgs, tlgLaneMap);
         rti.triggerInteraction(stlRegistration);
     }
+
+    /**
+     * Freeze all SUMO traffic lights by setting every signal head to OFF.
+     * Uses TraCI setPhase(...) with a custom state list sized to each group.
+     */
+    private void freezeAllTrafficLightsInSumo() {
+        try {
+            final java.util.List<String> tlgIds = traci.getSimulationControl().getTrafficLightGroupIds();
+            if (tlgIds == null || tlgIds.isEmpty()) {
+                log.info("freezeAllTrafficLightsInSumo: no traffic light groups found.");
+                return;
+            }
+
+            for (String groupId : tlgIds) {
+                try {
+                    final java.util.List<TrafficLightState> current =
+                            traci.getTrafficLightControl().getCurrentStates(groupId);
+                    if (current == null || current.isEmpty()) {
+                        log.debug("freezeAllTrafficLightsInSumo: group {} has no states; skipping.", groupId);
+                        continue;
+                    }
+
+                    final int n = current.size();
+                    final java.util.List<TrafficLightState> offStates =
+                            new java.util.ArrayList<>(java.util.Collections.nCopies(n, TrafficLightState.OFF));
+
+                    // Apply the custom OFF state in one shot
+                    traci.getTrafficLightControl().setPhase(groupId, offStates);
+                    log.info("Froze SUMO TL group {} ({} signals) -> OFF", groupId, n);
+                } catch (Exception perGroup) {
+                    log.warn("freezeAllTrafficLightsInSumo: failed for group {}: {}", groupId, perGroup.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("freezeAllTrafficLightsInSumo: TraCI error", e);
+        }
+    }
+
 
     /**
      * Find the first configuration file.
