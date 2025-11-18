@@ -11,7 +11,7 @@ if [ -z "$NETWORK" ]; then
 fi
 
 # Run the Docker command with the dynamically determined network
-docker run --privileged --gpus all --name carla-server --net="$NETWORK" --env=DISPLAY=$DISPLAY \
+docker run --privileged --rm --gpus all --name carla-server --net="$NETWORK" --env=DISPLAY=$DISPLAY \
   --env=NVIDIA_VISIBLE_DEVICES=all --env=NVIDIA_DRIVER_CAPABILITIES=all \
   --env=SDL_VIDEODRIVER=x11 --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
   --volume="/usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d:ro" \
