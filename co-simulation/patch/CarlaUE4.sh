@@ -15,4 +15,4 @@ docker run --privileged --rm --gpus all --name carla-server --net="$NETWORK" --e
   --env=NVIDIA_VISIBLE_DEVICES=all --env=NVIDIA_DRIVER_CAPABILITIES=all \
   --env=SDL_VIDEODRIVER=x11 --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
   --volume="/usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d:ro" \
-  carlasim/carla:0.10.0 bash CarlaUnreal.sh -vulkan -nosound "$@"
+  carlasim/carla:0.10.0 bash CarlaUnreal.sh -vulkan -nosound --ros2 "$@"
