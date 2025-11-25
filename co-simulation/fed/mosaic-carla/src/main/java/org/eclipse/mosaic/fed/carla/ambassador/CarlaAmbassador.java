@@ -815,52 +815,63 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * 
      * @param xSumo SUMO X coordinate
      * @param ySumo SUMO Y coordinate
+     * @param zSumo SUMO Z coordinate (height/elevation)
      * @param headingDeg SUMO heading angle in degrees
+     * @param pitchDeg SUMO pitch/slope angle in degrees
      * @param extentX Vehicle extent in X direction (half length) for front-bumper to center conversion
      * @return Transform object with CARLA coordinates and heading
      */
-    private Transform carlaTransformFromSumo(double xSumo, double ySumo, Double headingDeg, Double extentX) {
+    private Transform carlaTransformFromSumo(double xSumo, double ySumo, double zSumo, Double headingDeg, Double pitchDeg, Double extentX) {
         // Start with SUMO coordinates
         double sumoX = xSumo;
         double sumoY = ySumo;
-        double sumoZ = 0.0;
+        double sumoZ = zSumo;
         
         // From front-center-bumper to center (sumo reference system)
         // Following Python bridge_helper.py get_carla_transform logic exactly
+        // Python: yaw = -1 * in_rotation.yaw + 90
+        // Python: pitch = in_rotation.pitch
+        // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
+        //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
+        //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
         if (extentX != null && extentX > 0.0 && headingDeg != null) {
-            double yaw = -1 * headingDeg + 90; // Python: yaw = -1 * in_rotation.yaw + 90
+            double yaw = -1 * headingDeg + 90;
             double yawRad = Math.toRadians(yaw);
-            // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
-            //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
-            //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
             sumoX -= Math.cos(yawRad) * extentX;
             sumoY -= Math.sin(yawRad) * extentX;
-            // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
+            
+            // Apply pitch adjustment to Z axis if pitch is available
+            if (pitchDeg != null) {
+                double pitchRad = Math.toRadians(pitchDeg);
+                sumoZ -= Math.sin(pitchRad) * extentX;
+            }
         }
         
         // Applying offset sumo-carla net
         // Python: out_location = (out_location[0] - offset[0], out_location[1] - offset[1], out_location[2])
+        // Note: Z axis does NOT apply offset (only X and Y apply offset)
         double xWithOffset = sumoX - sumoNetOffsetXY[0];
         double yWithOffset = sumoY - sumoNetOffsetXY[1];
-        double zWithOffset = sumoZ;
+        double zWithOffset = sumoZ; // Z axis does not apply offset
         
         // Transform to carla reference system (left-handed)
         // Python: carla.Location(out_location[0], -out_location[1], out_location[2])
         double carlaX = xWithOffset;
         double carlaY = -yWithOffset; // Flip Y for left-handed system
-        double carlaZ = zWithOffset;
+        double carlaZ = zWithOffset; // Z axis is preserved directly
         
         // Convert SUMO heading to CARLA yaw
-        // Fixed: Ensure consistent angle conversion
+        // Python: carla.Rotation(out_rotation[0], out_rotation[1] - 90, out_rotation[2])
         double carlaYawDeg = headingDeg != null ? (headingDeg - 90.0) : 0.0;
         // Normalize yaw to [-180, 180] range for CARLA
         while (carlaYawDeg > 180.0) carlaYawDeg -= 360.0;
         while (carlaYawDeg < -180.0) carlaYawDeg += 360.0;
         
-        double pitchDeg = 0.0;
-        double rollDeg = 0.0;
+        // Preserve pitch and roll from SUMO
+        double carlaPitchDeg = pitchDeg != null ? pitchDeg : 0.0;
+        double carlaRollDeg = 0.0;
         
-        return new Transform(carlaX, carlaY, carlaZ, pitchDeg, carlaYawDeg, rollDeg);
+        return new Transform(carlaX, carlaY, carlaZ, carlaPitchDeg, carlaYawDeg, carlaRollDeg);
     }
 
     /**
@@ -1231,7 +1242,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed(); // Get speed from VehicleData
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
@@ -1253,7 +1268,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during categorization: {}", vd.getName(), e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1280,7 +1295,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed();
                 
                 // Check if vehicle already exists in mapping - if so, skip spawn and move to update
@@ -1310,7 +1329,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during spawn: {}", id, e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1411,7 +1430,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed();
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
@@ -1433,7 +1456,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during update: {}", id, e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
