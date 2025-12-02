@@ -46,6 +46,7 @@ import time
 
 
 import carla
+SPAWN_OFFSET_Z = 25.0 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("CarlaXMLRPCServer")
@@ -111,26 +112,24 @@ class CarlaXMLRPCServer:
         if not self.world:
             return None
         # Heights (meters) to try to avoid ground collisions; small to large
-        height_offsets = [0.0, 0.2, 0.5, 1.0]
         # Small xy jitters (meters)
         xy_jitters = [(0.0, 0.0), (0.2, 0.0), (-0.2, 0.0), (0.0, 0.2), (0.0, -0.2), (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2)]
 
-        for dz in height_offsets:
-            for dx, dy in xy_jitters:
-                try:
-                    t = carla.Transform(
-                        carla.Location(base_transform.location.x + dx,
-                                       base_transform.location.y + dy,
-                                       base_transform.location.z + dz),
-                        base_transform.rotation
-                    )
-                    actor = self.world.try_spawn_actor(bp, t)
-                    if actor is not None:
-                        return actor
-                except Exception as e:
-                    logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
-                    continue
-        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", height_offsets, xy_jitters)
+        for dx, dy in xy_jitters:
+            try:
+                t = carla.Transform(
+                    carla.Location(base_transform.location.x + dx,
+                                base_transform.location.y + dy,
+                                base_transform.location.z + SPAWN_OFFSET_Z),
+                    base_transform.rotation
+                )
+                actor = self.world.try_spawn_actor(bp, t)
+                if actor is not None:
+                    return actor
+            except Exception as e:
+                logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, SPAWN_OFFSET_Z, e)
+                continue
+        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", SPAWN_OFFSET_Z, xy_jitters)
         return None
 
     # ---------- Registration ----------
