@@ -93,6 +93,7 @@ public class DockerCommandLine {
         }
         cmd[i++] = "-d";
         cmd[i] = image;
+        logger.info("Executing docker {}", String.join(" ", cmd));
         return execCommandAndRead(cmd);
     }
 

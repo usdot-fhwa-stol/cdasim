@@ -387,9 +387,12 @@ public class MosaicSimulation {
         final FederateAmbassador ambassador = descriptor.getAmbassador();
         final CLocalHost host = descriptor.getHost();
 
+        log.info("Federate {} is initializing", descriptor.getId());
         if (descriptor.isToStartAndStop()) {
 
+            log.info("Federate {} is to start and stop", descriptor.getId());
             if (StringUtils.isNotEmpty(federate.dockerImage)) {
+                log.info("Federate {} is set to run on dockerImage: {}", descriptor.getId(), federate.dockerImage);
                 descriptor.setFederateExecutor(
                         descriptor.getAmbassador().createDockerFederateExecutor(federate.dockerImage, host.operatingSystem)
                 );
@@ -464,6 +467,7 @@ public class MosaicSimulation {
         // add federates
         for (FederateDescriptor descriptor : federates) {
             federation.addFederate(descriptor);
+            log.info("addFederate for {} completed", descriptor.getId());
             inter.subscribeInteractions(descriptor.getId(), descriptor.getInteractions());
             time.updateWatchDog();
         }
