@@ -28,7 +28,7 @@ WORKDIR /home/mosaic/bin/fed/ns3
 COPY ./ns* ./
 
 RUN \
-    ./ns3_installer.sh -p --quiet && \
+    ./ns3_dind_installer.sh -p --quiet && \
     mkdir -p ns3/scratch
 
 VOLUME ["/home/mosaic/bin/fed/ns3/scratch"]
