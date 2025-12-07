@@ -369,8 +369,23 @@ class CarlaXMLRPCServer:
         try:
             if not self.is_connected():
                 return False
+            # Check if actor_id already exists and if the actor is still valid
             if actor_id in self.actors:
-                return False
+                existing_actor = self.actors[actor_id]
+                # Check if the actor is still valid in the world
+                try:
+                    if self.world and hasattr(existing_actor, 'id'):
+                        # Try to get the actor from world to verify it still exists
+                        world_actor = self.world.get_actor(existing_actor.id)
+                        if world_actor is not None:
+                            logger.warning("spawn_actor: actor_id %s already exists with valid actor (ID: %s), skipping spawn", actor_id, existing_actor.id)
+                            return False
+                except Exception:
+                    # Actor no longer exists in world, clean up and allow respawn
+                    logger.info("spawn_actor: actor_id %s exists but actor is invalid, cleaning up and allowing respawn", actor_id)
+                    self.actors.pop(actor_id, None)
+                    self.actor_types.pop(actor_id, None)
+                    self.actor_blueprints.pop(actor_id, None)
 
             lib = self.world.get_blueprint_library()
 
@@ -593,7 +608,7 @@ class CarlaXMLRPCServer:
                     self.actors.pop(alias, None)
                     self.actor_types.pop(alias, None)
                     self.actor_blueprints.pop(alias, None)
-                return out
+            return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
             return {}
