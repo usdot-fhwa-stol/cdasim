@@ -54,7 +54,7 @@ class CarlaXMLRPCServer:
         self.carla_host = carla_host
         self.carla_port = carla_port
         self.tls_manager = tls_manager
-        self.timestep_size  = timestep_size 
+        self.timestep_size = timestep_size 
         self.default_map_name = default_map_name
 
         self.client: Optional[carla.Client] = None
@@ -1097,7 +1097,7 @@ def main():
     parser.add_argument('--port', type=int, default=8090)
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
-    parser.add_argument('--timestep_size ', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
+    parser.add_argument('--timestep_size', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
     parser.add_argument('--map', '--map-name', dest='map_name', default='Town04', help='Default map name to load on connection (default: Town04)')
     parser.add_argument('--tls-manager',
                        type=str,
@@ -1109,7 +1109,7 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.timestep_size , args.map_name)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.timestep_size, args.map_name)
     try:
         server.start()
     except KeyboardInterrupt:
