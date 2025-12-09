@@ -369,23 +369,8 @@ class CarlaXMLRPCServer:
         try:
             if not self.is_connected():
                 return False
-            # Check if actor_id already exists and if the actor is still valid
             if actor_id in self.actors:
-                existing_actor = self.actors[actor_id]
-                # Check if the actor is still valid in the world
-                try:
-                    if self.world and hasattr(existing_actor, 'id'):
-                        # Try to get the actor from world to verify it still exists
-                        world_actor = self.world.get_actor(existing_actor.id)
-                        if world_actor is not None:
-                            logger.warning("spawn_actor: actor_id %s already exists with valid actor (ID: %s), skipping spawn", actor_id, existing_actor.id)
-                            return False
-                except Exception:
-                    # Actor no longer exists in world, clean up and allow respawn
-                    logger.info("spawn_actor: actor_id %s exists but actor is invalid, cleaning up and allowing respawn", actor_id)
-                    self.actors.pop(actor_id, None)
-                    self.actor_types.pop(actor_id, None)
-                    self.actor_blueprints.pop(actor_id, None)
+                return False
 
             lib = self.world.get_blueprint_library()
 
@@ -503,7 +488,6 @@ class CarlaXMLRPCServer:
                 rp, ry, rr = 0.0, 0.0, 0.0
             transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
             actor.set_transform(transform)
-            logger.info("update_actor_transform success: actor_key=%s, transform=%s", actor_key, transform)
             return True
         except Exception as e:
             logger.error("update_actor_transform error: %s", e)
@@ -588,6 +572,18 @@ class CarlaXMLRPCServer:
                             }
                         }
                         
+                        # Add velocity information if available
+                        if hasattr(actor, 'get_velocity'):
+                            try:
+                                v = actor.get_velocity()
+                                actor_data['velocity'] = {
+                                    'linear': [float(v.x), float(v.y), float(v.z)]
+                                }
+                            except Exception as e:
+                                logger.debug("Failed to get velocity for actor %s: %s", alias, e)
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                        else:
+                            actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
                         
                         out[alias] = actor_data
                     else:
@@ -597,8 +593,7 @@ class CarlaXMLRPCServer:
                     self.actors.pop(alias, None)
                     self.actor_types.pop(alias, None)
                     self.actor_blueprints.pop(alias, None)
-            logger.debug("get_all_actors returning %d actors: %s", len(out))
-            return out
+                return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
             return {}
