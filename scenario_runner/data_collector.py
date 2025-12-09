@@ -34,6 +34,7 @@ class DataCollector:
 
     def collect(self, index: int, config: dict):
         data_output = config.get("data_output")
+        log_dir = config.get("log_directory")
         if not data_output:
             print("No data_output section. Skipping.")
             return
@@ -51,6 +52,15 @@ class DataCollector:
 
         if collect_cfg.get("rosbags"):
             self._collect_folder(self.rosbag_dir, case_dir / "rosbags")
+
+        if collect_cfg.get("messenger_logs"):
+            self._collect_folder(Path(log_dir["messenger_log_dir"]), case_dir / "messenger_logs")
+        
+        if collect_cfg.get("v2xhub_logs"):
+            self._collect_folder(Path(log_dir["v2xhub_log_dir"]), case_dir / "v2xhub_logs")
+        
+        if collect_cfg.get("carmacloud_logs"):
+            self._collect_folder(Path(log_dir["carmacloud_log_dir"]), case_dir / "carmacloud_logs")
 
     def _collect_folder(self, src_base: Path, dest: Path):
         latest = self.latest_subdir(src_base)
