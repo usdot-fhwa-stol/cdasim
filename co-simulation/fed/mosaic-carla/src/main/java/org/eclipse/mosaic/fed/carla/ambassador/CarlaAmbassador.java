@@ -1476,26 +1476,32 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             currentActorIds.addAll(newlySpawnedActors);
 
             // Handle removals
+            // Fix: Check sumoToCarlaIdMapping instead of currentActorIds to ensure all mapped vehicles are deleted
+            log.info("Processing {} vehicle removals from SUMO", interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0);
             for (String removedId : interaction.getRemovedNames()) {
-                if (currentActorIds.contains(removedId)) {
-                    // Get the CARLA ID for this SUMO vehicle
-                    String carlaId = sumoToCarlaIdMapping.get(removedId);
-                    if (carlaId != null) {
-                        boolean destroyed = actorClient.destroyActor(carlaId);
-                        if (destroyed) {
-                            currentActorIds.remove(removedId);
-                            sumoToCarlaIdMapping.remove(removedId);
-                            log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
-                        } else {
-                            log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
-                            // Still remove from mapping to prevent inconsistent state
-                            currentActorIds.remove(removedId);
-                            sumoToCarlaIdMapping.remove(removedId);
-                        }
+                log.info("Attempting to remove SUMO vehicle '{}'", removedId);
+                // Get the CARLA ID for this SUMO vehicle from mapping
+                String carlaId = sumoToCarlaIdMapping.get(removedId);
+                if (carlaId != null) {
+                    log.info("Found CARLA ID mapping for SUMO vehicle '{}' -> CARLA actor '{}', attempting destruction", removedId, carlaId);
+                    // Always attempt to destroy the CARLA actor if mapping exists
+                    boolean destroyed = actorClient.destroyActor(carlaId);
+                    if (destroyed) {
+                        log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
                     } else {
-                        log.warn("No CARLA ID found for SUMO vehicle '{}' during removal, cleaning up from currentActorIds", removedId);
-                        // Still remove from currentActorIds to maintain consistency
+                        log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
+                    }
+                    // Always remove from mapping and currentActorIds to prevent inconsistent state
+                    currentActorIds.remove(removedId);
+                    sumoToCarlaIdMapping.remove(removedId);
+                    log.info("Cleaned up mapping for SUMO vehicle '{}' (CARLA ID: '{}')", removedId, carlaId);
+                } else {
+                    // No mapping found, but still clean up currentActorIds if present
+                    if (currentActorIds.contains(removedId)) {
+                        log.warn("No CARLA ID mapping found for SUMO vehicle '{}' during removal, but removing from currentActorIds", removedId);
                         currentActorIds.remove(removedId);
+                    } else {
+                        log.debug("SUMO vehicle '{}' marked for removal but has no CARLA mapping or current actor ID", removedId);
                     }
                 }
             }
