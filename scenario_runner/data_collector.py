@@ -34,7 +34,8 @@ class DataCollector:
 
     def collect(self, index: int, config: dict):
         data_output = config.get("data_output")
-        log_dir = config.get("log_directory")
+        if data_output.get("log_directory"):
+            log_dir = data_output.get("log_directory", {})
         if not data_output:
             print("No data_output section. Skipping.")
             return
