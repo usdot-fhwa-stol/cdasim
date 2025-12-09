@@ -442,6 +442,7 @@ class CarlaXMLRPCServer:
                 rp, ry, rr = 0.0, 0.0, 0.0
             transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
             actor.set_transform(transform)
+            logger.info("update_actor_transform success: actor_key=%s, transform=%s", actor_key, transform)
             return True
         except Exception as e:
             logger.error("update_actor_transform error: %s", e)
