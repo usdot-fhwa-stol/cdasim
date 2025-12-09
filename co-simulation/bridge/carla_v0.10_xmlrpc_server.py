@@ -587,18 +587,6 @@ class CarlaXMLRPCServer:
                             }
                         }
                         
-                        # Add velocity information if available
-                        if hasattr(actor, 'get_velocity'):
-                            try:
-                                v = actor.get_velocity()
-                                actor_data['velocity'] = {
-                                    'linear': [float(v.x), float(v.y), float(v.z)]
-                                }
-                            except Exception as e:
-                                logger.debug("Failed to get velocity for actor %s: %s", alias, e)
-                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
-                        else:
-                            actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
                         
                         out[alias] = actor_data
                     else:
@@ -608,6 +596,7 @@ class CarlaXMLRPCServer:
                     self.actors.pop(alias, None)
                     self.actor_types.pop(alias, None)
                     self.actor_blueprints.pop(alias, None)
+            logger.debug("get_all_actors returning %d actors: %s", len(out))
             return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
