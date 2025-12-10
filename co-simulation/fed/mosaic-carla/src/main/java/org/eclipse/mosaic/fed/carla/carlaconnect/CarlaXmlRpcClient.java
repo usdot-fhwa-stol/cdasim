@@ -1047,13 +1047,14 @@ public class CarlaXmlRpcClient {
                 
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
+                    log.debug("New actor detected: {}", actorId);
                     added.add(currentStateMap);
                 } else {
                     // Existing actor - check for changes
                     ActorState previousState = previousActorStates.get(actorId);
-                    if (hasActorStateChanged(previousState, currentState)) {
-                        updated.add(currentStateMap);
-                    }
+                    updated.add(currentStateMap);
+                    log.debug("Actor {} updated", actorId);
+                    
                 }
             }
             
@@ -1162,6 +1163,8 @@ public class CarlaXmlRpcClient {
             return false;
         }
         
+        String actorId = currentState.getId();
+        
         // Compare transform information with optimized checks
         ActorState.Transform prevTransform = previousState.getTransform();
         ActorState.Transform currTransform = currentState.getTransform();
@@ -1172,9 +1175,11 @@ public class CarlaXmlRpcClient {
             List<Double> currLoc = currTransform.getLocation();
             if (prevLoc != null && currLoc != null) {
                 if (!isLocationEqual(prevLoc, currLoc)) {
+                    log.debug("Actor {} location changed: {} -> {}", actorId, prevLoc, currLoc);
                     return true;
                 }
             } else if (!Objects.equals(prevLoc, currLoc)) {
+                log.debug("Actor {} location changed (null check): {} -> {}", actorId, prevLoc, currLoc);
                 return true;
             }
             
@@ -1182,10 +1187,11 @@ public class CarlaXmlRpcClient {
             List<Double> prevRot = prevTransform.getRotation();
             List<Double> currRot = currTransform.getRotation();
             if (!Objects.equals(prevRot, currRot)) {
+                log.debug("Actor {} rotation changed: {} -> {}", actorId, prevRot, currRot);
                 return true;
             }
         } else if (prevTransform != currTransform) {
-            // One is null and the other is not
+            log.debug("Actor {} transform changed (null check)", actorId);
             return true;
         }
         
@@ -1200,14 +1206,24 @@ public class CarlaXmlRpcClient {
             // Compare linear velocities with tolerance
             if (prevLinear != null && currLinear != null) {
                 if (!isVelocityEqual(prevLinear, currLinear)) {
+                    log.debug("Actor {} velocity changed: {} -> {}", actorId, prevLinear, currLinear);
                     return true;
                 }
             } else if (!Objects.equals(prevLinear, currLinear)) {
+                log.debug("Actor {} velocity changed (null check): {} -> {}", actorId, prevLinear, currLinear);
                 return true;
             }
         } else if (prevVelocity != currVelocity) {
-            // One is null and the other is not
+            log.debug("Actor {} velocity changed (null check)", actorId);
             return true;
+        }
+        
+        // Detailed debug for why no change was detected if we suspect it should have
+        if (log.isTraceEnabled()) {
+             log.trace("No change detected for actor {}. Loc: {}, Vel: {}", 
+                     actorId, 
+                     currTransform != null ? currTransform.getLocation() : "null",
+                     currVelocity != null ? currVelocity.getLinear() : "null");
         }
         
         return false;
@@ -1231,6 +1247,7 @@ public class CarlaXmlRpcClient {
                     return false;
                 }
             } else if (Math.abs(val1 - val2) > TOLERANCE) {
+                log.debug("Location change detected at index {}: {} vs {} (diff: {})", i, val1, val2, Math.abs(val1 - val2));
                 return false;
             }
         }
@@ -1255,6 +1272,7 @@ public class CarlaXmlRpcClient {
                     return false;
                 }
             } else if (Math.abs(val1 - val2) > TOLERANCE) {
+                log.debug("Velocity change detected at index {}: {} vs {} (diff: {})", i, val1, val2, Math.abs(val1 - val2));
                 return false;
             }
         }
