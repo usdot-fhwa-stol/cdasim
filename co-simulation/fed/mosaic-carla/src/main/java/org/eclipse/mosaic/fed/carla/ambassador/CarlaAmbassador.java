@@ -598,20 +598,38 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Update current actor IDs cache for next iteration
+                        // IMPORTANT: We need to get ALL current external actors, not just the ones that changed
+                        // This ensures that actors without changes are still tracked for future change detection
                         java.util.Set<String> previousIds = new java.util.HashSet<>(currentActorIds);
                         currentActorIds.clear();
                         
-                        // Add current actors from the change detection
-                        for (java.util.Map<String, Object> actorInfo : addedActors) {
-                            String actorId = (String) actorInfo.get("id");
-                            if (actorId != null) {
+                        // Get ALL current external actors (not just changed ones) to properly track them
+                        try {
+                            java.util.Map<String, java.util.Map<String, Object>> allCurrentActors = actorClient.getAllActorsExcludingSumo(sumoToCarlaIdMapping);
+                            for (String actorId : allCurrentActors.keySet()) {
                                 currentActorIds.add(actorId);
                             }
-                        }
-                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
-                            String actorId = (String) actorInfo.get("id");
-                            if (actorId != null) {
-                                currentActorIds.add(actorId);
+                            log.debug("Updated currentActorIds: tracking {} external actors", currentActorIds.size());
+                        } catch (Exception e) {
+                            log.warn("Failed to get all current actors for tracking: {}", e.getMessage());
+                            // Fallback: at least add the ones we know about from changes
+                            for (java.util.Map<String, Object> actorInfo : addedActors) {
+                                String actorId = (String) actorInfo.get("id");
+                                if (actorId != null) {
+                                    currentActorIds.add(actorId);
+                                }
+                            }
+                            for (java.util.Map<String, Object> actorInfo : updatedActors) {
+                                String actorId = (String) actorInfo.get("id");
+                                if (actorId != null) {
+                                    currentActorIds.add(actorId);
+                                }
+                            }
+                            // Also preserve existing actors that weren't in the change lists
+                            for (String existingId : previousIds) {
+                                if (!removedActors.contains(existingId)) {
+                                    currentActorIds.add(existingId);
+                                }
                             }
                         }
                         
