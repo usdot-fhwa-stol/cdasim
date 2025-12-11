@@ -538,34 +538,46 @@ class CarlaXMLRPCServer:
                 return {}
             
             out = {}
-            # Get actual actors from CARLA world to detect externally removed actors
-            world_actors = {}
-            try:
-                for actor in self.world.get_actors():
-                    world_actors[str(actor.id)] = actor
-            except Exception as e:
-                logger.warning("Failed to get world actors: %s", e)
-                world_actors = {}
+            # Build a reverse mapping from actor ID to alias for quick lookup
+            actor_id_to_alias = {}
+            for alias, actor in self.actors.items():
+                actor_id_to_alias[actor.id] = alias
             
             # Clean up actors that no longer exist in CARLA world
             actors_to_remove = []
             for alias, actor in self.actors.items():
-                if str(actor.id) not in world_actors:
+                try:
+                    # Try to get the actor from world to verify it still exists
+                    world_actor = self.world.get_actor(actor.id)
+                    if world_actor is None:
+                        actors_to_remove.append(alias)
+                        logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
+                except Exception:
                     actors_to_remove.append(alias)
                     logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
             
             for alias in actors_to_remove:
-                self.actors.pop(alias, None)
+                actor = self.actors.pop(alias, None)
+                if actor:
+                    actor_id_to_alias.pop(actor.id, None)
                 self.actor_types.pop(alias, None)
                 self.actor_blueprints.pop(alias, None)
             
-            # Build output with currently existing actors
-            for alias, actor in self.actors.items():
-                try:
-                    if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
+            # Get ALL actors from CARLA world and build output
+            try:
+                for actor in self.world.get_actors():
+                    try:
+                        # Skip if actor doesn't have get_transform (e.g., some special actors)
+                        if not hasattr(actor, 'get_transform'):
+                            continue
+                        
+                        # Use alias if available, otherwise use actor ID as key
+                        actor_key = actor_id_to_alias.get(actor.id, str(actor.id))
+                        
+                        # Get transform
                         t = actor.get_transform()
                         actor_data = {
-                            'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                            'type': self.actor_types.get(actor_key, getattr(actor, 'type_id', '')),
                             'transform': {
                                 'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
                                 'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
@@ -580,19 +592,40 @@ class CarlaXMLRPCServer:
                                     'linear': [float(v.x), float(v.y), float(v.z)]
                                 }
                             except Exception as e:
-                                logger.debug("Failed to get velocity for actor %s: %s", alias, e)
+                                logger.debug("Failed to get velocity for actor %s (ID: %s): %s", actor_key, actor.id, e)
                                 actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
                         else:
                             actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
                         
-                        out[alias] = actor_data
-                    else:
-                        logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
-                except Exception as e:
-                    logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e)
-                    self.actors.pop(alias, None)
-                    self.actor_types.pop(alias, None)
-                    self.actor_blueprints.pop(alias, None)
+                        out[actor_key] = actor_data
+                    except Exception as e:
+                        logger.warning("Failed to process actor ID %s: %s", actor.id, e)
+                        continue
+            except Exception as e:
+                logger.error("Failed to get world actors: %s", e)
+                # Fallback: return only tracked actors
+                for alias, actor in self.actors.items():
+                    try:
+                        if hasattr(actor, 'get_transform'):
+                            t = actor.get_transform()
+                            actor_data = {
+                                'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                                'transform': {
+                                    'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                    'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                                }
+                            }
+                            if hasattr(actor, 'get_velocity'):
+                                try:
+                                    v = actor.get_velocity()
+                                    actor_data['velocity'] = {'linear': [float(v.x), float(v.y), float(v.z)]}
+                                except Exception:
+                                    actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            else:
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            out[alias] = actor_data
+                    except Exception as e2:
+                        logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e2)
             
             logger.debug("get_all_actors returning %d actors: %s", len(out), list(out.keys()))
             return out

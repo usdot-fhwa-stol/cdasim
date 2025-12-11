@@ -661,9 +661,11 @@ public class CarlaXmlRpcClient {
             }
             
             // Filter out SUMO-managed vehicles
+            // Note: getAllActors() returns keys as alias (SUMO vehicle ID), 
+            // and sumoToCarlaMapping keys are also SUMO vehicle IDs
             for (Map.Entry<String, Map<String, Object>> entry : allActors.entrySet()) {
                 String actorId = entry.getKey();
-                if (!sumoToCarlaMapping.containsValue(actorId)) {
+                if (!sumoToCarlaMapping.containsKey(actorId)) {
                     filteredActors.put(actorId, entry.getValue());
                 } else {
                     log.debug("Excluding SUMO-managed actor '{}' from getAllActors result", actorId);
@@ -1032,7 +1034,10 @@ public class CarlaXmlRpcClient {
                 currentStateMap.put("id", actorId);
                 
                 // Skip actors that are already managed by SUMO (exclude from changes)
-                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(actorId)) {
+                // Note: getAllActorsExcludingSumo already filters these, but double-check for safety
+                // getAllActors() returns keys as alias (SUMO vehicle ID), 
+                // and sumoToCarlaMapping keys are also SUMO vehicle IDs
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsKey(actorId)) {
                     log.debug("Skipping actor {} as it's managed by SUMO", actorId);
                     continue;
                 }
@@ -1053,16 +1058,18 @@ public class CarlaXmlRpcClient {
                 } else {
                     // Existing actor - check for changes
                     ActorState previousState = previousActorStates.get(actorId);
-                    updated.add(currentStateMap);
-                    log.debug("Actor {} updated", actorId);
+                    if (hasActorStateChanged(previousState, currentState)) {
+                        updated.add(currentStateMap);
+                    }
                     
                 }
             }
-            
             // Find removed actors
             for (String previousActorId : previousActorStates.keySet()) {
                 // Skip actors that are managed by SUMO
-                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(previousActorId)) {
+                // Note: getAllActors() returns keys as alias (SUMO vehicle ID), 
+                // and sumoToCarlaMapping keys are also SUMO vehicle IDs
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsKey(previousActorId)) {
                     log.debug("Skipping removal check for actor {} as it's managed by SUMO", previousActorId);
                     continue;
                 }

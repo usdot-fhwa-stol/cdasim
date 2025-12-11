@@ -644,7 +644,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             this.rti.triggerInteraction(vehicleUpdates);
                             log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
                                 addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
-
                         }
 
                         // Update last known actor id snapshot after publishing
