@@ -656,6 +656,7 @@ public class CarlaXmlRpcClient {
             Map<String, Map<String, Object>> filteredActors = new HashMap<>();
             
             if (sumoToCarlaMapping == null || sumoToCarlaMapping.isEmpty()) {
+                log.debug("getAllActorsExcludingSumo: No SUMO-to-CARLA mapping provided, returning all actors");
                 return allActors;
             }
             

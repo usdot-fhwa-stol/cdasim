@@ -593,7 +593,9 @@ class CarlaXMLRPCServer:
                     self.actors.pop(alias, None)
                     self.actor_types.pop(alias, None)
                     self.actor_blueprints.pop(alias, None)
-                return out
+            
+            logger.debug("get_all_actors returning %d actors: %s", len(out), list(out.keys()))
+            return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
             return {}
