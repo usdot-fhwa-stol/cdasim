@@ -1101,8 +1101,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // SUMO->CARLA: carlaX = xWithOffset, carlaY = -yWithOffset
         // Where: xWithOffset = sumoX - offset[0], yWithOffset = sumoY - offset[1]
         // So CARLA->SUMO: sumoX = carlaX + offset[0], sumoY = -carlaY + offset[1]
-        double sumoX = carlaX +2*sumoNetOffsetXY[0];
-        double sumoY = -carlaY +2* sumoNetOffsetXY[1]; // Correct inverse transformation
+        double sumoX = carlaX + sumoNetOffsetXY[0];
+        double sumoY = -carlaY + sumoNetOffsetXY[1]; // Correct inverse transformation
         double sumoZ = carlaZ;
         
         // Log the final SUMO coordinates for debugging
