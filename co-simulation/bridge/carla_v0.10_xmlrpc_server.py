@@ -563,9 +563,9 @@ class CarlaXMLRPCServer:
                 self.actor_types.pop(alias, None)
                 self.actor_blueprints.pop(alias, None)
             
-            # Get ALL actors from CARLA world and build output
+            # Get ALL vehicle actors from CARLA world and build output (exclude traffic lights)
             try:
-                for actor in self.world.get_actors():
+                for actor in self.world.get_actors().filter('vehicle.*'):
                     try:
                         # Skip if actor doesn't have get_transform (e.g., some special actors)
                         if not hasattr(actor, 'get_transform'):
@@ -603,13 +603,18 @@ class CarlaXMLRPCServer:
                         continue
             except Exception as e:
                 logger.error("Failed to get world actors: %s", e)
-                # Fallback: return only tracked actors
+                # Fallback: return only tracked vehicle actors
                 for alias, actor in self.actors.items():
                     try:
+                        # Only include vehicles (exclude traffic lights and other types)
+                        actor_type = getattr(actor, 'type_id', '')
+                        if not actor_type.startswith('vehicle.'):
+                            continue
+                        
                         if hasattr(actor, 'get_transform'):
                             t = actor.get_transform()
                             actor_data = {
-                                'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                                'type': self.actor_types.get(alias, actor_type),
                                 'transform': {
                                     'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
                                     'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
