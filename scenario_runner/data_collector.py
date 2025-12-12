@@ -16,9 +16,6 @@ from pathlib import Path
 import shutil
 
 class DataCollector:
-    def ensure_directories(self):
-        self.mosaic_log_dir.mkdir(parents=True, exist_ok=True)
-        self.rosbag_dir.mkdir(parents=True, exist_ok=True)
 
     def latest_subdir(self, base: Path):
         if not base.exists():
@@ -41,12 +38,14 @@ class DataCollector:
         collect_cfg = data_output.get("collect", {})
 
         for key, value in collect_cfg.items():
+            print(key, value)
             self._collect_folder(Path(value), case_dir / key)
 
     def _collect_folder(self, src_base: Path, dest: Path):
         latest = self.latest_subdir(src_base)
+        print(latest)
         if latest:
-            shutil.copytree(latest, dest, dirs_exist_ok=True)
+            shutil.copytree(latest, dest, dirs_exist_ok=True, symlinks=True)
             print(f"Copied {latest} → {dest}")
         else:
             print(f"No logs found in: {src_base}")
