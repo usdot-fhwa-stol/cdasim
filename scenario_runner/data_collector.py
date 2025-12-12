@@ -16,12 +16,6 @@ from pathlib import Path
 import shutil
 
 class DataCollector:
-    def __init__(self,
-                 mosaic_log_dir="/opt/carma-simulation/logs",
-                 rosbag_dir="/opt/carma/logs"):
-        self.mosaic_log_dir = Path(mosaic_log_dir)
-        self.rosbag_dir = Path(rosbag_dir)
-
     def ensure_directories(self):
         self.mosaic_log_dir.mkdir(parents=True, exist_ok=True)
         self.rosbag_dir.mkdir(parents=True, exist_ok=True)
@@ -34,8 +28,6 @@ class DataCollector:
 
     def collect(self, index: int, config: dict):
         data_output = config.get("data_output")
-        if data_output.get("log_directory"):
-            log_dir = data_output.get("log_directory", {})
         if not data_output:
             print("No data_output section. Skipping.")
             return
@@ -48,20 +40,8 @@ class DataCollector:
 
         collect_cfg = data_output.get("collect", {})
 
-        if collect_cfg.get("mosaic_logs"):
-            self._collect_folder(self.mosaic_log_dir, case_dir / "mosaic_logs")
-
-        if collect_cfg.get("rosbags"):
-            self._collect_folder(self.rosbag_dir, case_dir / "rosbags")
-
-        if collect_cfg.get("messenger_logs"):
-            self._collect_folder(Path(log_dir["messenger_log_dir"]), case_dir / "messenger_logs")
-        
-        if collect_cfg.get("v2xhub_logs"):
-            self._collect_folder(Path(log_dir["v2xhub_log_dir"]), case_dir / "v2xhub_logs")
-        
-        if collect_cfg.get("carmacloud_logs"):
-            self._collect_folder(Path(log_dir["carmacloud_log_dir"]), case_dir / "carmacloud_logs")
+        for key, value in collect_cfg.items():
+            self._collect_folder(Path(value), case_dir / key)
 
     def _collect_folder(self, src_base: Path, dest: Path):
         latest = self.latest_subdir(src_base)
