@@ -182,9 +182,9 @@
             "configuration": "ns3_config.json",
             "configurationDeployPath": "ns3/scratch",
             "priority": 50,
-            "dockerImage": "",
+            "dockerImage": "ns3-federate",
             "host": "local",
-            "port": 5011,
+            "port": 40001,
             "deploy": true,
             "start": true,
             "subscriptions": [
