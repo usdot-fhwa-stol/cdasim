@@ -76,10 +76,13 @@ test_cases:
               z: 0.0
               yaw: 180.0
     data_output:
-      output_directory: /tests/output/intersection
+      output_directory: /opt/carma-simulation/tests/output/intersection
       collect:
-        mosaic_logs: true
-        rosbags: true
+        mosaic_logs: /opt/carma-simulation/logs
+        rosbags: /opt/carma/logs
+        messenger_logs: /opt/carma_messenger
+        v2xhub_logs: /opt/carma/logs/v2xhub
+        carmacloud_logs: /opt/carma/logs/carmacloud
 
   - label: highway_merge
     runtime_seconds: 180
@@ -135,7 +138,9 @@ test_cases:
               z: 0.0
               yaw: 45.0
     data_output:
-      output_directory: /tests/output/highway_merge
+      output_directory: /opt/carma-simulation/tests/output/highway_merge
       collect:
-        mosaic_logs: false
-        rosbags: true
+        mosaic_logs: /opt/carma-simulation/logs
+        rosbags: /opt/carma/logs
+        v2xhub_logs: /opt/carma/logs/v2xhub
+        carmacloud_logs: /opt/carma/logs/carmacloud

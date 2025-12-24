@@ -16,15 +16,6 @@ from pathlib import Path
 import shutil
 
 class DataCollector:
-    def __init__(self,
-                 mosaic_log_dir="/opt/carma-simulation/logs",
-                 rosbag_dir="/opt/carma/logs"):
-        self.mosaic_log_dir = Path(mosaic_log_dir)
-        self.rosbag_dir = Path(rosbag_dir)
-
-    def ensure_directories(self):
-        self.mosaic_log_dir.mkdir(parents=True, exist_ok=True)
-        self.rosbag_dir.mkdir(parents=True, exist_ok=True)
 
     def latest_subdir(self, base: Path):
         if not base.exists():
@@ -46,16 +37,15 @@ class DataCollector:
 
         collect_cfg = data_output.get("collect", {})
 
-        if collect_cfg.get("mosaic_logs"):
-            self._collect_folder(self.mosaic_log_dir, case_dir / "mosaic_logs")
-
-        if collect_cfg.get("rosbags"):
-            self._collect_folder(self.rosbag_dir, case_dir / "rosbags")
+        for key, value in collect_cfg.items():
+            print(key, value)
+            self._collect_folder(Path(value), case_dir / key)
 
     def _collect_folder(self, src_base: Path, dest: Path):
         latest = self.latest_subdir(src_base)
+        print(latest)
         if latest:
-            shutil.copytree(latest, dest, dirs_exist_ok=True)
+            shutil.copytree(latest, dest, dirs_exist_ok=True, symlinks=True)
             print(f"Copied {latest} → {dest}")
         else:
             print(f"No logs found in: {src_base}")

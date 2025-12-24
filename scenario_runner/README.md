@@ -53,6 +53,7 @@ The system automatically:
 
 4. **Data Collection**
    - `DataCollector` gathers logs from `/opt/carma-simulation/logs` (MOSAIC) and `/opt/carma/logs` (CARMA/ROS).
+   - (Optional) Also gathers v2xhub, carma messenger and carma cloud logs
    - These outputs are copied to the scenario’s result directory defined in the YAML (`data_output.output_directory`).
 
 5. **Cleanup**

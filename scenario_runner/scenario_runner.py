@@ -42,9 +42,6 @@ class ScenarioRunner:
         label = case.get("label", f"scenario_{idx}")
         print(f"\n=== Scenario {idx}: {label} ===")
 
-        # 0. Make sure logs file exists or not
-        self.collector.ensure_directories()
-
         # 1. Clean tmp/ (fresh start)
         if self.tmp_dir.exists():
             shutil.rmtree(self.tmp_dir)
