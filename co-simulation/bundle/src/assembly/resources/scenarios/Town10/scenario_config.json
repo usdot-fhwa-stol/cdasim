@@ -1,6 +1,6 @@
 {
     "simulation": {
-        "id": "Town04",
+        "id": "Town10",
         "duration": "600s",
         "randomSeed": 212323853,
         "projection": {
@@ -9,8 +9,8 @@
                 "longitude": 0
             },
             "cartesianOffset": {
-                "x": 503.02,
-                "y": 423.76
+                "x": 0,
+                "y": 0
             }
         },
         "network": {
@@ -33,10 +33,6 @@
         "omnetpp": false,
         "output": false,
         "sumo": true,
-        "carla": true,
-        "carma": true,
-        "infrastructure": false,
-        "carma-cloud": false,
-        "carma-messenger": false
+        "carla": true
     }
 }

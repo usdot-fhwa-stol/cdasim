@@ -15,20 +15,12 @@ try:
     CARLA_VERSION = getattr(carla, "__version__", "unknown")
 except Exception as e:
     # Logger not yet initialized, use basic logging
+    import logging
     logging.warning("Failed to get CARLA version: %s", e)
     CARLA_VERSION = "unknown"
 
 """
 CARLA XML-RPC Server for MOSAIC Integration (Unified XML-RPC per redesign spec)
-
-This server exposes granular, XML-RPC-safe methods for:
-- Actor data (vehicles, pedestrians): transforms, velocities, accelerations, bounding boxes, etc.
-- Traffic signal states (single and bulk).
-- Sensor frames (raw bytes + metadata) with xmlrpc.client.Binary.
-- Simulation control with world.tick() via advance_simulation().
-
-It aligns with the "Proposed Redesign of the CARLA-MOSAIC Bridge Using Unified XML-RPC"
-specification (UGA MSC Lab, 2025-06-03), Sections 4–6.
 """
 
 import argparse
@@ -43,9 +35,8 @@ from xmlrpc.client import Binary
 import glob
 import time
 
-
-
 import carla
+SPAWN_OFFSET_Z = 25.0 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("CarlaXMLRPCServer")
@@ -63,7 +54,7 @@ class CarlaXMLRPCServer:
         self.carla_host = carla_host
         self.carla_port = carla_port
         self.tls_manager = tls_manager
-        self.timestep_size  = timestep_size 
+        self.timestep_size = timestep_size 
         self.default_map_name = default_map_name
 
         self.client: Optional[carla.Client] = None
@@ -76,6 +67,11 @@ class CarlaXMLRPCServer:
         self.sensors: Dict[str, carla.Sensor] = {}
         self.sensor_data: Dict[str, Any] = {}
         self.sensor_blueprints: Dict[str, carla.ActorBlueprint] = {}
+
+        # --- Traffic Light Indexing ---
+        self._odr_to_tl = {} 
+        self._odr_to_tls = {}
+        self._tl_id_to_odr = {}
 
         self.server = SimpleXMLRPCServer(
             (host, port),
@@ -111,26 +107,24 @@ class CarlaXMLRPCServer:
         if not self.world:
             return None
         # Heights (meters) to try to avoid ground collisions; small to large
-        height_offsets = [0.0, 0.2, 0.5, 1.0]
         # Small xy jitters (meters)
         xy_jitters = [(0.0, 0.0), (0.2, 0.0), (-0.2, 0.0), (0.0, 0.2), (0.0, -0.2), (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2)]
 
-        for dz in height_offsets:
-            for dx, dy in xy_jitters:
-                try:
-                    t = carla.Transform(
-                        carla.Location(base_transform.location.x + dx,
-                                       base_transform.location.y + dy,
-                                       base_transform.location.z + dz),
-                        base_transform.rotation
-                    )
-                    actor = self.world.try_spawn_actor(bp, t)
-                    if actor is not None:
-                        return actor
-                except Exception as e:
-                    logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
-                    continue
-        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", height_offsets, xy_jitters)
+        for dx, dy in xy_jitters:
+            try:
+                t = carla.Transform(
+                    carla.Location(base_transform.location.x + dx,
+                                base_transform.location.y + dy,
+                                base_transform.location.z + SPAWN_OFFSET_Z),
+                    base_transform.rotation
+                )
+                actor = self.world.try_spawn_actor(bp, t)
+                if actor is not None:
+                    return actor
+            except Exception as e:
+                logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, SPAWN_OFFSET_Z, e)
+                continue
+        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", SPAWN_OFFSET_Z, xy_jitters)
         return None
 
     # ---------- Registration ----------
@@ -170,6 +164,7 @@ class CarlaXMLRPCServer:
         self.server.register_function(self.get_all_traffic_light_states, 'get_all_traffic_light_states')
         self.server.register_function(self.set_traffic_light_state, 'set_traffic_light_state')
         self.server.register_function(self.set_traffic_light_timer, 'set_traffic_light_timer')
+        self.server.register_function(self.freeze_all_traffic_lights, 'freeze_all_traffic_lights')
 
         # Sensors
         self.server.register_function(self.get_detected_objects, 'get_detected_objects')
@@ -198,10 +193,7 @@ class CarlaXMLRPCServer:
             logger.exception("Error getting simulation timestamp: %s", e)
             return 0.0
 
-
-
     # ----- Coordinate transform configuration -----
-
     def set_net_offset_xy(self, x: float, y: float) -> bool:
         try:
             self.net_offset_xy = (float(x), float(y))
@@ -295,6 +287,10 @@ class CarlaXMLRPCServer:
             # Configure TLS manager after successful connection
             self._configure_tls_manager()
             
+            # --- Traffic Light Indexing ---
+            self._odr_to_tl, self._odr_to_tls, self._tl_id_to_odr = build_light_index(self.world)
+            logger.info("Built OpenDRIVE traffic light index: %d lights mapped", len(self._odr_to_tl))
+            
             return True
         except Exception as e:
             logger.error("Failed to connect: %s", e)
@@ -302,7 +298,6 @@ class CarlaXMLRPCServer:
 
     def disconnect(self) -> bool:
         try:
-            
             for _, a in list(self.actors.items()):
                 try: a.destroy()
                 except Exception as e: 
@@ -313,6 +308,9 @@ class CarlaXMLRPCServer:
                     logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
             self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
             self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
+            # Clear indices
+            self._odr_to_tl.clear(); self._odr_to_tls.clear(); self._tl_id_to_odr.clear()
+            
             self.world = None; self.client = None
             logger.info("Disconnected from CARLA")
             return True
@@ -333,23 +331,11 @@ class CarlaXMLRPCServer:
                 return False
             
             if self.tls_manager == 'carla':
-                # CARLA manages traffic lights - disable SUMO traffic light control
                 logger.info("TLS Manager: CARLA will manage traffic lights")
-                # Note: In a bridge context, this would disable SUMO traffic light control
-                # For XML-RPC server, we just log the configuration
-                
             elif self.tls_manager == 'sumo':
-                # SUMO manages traffic lights - disable CARLA traffic light control
                 logger.info("TLS Manager: SUMO will manage traffic lights")
-                # Note: In a bridge context, this would disable CARLA traffic light control
-                # For XML-RPC server, we just log the configuration
-                
             elif self.tls_manager == 'EVC':
-                # EVC manages traffic lights
                 logger.info("TLS Manager: EVC will manage traffic lights")
-                # Note: In a bridge context, this would disable CARLA traffic light control
-                # For XML-RPC server, we just log the configuration
-                
             else:  # 'none' or any other value
                 logger.info("TLS Manager: No traffic light management")
                 
@@ -381,7 +367,6 @@ class CarlaXMLRPCServer:
                     location: List[float], rotation: List[float],
                     attributes: Dict[str, Any] = None) -> Union[bool, str]:
         try:
-            
             if not self.is_connected():
                 return False
             if actor_id in self.actors:
@@ -420,15 +405,6 @@ class CarlaXMLRPCServer:
                     if bp.has_attribute(k):
                         bp.set_attribute(k, str(v))
 
-            # Get vehicle extent for proper center calculation
-            extent_x = 0.0
-            if bp.has_attribute('extent_x'):
-                try:
-                    extent_x = float(bp.get_attribute('extent_x').as_str())
-                except Exception as e:
-                    logger.debug("Error getting extent_x attribute: %s", e)
-                    pass
-
             try:
                 lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
             except Exception as e:
@@ -452,7 +428,7 @@ class CarlaXMLRPCServer:
                 "attributes=%s========",
                 actor_id, actor_type, loc.x, loc.y, loc.z, rot.pitch, rot.yaw, rot.roll, attributes
             )
-            logger.info("spawn actor at loc=%.3f, %.3f, %.3f, rot=%.1f, %.1f, %.1f", loc.x, loc.y, loc.z, rot.pitch, rot.yaw, rot.roll)
+            
             # Attempt safe spawn with collision avoidance (height offsets and slight jitters)
             actor = self._safe_try_spawn(bp, transform)
             if actor is None:
@@ -473,12 +449,10 @@ class CarlaXMLRPCServer:
                 logger.info("========Actor %s spawned (spectator not moved)========", actor_id)
             
             logger.info("========spawn_actor success========")
-            # Return the CARLA internal actor ID instead of boolean
             return str(actor.id)
         except Exception as e:
             logger.error("spawn_actor error: %s", e)
             return False
-
 
     def destroy_actor(self, actor_key: ActorKey) -> bool:
         try:
@@ -499,11 +473,6 @@ class CarlaXMLRPCServer:
         try:
             actor = self._resolve_actor(actor_key)
             if actor is None: return False
-            
-            # Get vehicle extent for proper center calculation
-            extent_x = 0.0
-            if hasattr(actor, 'bounding_box') and hasattr(actor.bounding_box, 'extent'):
-                extent_x = float(actor.bounding_box.extent.x)
             
             try:
                 lx = float(location[0]); ly = float(location[1]); lz = float(location[2]) if len(location) > 2 else 0.0
@@ -526,7 +495,6 @@ class CarlaXMLRPCServer:
 
     def update_actor_velocity(self, actor_key: ActorKey, velocity: List[float]) -> bool:
         try:
-            
             actor = self._resolve_actor(actor_key)
             if actor is None:
                 return False
@@ -564,43 +532,52 @@ class CarlaXMLRPCServer:
             logger.error("update_actor_velocity error: %s", e)
             return False
 
-
     def get_all_actors(self) -> Dict[str, Dict[str, Any]]:
         try:
-            
             if not self.is_connected():
                 return {}
             
             out = {}
-            # Get actual actors from CARLA world to detect externally removed actors
-            world_actors = {}
-            try:
-                for actor in self.world.get_actors():
-                    world_actors[str(actor.id)] = actor
-            except Exception as e:
-                logger.warning("Failed to get world actors: %s", e)
-                world_actors = {}
+            # Build a reverse mapping from actor ID to alias for quick lookup
+            actor_id_to_alias = {}
+            for alias, actor in self.actors.items():
+                actor_id_to_alias[actor.id] = alias
             
             # Clean up actors that no longer exist in CARLA world
             actors_to_remove = []
             for alias, actor in self.actors.items():
-                if str(actor.id) not in world_actors:
+                try:
+                    # Try to get the actor from world to verify it still exists
+                    world_actor = self.world.get_actor(actor.id)
+                    if world_actor is None:
+                        actors_to_remove.append(alias)
+                        logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
+                except Exception:
                     actors_to_remove.append(alias)
                     logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
             
             for alias in actors_to_remove:
-                self.actors.pop(alias, None)
+                actor = self.actors.pop(alias, None)
+                if actor:
+                    actor_id_to_alias.pop(actor.id, None)
                 self.actor_types.pop(alias, None)
                 self.actor_blueprints.pop(alias, None)
             
-            # Build output with currently existing actors
-            for alias, actor in self.actors.items():
-                try:
-                    # Double-check actor still exists and is valid
-                    if str(actor.id) in world_actors and hasattr(actor, 'get_transform'):
+            # Get ALL vehicle actors from CARLA world and build output (exclude traffic lights)
+            try:
+                for actor in self.world.get_actors().filter('vehicle.*'):
+                    try:
+                        # Skip if actor doesn't have get_transform (e.g., some special actors)
+                        if not hasattr(actor, 'get_transform'):
+                            continue
+                        
+                        # Use alias if available, otherwise use actor ID as key
+                        actor_key = actor_id_to_alias.get(actor.id, str(actor.id))
+                        
+                        # Get transform
                         t = actor.get_transform()
                         actor_data = {
-                            'type': self.actor_types.get(alias, getattr(actor, 'type_id', '')),
+                            'type': self.actor_types.get(actor_key, getattr(actor, 'type_id', '')),
                             'transform': {
                                 'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
                                 'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
@@ -615,21 +592,48 @@ class CarlaXMLRPCServer:
                                     'linear': [float(v.x), float(v.y), float(v.z)]
                                 }
                             except Exception as e:
-                                logger.debug("Failed to get velocity for actor %s: %s", alias, e)
+                                logger.debug("Failed to get velocity for actor %s (ID: %s): %s", actor_key, actor.id, e)
                                 actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
                         else:
                             actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
                         
-                        out[alias] = actor_data
-                    else:
-                        logger.warning("Actor %s (ID: %s) is invalid, skipping", alias, actor.id)
-                except Exception as e:
-                    logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e)
-                    # Remove invalid actor from tracking
-                    self.actors.pop(alias, None)
-                    self.actor_types.pop(alias, None)
-                    self.actor_blueprints.pop(alias, None)
-                return out
+                        out[actor_key] = actor_data
+                    except Exception as e:
+                        logger.warning("Failed to process actor ID %s: %s", actor.id, e)
+                        continue
+            except Exception as e:
+                logger.error("Failed to get world actors: %s", e)
+                # Fallback: return only tracked vehicle actors
+                for alias, actor in self.actors.items():
+                    try:
+                        # Only include vehicles (exclude traffic lights and other types)
+                        actor_type = getattr(actor, 'type_id', '')
+                        if not actor_type.startswith('vehicle.'):
+                            continue
+                        
+                        if hasattr(actor, 'get_transform'):
+                            t = actor.get_transform()
+                            actor_data = {
+                                'type': self.actor_types.get(alias, actor_type),
+                                'transform': {
+                                    'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                    'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                                }
+                            }
+                            if hasattr(actor, 'get_velocity'):
+                                try:
+                                    v = actor.get_velocity()
+                                    actor_data['velocity'] = {'linear': [float(v.x), float(v.y), float(v.z)]}
+                                except Exception:
+                                    actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            else:
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            out[alias] = actor_data
+                    except Exception as e2:
+                        logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e2)
+            
+            logger.debug("get_all_actors returning %d actors: %s", len(out), list(out.keys()))
+            return out
         except Exception as e:
             logger.error("get_all_actors error: %s", e)
             return {}
@@ -718,7 +722,6 @@ class CarlaXMLRPCServer:
 
     def get_vehicle_light_state(self, actor_key: ActorKey) -> Optional[Dict[str, Any]]:
         try:
-            
             actor = self._resolve_actor(actor_key)
             if actor is None: return None
             if hasattr(actor, 'get_light_state'):
@@ -766,7 +769,7 @@ class CarlaXMLRPCServer:
                     actor.set_target_angular_velocity(avec)
                 elif hasattr(actor, 'set_angular_velocity'):
                     actor.set_angular_velocity(avec)
-            ctrl = properties_to_set.get('control')  # {'throttle':..,'steer':..,'brake':..,'reverse':..}
+            ctrl = properties_to_set.get('control')
             if ctrl and str(getattr(actor, 'type_id', '')).startswith('vehicle.'):
                 try:
                     c = carla.VehicleControl()
@@ -776,8 +779,9 @@ class CarlaXMLRPCServer:
                     actor.apply_control(c)
                 except Exception as e:
                     logger.debug("apply_control ignored: %s", e)
+        return True
 
-    # ---------- Traffic Lights ----------
+    # ---------- Traffic Lights (OpenDRIVE-aware) ----------
     def _tl_state_to_int(self, state: carla.TrafficLightState) -> int:
         if state == carla.TrafficLightState.Red: return 0
         if state == carla.TrafficLightState.Yellow: return 1
@@ -786,6 +790,8 @@ class CarlaXMLRPCServer:
         return 4
 
     def get_traffic_light_state(self, traffic_light_id: ActorKey) -> Optional[Dict[str, Any]]:
+        # NOTE: This specific function checks for Actor ID first (backward compat), 
+        # but can also be used if the caller knows the ID. 
         try:
             if not self.is_connected(): return None
             tid = int(traffic_light_id)
@@ -814,14 +820,21 @@ class CarlaXMLRPCServer:
             if not self.is_connected(): return []
             out = []
             ts = self._sim_timestamp()
+            # Filter for traffic lights
             for tl in self.world.get_actors().filter('traffic.traffic_light'):
                 try:
                     state = tl.get_state()
+                    # Use the lookup table to get the persistent OpenDRIVE ID
+                    odr = self._tl_id_to_odr.get(tl.id)
+                    if odr is None:
+                        # This traffic light actor has no associated OpenDRIVE ID map
+                        continue
+                        
                     item = {
-                        'id': int(tl.id),
+                        'opendrive_id': odr, # Key changed to opendrive_id for MOSAIC compat
                         'state': int(self._tl_state_to_int(state)),
                         'elapsed_time': float(getattr(tl, 'get_elapsed_time', lambda: 0.0)()),
-                        'timestamp': ts
+                        'timestamp': float(ts)
                     }
                     try: item['is_frozen'] = bool(tl.is_frozen())
                     except Exception as e: 
@@ -833,26 +846,33 @@ class CarlaXMLRPCServer:
                 except Exception as e:
                         logger.exception("Error processing traffic light %s: %s", getattr(tl, 'id', 'unknown'), e)
                         continue
-                return out
+            return out
         except Exception as e:
             logger.error("get_all_traffic_light_states error: %s", e)
             return []
 
     def set_traffic_light_state(self, traffic_light_id: ActorKey, state: str) -> bool:
+        # Uses OpenDRIVE ID (passed as string) to find the light
         try:
             if not self.is_connected(): return False
-            for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                if str(tl.id) == str(traffic_light_id):
-                    if state == 'Red':
-                        tl.set_state(carla.TrafficLightState.Red)
-                    elif state == 'Yellow':
-                        tl.set_state(carla.TrafficLightState.Yellow)
-                    elif state == 'Green':
-                        tl.set_state(carla.TrafficLightState.Green)
-                    else:
-                        return False
-                    return True
+            
+            # Lookup via OpenDRIVE ID
+            tl = self._odr_to_tl.get(str(traffic_light_id))
+            if not tl:
+                logger.warning("Traffic light ODR ID %s not found in index", traffic_light_id)
                 return False
+
+            state_lower = state.lower()
+            if state_lower == 'red':
+                tl.set_state(carla.TrafficLightState.Red)
+            elif state_lower == 'yellow':
+                tl.set_state(carla.TrafficLightState.Yellow)
+            elif state_lower == 'green':
+                tl.set_state(carla.TrafficLightState.Green)
+            else:
+                logger.warning("Invalid state requested: %s", state)
+                return False
+            return True
         except Exception as e:
             logger.error("set_traffic_light_state error: %s", e)
             return False
@@ -860,14 +880,50 @@ class CarlaXMLRPCServer:
     def set_traffic_light_timer(self, traffic_light_id: ActorKey, time_s: float) -> bool:
         try:
             if not self.is_connected(): return False
-            for tl in self.world.get_actors().filter('traffic.traffic_light'):
-                if str(tl.id) == str(traffic_light_id):
-                    tl.set_green_time(float(time_s))
-                    return True
-            return False
+            
+            # Lookup via OpenDRIVE ID
+            tl = self._odr_to_tl.get(str(traffic_light_id))
+            if not tl:
+                logger.warning("Traffic light ODR ID %s not found", traffic_light_id)
+                return False
+            
+            state = tl.get_state()
+            elapsed = float(tl.get_elapsed_time() or 0.0)
+            desired_remaining = max(0.0, float(time_s))
+            new_total = elapsed + desired_remaining
+
+            if state == carla.TrafficLightState.Green:
+                tl.set_green_time(new_total)
+            elif state == carla.TrafficLightState.Yellow:
+                tl.set_yellow_time(new_total)
+            elif state == carla.TrafficLightState.Red:
+                tl.set_red_time(new_total)
+            else:
+                return False
+            return True
         except Exception as e:
             logger.error("set_traffic_light_timer error: %s", e)
             return False
+
+    def freeze_all_traffic_lights(self, frozen: bool = True) -> int:
+        """
+        Freeze or unfreeze all traffic lights. Returns count of actors updated.
+        """
+        try:
+            if not self.is_connected():
+                return 0
+            count = 0
+            for tl in self.world.get_actors().filter('traffic.traffic_light'):
+                try:
+                    tl.freeze(bool(frozen))
+                    count += 1
+                except Exception as e:
+                    logger.warning("freeze_all_traffic_lights: failed on %s: %s", tl.id, e)
+            logger.info("freeze_all_traffic_lights: set frozen=%s on %d traffic lights", frozen, count)
+            return count
+        except Exception as e:
+            logger.error("freeze_all_traffic_lights error: %s", e)
+            return 0
 
     # ---------- Sensors ----------
     def get_detected_objects(self, infrastructure_id: str, sensor_key: SensorKey) -> str:
@@ -967,12 +1023,10 @@ class CarlaXMLRPCServer:
                 return []
             maps = []
             try:
-                # v0.10 may still provide this method, but resources are limited (mostly Town10)
                 maps = list(self.client.get_available_maps())
             except Exception as e:
                 logger.debug("Error getting available maps: %s", e)
                 maps = []
-            # v0.10 officially only guarantees Town10 upgrade; provide fallback if query is empty
             if not maps:
                 maps = ['Carla/Maps/Town10HD_Opt', 'Carla/Maps/Town10HD']
             return maps
@@ -993,8 +1047,11 @@ class CarlaXMLRPCServer:
                 self.world = self.client.load_world(map_name)
                 # Re-apply synchronous settings after world reload
                 self._apply_sync_settings()
+                
+                # Configure indices again for the new map
+                self._odr_to_tl, self._odr_to_tls, self._tl_id_to_odr = build_light_index(self.world)
+                logger.info("Built OpenDRIVE traffic light index: %d lights mapped", len(self._odr_to_tl))
                     
-                # Verify the map was loaded successfully
                 try:
                     new_map = self.world.get_map().name
                     logger.info("Successfully loaded map: %s", new_map)
@@ -1004,7 +1061,6 @@ class CarlaXMLRPCServer:
                     
                 return True
             except Exception as e:
-                # v0.10 lacks many old maps; return False instead of throwing exception when unavailable
                 logger.warning("load_map failed for %s on v0.10: %s", map_name, e)
                 return False
         except Exception as e:
@@ -1028,6 +1084,37 @@ class CarlaXMLRPCServer:
         finally:
             self.disconnect()
 
+def build_light_index(world):
+    """
+    Builds a mapping between OpenDRIVE Signal IDs and CARLA Traffic Light Actors.
+    Returns: (odr_to_tl, odr_to_tls_list, tl_id_to_odr)
+    """
+    odr_to_tl = {}
+    tl_id_to_odr = {}
+    multi = {}
+    
+    try:
+        mp = world.get_map()
+        for lm in mp.get_all_landmarks():
+            # Ensure we look for TrafficLights. 
+            # Note: CARLA 0.10 API usually keeps LandmarkType compatible.
+            if getattr(lm, "type", None) == getattr(carla, "LandmarkType", None) and \
+            lm.type != carla.LandmarkType.TrafficLight:
+                continue
+
+            tl = world.get_traffic_light(lm)
+            if tl is None:
+                continue
+
+            odr = str(lm.id)  # OpenDRIVE signal id
+            odr_to_tl.setdefault(odr, tl)
+            tl_id_to_odr[tl.id] = odr
+            multi.setdefault(odr, []).append(tl)
+            
+    except Exception as e:
+        logger.error("Failed to build traffic light index: %s", e)
+        
+    return odr_to_tl, multi, tl_id_to_odr
 
 def main():
     parser = argparse.ArgumentParser(description='CARLA XML-RPC Server (Unified)')
@@ -1035,7 +1122,7 @@ def main():
     parser.add_argument('--port', type=int, default=8090)
     parser.add_argument('--carla-host', default='localhost')
     parser.add_argument('--carla-port', type=int, default=2000)
-    parser.add_argument('--timestep_size ', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
+    parser.add_argument('--timestep_size', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
     parser.add_argument('--map', '--map-name', dest='map_name', default='Town04', help='Default map name to load on connection (default: Town04)')
     parser.add_argument('--tls-manager',
                        type=str,
@@ -1047,7 +1134,7 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.timestep_size , args.map_name)
+    server = CarlaXMLRPCServer(args.host, args.port, args.carla_host, args.carla_port, args.tls_manager, args.timestep_size, args.map_name)
     try:
         server.start()
     except KeyboardInterrupt:

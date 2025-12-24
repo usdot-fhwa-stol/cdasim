@@ -598,20 +598,38 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Update current actor IDs cache for next iteration
+                        // IMPORTANT: We need to get ALL current external actors, not just the ones that changed
+                        // This ensures that actors without changes are still tracked for future change detection
                         java.util.Set<String> previousIds = new java.util.HashSet<>(currentActorIds);
                         currentActorIds.clear();
                         
-                        // Add current actors from the change detection
-                        for (java.util.Map<String, Object> actorInfo : addedActors) {
-                            String actorId = (String) actorInfo.get("id");
-                            if (actorId != null) {
+                        // Get ALL current external actors (not just changed ones) to properly track them
+                        try {
+                            java.util.Map<String, java.util.Map<String, Object>> allCurrentActors = actorClient.getAllActorsExcludingSumo(sumoToCarlaIdMapping);
+                            for (String actorId : allCurrentActors.keySet()) {
                                 currentActorIds.add(actorId);
                             }
-                        }
-                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
-                            String actorId = (String) actorInfo.get("id");
-                            if (actorId != null) {
-                                currentActorIds.add(actorId);
+                            log.debug("Updated currentActorIds: tracking {} external actors", currentActorIds.size());
+                        } catch (Exception e) {
+                            log.warn("Failed to get all current actors for tracking: {}", e.getMessage());
+                            // Fallback: at least add the ones we know about from changes
+                            for (java.util.Map<String, Object> actorInfo : addedActors) {
+                                String actorId = (String) actorInfo.get("id");
+                                if (actorId != null) {
+                                    currentActorIds.add(actorId);
+                                }
+                            }
+                            for (java.util.Map<String, Object> actorInfo : updatedActors) {
+                                String actorId = (String) actorInfo.get("id");
+                                if (actorId != null) {
+                                    currentActorIds.add(actorId);
+                                }
+                            }
+                            // Also preserve existing actors that weren't in the change lists
+                            for (String existingId : previousIds) {
+                                if (!removedActors.contains(existingId)) {
+                                    currentActorIds.add(existingId);
+                                }
                             }
                         }
                         
@@ -626,7 +644,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             this.rti.triggerInteraction(vehicleUpdates);
                             log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
                                 addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
-
                         }
 
                         // Update last known actor id snapshot after publishing
@@ -810,52 +827,63 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * 
      * @param xSumo SUMO X coordinate
      * @param ySumo SUMO Y coordinate
+     * @param zSumo SUMO Z coordinate (height/elevation)
      * @param headingDeg SUMO heading angle in degrees
+     * @param pitchDeg SUMO pitch/slope angle in degrees
      * @param extentX Vehicle extent in X direction (half length) for front-bumper to center conversion
      * @return Transform object with CARLA coordinates and heading
      */
-    private Transform carlaTransformFromSumo(double xSumo, double ySumo, Double headingDeg, Double extentX) {
+    private Transform carlaTransformFromSumo(double xSumo, double ySumo, double zSumo, Double headingDeg, Double pitchDeg, Double extentX) {
         // Start with SUMO coordinates
         double sumoX = xSumo;
         double sumoY = ySumo;
-        double sumoZ = 0.0;
+        double sumoZ = zSumo;
         
         // From front-center-bumper to center (sumo reference system)
         // Following Python bridge_helper.py get_carla_transform logic exactly
+        // Python: yaw = -1 * in_rotation.yaw + 90
+        // Python: pitch = in_rotation.pitch
+        // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
+        //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
+        //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
         if (extentX != null && extentX > 0.0 && headingDeg != null) {
-            double yaw = -1 * headingDeg + 90; // Python: yaw = -1 * in_rotation.yaw + 90
+            double yaw = -1 * headingDeg + 90;
             double yawRad = Math.toRadians(yaw);
-            // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
-            //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
-            //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
             sumoX -= Math.cos(yawRad) * extentX;
             sumoY -= Math.sin(yawRad) * extentX;
-            // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
+            
+            // Apply pitch adjustment to Z axis if pitch is available
+            if (pitchDeg != null) {
+                double pitchRad = Math.toRadians(pitchDeg);
+                sumoZ -= Math.sin(pitchRad) * extentX;
+            }
         }
         
         // Applying offset sumo-carla net
         // Python: out_location = (out_location[0] - offset[0], out_location[1] - offset[1], out_location[2])
+        // Note: Z axis does NOT apply offset (only X and Y apply offset)
         double xWithOffset = sumoX - sumoNetOffsetXY[0];
         double yWithOffset = sumoY - sumoNetOffsetXY[1];
-        double zWithOffset = sumoZ;
+        double zWithOffset = sumoZ; // Z axis does not apply offset
         
         // Transform to carla reference system (left-handed)
         // Python: carla.Location(out_location[0], -out_location[1], out_location[2])
         double carlaX = xWithOffset;
         double carlaY = -yWithOffset; // Flip Y for left-handed system
-        double carlaZ = zWithOffset;
+        double carlaZ = zWithOffset; // Z axis is preserved directly
         
         // Convert SUMO heading to CARLA yaw
-        // Fixed: Ensure consistent angle conversion
+        // Python: carla.Rotation(out_rotation[0], out_rotation[1] - 90, out_rotation[2])
         double carlaYawDeg = headingDeg != null ? (headingDeg - 90.0) : 0.0;
         // Normalize yaw to [-180, 180] range for CARLA
         while (carlaYawDeg > 180.0) carlaYawDeg -= 360.0;
         while (carlaYawDeg < -180.0) carlaYawDeg += 360.0;
         
-        double pitchDeg = 0.0;
-        double rollDeg = 0.0;
+        // Preserve pitch and roll from SUMO
+        double carlaPitchDeg = pitchDeg != null ? pitchDeg : 0.0;
+        double carlaRollDeg = 0.0;
         
-        return new Transform(carlaX, carlaY, carlaZ, pitchDeg, carlaYawDeg, rollDeg);
+        return new Transform(carlaX, carlaY, carlaZ, carlaPitchDeg, carlaYawDeg, carlaRollDeg);
     }
 
     /**
@@ -1072,8 +1100,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // SUMO->CARLA: carlaX = xWithOffset, carlaY = -yWithOffset
         // Where: xWithOffset = sumoX - offset[0], yWithOffset = sumoY - offset[1]
         // So CARLA->SUMO: sumoX = carlaX + offset[0], sumoY = -carlaY + offset[1]
-        double sumoX = carlaX +2*sumoNetOffsetXY[0];
-        double sumoY = -carlaY +2* sumoNetOffsetXY[1]; // Correct inverse transformation
+        double sumoX = carlaX + sumoNetOffsetXY[0];
+        double sumoY = -carlaY + sumoNetOffsetXY[1]; // Correct inverse transformation
         double sumoZ = carlaZ;
         
         // Log the final SUMO coordinates for debugging
@@ -1226,7 +1254,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed(); // Get speed from VehicleData
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
@@ -1248,7 +1280,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during categorization: {}", vd.getName(), e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1275,7 +1307,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed();
                 
                 // Check if vehicle already exists in mapping - if so, skip spawn and move to update
@@ -1305,7 +1341,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during spawn: {}", id, e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1406,7 +1442,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed();
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
@@ -1428,7 +1468,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during update: {}", id, e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1453,26 +1493,32 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             currentActorIds.addAll(newlySpawnedActors);
 
             // Handle removals
+            // Fix: Check sumoToCarlaIdMapping instead of currentActorIds to ensure all mapped vehicles are deleted
+            log.info("Processing {} vehicle removals from SUMO", interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0);
             for (String removedId : interaction.getRemovedNames()) {
-                if (currentActorIds.contains(removedId)) {
-                    // Get the CARLA ID for this SUMO vehicle
-                    String carlaId = sumoToCarlaIdMapping.get(removedId);
-                    if (carlaId != null) {
-                        boolean destroyed = actorClient.destroyActor(carlaId);
-                        if (destroyed) {
-                            currentActorIds.remove(removedId);
-                            sumoToCarlaIdMapping.remove(removedId);
-                            log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
-                        } else {
-                            log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
-                            // Still remove from mapping to prevent inconsistent state
-                            currentActorIds.remove(removedId);
-                            sumoToCarlaIdMapping.remove(removedId);
-                        }
+                log.info("Attempting to remove SUMO vehicle '{}'", removedId);
+                // Get the CARLA ID for this SUMO vehicle from mapping
+                String carlaId = sumoToCarlaIdMapping.get(removedId);
+                if (carlaId != null) {
+                    log.info("Found CARLA ID mapping for SUMO vehicle '{}' -> CARLA actor '{}', attempting destruction", removedId, carlaId);
+                    // Always attempt to destroy the CARLA actor if mapping exists
+                    boolean destroyed = actorClient.destroyActor(carlaId);
+                    if (destroyed) {
+                        log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
                     } else {
-                        log.warn("No CARLA ID found for SUMO vehicle '{}' during removal, cleaning up from currentActorIds", removedId);
-                        // Still remove from currentActorIds to maintain consistency
+                        log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
+                    }
+                    // Always remove from mapping and currentActorIds to prevent inconsistent state
+                    currentActorIds.remove(removedId);
+                    sumoToCarlaIdMapping.remove(removedId);
+                    log.info("Cleaned up mapping for SUMO vehicle '{}' (CARLA ID: '{}')", removedId, carlaId);
+                } else {
+                    // No mapping found, but still clean up currentActorIds if present
+                    if (currentActorIds.contains(removedId)) {
+                        log.warn("No CARLA ID mapping found for SUMO vehicle '{}' during removal, but removing from currentActorIds", removedId);
                         currentActorIds.remove(removedId);
+                    } else {
+                        log.debug("SUMO vehicle '{}' marked for removal but has no CARLA mapping or current actor ID", removedId);
                     }
                 }
             }
