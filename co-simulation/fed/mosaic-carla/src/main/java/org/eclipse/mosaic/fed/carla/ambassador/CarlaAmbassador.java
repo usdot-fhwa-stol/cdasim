@@ -30,6 +30,9 @@ import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.Size;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
@@ -476,7 +479,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                     // MOCK CALL processInteraction to trigger DetectedObjectInteractions
-                    this.processInteraction(new DetectedObjectInteraction(time, "sensorID1", "projection String", 101, CartesianPoint.xyz(1.1, 2, 3.2), new Vector3d(0, 0, 0), new Vector3d(), new Size(0, 0, 0), 100));
+                    this.processInteraction(new DetectedObjectInteraction(time, "sensorID1", "projection string", 101, CartesianPoint.xyz(1.1, 2, 3.2), new Vector3d(0, 0, 0), new Vector3d(), new Size(0, 0, 0), 100));
 
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
