@@ -1192,9 +1192,14 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.debug("Ignoring interaction of type: {}", type);
         }
     }
+    /**
+     * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
+     * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
+     * @throws InterruptedException
+     */
     private void receiveInteraction(DetectorRegistration interaction) {
         try {
-            carlaXmlRpcClient.createSensor(interaction);
+            sensorClient.createSensor(interaction);
             registeredDetectors.add(interaction);
         }
         catch(XmlRpcException e) {
