@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +77,7 @@ public class CarlaXmlRpcClient {
     private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
+    private static final String CREATE_SENSOR = "create_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
     // Maps
