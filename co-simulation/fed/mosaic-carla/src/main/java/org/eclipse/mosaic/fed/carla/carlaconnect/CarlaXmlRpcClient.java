@@ -17,6 +17,7 @@ package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
 import java.util.*;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -818,14 +819,13 @@ public class CarlaXmlRpcClient {
      * @param registration DetectorRegistration interaction used to create sensor.
      * @throws XmlRpcException if XMLRPC call fails or connection is lost.
      */
-        public void createSensor(DetectorRegistration registration) throws XmlRpcException{
-            List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
-            List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
-            Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
-            Object result = client.execute(CREATE_SENSOR, params);
-            log.info((String)result);
-          
-        }
+    public void createSensor(DetectorRegistration registration) throws XmlRpcException {
+        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
+        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
+        Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
+        Object result = client.execute(CREATE_SENSOR, params);
+        log.info((String)result);
+    }
     /**
      * Get detected objects from sensor (backward compatibility)
      * @param infrastructureId Infrastructure ID

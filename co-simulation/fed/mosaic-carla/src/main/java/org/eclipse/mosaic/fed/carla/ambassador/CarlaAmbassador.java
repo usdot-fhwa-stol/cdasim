@@ -441,8 +441,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
                     sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    log.debug("Multi-XML-RPC manager SENSOR_LIB connection status: {}", sensorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
                     sensorConnected = carlaXmlRpcClient.isConnected();
+                    log.debug("Single XML-RPC client SENSOR_LIB connection status: {}", sensorConnected);
+                } else {
+                    log.debug("No XML-RPC client configured for SENSOR_LIB");
                 }
                 
                 if (sensorConnected) {
@@ -1200,14 +1204,30 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     private void receiveInteraction(DetectorRegistration interaction) {
         // Prefer the multi-connection manager when available, otherwise fall back to the single client
         CarlaXmlRpcClient sensorClient = null;
+        boolean sensorConnected = false;
         if (multiXmlRpcManager != null) {
             sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+            sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+            log.info("Multi-XML-RPC manager SENSOR_LIB connection status: {}, client available: {}", 
+                    sensorConnected, sensorClient != null);
         } else {
             sensorClient = this.carlaXmlRpcClient;
+            if (sensorClient != null) {
+                sensorConnected = sensorClient.isConnected();
+                log.info("Single XML-RPC client SENSOR_LIB connection status: {}, server type: {}", 
+                        sensorConnected, sensorClient.getServerType());
+            } else {
+                log.warn("No XML-RPC client configured for SENSOR_LIB");
+            }
         }
 
         if (sensorClient == null) {
             log.warn("No XML-RPC sensor client available; skip detector creation for {}", interaction.getDetector());
+            return;
+        }
+        
+        if (!sensorConnected) {
+            log.warn("SENSOR_LIB server not connected; skip detector creation for {}", interaction.getDetector());
             return;
         }
 
@@ -1688,6 +1708,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         // If actor client failed, try sensor client
                         if (!mapLoaded) {
                             CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                            boolean sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                            log.info("SENSOR_LIB connection status: {}, client available: {}", sensorConnected, sensorClient != null);
                             if (sensorClient != null && sensorClient.isConnected()) {
                                 log.info("Trying to load map via sensor client");
                                 mapLoaded = sensorClient.loadMap(carlaConfig.mapName);
@@ -1742,6 +1764,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 }
                 // If actor client failed, try sensor client
                 CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                boolean sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                log.debug("SENSOR_LIB connection status: {}, client available: {}", sensorConnected, sensorClient != null);
                 if (sensorClient != null && sensorClient.isConnected()) {
                     return sensorClient.getMapName();
                 }
@@ -1774,7 +1798,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // If actor client failed, try sensor client
                 if (!mapLoaded) {
                     CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    boolean sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    log.info("SENSOR_LIB connection status: {}, client available: {}", sensorConnected, sensorClient != null);
                     if (sensorClient != null && sensorClient.isConnected()) {
+                        log.info("Trying to load map via sensor client");
                         mapLoaded = sensorClient.loadMap(mapName);
                     }
                 }
