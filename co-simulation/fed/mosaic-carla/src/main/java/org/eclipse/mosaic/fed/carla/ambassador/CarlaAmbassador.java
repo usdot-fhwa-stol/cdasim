@@ -1706,19 +1706,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             }
                         }
                         // If actor client failed, try sensor client
-                        if (!mapLoaded) {
-                            CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                            boolean sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                            log.info("SENSOR_LIB connection status: {}, client available: {}", sensorConnected, sensorClient != null);
-                            if (sensorClient != null && sensorClient.isConnected()) {
-                                log.info("Trying to load map via sensor client");
-                                mapLoaded = sensorClient.loadMap(carlaConfig.mapName);
-                                if (mapLoaded) {
-                                    log.info("Map loaded successfully via sensor client");
-                                    break;
-                                }
-                            }
-                        }
+                       
                     } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
                         log.info("Trying to load map via single XML-RPC client");
                         mapLoaded = carlaXmlRpcClient.loadMap(carlaConfig.mapName);
