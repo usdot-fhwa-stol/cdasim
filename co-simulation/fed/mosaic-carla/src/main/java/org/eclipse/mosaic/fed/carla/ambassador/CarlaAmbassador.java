@@ -1198,6 +1198,19 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * @throws InterruptedException
      */
     private void receiveInteraction(DetectorRegistration interaction) {
+        // Prefer the multi-connection manager when available, otherwise fall back to the single client
+        CarlaXmlRpcClient sensorClient = null;
+        if (multiXmlRpcManager != null) {
+            sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+        } else {
+            sensorClient = this.carlaXmlRpcClient;
+        }
+
+        if (sensorClient == null) {
+            log.warn("No XML-RPC sensor client available; skip detector creation for {}", interaction.getDetector());
+            return;
+        }
+
         try {
             sensorClient.createSensor(interaction);
             registeredDetectors.add(interaction);

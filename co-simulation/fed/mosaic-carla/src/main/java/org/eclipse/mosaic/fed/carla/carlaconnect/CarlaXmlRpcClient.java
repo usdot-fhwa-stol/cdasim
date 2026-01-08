@@ -811,7 +811,19 @@ public class CarlaXmlRpcClient {
             return false;
         }
     }
-
+    /**
+     * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.
+     * @param registration DetectorRegistration interaction used to create sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
+        public void createSensor(DetectorRegistration registration) throws XmlRpcException{
+            List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
+            List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
+            Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
+            Object result = client.execute(CREATE_SENSOR, params);
+            log.info((String)result);
+          
+        }
     /**
      * Get detected objects from sensor (backward compatibility)
      * @param infrastructureId Infrastructure ID
