@@ -54,11 +54,14 @@ public class CarlaMultiXmlRpcManager {
     
     /**
      * Connect to all registered servers
+     * Attempts to connect to each server independently, allowing partial success.
      * @param retryAttempts Number of retry attempts for each connection
-     * @throws XmlRpcException if any connection fails
      * @throws InterruptedException if interrupted during connection
      */
-    public void connectAll(int retryAttempts) throws XmlRpcException, InterruptedException {
+    public void connectAll(int retryAttempts) throws InterruptedException {
+        int successCount = 0;
+        int failureCount = 0;
+        
         for (Map.Entry<CarlaXmlRpcClient.ServerType, CarlaXmlRpcClient> entry : clients.entrySet()) {
             CarlaXmlRpcClient.ServerType serverType = entry.getKey();
             CarlaXmlRpcClient client = entry.getValue();
@@ -67,12 +70,27 @@ public class CarlaMultiXmlRpcManager {
                 log.info("Connecting to {} server...", serverType);
                 client.connect(retryAttempts);
                 connectionStatus.put(serverType, true);
+                successCount++;
                 log.info("Successfully connected to {} server", serverType);
             } catch (XmlRpcException e) {
                 log.error("Failed to connect to {} server: {}", serverType, e.getMessage());
                 connectionStatus.put(serverType, false);
-                throw e;
+                failureCount++;
+                // Continue trying other servers instead of throwing exception
+            } catch (Exception e) {
+                log.error("Unexpected error connecting to {} server: {}", serverType, e.getMessage());
+                connectionStatus.put(serverType, false);
+                failureCount++;
             }
+        }
+        
+        // Log summary of connection results
+        if (successCount > 0 && failureCount > 0) {
+            log.warn("Partial connection success: {} connected, {} failed", successCount, failureCount);
+        } else if (failureCount > 0) {
+            log.error("All connection attempts failed ({} failures)", failureCount);
+        } else if (successCount > 0) {
+            log.info("All servers connected successfully ({} connections)", successCount);
         }
     }
     

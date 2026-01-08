@@ -391,13 +391,33 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 try {
                     if (multiXmlRpcManager != null) {
                         multiXmlRpcManager.connectAll(60);
+                        // Log connection status summary after connection attempt
+                        Map<CarlaXmlRpcClient.ServerType, Boolean> status = multiXmlRpcManager.getConnectionStatus();
+                        for (Map.Entry<CarlaXmlRpcClient.ServerType, Boolean> entry : status.entrySet()) {
+                            if (entry.getValue()) {
+                                log.info("{} server: CONNECTED", entry.getKey());
+                            } else {
+                                log.warn("{} server: NOT CONNECTED", entry.getKey());
+                            }
+                        }
                     } else if (carlaXmlRpcClient != null) {
                         carlaXmlRpcClient.connect(60);
+                        log.info("Single XML-RPC client ({}): {}", 
+                                carlaXmlRpcClient.getServerType(),
+                                carlaXmlRpcClient.isConnected() ? "CONNECTED" : "NOT CONNECTED");
                     } else {
                         log.info("[PTAG] no XML-RPC client(s) configured.");
                     }
                 } catch (Exception ce) {
                     log.warn("[PTAG] initial connect failed: {}", ce.toString());
+                    // Log current connection status even after exception
+                    if (multiXmlRpcManager != null) {
+                        Map<CarlaXmlRpcClient.ServerType, Boolean> status = multiXmlRpcManager.getConnectionStatus();
+                        for (Map.Entry<CarlaXmlRpcClient.ServerType, Boolean> entry : status.entrySet()) {
+                            log.info("{} server status after connection attempt: {}", 
+                                    entry.getKey(), entry.getValue() ? "CONNECTED" : "NOT CONNECTED");
+                        }
+                    }
                 }
             }
             if (!isTlManager && !frozeCarlaTL) {
@@ -452,13 +472,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (sensorConnected) {
                     // Get sensor client once to avoid repeated calls
                     CarlaXmlRpcClient sensorClient = null;
-                    if (multiXmlRpcManager != null) {
-                        sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                    } else {
-                        sensorClient = carlaXmlRpcClient;
-                    }
+                    sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
                     
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
+                    // MOCK CALL processInteraction to trigger DetectedObjectInteractions
+                    this.processInteraction(new DetectedObjectInteraction(time, "sensorID1", "projection String", 101, CartesianPoint.xyz(1.1, 2, 3.2), new Vector3d(0, 0, 0), new Vector3d(), new Size(0, 0, 0), 100));
+
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
                         DetectedObject[] detections = sensorClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
@@ -467,6 +486,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             // Convert nanosecond timestamp to millisecond timestamp
                             interaction.getDetectedObject().setTimestamp((int)(time/1e6));
                             detectedObjectInteractions.add(interaction);
+                            log.info("Detected object: {}", detected.toString());
                         }
                     }
                     // trigger all detection interactions
@@ -1745,17 +1765,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     public String getCurrentMapName() {
         try {
             if (multiXmlRpcManager != null) {
-                // Try actor client first
+                // Use actor client (map operations are ACTOR_LIB responsibility)
                 CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                 if (actorClient != null && actorClient.isConnected()) {
                     return actorClient.getMapName();
-                }
-                // If actor client failed, try sensor client
-                CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                boolean sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                log.debug("SENSOR_LIB connection status: {}, client available: {}", sensorConnected, sensorClient != null);
-                if (sensorClient != null && sensorClient.isConnected()) {
-                    return sensorClient.getMapName();
                 }
             } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
                 return carlaXmlRpcClient.getMapName();
@@ -1778,20 +1791,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             
             boolean mapLoaded = false;
             if (multiXmlRpcManager != null) {
-                // Try actor client first
+                // Use actor client (map operations are ACTOR_LIB responsibility)
                 CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                 if (actorClient != null && actorClient.isConnected()) {
                     mapLoaded = actorClient.loadMap(mapName);
-                }
-                // If actor client failed, try sensor client
-                if (!mapLoaded) {
-                    CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                    boolean sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                    log.info("SENSOR_LIB connection status: {}, client available: {}", sensorConnected, sensorClient != null);
-                    if (sensorClient != null && sensorClient.isConnected()) {
-                        log.info("Trying to load map via sensor client");
-                        mapLoaded = sensorClient.loadMap(mapName);
-                    }
+                } else {
+                    log.warn("ACTOR_LIB client not available or not connected; cannot load map");
                 }
             } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
                 mapLoaded = carlaXmlRpcClient.loadMap(mapName);
