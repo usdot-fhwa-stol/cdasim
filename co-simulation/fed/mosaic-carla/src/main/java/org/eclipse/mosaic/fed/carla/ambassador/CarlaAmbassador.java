@@ -1185,11 +1185,23 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Processing TrafficLightUpdates interaction - this should forward traffic light commands to CARLA");
             this.receiveInteraction((TrafficLightUpdates) interaction);
         }
+        else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
+            this.receiveInteraction((DetectorRegistration) interaction);
+        }
         else {
             log.debug("Ignoring interaction of type: {}", type);
         }
     }
+    private void receiveInteraction(DetectorRegistration interaction) {
+        try {
+            carlaXmlRpcClient.createSensor(interaction);
+            registeredDetectors.add(interaction);
+        }
+        catch(XmlRpcException e) {
+            log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
+        }
 
+    }
     /**
      * Synchronize CARLA with SUMO vehicle updates.
      * - Spawn missing CARLA actors for SUMO vehicles in added/updated lists
