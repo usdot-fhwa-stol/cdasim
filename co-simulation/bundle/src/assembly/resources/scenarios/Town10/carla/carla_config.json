@@ -3,5 +3,6 @@
     "carlaUE4Path": "/opt/carma-simulation/",
     "carlaCDASimAdapterUrl":"null",
     "carlaActorLibRPCUrl": "http://127.0.0.1:8090/RPC2",
+    "carlaSensorLibRPCUrl": "http://127.0.0.1:8091/RPC2",
     "sumoNetXmlPath": "/opt/carma-simulation/scenarios/Town10/sumo/Town10.net.xml"
 }
