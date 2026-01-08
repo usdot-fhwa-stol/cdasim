@@ -120,6 +120,7 @@ public class CarlaMultiXmlRpcManager {
     public boolean isConnected(CarlaXmlRpcClient.ServerType serverType) {
         CarlaXmlRpcClient client = clients.get(serverType);
         if (client == null) {
+            log.warn("Client not found for server type: {}", serverType);
             return false;
         }
         

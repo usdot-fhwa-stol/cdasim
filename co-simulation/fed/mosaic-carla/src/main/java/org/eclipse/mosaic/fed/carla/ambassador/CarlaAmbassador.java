@@ -464,11 +464,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // Handle sensor operations
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
-                    sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    // Bypass isConnected check for SENSOR_LIB as it is not implemented on server side
+                    sensorConnected = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) != null;
                     log.debug("Multi-XML-RPC manager SENSOR_LIB connection status: {}", sensorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
-                    sensorConnected = carlaXmlRpcClient.isConnected();
-                    log.debug("Single XML-RPC client SENSOR_LIB connection status: {}", sensorConnected);
+                    // Bypass isConnected check for SENSOR_LIB
+                    sensorConnected = true; 
+                    log.debug("Single XML-RPC client SENSOR_LIB connection status: {} (check bypassed)", sensorConnected);
                 } else {
                     log.debug("No XML-RPC client configured for SENSOR_LIB");
                 }
@@ -1242,14 +1244,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         boolean sensorConnected = false;
         if (multiXmlRpcManager != null) {
             sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-            sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+            // Bypass isConnected check for SENSOR_LIB as it is not implemented on server side
+            sensorConnected = sensorClient != null;
             log.info("Multi-XML-RPC manager SENSOR_LIB connection status: {}, client available: {}", 
                     sensorConnected, sensorClient != null);
         } else {
             sensorClient = this.carlaXmlRpcClient;
             if (sensorClient != null) {
-                sensorConnected = sensorClient.isConnected();
-                log.info("Single XML-RPC client SENSOR_LIB connection status: {}, server type: {}", 
+                // Bypass isConnected check for SENSOR_LIB
+                sensorConnected = true;
+                log.info("Single XML-RPC client SENSOR_LIB connection status: {} (check bypassed), server type: {}", 
                         sensorConnected, sensorClient.getServerType());
             } else {
                 log.warn("No XML-RPC client configured for SENSOR_LIB");
