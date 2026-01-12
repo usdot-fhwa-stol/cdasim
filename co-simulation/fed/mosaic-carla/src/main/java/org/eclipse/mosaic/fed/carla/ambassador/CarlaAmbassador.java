@@ -30,7 +30,10 @@ import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
@@ -481,11 +484,17 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
                     
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
-                    // MOCK CALL processInteraction to trigger DetectedObjectInteractions
+                    // MOCK: register a detector and provide a local detected object so the detection
+                    // processing below always has at least one entry.
+                    Detector mockDetector = new Detector(
+                            "sensorID1",
+                            DetectorType.SEMANTIC_LIDAR,
+                            new Orientation(0.0, 0.0, 0.0),
+                            CartesianPoint.xyz(1.1, 2, 3.2));
                     DetectedObject mockDetectedObject = new DetectedObject(
                             DetectionType.CAR,
                             1.0,
-                            "sensorID1",
+                            mockDetector.getSensorId(),
                             "projection string",
                             101,
                             CartesianPoint.xyz(1.1, 2, 3.2),
@@ -493,11 +502,18 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             new Vector3d(),
                             new Size(0, 0, 0),
                             100);
-                    this.processInteraction(new DetectedObjectInteraction(time, mockDetectedObject));
+                    DetectorRegistration mockRegistration = new DetectorRegistration(time, mockDetector, "mock_infrastructure");
+                    this.processInteraction(mockRegistration);
+                    log.info("Sensor Lib: Calling processInteraction for mockDetectedObject");
 
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
                         DetectedObject[] detections = sensorClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+                        log.info("Sensor Lib: Calling getDetectedObjects for registration");
+                        if ((detections == null || detections.length == 0) && registration.equals(mockRegistration)) {
+                            detections = new DetectedObject[]{mockDetectedObject};
+                            log.info("Sensor Lib: Using local mock detection for {}", registration.getDetector().getSensorId());
+                        }
                         for (DetectedObject detected: detections) {
                             DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
                             // Convert nanosecond timestamp to millisecond timestamp
