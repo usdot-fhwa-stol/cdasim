@@ -507,6 +507,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 
                 if (sensorConnected) {
                     // Get sensor client once to avoid repeated calls
+                    CarlaXmlRpcClient sensorClient = null;
                     sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
                     // List to collect detected object interactions for this time step
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
