@@ -503,16 +503,36 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             new Size(0, 0, 0),
                             100);
                     DetectorRegistration mockRegistration = new DetectorRegistration(time, mockDetector, "mock_infrastructure");
-                    this.processInteraction(mockRegistration);
-                    log.info("Sensor Lib: Calling processInteraction for mockDetectedObject");
+                    // Directly add mock registration to avoid XML-RPC call (server doesn't support create_sensor)
+                    boolean mockAlreadyRegistered = registeredDetectors.stream()
+                            .anyMatch(reg -> reg.getDetector().getSensorId().equals(mockDetector.getSensorId()) 
+                                    && reg.getInfrastructureId().equals("mock_infrastructure"));
+                    if (!mockAlreadyRegistered) {
+                        registeredDetectors.add(mockRegistration);
+                        log.info("Sensor Lib: Added mock detector registration directly (bypassing XML-RPC create_sensor)");
+                    }
 
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
-                        DetectedObject[] detections = sensorClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
-                        log.info("Sensor Lib: Calling getDetectedObjects for registration");
-                        if ((detections == null || detections.length == 0) && registration.equals(mockRegistration)) {
+                        DetectedObject[] detections = null;
+                        // Check if this is the mock registration
+                        boolean isMockRegistration = registration.getInfrastructureId().equals("mock_infrastructure") 
+                                && registration.getDetector().getSensorId().equals("sensorID1");
+                        
+                        if (isMockRegistration) {
+                            // For mock registration, use local mock detection directly
                             detections = new DetectedObject[]{mockDetectedObject};
-                            log.info("Sensor Lib: Using local mock detection for {}", registration.getDetector().getSensorId());
+                            log.info("Sensor Lib: Using local mock detection for mock registration");
+                        } else {
+                            // For real registrations, call XML-RPC
+                            try {
+                                detections = sensorClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
+                                log.info("Sensor Lib: Calling getDetectedObjects for registration");
+                            } catch (Exception e) {
+                                log.warn("Failed to get detected objects for sensor {}: {}", 
+                                        registration.getDetector().getSensorId(), e.getMessage());
+                                detections = new DetectedObject[0];
+                            }
                         }
                         for (DetectedObject detected: detections) {
                             DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
