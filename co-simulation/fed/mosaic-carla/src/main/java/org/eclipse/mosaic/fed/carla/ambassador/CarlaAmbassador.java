@@ -753,8 +753,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } 
         catch (IllegalValueException e) {
             log.error("Failed to process advance time grant due to : ", e);
-        } catch (XmlRpcException e) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim Adapter connection! Check carla_config.json!", e);
         }
     }
 
