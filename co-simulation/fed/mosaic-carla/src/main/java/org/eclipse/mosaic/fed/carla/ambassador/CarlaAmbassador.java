@@ -508,24 +508,35 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 if (sensorConnected) {
                     // Get sensor client once to avoid repeated calls
                     CarlaXmlRpcClient sensorClient = null;
-                    sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    if (multiXmlRpcManager != null) {
+                        sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    } else {
+                        sensorClient = carlaXmlRpcClient;
+                    }
                     // List to collect detected object interactions for this time step
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                     
                     // Get all detections from all currently registered detectors.
-                    for (DetectorRegistration registration: registeredDetectors ) {
-                        DetectedObject[] detections = sensorClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
-                        for (DetectedObject detected: detections) {
-                            log.info("Detected object: {}", detected);
-                            DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
-                            // Convert nanosecond timestamp to millisecond timestamp
-                            interaction.getDetectedObject().setTimestamp((int)(time/1e6));
-                            detectedObjectInteractions.add(interaction);
+                    if (sensorClient != null) {
+                        for (DetectorRegistration registration: registeredDetectors ) {
+                            try {
+                                DetectedObject[] detections = sensorClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                                for (DetectedObject detected: detections) {
+                                    log.info("Detected object: {}", detected);
+                                    DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                                    // Convert nanosecond timestamp to millisecond timestamp
+                                    interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                                    detectedObjectInteractions.add(interaction);
+                                }
+                            } catch (XmlRpcException e) {
+                                log.error("Error occurred attempting to get detected objects for detector {}: {}", 
+                                        registration.getDetector().getSensorId(), e);
+                            }
                         }
-                    }
                         //Trigger all detection interaction
-                    for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
-                        this.rti.triggerInteraction(detectionInteraction);
+                        for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                            this.rti.triggerInteraction(detectionInteraction);
+                        }
                     }
                 }
                 // Handle actor operations
