@@ -507,12 +507,13 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 
                 if (sensorConnected) {
                     // Get sensor client once to avoid repeated calls
-                    CarlaXmlRpcClient sensorClient = null;
                     sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    // List to collect detected object interactions for this time step
+                    List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
                     
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
-                        DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                        DetectedObject[] detections = sensorClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
                         for (DetectedObject detected: detections) {
                             log.info("Detected object: {}", detected);
                             DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
