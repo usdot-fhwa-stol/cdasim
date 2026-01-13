@@ -30,7 +30,10 @@ import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
 import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
 import org.eclipse.mosaic.lib.objects.detector.Size;
 import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.math.Vector3d;
@@ -480,33 +483,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     CarlaXmlRpcClient sensorClient = null;
                     sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
                     
-                    List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
-                    // MOCK CALL processInteraction to trigger DetectedObjectInteractions
-                    DetectedObject mockDetectedObject = new DetectedObject(
-                            DetectionType.CAR,
-                            1.0,
-                            "sensorID1",
-                            "projection string",
-                            101,
-                            CartesianPoint.xyz(1.1, 2, 3.2),
-                            new Vector3d(0, 0, 0),
-                            new Vector3d(),
-                            new Size(0, 0, 0),
-                            100);
-                    this.processInteraction(new DetectedObjectInteraction(time, mockDetectedObject));
-
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
-                        DetectedObject[] detections = sensorClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
-                        for (DetectedObject detected: detections) {
-                            DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
-                            // Convert nanosecond timestamp to millisecond timestamp
-                            interaction.getDetectedObject().setTimestamp((int)(time/1e6));
-                            detectedObjectInteractions.add(interaction);
-                            log.info("Detected object: {}", detected.toString());
+                        // For real registrations, call XML-RPC
+                        try {
+                            sensorClient.createSensor(registration);
+                            log.info("Sensor Lib: Calling createSensor for registration");
+                        } catch (Exception e) {
+                            log.warn("Failed to create sensor for registration: {}", e.getMessage());
                         }
-                    }
-                    // trigger all detection interactions
+
                     for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                         this.rti.triggerInteraction(detectionInteraction);
                     }
@@ -717,8 +703,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } 
         catch (IllegalValueException e) {
             log.error("Failed to process advance time grant due to : ", e);
-        } catch (XmlRpcException e) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim Adapter connection! Check carla_config.json!", e);
         }
     }
 
