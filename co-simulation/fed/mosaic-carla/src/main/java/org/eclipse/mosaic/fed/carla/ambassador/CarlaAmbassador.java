@@ -403,6 +403,33 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         for (Map.Entry<CarlaXmlRpcClient.ServerType, Boolean> entry : status.entrySet()) {
                             if (entry.getValue()) {
                                 log.info("{} server: CONNECTED", entry.getKey());
+
+                                // create sensor for sensorlib
+                                if (entry.getKey() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
+                                    try {
+                                        // Create mock sensor at specified coordinates
+                                        Detector mockDetector = new Detector(
+                                                "mock_sensor_1",
+                                                DetectorType.SEMANTIC_LIDAR,
+                                                new Orientation(0.0, 0.0, 0.0),
+                                                CartesianPoint.xyz(63.0, -30.0, 3.0));
+                                        DetectorRegistration mockRegistration = new DetectorRegistration(
+                                                time,
+                                                mockDetector,
+                                                "mock_infrastructure");
+                                        
+                                        // Get sensor client and create sensor
+                                        CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                                        if (sensorClient != null) {
+                                            sensorClient.createSensor(mockRegistration);
+                                            registeredDetectors.add(mockRegistration);
+                                            log.info("Created mock sensor at (63, -30, 3) via SENSOR_LIB");
+                                        }
+                                    } catch (Exception e) {
+                                        log.warn("Failed to create mock sensor at connection time: {}", e.getMessage());
+                                    }
+                                }
+
                             } else {
                                 log.warn("{} server: NOT CONNECTED", entry.getKey());
                             }
@@ -485,14 +512,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     
                     // Get all detections from all currently registered detectors.
                     for (DetectorRegistration registration: registeredDetectors ) {
-                        // For real registrations, call XML-RPC
-                        try {
-                            sensorClient.createSensor(registration);
-                            log.info("Sensor Lib: Calling createSensor for registration");
-                        } catch (Exception e) {
-                            log.warn("Failed to create sensor for registration: {}", e.getMessage());
+                        DetectedObject[] detections = carlaXmlRpcClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                        for (DetectedObject detected: detections) {
+                            log.info("Detected object: {}", detected);
+                            DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                            // Convert nanosecond timestamp to millisecond timestamp
+                            interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                            detectedObjectInteractions.add(interaction);
                         }
-
+                    }
+                        //Trigger all detection interaction
                     for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
                         this.rti.triggerInteraction(detectionInteraction);
                     }
