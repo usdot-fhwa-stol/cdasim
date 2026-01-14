@@ -391,7 +391,33 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
-
+        sensorCreated = false;
+        if (entry.getKey() == CarlaXmlRpcClient.ServerType.SENSOR_LIB && !sensorCreated) {
+            sensorCreated = true;
+            try {
+                // Create mock sensor at specified coordinates
+                Detector mockDetector = new Detector(
+                        "mock_sensor_1",
+                        DetectorType.SEMANTIC_LIDAR,
+                        new Orientation(0.0, 0.0, 0.0),
+                        // 62 114 
+                        CartesianPoint.xyz(-46.0, 84.0, 3.0));
+                DetectorRegistration mockRegistration = new DetectorRegistration(
+                        time,
+                        mockDetector,
+                        "mock_infrastructure");
+                
+                // Get sensor client and create sensor
+                CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                if (sensorClient != null) {
+                    sensorClient.createSensor(mockRegistration);
+                    registeredDetectors.add(mockRegistration);
+                    log.info("Created mock sensor at (-46, 84, 3) via SENSOR_LIB");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to create mock sensor at connection time: {}", e.getMessage());
+            }
+        }
         try {
             if (!initialConnectAttempted) {
                 initialConnectAttempted = true;
@@ -405,30 +431,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                 log.info("{} server: CONNECTED", entry.getKey());
 
                                 // create sensor for sensorlib
-                                if (entry.getKey() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
-                                    try {
-                                        // Create mock sensor at specified coordinates
-                                        Detector mockDetector = new Detector(
-                                                "mock_sensor_1",
-                                                DetectorType.SEMANTIC_LIDAR,
-                                                new Orientation(0.0, 0.0, 0.0),
-                                                CartesianPoint.xyz(63.0, -30.0, 3.0));
-                                        DetectorRegistration mockRegistration = new DetectorRegistration(
-                                                time,
-                                                mockDetector,
-                                                "mock_infrastructure");
-                                        
-                                        // Get sensor client and create sensor
-                                        CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                                        if (sensorClient != null) {
-                                            sensorClient.createSensor(mockRegistration);
-                                            registeredDetectors.add(mockRegistration);
-                                            log.info("Created mock sensor at (63, -30, 3) via SENSOR_LIB");
-                                        }
-                                    } catch (Exception e) {
-                                        log.warn("Failed to create mock sensor at connection time: {}", e.getMessage());
-                                    }
-                                }
+                                
 
                             } else {
                                 log.warn("{} server: NOT CONNECTED", entry.getKey());
