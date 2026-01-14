@@ -391,11 +391,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
-        sensorCreated = false;
+        Boolean sensorCreated = true;
         if (entry.getKey() == CarlaXmlRpcClient.ServerType.SENSOR_LIB && !sensorCreated) {
-            sensorCreated = true;
+           
             try {
                 // Create mock sensor at specified coordinates
+                sensorCreated = true;
                 Detector mockDetector = new Detector(
                         "mock_sensor_1",
                         DetectorType.SEMANTIC_LIDAR,
