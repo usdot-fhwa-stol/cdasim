@@ -78,7 +78,7 @@ public class CarlaXmlRpcClient {
     private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
-    private static final String CREATE_SENSOR = "create_sensor";
+    private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
     // Maps
