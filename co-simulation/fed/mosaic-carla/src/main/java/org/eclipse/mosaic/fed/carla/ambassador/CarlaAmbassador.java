@@ -313,32 +313,39 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Load specified map if configured
         
         // Initialize XML-RPC connections
+        // First, convert string "null" to actual null values
+        if (carlaConfig.carlaSensorLibRPCUrl != null && "null".equalsIgnoreCase(carlaConfig.carlaSensorLibRPCUrl)) {
+            carlaConfig.carlaSensorLibRPCUrl = null;
+        }
+        if (carlaConfig.carlaActorLibRPCUrl != null && "null".equalsIgnoreCase(carlaConfig.carlaActorLibRPCUrl)) {
+            carlaConfig.carlaActorLibRPCUrl = null;
+        }
+        
+        // Only create multi-server manager if at least one server URL is configured (after null conversion)
         if (carlaConfig.carlaSensorLibRPCUrl != null || carlaConfig.carlaActorLibRPCUrl != null) {
             // Use multi-server manager for separate sensor and actor connections
             multiXmlRpcManager = new CarlaMultiXmlRpcManager();
             
             try {
                 // Add sensor library server
-                // convert string null to null
-                if ("null".equalsIgnoreCase(carlaConfig.carlaSensorLibRPCUrl)) {
-                    carlaConfig.carlaSensorLibRPCUrl = null;
-                }
-                if ("null".equalsIgnoreCase(carlaConfig.carlaActorLibRPCUrl)) {
-                    carlaConfig.carlaActorLibRPCUrl = null;
-                }
-                if (carlaConfig.carlaSensorLibRPCUrl != null) {
+                if (carlaConfig.carlaSensorLibRPCUrl != null && !carlaConfig.carlaSensorLibRPCUrl.trim().isEmpty()) {
                     log.info("Start adding Sensor_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
                     multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB, carlaConfig.carlaSensorLibRPCUrl);
                     log.info("Added SENSOR_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
+                } else {
+                    log.info("SENSOR_LIB server not configured, skipping");
                 }
                 
                 // Add actor library server
-                if (carlaConfig.carlaActorLibRPCUrl != null) {
+                if (carlaConfig.carlaActorLibRPCUrl != null && !carlaConfig.carlaActorLibRPCUrl.trim().isEmpty()) {
                     log.info("Start adding ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
                     multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB, carlaConfig.carlaActorLibRPCUrl);
                     log.info("Added ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
+                } else {
+                    log.info("ACTOR_LIB server not configured, skipping");
                 }
                 
+                // Verify at least one server was added
                 if (multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) == null &&
                     multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB) == null) {
                     throw new InternalFederateException("No XML-RPC servers configured for multi-server mode");
@@ -347,6 +354,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } catch (MalformedURLException m) {
                 throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!");
             }
+        } else {
+            log.info("No XML-RPC servers configured (both SENSOR_LIB and ACTOR_LIB URLs are null or empty)");
         }
 
         loadConfiguredMap();
