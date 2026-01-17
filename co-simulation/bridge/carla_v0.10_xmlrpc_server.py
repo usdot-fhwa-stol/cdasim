@@ -1118,9 +1118,9 @@ def build_light_index(world):
 
 def main():
     parser = argparse.ArgumentParser(description='CARLA XML-RPC Server (Unified)')
-    parser.add_argument('--host', default='localhost')
+    parser.add_argument('--host', default='172.2.0.12')
     parser.add_argument('--port', type=int, default=8090)
-    parser.add_argument('--carla-host', default='localhost')
+    parser.add_argument('--carla-host', default='172.2.0.3')
     parser.add_argument('--carla-port', type=int, default=2000)
     parser.add_argument('--timestep_size', type=float, default=0.1, help='Fixed delta seconds for simulation (default: 0.1)')
     parser.add_argument('--map', '--map-name', dest='map_name', default='Town04', help='Default map name to load on connection (default: Town04)')
