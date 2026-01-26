@@ -33,6 +33,10 @@
         "omnetpp": false,
         "output": false,
         "sumo": true,
-        "carla": true
+        "carla": true,
+        "carma": true,
+        "infrastructure": true,
+        "carma-cloud": true,
+        "carma-messenger": true
     }
 }
