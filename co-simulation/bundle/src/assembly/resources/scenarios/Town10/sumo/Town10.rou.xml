@@ -4,6 +4,9 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <route id="stop1" edges="-5"/>
+    <vType id="MoveOverLaw" carFollowModel="IDM"/>
+    <vType id="car" carFollowModel="IDM" lcStrategic="-1" lcCooperative="-1" lcSpeedGain="0"  lcKeepRight="0"/>
     <!-- Vehicles, persons and containers (sorted by depart) -->
     <trip id="t_0" depart="0.00" from="-13" to="11" via="-14 -20"/>
     <trip id="t_1" depart="10.00" from="-13" to="6" via="12 -9 -21 -0"/>
