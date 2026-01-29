@@ -17,12 +17,14 @@ package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
 import java.util.*;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +78,7 @@ public class CarlaXmlRpcClient {
     private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
+    private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
     // Maps
@@ -811,7 +814,18 @@ public class CarlaXmlRpcClient {
             return false;
         }
     }
-
+    /**
+     * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.
+     * @param registration DetectorRegistration interaction used to create sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
+    public void createSensor(DetectorRegistration registration) throws XmlRpcException {
+        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
+        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
+        Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
+        Object result = client.execute(CREATE_SENSOR, params);
+        log.info((String)result);
+    }
     /**
      * Get detected objects from sensor (backward compatibility)
      * @param infrastructureId Infrastructure ID
