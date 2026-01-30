@@ -30,6 +30,13 @@ import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleDeparture;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
+import org.eclipse.mosaic.lib.objects.detector.Detector;
+import org.eclipse.mosaic.lib.objects.detector.DetectorType;
+import org.eclipse.mosaic.lib.objects.detector.DetectionType;
+import org.eclipse.mosaic.lib.objects.detector.Orientation;
+import org.eclipse.mosaic.lib.objects.detector.Size;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
+import org.eclipse.mosaic.lib.math.Vector3d;
 import org.eclipse.mosaic.lib.util.ProcessLoggingThread;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
@@ -306,32 +313,39 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // Load specified map if configured
         
         // Initialize XML-RPC connections
+        // First, convert string "null" to actual null values
+        if (carlaConfig.carlaSensorLibRPCUrl != null && "null".equalsIgnoreCase(carlaConfig.carlaSensorLibRPCUrl)) {
+            carlaConfig.carlaSensorLibRPCUrl = null;
+        }
+        if (carlaConfig.carlaActorLibRPCUrl != null && "null".equalsIgnoreCase(carlaConfig.carlaActorLibRPCUrl)) {
+            carlaConfig.carlaActorLibRPCUrl = null;
+        }
+        
+        // Only create multi-server manager if at least one server URL is configured (after null conversion)
         if (carlaConfig.carlaSensorLibRPCUrl != null || carlaConfig.carlaActorLibRPCUrl != null) {
             // Use multi-server manager for separate sensor and actor connections
             multiXmlRpcManager = new CarlaMultiXmlRpcManager();
             
             try {
                 // Add sensor library server
-                // convert string null to null
-                if ("null".equalsIgnoreCase(carlaConfig.carlaSensorLibRPCUrl)) {
-                    carlaConfig.carlaSensorLibRPCUrl = null;
-                }
-                if ("null".equalsIgnoreCase(carlaConfig.carlaActorLibRPCUrl)) {
-                    carlaConfig.carlaActorLibRPCUrl = null;
-                }
-                if (carlaConfig.carlaSensorLibRPCUrl != null) {
+                if (carlaConfig.carlaSensorLibRPCUrl != null && !carlaConfig.carlaSensorLibRPCUrl.trim().isEmpty()) {
                     log.info("Start adding Sensor_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
                     multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB, carlaConfig.carlaSensorLibRPCUrl);
                     log.info("Added SENSOR_LIB server: {}", carlaConfig.carlaSensorLibRPCUrl);
+                } else {
+                    log.info("SENSOR_LIB server not configured, skipping");
                 }
                 
                 // Add actor library server
-                if (carlaConfig.carlaActorLibRPCUrl != null) {
+                if (carlaConfig.carlaActorLibRPCUrl != null && !carlaConfig.carlaActorLibRPCUrl.trim().isEmpty()) {
                     log.info("Start adding ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
                     multiXmlRpcManager.addClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB, carlaConfig.carlaActorLibRPCUrl);
                     log.info("Added ACTOR_LIB server: {}", carlaConfig.carlaActorLibRPCUrl);
+                } else {
+                    log.info("ACTOR_LIB server not configured, skipping");
                 }
                 
+                // Verify at least one server was added
                 if (multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) == null &&
                     multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB) == null) {
                     throw new InternalFederateException("No XML-RPC servers configured for multi-server mode");
@@ -340,6 +354,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             } catch (MalformedURLException m) {
                 throw new InternalFederateException("Carla Ambassador initialization failed due to invalid XML-RPC server URLs! Check carla_config.json!");
             }
+        } else {
+            log.info("No XML-RPC servers configured (both SENSOR_LIB and ACTOR_LIB URLs are null or empty)");
         }
 
         loadConfiguredMap();
@@ -384,20 +400,43 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("[PTAG] early-return: time < nextTimeStep ({} < {})", time, nextTimeStep);
             return;
         }
-
         try {
             if (!initialConnectAttempted) {
                 initialConnectAttempted = true;
                 try {
                     if (multiXmlRpcManager != null) {
                         multiXmlRpcManager.connectAll(60);
+                        // Log connection status summary after connection attempt
+                        Map<CarlaXmlRpcClient.ServerType, Boolean> status = multiXmlRpcManager.getConnectionStatus();
+                        for (Map.Entry<CarlaXmlRpcClient.ServerType, Boolean> entry : status.entrySet()) {
+                            if (entry.getValue()) {
+                                log.info("{} server: CONNECTED", entry.getKey());
+
+                                // create sensor for sensorlib
+                                
+
+                            } else {
+                                log.warn("{} server: NOT CONNECTED", entry.getKey());
+                            }
+                        }
                     } else if (carlaXmlRpcClient != null) {
                         carlaXmlRpcClient.connect(60);
+                        log.info("Single XML-RPC client ({}): {}", 
+                                carlaXmlRpcClient.getServerType(),
+                                carlaXmlRpcClient.isConnected() ? "CONNECTED" : "NOT CONNECTED");
                     } else {
                         log.info("[PTAG] no XML-RPC client(s) configured.");
                     }
                 } catch (Exception ce) {
                     log.warn("[PTAG] initial connect failed: {}", ce.toString());
+                    // Log current connection status even after exception
+                    if (multiXmlRpcManager != null) {
+                        Map<CarlaXmlRpcClient.ServerType, Boolean> status = multiXmlRpcManager.getConnectionStatus();
+                        for (Map.Entry<CarlaXmlRpcClient.ServerType, Boolean> entry : status.entrySet()) {
+                            log.info("{} server status after connection attempt: {}", 
+                                    entry.getKey(), entry.getValue() ? "CONNECTED" : "NOT CONNECTED");
+                        }
+                    }
                 }
             }
             if (!isTlManager && !frozeCarlaTL) {
@@ -440,9 +479,15 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 // Handle sensor operations
                 boolean sensorConnected = false;
                 if (multiXmlRpcManager != null) {
-                    sensorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+                    // Bypass isConnected check for SENSOR_LIB as it is not implemented on server side
+                    sensorConnected = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB) != null;
+                    log.debug("Multi-XML-RPC manager SENSOR_LIB connection status: {}", sensorConnected);
                 } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.SENSOR_LIB) {
-                    sensorConnected = carlaXmlRpcClient.isConnected();
+                    // Bypass isConnected check for SENSOR_LIB
+                    sensorConnected = true; 
+                    log.debug("Single XML-RPC client SENSOR_LIB connection status: {} (check bypassed)", sensorConnected);
+                } else {
+                    log.debug("No XML-RPC client configured for SENSOR_LIB");
                 }
                 
                 if (sensorConnected) {
@@ -453,21 +498,30 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     } else {
                         sensorClient = carlaXmlRpcClient;
                     }
-                    
+                    // List to collect detected object interactions for this time step
                     List<DetectedObjectInteraction> detectedObjectInteractions = new ArrayList<>();
+                    
                     // Get all detections from all currently registered detectors.
-                    for (DetectorRegistration registration: registeredDetectors ) {
-                        DetectedObject[] detections = sensorClient.getDetectedObjects(registration.getInfrastructureId(), registration.getDetector().getSensorId());
-                        for (DetectedObject detected: detections) {
-                            DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
-                            // Convert nanosecond timestamp to millisecond timestamp
-                            interaction.getDetectedObject().setTimestamp((int)(time/1e6));
-                            detectedObjectInteractions.add(interaction);
+                    if (sensorClient != null) {
+                        for (DetectorRegistration registration: registeredDetectors ) {
+                            try {
+                                DetectedObject[] detections = sensorClient.getDetectedObjects( registration.getInfrastructureId() , registration.getDetector().getSensorId());
+                                for (DetectedObject detected: detections) {
+                                    log.info("Detected object: {}", detected);
+                                    DetectedObjectInteraction interaction = new DetectedObjectInteraction(time, detected);
+                                    // Convert nanosecond timestamp to millisecond timestamp
+                                    interaction.getDetectedObject().setTimestamp((int)(time/1e6));
+                                    detectedObjectInteractions.add(interaction);
+                                }
+                            } catch (XmlRpcException e) {
+                                log.error("Error occurred attempting to get detected objects for detector {}: {}", 
+                                        registration.getDetector().getSensorId(), e);
+                            }
                         }
-                    }
-                    // trigger all detection interactions
-                    for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
-                        this.rti.triggerInteraction(detectionInteraction);
+                        //Trigger all detection interaction
+                        for (DetectedObjectInteraction detectionInteraction: detectedObjectInteractions) {
+                            this.rti.triggerInteraction(detectionInteraction);
+                        }
                     }
                 }
                 // Handle actor operations
@@ -598,20 +652,38 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         }
 
                         // Update current actor IDs cache for next iteration
+                        // IMPORTANT: We need to get ALL current external actors, not just the ones that changed
+                        // This ensures that actors without changes are still tracked for future change detection
                         java.util.Set<String> previousIds = new java.util.HashSet<>(currentActorIds);
                         currentActorIds.clear();
                         
-                        // Add current actors from the change detection
-                        for (java.util.Map<String, Object> actorInfo : addedActors) {
-                            String actorId = (String) actorInfo.get("id");
-                            if (actorId != null) {
+                        // Get ALL current external actors (not just changed ones) to properly track them
+                        try {
+                            java.util.Map<String, java.util.Map<String, Object>> allCurrentActors = actorClient.getAllActorsExcludingSumo(sumoToCarlaIdMapping);
+                            for (String actorId : allCurrentActors.keySet()) {
                                 currentActorIds.add(actorId);
                             }
-                        }
-                        for (java.util.Map<String, Object> actorInfo : updatedActors) {
-                            String actorId = (String) actorInfo.get("id");
-                            if (actorId != null) {
-                                currentActorIds.add(actorId);
+                            log.debug("Updated currentActorIds: tracking {} external actors", currentActorIds.size());
+                        } catch (Exception e) {
+                            log.warn("Failed to get all current actors for tracking: {}", e.getMessage());
+                            // Fallback: at least add the ones we know about from changes
+                            for (java.util.Map<String, Object> actorInfo : addedActors) {
+                                String actorId = (String) actorInfo.get("id");
+                                if (actorId != null) {
+                                    currentActorIds.add(actorId);
+                                }
+                            }
+                            for (java.util.Map<String, Object> actorInfo : updatedActors) {
+                                String actorId = (String) actorInfo.get("id");
+                                if (actorId != null) {
+                                    currentActorIds.add(actorId);
+                                }
+                            }
+                            // Also preserve existing actors that weren't in the change lists
+                            for (String existingId : previousIds) {
+                                if (!removedActors.contains(existingId)) {
+                                    currentActorIds.add(existingId);
+                                }
                             }
                         }
                         
@@ -626,7 +698,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             this.rti.triggerInteraction(vehicleUpdates);
                             log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
                                 addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
-
                         }
 
                         // Update last known actor id snapshot after publishing
@@ -659,8 +730,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         } 
         catch (IllegalValueException e) {
             log.error("Failed to process advance time grant due to : ", e);
-        } catch (XmlRpcException e) {
-            throw new InternalFederateException("Failed to process advance time grant due to CARLA CDA Sim Adapter connection! Check carla_config.json!", e);
         }
     }
 
@@ -810,52 +879,63 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * 
      * @param xSumo SUMO X coordinate
      * @param ySumo SUMO Y coordinate
+     * @param zSumo SUMO Z coordinate (height/elevation)
      * @param headingDeg SUMO heading angle in degrees
+     * @param pitchDeg SUMO pitch/slope angle in degrees
      * @param extentX Vehicle extent in X direction (half length) for front-bumper to center conversion
      * @return Transform object with CARLA coordinates and heading
      */
-    private Transform carlaTransformFromSumo(double xSumo, double ySumo, Double headingDeg, Double extentX) {
+    private Transform carlaTransformFromSumo(double xSumo, double ySumo, double zSumo, Double headingDeg, Double pitchDeg, Double extentX) {
         // Start with SUMO coordinates
         double sumoX = xSumo;
         double sumoY = ySumo;
-        double sumoZ = 0.0;
+        double sumoZ = zSumo;
         
         // From front-center-bumper to center (sumo reference system)
         // Following Python bridge_helper.py get_carla_transform logic exactly
+        // Python: yaw = -1 * in_rotation.yaw + 90
+        // Python: pitch = in_rotation.pitch
+        // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
+        //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
+        //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
         if (extentX != null && extentX > 0.0 && headingDeg != null) {
-            double yaw = -1 * headingDeg + 90; // Python: yaw = -1 * in_rotation.yaw + 90
+            double yaw = -1 * headingDeg + 90;
             double yawRad = Math.toRadians(yaw);
-            // Python: out_location = (in_location.x - math.cos(math.radians(yaw)) * extent.x,
-            //                         in_location.y - math.sin(math.radians(yaw)) * extent.x,
-            //                         in_location.z - math.sin(math.radians(pitch)) * extent.x)
             sumoX -= Math.cos(yawRad) * extentX;
             sumoY -= Math.sin(yawRad) * extentX;
-            // Note: Python also considers pitch for Z, but we assume pitch=0 for simplicity
+            
+            // Apply pitch adjustment to Z axis if pitch is available
+            if (pitchDeg != null) {
+                double pitchRad = Math.toRadians(pitchDeg);
+                sumoZ -= Math.sin(pitchRad) * extentX;
+            }
         }
         
         // Applying offset sumo-carla net
         // Python: out_location = (out_location[0] - offset[0], out_location[1] - offset[1], out_location[2])
+        // Note: Z axis does NOT apply offset (only X and Y apply offset)
         double xWithOffset = sumoX - sumoNetOffsetXY[0];
         double yWithOffset = sumoY - sumoNetOffsetXY[1];
-        double zWithOffset = sumoZ;
+        double zWithOffset = sumoZ; // Z axis does not apply offset
         
         // Transform to carla reference system (left-handed)
         // Python: carla.Location(out_location[0], -out_location[1], out_location[2])
         double carlaX = xWithOffset;
         double carlaY = -yWithOffset; // Flip Y for left-handed system
-        double carlaZ = zWithOffset;
+        double carlaZ = zWithOffset; // Z axis is preserved directly
         
         // Convert SUMO heading to CARLA yaw
-        // Fixed: Ensure consistent angle conversion
+        // Python: carla.Rotation(out_rotation[0], out_rotation[1] - 90, out_rotation[2])
         double carlaYawDeg = headingDeg != null ? (headingDeg - 90.0) : 0.0;
         // Normalize yaw to [-180, 180] range for CARLA
         while (carlaYawDeg > 180.0) carlaYawDeg -= 360.0;
         while (carlaYawDeg < -180.0) carlaYawDeg += 360.0;
         
-        double pitchDeg = 0.0;
-        double rollDeg = 0.0;
+        // Preserve pitch and roll from SUMO
+        double carlaPitchDeg = pitchDeg != null ? pitchDeg : 0.0;
+        double carlaRollDeg = 0.0;
         
-        return new Transform(carlaX, carlaY, carlaZ, pitchDeg, carlaYawDeg, rollDeg);
+        return new Transform(carlaX, carlaY, carlaZ, carlaPitchDeg, carlaYawDeg, carlaRollDeg);
     }
 
     /**
@@ -1072,8 +1152,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         // SUMO->CARLA: carlaX = xWithOffset, carlaY = -yWithOffset
         // Where: xWithOffset = sumoX - offset[0], yWithOffset = sumoY - offset[1]
         // So CARLA->SUMO: sumoX = carlaX + offset[0], sumoY = -carlaY + offset[1]
-        double sumoX = carlaX +2*sumoNetOffsetXY[0];
-        double sumoY = -carlaY +2* sumoNetOffsetXY[1]; // Correct inverse transformation
+        double sumoX = carlaX + sumoNetOffsetXY[0];
+        double sumoY = -carlaY + sumoNetOffsetXY[1]; // Correct inverse transformation
         double sumoZ = carlaZ;
         
         // Log the final SUMO coordinates for debugging
@@ -1157,11 +1237,59 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             log.info("Processing TrafficLightUpdates interaction - this should forward traffic light commands to CARLA");
             this.receiveInteraction((TrafficLightUpdates) interaction);
         }
+        else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
+            this.receiveInteraction((DetectorRegistration) interaction);
+        }
         else {
             log.debug("Ignoring interaction of type: {}", type);
         }
     }
+    /**
+     * Method to call XMLRPC method to create sensor on reception of DetectionRegistration interactions. 
+     * @param interaction Interaction triggered by Ambassadors attempting to create sensors in CARLA.
+     * @throws InterruptedException
+     */
+    private void receiveInteraction(DetectorRegistration interaction) {
+        // Prefer the multi-connection manager when available, otherwise fall back to the single client
+        CarlaXmlRpcClient sensorClient = null;
+        boolean sensorConnected = false;
+        if (multiXmlRpcManager != null) {
+            sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
+            // Bypass isConnected check for SENSOR_LIB as it is not implemented on server side
+            sensorConnected = sensorClient != null;
+            log.info("Multi-XML-RPC manager SENSOR_LIB connection status: {}, client available: {}", 
+                    sensorConnected, sensorClient != null);
+        } else {
+            sensorClient = this.carlaXmlRpcClient;
+            if (sensorClient != null) {
+                // Bypass isConnected check for SENSOR_LIB
+                sensorConnected = true;
+                log.info("Single XML-RPC client SENSOR_LIB connection status: {} (check bypassed), server type: {}", 
+                        sensorConnected, sensorClient.getServerType());
+            } else {
+                log.warn("No XML-RPC client configured for SENSOR_LIB");
+            }
+        }
 
+        if (sensorClient == null) {
+            log.warn("No XML-RPC sensor client available; skip detector creation for {}", interaction.getDetector());
+            return;
+        }
+        
+        if (!sensorConnected) {
+            log.warn("SENSOR_LIB server not connected; skip detector creation for {}", interaction.getDetector());
+            return;
+        }
+
+        try {
+            sensorClient.createSensor(interaction);
+            registeredDetectors.add(interaction);
+        }
+        catch(XmlRpcException e) {
+            log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);
+        }
+
+    }
     /**
      * Synchronize CARLA with SUMO vehicle updates.
      * - Spawn missing CARLA actors for SUMO vehicles in added/updated lists
@@ -1226,7 +1354,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed(); // Get speed from VehicleData
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
@@ -1248,7 +1380,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during categorization: {}", vd.getName(), e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1275,7 +1407,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed();
                 
                 // Check if vehicle already exists in mapping - if so, skip spawn and move to update
@@ -1305,7 +1441,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during spawn: {}", id, e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1406,7 +1542,11 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String id = vd.getName();
                 final double xSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getX() : 0.0;
                 final double ySumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getY() : 0.0;
+                // Extract Z coordinate from projectedPosition (SUMO Position3D)
+                final double zSumo = vd.getProjectedPosition() != null ? vd.getProjectedPosition().getZ() : 0.0;
                 final Double heading = vd.getHeading() != null ? vd.getHeading() : 0.0;
+                // Extract pitch/slope from VehicleData (SUMO slope corresponds to pitch)
+                final Double pitchDeg = vd.getSlope(); // SUMO slope is in degrees, corresponds to pitch
                 final double speed = vd.getSpeed();
                 
                 // Determine extentX (half length) to convert front-bumper reference to vehicle center if available
@@ -1428,7 +1568,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     log.debug("Failed to extract extentX from vehicle data for vehicle '{}' during update: {}", id, e.getMessage());
                 }
                 
-                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, heading, extentX);
+                final Transform tf = carlaTransformFromSumo(xSumo, ySumo, zSumo, heading, pitchDeg, extentX);
                 final java.util.List<Double> location = tf.toLocationList();
                 final java.util.List<Double> rotation = tf.toRotationList();
                 
@@ -1453,26 +1593,32 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             currentActorIds.addAll(newlySpawnedActors);
 
             // Handle removals
+            // Fix: Check sumoToCarlaIdMapping instead of currentActorIds to ensure all mapped vehicles are deleted
+            log.info("Processing {} vehicle removals from SUMO", interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0);
             for (String removedId : interaction.getRemovedNames()) {
-                if (currentActorIds.contains(removedId)) {
-                    // Get the CARLA ID for this SUMO vehicle
-                    String carlaId = sumoToCarlaIdMapping.get(removedId);
-                    if (carlaId != null) {
-                        boolean destroyed = actorClient.destroyActor(carlaId);
-                        if (destroyed) {
-                            currentActorIds.remove(removedId);
-                            sumoToCarlaIdMapping.remove(removedId);
-                            log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
-                        } else {
-                            log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
-                            // Still remove from mapping to prevent inconsistent state
-                            currentActorIds.remove(removedId);
-                            sumoToCarlaIdMapping.remove(removedId);
-                        }
+                log.info("Attempting to remove SUMO vehicle '{}'", removedId);
+                // Get the CARLA ID for this SUMO vehicle from mapping
+                String carlaId = sumoToCarlaIdMapping.get(removedId);
+                if (carlaId != null) {
+                    log.info("Found CARLA ID mapping for SUMO vehicle '{}' -> CARLA actor '{}', attempting destruction", removedId, carlaId);
+                    // Always attempt to destroy the CARLA actor if mapping exists
+                    boolean destroyed = actorClient.destroyActor(carlaId);
+                    if (destroyed) {
+                        log.info("Successfully removed SUMO vehicle '{}' and destroyed its CARLA actor '{}'", removedId, carlaId);
                     } else {
-                        log.warn("No CARLA ID found for SUMO vehicle '{}' during removal, cleaning up from currentActorIds", removedId);
-                        // Still remove from currentActorIds to maintain consistency
+                        log.warn("Failed to destroy CARLA actor '{}' for SUMO vehicle '{}', but removing from mapping anyway", carlaId, removedId);
+                    }
+                    // Always remove from mapping and currentActorIds to prevent inconsistent state
+                    currentActorIds.remove(removedId);
+                    sumoToCarlaIdMapping.remove(removedId);
+                    log.info("Cleaned up mapping for SUMO vehicle '{}' (CARLA ID: '{}')", removedId, carlaId);
+                } else {
+                    // No mapping found, but still clean up currentActorIds if present
+                    if (currentActorIds.contains(removedId)) {
+                        log.warn("No CARLA ID mapping found for SUMO vehicle '{}' during removal, but removing from currentActorIds", removedId);
                         currentActorIds.remove(removedId);
+                    } else {
+                        log.debug("SUMO vehicle '{}' marked for removal but has no CARLA mapping or current actor ID", removedId);
                     }
                 }
             }
@@ -1610,17 +1756,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                             }
                         }
                         // If actor client failed, try sensor client
-                        if (!mapLoaded) {
-                            CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                            if (sensorClient != null && sensorClient.isConnected()) {
-                                log.info("Trying to load map via sensor client");
-                                mapLoaded = sensorClient.loadMap(carlaConfig.mapName);
-                                if (mapLoaded) {
-                                    log.info("Map loaded successfully via sensor client");
-                                    break;
-                                }
-                            }
-                        }
+                       
                     } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
                         log.info("Trying to load map via single XML-RPC client");
                         mapLoaded = carlaXmlRpcClient.loadMap(carlaConfig.mapName);
@@ -1659,15 +1795,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     public String getCurrentMapName() {
         try {
             if (multiXmlRpcManager != null) {
-                // Try actor client first
+                // Use actor client (map operations are ACTOR_LIB responsibility)
                 CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                 if (actorClient != null && actorClient.isConnected()) {
                     return actorClient.getMapName();
-                }
-                // If actor client failed, try sensor client
-                CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                if (sensorClient != null && sensorClient.isConnected()) {
-                    return sensorClient.getMapName();
                 }
             } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
                 return carlaXmlRpcClient.getMapName();
@@ -1690,17 +1821,12 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             
             boolean mapLoaded = false;
             if (multiXmlRpcManager != null) {
-                // Try actor client first
+                // Use actor client (map operations are ACTOR_LIB responsibility)
                 CarlaXmlRpcClient actorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
                 if (actorClient != null && actorClient.isConnected()) {
                     mapLoaded = actorClient.loadMap(mapName);
-                }
-                // If actor client failed, try sensor client
-                if (!mapLoaded) {
-                    CarlaXmlRpcClient sensorClient = multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.SENSOR_LIB);
-                    if (sensorClient != null && sensorClient.isConnected()) {
-                        mapLoaded = sensorClient.loadMap(mapName);
-                    }
+                } else {
+                    log.warn("ACTOR_LIB client not available or not connected; cannot load map");
                 }
             } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.isConnected()) {
                 mapLoaded = carlaXmlRpcClient.loadMap(mapName);

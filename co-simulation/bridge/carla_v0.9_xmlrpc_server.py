@@ -45,7 +45,7 @@ logger = logging.getLogger("CarlaXMLRPCServer")
 
 ActorKey = Union[int, str]
 SensorKey = Union[int, str]
-
+SPAWN_OFFSET_Z = 25.0 
 
 class CarlaXMLRPCServer:
     def __init__(self, host: str = 'localhost', port: int = 8090,
@@ -73,6 +73,7 @@ class CarlaXMLRPCServer:
 
         self._odr_to_tl = {} 
         self._odr_to_tls = {}
+        self._tl_id_to_odr = {}
 
         self.server = SimpleXMLRPCServer(
             (host, port),
@@ -108,26 +109,25 @@ class CarlaXMLRPCServer:
         if not self.world:
             return None
         # Heights (meters) to try to avoid ground collisions; small to large
-        height_offsets = [0.0, 0.2, 0.5, 1.0]
+       
         # Small xy jitters (meters)
         xy_jitters = [(0.0, 0.0), (0.2, 0.0), (-0.2, 0.0), (0.0, 0.2), (0.0, -0.2), (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2)]
 
-        for dz in height_offsets:
-            for dx, dy in xy_jitters:
-                try:
-                    t = carla.Transform(
-                        carla.Location(base_transform.location.x + dx,
-                                       base_transform.location.y + dy,
-                                       base_transform.location.z + dz),
-                        base_transform.rotation
-                    )
-                    actor = self.world.try_spawn_actor(bp, t)
-                    if actor is not None:
-                        return actor
-                except Exception as e:
-                    logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, dz, e)
-                    continue
-        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", height_offsets, xy_jitters)
+        for dx, dy in xy_jitters:
+            try:
+                t = carla.Transform(
+                    carla.Location(base_transform.location.x + dx,
+                                    base_transform.location.y + dy,
+                                    base_transform.location.z + SPAWN_OFFSET_Z),
+                    base_transform.rotation
+                )
+                actor = self.world.try_spawn_actor(bp, t)
+                if actor is not None:
+                    return actor
+            except Exception as e:
+                logger.debug("Error during safe_try_spawn attempt (dx=%.2f, dy=%.2f, dz=%.2f): %s", dx, dy, SPAWN_OFFSET_Z, e)
+                continue
+        logger.warning("_safe_try_spawn failed after all attempts with height offsets %s and jitters %s", SPAWN_OFFSET_Z, xy_jitters)
         return None
 
     # ---------- Registration ----------
@@ -295,6 +295,8 @@ class CarlaXMLRPCServer:
                     logger.exception("Error destroying sensor (sensor_id=%s): %s", getattr(s, 'id', 'unknown'), e)
             self.actors.clear(); self.actor_types.clear(); self.actor_blueprints.clear()
             self.sensors.clear(); self.sensor_data.clear(); self.sensor_blueprints.clear()
+            # Clear indices
+            self._odr_to_tl.clear(); self._odr_to_tls.clear(); self._tl_id_to_odr.clear()
             self.world = None; self.client = None
             logger.info("Disconnected from CARLA")
             return True
@@ -329,7 +331,23 @@ class CarlaXMLRPCServer:
                     attributes: Dict[str, Any] = None) -> Union[bool, str]:
         try:
             if not self.is_connected(): return False
-            if actor_id in self.actors: return False
+            # Check if actor_id already exists and if the actor is still valid
+            if actor_id in self.actors:
+                existing_actor = self.actors[actor_id]
+                # Check if the actor is still valid in the world
+                try:
+                    if self.world and hasattr(existing_actor, 'id'):
+                        # Try to get the actor from world to verify it still exists
+                        world_actor = self.world.get_actor(existing_actor.id)
+                        if world_actor is not None:
+                            logger.warning("spawn_actor: actor_id %s already exists with valid actor (ID: %s), skipping spawn", actor_id, existing_actor.id)
+                            return False
+                except Exception:
+                    # Actor no longer exists in world, clean up and allow respawn
+                    logger.info("spawn_actor: actor_id %s exists but actor is invalid, cleaning up and allowing respawn", actor_id)
+                    self.actors.pop(actor_id, None)
+                    self.actor_types.pop(actor_id, None)
+                    self.actor_blueprints.pop(actor_id, None)
             bp = self.world.get_blueprint_library().find(actor_type)
             if not bp: return False
             if attributes:
@@ -424,6 +442,7 @@ class CarlaXMLRPCServer:
                 rp, ry, rr = 0.0, 0.0, 0.0
             transform = carla.Transform(carla.Location(lx, ly, lz), carla.Rotation(rp, ry, rr))
             actor.set_transform(transform)
+            logger.info("update_actor_transform success: actor_key=%s, transform=%s", actor_key, transform)
             return True
         except Exception as e:
             logger.error("update_actor_transform error: %s", e)
@@ -487,26 +506,99 @@ class CarlaXMLRPCServer:
                 return {}
             
             out = {}
-            # Simply get all vehicles from CARLA world
-            for actor in self.world.get_actors():
+            # Build a reverse mapping from actor ID to alias for quick lookup
+            actor_id_to_alias = {}
+            for alias, actor in self.actors.items():
+                actor_id_to_alias[actor.id] = alias
+            
+            # Clean up actors that no longer exist in CARLA world
+            actors_to_remove = []
+            for alias, actor in self.actors.items():
                 try:
-                    # Only include vehicles
-                    if hasattr(actor, 'type_id') and 'vehicle.' in str(actor.type_id):
+                    # Try to get the actor from world to verify it still exists
+                    world_actor = self.world.get_actor(actor.id)
+                    if world_actor is None:
+                        actors_to_remove.append(alias)
+                        logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
+                except Exception:
+                    actors_to_remove.append(alias)
+                    logger.info("Actor %s (ID: %s) no longer exists in CARLA world, removing from tracking", alias, actor.id)
+            
+            for alias in actors_to_remove:
+                actor = self.actors.pop(alias, None)
+                if actor:
+                    actor_id_to_alias.pop(actor.id, None)
+                self.actor_types.pop(alias, None)
+                self.actor_blueprints.pop(alias, None)
+            
+            # Get ALL vehicle actors from CARLA world and build output (exclude traffic lights)
+            try:
+                for actor in self.world.get_actors().filter('vehicle.*'):
+                    try:
+                        # Skip if actor doesn't have get_transform (e.g., some special actors)
+                        if not hasattr(actor, 'get_transform'):
+                            continue
+                        
+                        # Use alias if available, otherwise use actor ID as key
+                        actor_key = actor_id_to_alias.get(actor.id, str(actor.id))
+                        
+                        # Get transform
+                        t = actor.get_transform()
+                        actor_data = {
+                            'type': self.actor_types.get(actor_key, getattr(actor, 'type_id', '')),
+                            'transform': {
+                                'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
+                                'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
+                            }
+                        }
+                        
+                        # Add velocity information if available
+                        if hasattr(actor, 'get_velocity'):
+                            try:
+                                v = actor.get_velocity()
+                                actor_data['velocity'] = {
+                                    'linear': [float(v.x), float(v.y), float(v.z)]
+                                }
+                            except Exception as e:
+                                logger.debug("Failed to get velocity for actor %s (ID: %s): %s", actor_key, actor.id, e)
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                        else:
+                            actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                        
+                        out[actor_key] = actor_data
+                    except Exception as e:
+                        logger.warning("Failed to process actor ID %s: %s", actor.id, e)
+                        continue
+            except Exception as e:
+                logger.error("Failed to get world actors: %s", e)
+                # Fallback: return only tracked vehicle actors
+                for alias, actor in self.actors.items():
+                    try:
+                        # Only include vehicles (exclude traffic lights and other types)
+                        actor_type = getattr(actor, 'type_id', '')
+                        if not actor_type.startswith('vehicle.'):
+                            continue
+                        
                         if hasattr(actor, 'get_transform'):
                             t = actor.get_transform()
-                            # Use actor ID as key
-                            actor_id = str(actor.id)
                             actor_data = {
-                                'type': str(actor.type_id),
+                                'type': self.actor_types.get(alias, actor_type),
                                 'transform': {
                                     'location': [float(t.location.x), float(t.location.y), float(t.location.z)],
                                     'rotation': [float(t.rotation.pitch), float(t.rotation.yaw), float(t.rotation.roll)]
                                 }
                             }
-                            out[actor_id] = actor_data
-                except Exception as e:
-                    logger.warning("Failed to get data for actor %s: %s", actor.id, e)
-                    continue
+                            if hasattr(actor, 'get_velocity'):
+                                try:
+                                    v = actor.get_velocity()
+                                    actor_data['velocity'] = {'linear': [float(v.x), float(v.y), float(v.z)]}
+                                except Exception:
+                                    actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            else:
+                                actor_data['velocity'] = {'linear': [0.0, 0.0, 0.0]}
+                            out[alias] = actor_data
+                    except Exception as e2:
+                        logger.warning("Failed to get transform for actor %s (ID: %s): %s", alias, actor.id, e2)
             
             logger.debug("get_all_actors returning %d actors: %s", len(out), list(out.keys()))
             return out

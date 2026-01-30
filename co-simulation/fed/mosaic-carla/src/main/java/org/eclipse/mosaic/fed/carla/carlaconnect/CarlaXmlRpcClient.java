@@ -17,12 +17,14 @@ package org.eclipse.mosaic.fed.carla.carlaconnect;
 
 import java.net.URL;
 import java.util.*;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.lib.objects.detector.DetectedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +78,7 @@ public class CarlaXmlRpcClient {
     private static final String FREEZE_ALL_TRAFFIC_LIGHTS = "freeze_all_traffic_lights";
     
     // Sensors
+    private static final String CREATE_SENSOR = "create_simulated_semantic_lidar_sensor";
     private static final String GET_DETECTED_OBJECTS = "get_detected_objects";
     
     // Maps
@@ -656,13 +659,16 @@ public class CarlaXmlRpcClient {
             Map<String, Map<String, Object>> filteredActors = new HashMap<>();
             
             if (sumoToCarlaMapping == null || sumoToCarlaMapping.isEmpty()) {
+                log.debug("getAllActorsExcludingSumo: No SUMO-to-CARLA mapping provided, returning all actors");
                 return allActors;
             }
             
             // Filter out SUMO-managed vehicles
+            // Note: getAllActors() returns keys as alias (SUMO vehicle ID), 
+            // and sumoToCarlaMapping keys are also SUMO vehicle IDs
             for (Map.Entry<String, Map<String, Object>> entry : allActors.entrySet()) {
                 String actorId = entry.getKey();
-                if (!sumoToCarlaMapping.containsValue(actorId)) {
+                if (!sumoToCarlaMapping.containsKey(actorId)) {
                     filteredActors.put(actorId, entry.getValue());
                 } else {
                     log.debug("Excluding SUMO-managed actor '{}' from getAllActors result", actorId);
@@ -808,7 +814,18 @@ public class CarlaXmlRpcClient {
             return false;
         }
     }
-
+    /**
+     * Calls CARLA CDA Sim Adapter create_sensor XMLRPC method and logs sensor ID of created sensor.
+     * @param registration DetectorRegistration interaction used to create sensor.
+     * @throws XmlRpcException if XMLRPC call fails or connection is lost.
+     */
+    public void createSensor(DetectorRegistration registration) throws XmlRpcException {
+        List<Double> location = Arrays.asList(registration.getDetector().getLocation().getX(), registration.getDetector().getLocation().getY(), registration.getDetector().getLocation().getZ());
+        List<Double> orientation = Arrays.asList(registration.getDetector().getOrientation().getPitch(), registration.getDetector().getOrientation().getRoll(), registration.getDetector().getOrientation().getYaw());
+        Object[] params = new Object[]{registration.getInfrastructureId(), registration.getDetector().getSensorId(), location, orientation};
+        Object result = client.execute(CREATE_SENSOR, params);
+        log.info((String)result);
+    }
     /**
      * Get detected objects from sensor (backward compatibility)
      * @param infrastructureId Infrastructure ID
@@ -1030,37 +1047,46 @@ public class CarlaXmlRpcClient {
                 // Add actor ID to the state map so it can be retrieved later
                 currentStateMap.put("id", actorId);
                 
-                // Skip actors that are already managed by SUMO (exclude from changes)
-                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(actorId)) {
-                    log.debug("Skipping actor {} as it's managed by SUMO", actorId);
-                    continue;
-                }
-                
-                // Convert to typed ActorState
+                // Convert Map to ActorState for caching
                 ActorState currentState = ActorState.fromMap(actorId, currentStateMap);
-                if (currentState == null) {
-                    log.warn("Failed to convert actor state to ActorState for actor {}", actorId);
-                    continue;
-                }
-                
-                currentActorStates.put(actorId, currentState);
-                
-                if (!previousActorStates.containsKey(actorId)) {
-                    // New actor
-                    added.add(currentStateMap);
+                if (currentState != null) {
+                    currentActorStates.put(actorId, currentState);
                 } else {
-                    // Existing actor - check for changes
-                    ActorState previousState = previousActorStates.get(actorId);
-                    if (hasActorStateChanged(previousState, currentState)) {
-                        updated.add(currentStateMap);
+                    log.warn("Failed to convert actor {} to ActorState, will still track in added/updated lists", actorId);
+                    // Create a minimal ActorState to ensure tracking even if conversion fails
+                    // This prevents actors from being repeatedly added as "new" on subsequent calls
+                    try {
+                        // Try to create a minimal ActorState with available data
+                        ActorState minimalState = new ActorState(
+                            (String) currentStateMap.getOrDefault("type", ""),
+                            null, // transform
+                            null, // velocity
+                            actorId
+                        );
+                        currentActorStates.put(actorId, minimalState);
+                    } catch (Exception e) {
+                        log.debug("Could not create minimal ActorState for {}: {}", actorId, e.getMessage());
                     }
                 }
+                
+                // Always add to added/updated lists regardless of ActorState conversion success
+                // This ensures all actors are tracked even if conversion fails
+                if (!previousActorStates.containsKey(actorId)) {
+                    // New actor
+                    log.debug("New actor detected: {}", actorId);
+                    added.add(currentStateMap);
+                } else {
+                    // Existing actor - add to updated list
+                    log.debug("Existing actor updated: {}", actorId);
+                    updated.add(currentStateMap);
+                }
             }
-            
             // Find removed actors
             for (String previousActorId : previousActorStates.keySet()) {
                 // Skip actors that are managed by SUMO
-                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsValue(previousActorId)) {
+                // Note: getAllActors() returns keys as alias (SUMO vehicle ID), 
+                // and sumoToCarlaMapping keys are also SUMO vehicle IDs
+                if (sumoToCarlaMapping != null && sumoToCarlaMapping.containsKey(previousActorId)) {
                     log.debug("Skipping removal check for actor {} as it's managed by SUMO", previousActorId);
                     continue;
                 }
@@ -1069,10 +1095,7 @@ public class CarlaXmlRpcClient {
                     removed.add(previousActorId);
                 }
             }
-            log.debug("getActorChanges: Found added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
-            if (!added.isEmpty() || !updated.isEmpty() || !removed.isEmpty()) {
-                log.info("Actor changes: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
-            } 
+            log.info("getActorChanges: added={}, updated={}, removed={}", added.size(), updated.size(), removed.size());
             
             // Update cache with typed ActorState objects
             previousActorStates.clear();
@@ -1146,72 +1169,6 @@ public class CarlaXmlRpcClient {
         return changes;
     }
 
-    /**
-     * Check if actor state has changed between two states
-     * @param previousState Previous actor state
-     * @param currentState Current actor state
-     * @return true if state has changed
-     */
-    private boolean hasActorStateChanged(ActorState previousState, ActorState currentState) {
-        if (previousState == null || currentState == null) {
-            return true;
-        }
-        
-        // Quick reference equality check first
-        if (previousState == currentState) {
-            return false;
-        }
-        
-        // Compare transform information with optimized checks
-        ActorState.Transform prevTransform = previousState.getTransform();
-        ActorState.Transform currTransform = currentState.getTransform();
-        
-        if (prevTransform != null && currTransform != null) {
-            // Check location changes with tolerance for floating point precision
-            List<Double> prevLoc = prevTransform.getLocation();
-            List<Double> currLoc = currTransform.getLocation();
-            if (prevLoc != null && currLoc != null) {
-                if (!isLocationEqual(prevLoc, currLoc)) {
-                    return true;
-                }
-            } else if (!Objects.equals(prevLoc, currLoc)) {
-                return true;
-            }
-            
-            // Check rotation changes
-            List<Double> prevRot = prevTransform.getRotation();
-            List<Double> currRot = currTransform.getRotation();
-            if (!Objects.equals(prevRot, currRot)) {
-                return true;
-            }
-        } else if (prevTransform != currTransform) {
-            // One is null and the other is not
-            return true;
-        }
-        
-        // Compare velocity information with tolerance
-        ActorState.Velocity prevVelocity = previousState.getVelocity();
-        ActorState.Velocity currVelocity = currentState.getVelocity();
-        
-        if (prevVelocity != null && currVelocity != null) {
-            List<Double> prevLinear = prevVelocity.getLinear();
-            List<Double> currLinear = currVelocity.getLinear();
-            
-            // Compare linear velocities with tolerance
-            if (prevLinear != null && currLinear != null) {
-                if (!isVelocityEqual(prevLinear, currLinear)) {
-                    return true;
-                }
-            } else if (!Objects.equals(prevLinear, currLinear)) {
-                return true;
-            }
-        } else if (prevVelocity != currVelocity) {
-            // One is null and the other is not
-            return true;
-        }
-        
-        return false;
-    }
     
     /**
      * Check if two location lists are equal within tolerance
@@ -1231,6 +1188,7 @@ public class CarlaXmlRpcClient {
                     return false;
                 }
             } else if (Math.abs(val1 - val2) > TOLERANCE) {
+                log.debug("Location change detected at index {}: {} vs {} (diff: {})", i, val1, val2, Math.abs(val1 - val2));
                 return false;
             }
         }
@@ -1255,6 +1213,7 @@ public class CarlaXmlRpcClient {
                     return false;
                 }
             } else if (Math.abs(val1 - val2) > TOLERANCE) {
+                log.debug("Velocity change detected at index {}: {} vs {} (diff: {})", i, val1, val2, Math.abs(val1 - val2));
                 return false;
             }
         }
