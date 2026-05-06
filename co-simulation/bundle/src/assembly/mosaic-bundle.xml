@@ -79,6 +79,12 @@
             </includes>
         </dependencySet>
         <dependencySet>
+            <outputDirectory>scenarios/Tiergarten_NR/application</outputDirectory>
+            <includes>
+                <include>org.eclipse.mosaic.app:traffic-light-communication</include>
+            </includes>
+        </dependencySet>
+        <dependencySet>
             <outputDirectory>scenarios/Highway/application</outputDirectory>
             <includes>
                 <include>org.eclipse.mosaic.app:highway-management</include>
