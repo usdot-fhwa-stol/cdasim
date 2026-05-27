@@ -547,6 +547,16 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
      *                                  simulated externally.
      */
     private synchronized void receiveInteraction(VehicleFederateAssignment vehicleFederateAssignment) {
+        // Temporary workaround: CARMA vehicles are currently getting the map offset applied twice
+        // when synchronized through this external-vehicle path. Investigate the root cause before
+        // removing this filter.
+        if (vehicleFederateAssignment.getVehicleId() != null && vehicleFederateAssignment.getVehicleId().startsWith("carma")) {
+            externalVehicleMap.remove(vehicleFederateAssignment.getVehicleId());
+            log.debug("Ignoring CARMA vehicle '{}' for external SUMO position synchronization",
+                    vehicleFederateAssignment.getVehicleId());
+            return;
+        }
+
         if (!vehicleFederateAssignment.getAssignedFederate().equals(getId())
                 && !externalVehicleMap.containsKey(vehicleFederateAssignment.getVehicleId())) {
             externalVehicleMap.put(vehicleFederateAssignment.getVehicleId(), new ExternalVehicleState());
@@ -567,6 +577,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         // Only accept added vehicles that were explicitly assigned beforehand
         for (VehicleData addedVehicle : vehicleUpdates.getAdded()) {
             String vehicleId = addedVehicle.getName();
+            if (vehicleId != null && vehicleId.startsWith("carma")) {
+                externalVehicleMap.remove(vehicleId);
+                log.debug("Ignoring added CARMA vehicle '{}' from {} for external SUMO position synchronization",
+                        vehicleId, vehicleUpdates.getSenderId());
+                continue;
+            }
             if (!externalVehicleMap.containsKey(vehicleId)) {
                 // No explicit VehicleFederateAssignment was received for this vehicle; skip
                 log.warn("Ignoring added external vehicle '{}' from {} without prior VehicleFederateAssignment",
@@ -582,6 +598,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         // Handle updated vehicles
         ExternalVehicleState vehicleState;
         for (VehicleData updatedVehicle : vehicleUpdates.getUpdated()) {
+            if (updatedVehicle.getName() != null && updatedVehicle.getName().startsWith("carma")) {
+                externalVehicleMap.remove(updatedVehicle.getName());
+                log.debug("Ignoring updated CARMA vehicle '{}' from {} for external SUMO position synchronization",
+                        updatedVehicle.getName(), vehicleUpdates.getSenderId());
+                continue;
+            }
             vehicleState = externalVehicleMap.get(updatedVehicle.getName());
             if (vehicleState != null) {
                 vehicleState.setLastMovementInfo(updatedVehicle);
