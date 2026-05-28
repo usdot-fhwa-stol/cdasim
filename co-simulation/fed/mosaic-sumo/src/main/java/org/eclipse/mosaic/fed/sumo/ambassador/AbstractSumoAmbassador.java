@@ -91,6 +91,7 @@ import org.eclipse.mosaic.interactions.vehicle.VehicleSlowDown;
 import org.eclipse.mosaic.interactions.vehicle.VehicleSpeedChange;
 import org.eclipse.mosaic.interactions.vehicle.VehicleStop;
 import org.eclipse.mosaic.lib.enums.VehicleClass;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
 import org.eclipse.mosaic.lib.objects.traffic.SumoTraciResult;
 import org.eclipse.mosaic.lib.objects.trafficlight.TrafficLightGroup;
@@ -547,16 +548,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
      *                                  simulated externally.
      */
     private synchronized void receiveInteraction(VehicleFederateAssignment vehicleFederateAssignment) {
-        // Temporary workaround: CARMA vehicles are currently getting the map offset applied twice
-        // when synchronized through this external-vehicle path. Investigate the root cause before
-        // removing this filter.
-        if (vehicleFederateAssignment.getVehicleId() != null && vehicleFederateAssignment.getVehicleId().startsWith("carma")) {
-            externalVehicleMap.remove(vehicleFederateAssignment.getVehicleId());
-            log.debug("Ignoring CARMA vehicle '{}' for external SUMO position synchronization",
-                    vehicleFederateAssignment.getVehicleId());
-            return;
-        }
-
         if (!vehicleFederateAssignment.getAssignedFederate().equals(getId())
                 && !externalVehicleMap.containsKey(vehicleFederateAssignment.getVehicleId())) {
             externalVehicleMap.put(vehicleFederateAssignment.getVehicleId(), new ExternalVehicleState());
@@ -577,12 +568,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         // Only accept added vehicles that were explicitly assigned beforehand
         for (VehicleData addedVehicle : vehicleUpdates.getAdded()) {
             String vehicleId = addedVehicle.getName();
-            if (vehicleId != null && vehicleId.startsWith("carma")) {
-                externalVehicleMap.remove(vehicleId);
-                log.debug("Ignoring added CARMA vehicle '{}' from {} for external SUMO position synchronization",
-                        vehicleId, vehicleUpdates.getSenderId());
-                continue;
-            }
             if (!externalVehicleMap.containsKey(vehicleId)) {
                 // No explicit VehicleFederateAssignment was received for this vehicle; skip
                 log.warn("Ignoring added external vehicle '{}' from {} without prior VehicleFederateAssignment",
@@ -598,12 +583,6 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         // Handle updated vehicles
         ExternalVehicleState vehicleState;
         for (VehicleData updatedVehicle : vehicleUpdates.getUpdated()) {
-            if (updatedVehicle.getName() != null && updatedVehicle.getName().startsWith("carma")) {
-                externalVehicleMap.remove(updatedVehicle.getName());
-                log.debug("Ignoring updated CARMA vehicle '{}' from {} for external SUMO position synchronization",
-                        updatedVehicle.getName(), vehicleUpdates.getSenderId());
-                continue;
-            }
             vehicleState = externalVehicleMap.get(updatedVehicle.getName());
             if (vehicleState != null) {
                 vehicleState.setLastMovementInfo(updatedVehicle);
@@ -1389,6 +1368,13 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                         }
                         
                 String vehicleId = external.getKey();
+                CartesianPoint targetPosition = latestVehicleData.getPosition().toCartesian();
+                // Temporary workaround: CARMA vehicle updates already carry SUMO Cartesian coordinates.
+                // Use the projected position directly to avoid applying the projection offset again.
+                // Investigate the root cause before removing this special case.
+                if (vehicleId != null && vehicleId.startsWith("carma") && latestVehicleData.getProjectedPosition() != null) {
+                    targetPosition = latestVehicleData.getProjectedPosition();
+                }
                 boolean vehicleExistsInSumo = traci.getSimulationControl().getKnownVehicles().contains(vehicleId);
                 
                 // Only add vehicle if it doesn't exist in SUMO and hasn't been added before
@@ -1396,8 +1382,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                             // Add external vehicle to SUMO at the specified position
                             log.info("Adding external vehicle '{}' to SUMO at position ({}, {})", 
                         vehicleId, 
-                                latestVehicleData.getPosition().toCartesian().getX(),
-                                latestVehicleData.getPosition().toCartesian().getY());
+                                targetPosition.getX(),
+                                targetPosition.getY());
                             
                             // Use a default route and vehicle type for external vehicles
                             String defaultRoute = "default_route";
@@ -1450,7 +1436,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 if (traci.getSimulationControl().getKnownVehicles().contains(vehicleId)) {
                     // Move the vehicle to the correct position
                     traci.getVehicleControl().moveToXY(vehicleId,
-                                latestVehicleData.getPosition().toCartesian(), latestVehicleData.getHeading(),
+                                targetPosition, latestVehicleData.getHeading(),
                                 VehicleSetMoveToXY.Mode.EXACT_POSITION);
                 } else {
                     log.debug("Vehicle '{}' not found in SUMO, skipping position update", vehicleId);
