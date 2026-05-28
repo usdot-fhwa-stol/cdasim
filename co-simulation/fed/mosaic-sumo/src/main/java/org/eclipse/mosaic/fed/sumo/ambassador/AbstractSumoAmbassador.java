@@ -1368,12 +1368,14 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                         }
                         
                 String vehicleId = external.getKey();
-                CartesianPoint targetPosition = latestVehicleData.getPosition().toCartesian();
-                // Temporary workaround: CARMA vehicle updates already carry SUMO Cartesian coordinates.
-                // Use the projected position directly to avoid applying the projection offset again.
+                CartesianPoint targetPosition = latestVehicleData.getProjectedPosition() != null
+                        ? latestVehicleData.getProjectedPosition()
+                        : latestVehicleData.getPosition().toCartesian();
+                // Temporary workaround: CARMA vehicle updates are currently getting the map offset applied twice.
+                // Use the geographic position converted back to Cartesian, which removes the projection offset.
                 // Investigate the root cause before removing this special case.
-                if (vehicleId != null && vehicleId.startsWith("carma") && latestVehicleData.getProjectedPosition() != null) {
-                    targetPosition = latestVehicleData.getProjectedPosition();
+                if (vehicleId != null && vehicleId.startsWith("carma")) {
+                    targetPosition = latestVehicleData.getPosition().toCartesian();
                 }
                 boolean vehicleExistsInSumo = traci.getSimulationControl().getKnownVehicles().contains(vehicleId);
                 
