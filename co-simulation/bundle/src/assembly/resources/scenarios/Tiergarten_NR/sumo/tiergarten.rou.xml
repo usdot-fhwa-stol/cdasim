@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2024-11-08 20:13:11 by Eclipse SUMO netedit Version 1.15.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- VTypes -->
+    <vType id="MoveOverLaw" carFollowModel="IDM"/>
+    <vType id="car" carFollowModel="IDM" lcStrategic="-1" lcCooperative="-1" lcSpeedGain="0"  lcKeepRight="0"/>
+
+    <route id="route0" edges="4397063_21487174_26873453 4397063_26873453_26873454"/>
+    <route id="stop1" edges="4397063_26873453_26873454"/>
+    
+    <!-- Define a vehicle with a specific starting position on the first edge -->
+    
+</routes>
