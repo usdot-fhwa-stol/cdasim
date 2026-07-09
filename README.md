@@ -1,6 +1,5 @@
-| Docker Image Build (develop) | Docker Image Build (release) | Sonar Code Quality | Sonar Workflow |
-|----------------------|---------------------|---------------------|---------------------|
-|[![Docker Hub build](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/dockerhub.yml/badge.svg?branch=develop)](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/dockerhub.yml) | [![Docker Hub build](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/dockerhub.yml/badge.svg?branch=master)](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/dockerhub.yml) | [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=usdot-fhwa-stol_carma-simulation&metric=alert_status)](https://sonarcloud.io/dashboard?id=usdot-fhwa-stol_carma-simulation)| [![CI: Run tests](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/ci.yml/badge.svg)](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/ci.yml)|
+![GitHub Release](https://img.shields.io/github/v/release/usdot-fhwa-stol/cdasim) [![Tests](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/usdot-fhwa-stol/cdasim/actions/workflows/ci.yml) ![Docker Pulls](https://img.shields.io/docker/pulls/usdotfhwastoldev/cdasim?label=Docker%20Pulls%20-%20cdasim) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=usdot-fhwa-stol_carma-simulation&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=usdot-fhwa-stol_carma-simulation) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/usdot-fhwa-stol/cdasim/blob/develop/README.md#license)
+
 # CARMASimulation
 This repository will host the CARMA Everything-in-the-Loop Co-Simulation tool. This XiL simulation platform will support CARLA and SUMO simulation environments as a co-simulation using the MOSAIC framework to facilitate coordination and data exchange. This co-simulation environment will also utilize NS-3 to simulate the communications used by the C-ADS systems.
 
@@ -24,6 +23,6 @@ By contributing to the Federal Highway Administration (FHWA) Connected Automated
 Some of the packages within this repo contain different licensing restrictions. Consult the README in each package for details.  
 
 ## Contact
-Please click on the CARMA logo below to visit the Federal Highway Adminstration(FHWA) CARMA website.
+Please click on the CARMA logo below to visit the Federal Highway Adminstration(FHWA) CARMA website. For more information, contact CAVSupportServices@dot.gov.
 
 [![CARMA Image](https://raw.githubusercontent.com/usdot-fhwa-stol/carma-platform/develop/docs/image/CARMA_icon.png)](https://highways.dot.gov/research/research-programs/operations/CARMA)

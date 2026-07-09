@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.EOFException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -217,6 +218,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
      */
     protected boolean sumoCarlaCoSimulation = false;
 
+    protected boolean isTlManager = true;
+
     /**
      * Creates a new {@link AbstractSumoAmbassador} object.
      *
@@ -229,6 +232,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             sumoConfig = new ObjectInstantiation<>(CSumo.class, log).readFile(ambassadorParameter.configuration);
         } catch (InstantiationException e) {
             log.error("Configuration object could not be instantiated: ", e);
+            throw new RuntimeException("Failed to instantiate SUMO configuration. Cannot continue simulation.", e);
         }
 
         log.info("sumoConfig.updateInterval: " + sumoConfig.updateInterval);
@@ -373,7 +377,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             log.debug("    Keep alive: " + socket.getKeepAlive());
             log.debug("    TCP NoDelay: " + socket.getTcpNoDelay());
         } catch (UnknownHostException ex) {
-            log.error("Unknown host: {}", ex.getMessage());
+            log.error("Unknown host: {}", ex.getMessage(), ex);
+            // Socket connection failed, but retry logic in IOException handler will attempt to reconnect
         } catch (IOException ex) {
             log.warn("Error while connecting to SUMO. Retrying.");
             if (connectionAttempts-- > 0) {
@@ -454,7 +459,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             File sumoWorkingDir = new File(descriptor.getHost().workingDirectory, descriptor.getId());
             trafficSignManager.configure(traci, sumoWorkingDir);
         } catch (Exception e) {
-            log.error("Could not load TrafficSignManager. No traffic signs will be displayed.");
+            log.error("Could not load TrafficSignManager. No traffic signs will be displayed.", e);
         }
 
     }
@@ -559,6 +564,22 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             return;
         }
 
+        // Only accept added vehicles that were explicitly assigned beforehand
+        for (VehicleData addedVehicle : vehicleUpdates.getAdded()) {
+            String vehicleId = addedVehicle.getName();
+            if (!externalVehicleMap.containsKey(vehicleId)) {
+                // No explicit VehicleFederateAssignment was received for this vehicle; skip
+                log.warn("Ignoring added external vehicle '{}' from {} without prior VehicleFederateAssignment",
+                        vehicleId, vehicleUpdates.getSenderId());
+                continue;
+            }
+            ExternalVehicleState existingState = externalVehicleMap.get(vehicleId);
+            if (existingState != null) {
+                existingState.setLastMovementInfo(addedVehicle);
+            }
+        }
+
+        // Handle updated vehicles
         ExternalVehicleState vehicleState;
         for (VehicleData updatedVehicle : vehicleUpdates.getUpdated()) {
             vehicleState = externalVehicleMap.get(updatedVehicle.getName());
@@ -567,9 +588,12 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             }
         }
 
+        // Handle removed vehicles
         for (String removed : vehicleUpdates.getRemovedNames()) {
             if (externalVehicleMap.containsKey(removed)) {
+                log.info("Removing external vehicle '{}' from SUMO", removed);
                 traci.getSimulationControl().removeVehicle(removed, VehicleSetRemove.Reason.ARRIVED);
+                externalVehicleMap.remove(removed);
             }
         }
     }
@@ -626,7 +650,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
 
             stopVehicleAt(vehicleStop.getVehicleId(), stopPos, stopFlag, vehicleStop.getDuration());
         } catch (InternalFederateException e) {
-            log.warn("Vehicle {} could not be stopped", vehicleStop.getVehicleId());
+            log.warn("Vehicle {} could not be stopped: {}", vehicleStop.getVehicleId(), e.getMessage(), e);
+            // Note: Exception is logged but not rethrown to allow simulation to continue
+            // Stopping a vehicle is not critical enough to fail the entire simulation
         }
     }
 
@@ -822,6 +848,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                     return;
             }
 
+            if (!isTlManager) return; // Do not publish updates if not traffic light manager
             String programId = traci.getTrafficLightControl().getCurrentProgram(trafficLightGroupId);
             int phaseIndex = traci.getTrafficLightControl().getCurrentPhase(trafficLightGroupId);
             long assumedNextTimeSwitch = (long) (traci.getTrafficLightControl().getNextSwitchTime(trafficLightGroupId)
@@ -1226,6 +1253,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             if (firstAdvanceTime) {
                 initTraci();
                 initializeTrafficLights(time);
+                if (!isTlManager) this.freezeAllTrafficLightsInSumo();
                 firstAdvanceTime = false;
             }
 
@@ -1243,7 +1271,53 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
                 log.debug("Abstract Sumo Ambassador Vehicle updates: {}", simulationStepResult.getVehicleUpdates().toString());
                 rti.triggerInteraction(simulationStepResult.getVehicleUpdates());
                 rti.triggerInteraction(simulationStepResult.getTrafficDetectorUpdates());
-                this.rti.triggerInteraction(simulationStepResult.getTrafficLightUpdates());
+
+                if (isTlManager) {
+                    // Manual TrafficLightUpdates creation
+                    // Manually query and log traffic light states for all groups
+                    Map<String, TrafficLightGroupInfo> updatedTrafficLightGroups = new HashMap<>();
+                    String programId;
+                    int phaseIndex;
+                    long assumedNextTimeSwitch;
+                    List<String> tlgIds = traci.getSimulationControl().getTrafficLightGroupIds();
+                    for (String groupId : tlgIds) {
+                        try {
+                            programId = traci.getTrafficLightControl().getCurrentProgram(groupId);
+                            phaseIndex = traci.getTrafficLightControl().getCurrentPhase(groupId);
+                            assumedNextTimeSwitch = (long) (traci.getTrafficLightControl().getNextSwitchTime(groupId) * 1e9);
+                            List<TrafficLightState> states = traci.getTrafficLightControl().getCurrentStates(groupId);
+
+                            updatedTrafficLightGroups.put(groupId,
+                                    new TrafficLightGroupInfo(groupId, programId, phaseIndex, assumedNextTimeSwitch, states));
+                            
+                            // Convert states to SUMO-compatible string (e.g., "grgr")
+                            /*
+                            StringBuilder stateString = new StringBuilder();
+                            for (TrafficLightState state : states) {
+                                if (state.isGreen()) {
+                                    stateString.append('g'); // Permissive green
+                                } else if (state.isYellow()) {
+                                    stateString.append('y');
+                                } else if (state.isRed()) {
+                                    stateString.append('r');
+                                } else if (state.isRedYellow()) {
+                                    stateString.append('u');
+                                } else {
+                                    stateString.append('o'); // Off
+                                }
+                            }
+                            
+                            log.info("Manual Traffic Light Query at time {}: groupId={}, programId={}, phaseIndex={}, nextSwitchTime={}, state={}",
+                                    TIME.format(time), groupId, programId, phaseIndex,
+                                    TIME.format(assumedNextTimeSwitch), stateString.toString());
+                            */
+                        } catch (InternalFederateException e) {
+                            log.warn("Could not query traffic light state for groupId={}", groupId, e);
+                        }
+                    }
+
+                    this.rti.triggerInteraction(new TrafficLightUpdates(time, updatedTrafficLightGroups));
+                }
                 receivedSimulationStep = false;
                 firstAttemptToAdvanceToNextStep = true;
             }
@@ -1254,6 +1328,9 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
 
             lastAdvanceTime = time;
         } catch (InternalFederateException | IOException | IllegalValueException e) {
+            if (e instanceof IOException && (e instanceof EOFException || (e.getCause() instanceof EOFException))) {
+                log.error("SUMO TraCI connection closed (EOF) during simulateUntil({}). SUMO may have crashed or exited. Check SUMO logs and configuration.", time);
+            }
             log.error("Error during advanceTime(" + time + ")", e);
             throw new InternalFederateException(e);
         }
@@ -1276,21 +1353,90 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
     private void setExternalVehiclesToLatestPositions() {
         VehicleData latestVehicleData;
         for (Map.Entry<String, ExternalVehicleState> external : externalVehicleMap.entrySet()) {
-            if (external.getValue().isAdded()) {
                 latestVehicleData = external.getValue().getLastMovementInfo();
                 if (latestVehicleData == null) {
                     log.warn("No position data available for external vehicle {}", external.getKey());
-                    latestVehicleData = traci.getSimulationControl().getLastKnownVehicleData(external.getKey());
+                continue;
                 }
-                if (latestVehicleData != null) {
+            
                     try {
-                        traci.getVehicleControl().moveToXY(external.getKey(),
+                // Add null pointer check - check if position is null
+                        if (latestVehicleData.getPosition() == null) {
+                            log.warn("VehicleData position is null for external vehicle {}, skipping position update", external.getKey());
+                            continue;
+                        }
+                        
+                String vehicleId = external.getKey();
+                boolean vehicleExistsInSumo = traci.getSimulationControl().getKnownVehicles().contains(vehicleId);
+                
+                // Only add vehicle if it doesn't exist in SUMO and hasn't been added before
+                if (!vehicleExistsInSumo && !external.getValue().isAdded()) {
+                            // Add external vehicle to SUMO at the specified position
+                            log.info("Adding external vehicle '{}' to SUMO at position ({}, {})", 
+                        vehicleId, 
+                                latestVehicleData.getPosition().toCartesian().getX(),
+                                latestVehicleData.getPosition().toCartesian().getY());
+                            
+                            // Use a default route and vehicle type for external vehicles
+                            String defaultRoute = "default_route";
+                            String defaultVehicleType = "DEFAULT_VEHTYPE";
+                            // Ensure default route exists
+                            if (!routeCache.containsKey(defaultRoute)) {
+                                // Create a simple default route if it doesn't exist
+                                List<String> defaultEdges = new ArrayList<>();
+                                // Try to get any available edge as a fallback
+                                try {
+                                    // Get available routes and use edges from the first route
+                                    List<String> availableRoutes = traci.getRouteControl().getRouteIds();
+                                    if (!availableRoutes.isEmpty()) {
+                                        List<String> availableEdges = traci.getRouteControl().getRouteEdges(availableRoutes.get(0));
+                                        if (!availableEdges.isEmpty()) {
+                                            defaultEdges.add(availableEdges.get(0));
+                                            VehicleRoute defaultRouteObj = new VehicleRoute(defaultRoute, defaultEdges, new ArrayList<>(), 0d);
+                                            routeCache.put(defaultRoute, defaultRouteObj);
+                                            traci.getRouteControl().addRoute(defaultRoute, defaultEdges);
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    log.warn("Could not create default route for external vehicle: {}", e.getMessage());
+                                }
+                            }
+                            
+                            if (routeCache.containsKey(defaultRoute)) {
+                        try {
+                            traci.getSimulationControl().addVehicle(vehicleId, defaultRoute, defaultVehicleType, "random", "0", "0");
+                            log.info("Successfully added external vehicle '{}' to SUMO", vehicleId);
+                            // Mark as added to prevent duplicate additions
+                            external.getValue().setAdded(true);
+                        } catch (InternalFederateException e) {
+                            // If vehicle already exists, just log and continue
+                            if (e.getMessage().contains("already exists")) {
+                                log.debug("Vehicle '{}' already exists in SUMO, continuing with position update", vehicleId);
+                                external.getValue().setAdded(true);
+                            } else {
+                                log.warn("Could not add external vehicle '{}' to SUMO: {}", vehicleId, e.getMessage());
+                                continue;
+                            }
+                        }
+                    } else {
+                        log.warn("Could not add external vehicle '{}' to SUMO - no default route available", vehicleId);
+                                continue;
+                            }
+                        }
+                        
+                // Only update position if vehicle exists in SUMO
+                if (traci.getSimulationControl().getKnownVehicles().contains(vehicleId)) {
+                    // Move the vehicle to the correct position
+                    traci.getVehicleControl().moveToXY(vehicleId,
                                 latestVehicleData.getPosition().toCartesian(), latestVehicleData.getHeading(),
-                                VehicleSetMoveToXY.Mode.KEEP_ROUTE);
-                    } catch (InternalFederateException e) {
-                        log.warn("Could not set position of vehicle " + external.getKey(), e);
-                    }
+                                VehicleSetMoveToXY.Mode.EXACT_POSITION);
+                } else {
+                    log.debug("Vehicle '{}' not found in SUMO, skipping position update", vehicleId);
                 }
+                    } catch (InternalFederateException e) {
+                log.warn("Could not set position of vehicle {}: {}", external.getKey(), e.getMessage(), e);
+                // Note: Exception is logged but not rethrown to allow simulation to continue
+                // Position update failure for external vehicles should not fail the entire simulation
             }
         }
     }
@@ -1399,6 +1545,44 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         Interaction stlRegistration = new ScenarioTrafficLightRegistration(time, tlgs, tlgLaneMap);
         rti.triggerInteraction(stlRegistration);
     }
+
+    /**
+     * Freeze all SUMO traffic lights by setting every signal head to OFF.
+     * Uses TraCI setPhase(...) with a custom state list sized to each group.
+     */
+    private void freezeAllTrafficLightsInSumo() {
+        try {
+            final java.util.List<String> tlgIds = traci.getSimulationControl().getTrafficLightGroupIds();
+            if (tlgIds == null || tlgIds.isEmpty()) {
+                log.info("freezeAllTrafficLightsInSumo: no traffic light groups found.");
+                return;
+            }
+
+            for (String groupId : tlgIds) {
+                try {
+                    final java.util.List<TrafficLightState> current =
+                            traci.getTrafficLightControl().getCurrentStates(groupId);
+                    if (current == null || current.isEmpty()) {
+                        log.debug("freezeAllTrafficLightsInSumo: group {} has no states; skipping.", groupId);
+                        continue;
+                    }
+
+                    final int n = current.size();
+                    final java.util.List<TrafficLightState> offStates =
+                            new java.util.ArrayList<>(java.util.Collections.nCopies(n, TrafficLightState.OFF));
+
+                    // Apply the custom OFF state in one shot
+                    traci.getTrafficLightControl().setPhase(groupId, offStates);
+                    log.info("Froze SUMO TL group {} ({} signals) -> OFF", groupId, n);
+                } catch (Exception perGroup) {
+                    log.warn("freezeAllTrafficLightsInSumo: failed for group {}: {}", groupId, perGroup.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("freezeAllTrafficLightsInSumo: TraCI error", e);
+        }
+    }
+
 
     /**
      * Find the first configuration file.

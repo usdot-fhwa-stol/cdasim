@@ -58,14 +58,14 @@ class MoveOverLaw:
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
         target_lane_index = int(target_lane.split('_')[-1])
         self.sumo_connector.move_veh_lane(self._veh_id, target_lane_index)
-        self.sumo_connector.stop_veh(self._veh_id, self._stop_lane, self._stop_dist_msger)
+        self.sumo_connector.stop_veh(self._veh_id, self._stop_lane, self._stop_pos)
         self.is_stopped = True
         return
 
     def get_closer(self):
         target_lane = self.sumo_connector.get_veh_lane(self._target_veh_id)
         lane_index = int(target_lane.split('_')[-1])
-        target_lane_index = lane_index+1
+        target_lane_index = lane_index
         self.sumo_connector.move_veh_lane(self._veh_id, target_lane_index)
         return
 
