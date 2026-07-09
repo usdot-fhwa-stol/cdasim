@@ -70,8 +70,22 @@ public class DockerClient {
 
     DockerContainer runImage(String image, String containerName, List<String> options, boolean removeBeforeRun) {
         // if no specific ports are published, publish all ports of container
-        if (!options.contains("-p")) {
+        String dockerNetwork = System.getProperty("mosaic.docker.network");
+        if (StringUtils.isBlank(dockerNetwork)) {
+            dockerNetwork = System.getenv("MOSAIC_DOCKER_NETWORK");
+        }
+        logger.info("Resolved docker network: {}", dockerNetwork);
+
+        boolean isContainerNetwork = StringUtils.isNotBlank(dockerNetwork)
+                && dockerNetwork.startsWith("container:");
+
+        if (!options.contains("-p") && !options.contains("-P") && !isContainerNetwork) {
             options.add("-P");
+        }
+
+        if (StringUtils.isNotBlank(dockerNetwork) && !options.contains("--network")) {
+            options.add("--network");
+            options.add(dockerNetwork);
         }
         // set name of container to default value if it hasn't been set
         containerName = StringUtils.defaultString(containerName, image);
