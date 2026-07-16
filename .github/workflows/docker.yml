@@ -3,7 +3,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  docker:
+  docker-cdasim:
     uses: usdot-fhwa-stol/actions/.github/workflows/docker.yml@main
     with:
       runner: ubuntu-latest-16-cores
+
+  docker-xml-rpc-server:
+    uses: usdot-fhwa-stol/actions/.github/workflows/docker.yml@main
+    with:
+      runner: ubuntu-latest-16-cores
+      context: ./co-simulation/bridge
+      file: ./co-simulation/bridge/Dockerfile
