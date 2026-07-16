@@ -15,16 +15,16 @@
 
 package org.eclipse.mosaic.lib.docker;
 
+import java.util.List;
+import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Vector;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * A simple client which is able to run docker images using the command line
@@ -69,10 +69,13 @@ public class DockerClient {
     }
 
     DockerContainer runImage(String image, String containerName, List<String> options, boolean removeBeforeRun) {
-        // if no specific ports are published, publish all ports of container
-        if (!options.contains("-p")) {
+
+        if(!options.contains("-p")){
             options.add("-P");
         }
+
+  
+
         // set name of container to default value if it hasn't been set
         containerName = StringUtils.defaultString(containerName, image);
         if (!options.contains("--name")) {
@@ -84,6 +87,8 @@ public class DockerClient {
             docker.kill(containerName);
             docker.rm(containerName);
         }
+        
+        logger.info("About to start docker container '{}' with options: {}", image, options);
 
         final Process p;
         if ("true"

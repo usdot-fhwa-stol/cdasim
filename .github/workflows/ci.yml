@@ -6,6 +6,7 @@ on:
     branches:
       - develop
       - master
+      - fix_sonar_ci_failure
       - "release/*"
 jobs:          
   sonar: # sonar job is to setup and run sonar scan analysis on telematic cloud messaging code

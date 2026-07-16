@@ -35,7 +35,11 @@ cd "/opt/carma-simulation/bin/fed/ns3/"
 chmod +x ns3_installer.sh
 set -x
 ./ns3_installer.sh -q
-
 sudo cp /home/carma/src/co-simulation/patch/run.sh /opt/carma-simulation/bin/fed/ns3
+
+# Copy CaralUE4.sh (docker version) and make it executable
+cd "/opt/carma-simulation/"
+sudo cp /home/carma/src/co-simulation/patch/CarlaUE4.sh /opt/carma-simulation/
+sudo chmod 777 CarlaUE4.sh
 
 echo "Build complete!!!"

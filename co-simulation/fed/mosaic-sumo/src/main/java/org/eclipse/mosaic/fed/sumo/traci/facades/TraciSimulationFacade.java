@@ -460,6 +460,7 @@ public class TraciSimulationFacade {
                     TrafficLightGroupInfo trafficLightGroupInfo = new TrafficLightGroupInfo(
                             trafficLightGroupId, currentProgram, currentPhaseIndex, assumedTimeOfNextSwitch, trafficLightState
                     );
+                    log.info("simulateUntil() at time {} -> traffic light group info: {}", time, trafficLightGroupInfo.toString());
                     trafficLightGroupInfos.put(trafficLightGroupId, trafficLightGroupInfo);
                 }
             }

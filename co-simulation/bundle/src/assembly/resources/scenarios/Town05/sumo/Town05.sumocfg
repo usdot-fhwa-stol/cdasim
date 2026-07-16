@@ -7,6 +7,7 @@
     <input>
         <net-file value="Town05.net.xml"/>
         <route-files value="carlavtypes.rou.xml,Town05.rou.xml"/>
+        <additional-files value="detector.add.xml"/>
     </input>
     <gui_only>
         <tracker-interval value="0.1"/>
