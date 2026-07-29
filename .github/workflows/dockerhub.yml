@@ -9,10 +9,21 @@ on:
       - "carma-system-*"
 
 jobs:
-  dockerhub:
+  dockerhub-cdasim:
     uses: usdot-fhwa-stol/actions/.github/workflows/dockerhub.yml@main
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       runner: ubuntu-latest-16-cores
+
+  dockerhub-xml-rpc-server:
+    uses: usdot-fhwa-stol/actions/.github/workflows/dockerhub.yml@main
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    with:
+      runner: ubuntu-latest-16-cores
+      context: ./co-simulation/bridge
+      file: ./co-simulation/bridge/Dockerfile
+      image_name: xml-rpc-server

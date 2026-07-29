@@ -184,7 +184,7 @@
             "priority": 50,
             "dockerImage": "usdotfhwastol/ns3-federate:latest",
             "host": "local",
-            "port": 40001,
+            "port": 5011,
             "deploy": true,
             "start": true,
             "subscriptions": [
