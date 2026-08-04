@@ -82,7 +82,10 @@ public class DockerClient {
         if (!options.contains("-p") && !options.contains("-P") && !isContainerNetwork) {
             options.add("-P");
         }
-
+        if (StringUtils.isNotBlank(dockerNetwork) && !options.contains("--network")) {
+            options.add("--network");
+            options.add(dockerNetwork);
+        }
   
 
         // set name of container to default value if it hasn't been set
