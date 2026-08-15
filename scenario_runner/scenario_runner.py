@@ -15,9 +15,12 @@
 import yaml
 import subprocess
 import shutil
+import time
 from pathlib import Path
 from scenario_generator import ScenarioGenerator
 from data_collector import DataCollector
+from scenario_topology import apply_scenario_topology
+
 
 class ScenarioRunner:
     """Run every scenario defined in parameters.yaml."""
@@ -39,6 +42,7 @@ class ScenarioRunner:
         print(f"Loaded {len(self.test_cases)} scenario(s)")
 
     def _run_one(self, idx: int, case: dict):
+        case = apply_scenario_topology(case)
         label = case.get("label", f"scenario_{idx}")
         print(f"\n=== Scenario {idx}: {label} ===")
 
@@ -54,22 +58,23 @@ class ScenarioRunner:
         print(f"Generated {param_path}")
 
         # 3. Generate scripts
-        gen = ScenarioGenerator(config_path=str(param_path))
+        gen = ScenarioGenerator(
+            config_path=str(param_path),
+            compose_root=self.parameters_path.parent,
+        )
         scripts = gen.generate()
         start_sh = scripts["start_script"]
         stop_sh = scripts["stop_script"]
 
         # 4. Start
         print(f"Launching: {start_sh}")
-        proc = subprocess.Popen(["bash", start_sh])
+        subprocess.run(["bash", start_sh], check=True)
 
         # 5. Wait
         runtime = case.get("runtime_seconds", 60)
         print(f"Running for {runtime} seconds...")
         try:
-            proc.wait(timeout=runtime)
-        except subprocess.TimeoutExpired:
-            print("Timeout — stopping.")
+            time.sleep(runtime)
         finally:
             # 6. Stop
             print(f"Stopping: {stop_sh}")

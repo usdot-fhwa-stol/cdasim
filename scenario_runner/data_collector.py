@@ -39,13 +39,13 @@ class DataCollector:
 
         for key, value in collect_cfg.items():
             print(key, value)
-            self._collect_folder(Path(value), case_dir / key)
+            self._collect_folder(Path(value), case_dir / key, key == "mosaic_logs")
 
-    def _collect_folder(self, src_base: Path, dest: Path):
-        latest = self.latest_subdir(src_base)
-        print(latest)
-        if latest:
-            shutil.copytree(latest, dest, dirs_exist_ok=True, symlinks=True)
-            print(f"Copied {latest} → {dest}")
+    def _collect_folder(self, src_base: Path, dest: Path, latest_only: bool = False):
+        src = (self.latest_subdir(src_base) or src_base) if latest_only else src_base
+        print(src)
+        if src and src.exists():
+            shutil.copytree(src, dest, dirs_exist_ok=True, symlinks=True)
+            print(f"Copied {src} → {dest}")
         else:
             print(f"No logs found in: {src_base}")

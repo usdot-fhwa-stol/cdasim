@@ -18,21 +18,20 @@ CURRENT_DIR=$(pwd)
 echo "Stopping scenario..."
 
 {% for c in scenario %}
-docker compose -p "{{ c.PROJECT_NAME }}" down 2>/dev/null || true
+docker compose \
+{% for compose_file in c.compose_files %}               -f "{{ compose_file }}" \
+{% endfor %}               --env-file "{{ c.env_file }}" \
+               -p "{{ c.PROJECT_NAME }}" \
+               down 2>/dev/null || true
 {% endfor %}
 
-docker network rm sim_net 2>/dev/null || true
-
-{% for c in scenario %}
-{% if c.platform_net %}
-docker network rm {{ c.platform_net }} 2>/dev/null || true
-{% endif %}
-{% if c.street_net %}
-docker network rm {{ c.street_net }} 2>/dev/null || true
-{% endif %}
+{% for config_container in config_containers %}
+docker rm -f "{{ config_container.name }}" 2>/dev/null || true
 {% endfor %}
 
-rm -rf "{{ temp_dir }}" 2>/dev/null || true
+{% for network in networks %}
+docker network rm "{{ network.name }}" 2>/dev/null || true
+{% endfor %}
 
 echo "Scenario stopped."
 cd "$CURRENT_DIR" || exit 1
