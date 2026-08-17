@@ -81,6 +81,13 @@ class ScenarioGenerator:
         if runtime_org:  base['RUNTIME_IMAGE_ORG'] = runtime_org
         if runtime_tag:  base['RUNTIME_IMAGE_TAG'] = runtime_tag
 
+        # Flatten nested dict into list of KEY=VALUE strings, for example:
+        # EVC:
+        #   enable: false
+        #   snmp_port: null
+        #           |
+        #           v
+        # EVC_ENABLE=false
         def flatten(d: Dict, prefix: str = "") -> List[str]:
             items = []
             for k, v in d.items():
@@ -103,11 +110,14 @@ class ScenarioGenerator:
     # --------------------------------------------------------------------- #
     @classmethod
     def _service_name(cls, name: str) -> str:
+        # Normalize legacy service names by removing trailing digits from old version of cdasim-config
+        # and mapping known aliases
         base_name = re.sub(r"_\d+$", "", name)
         return cls.LEGACY_SERVICE_ALIASES.get(base_name, base_name)
 
     @staticmethod
     def _service_reference(value: str, renames: Dict[str, str]) -> str:
+        # Normalize service references in "service:NAME" or "container:NAME" format
         if value in renames:
             return renames[value]
         parts = value.split(":")
@@ -160,6 +170,9 @@ class ScenarioGenerator:
             yaml.safe_dump(compose, sort_keys=False), encoding="utf-8"
         )
 
+    # --------------------------------------------------------------------- #
+    # Extract base docker-compose.yml from config image 
+    # --------------------------------------------------------------------- #
     def extract_compose_from_image(
         self,
         full_image: str,
@@ -167,6 +180,7 @@ class ScenarioGenerator:
         compose_path: Optional[str] = None,
         pull_policy: str = 'missing'
     ) -> str:
+        
         if not full_image:
             raise ValueError(f"Missing CONFIG_IMAGE_FULL for {project_name}")
 
