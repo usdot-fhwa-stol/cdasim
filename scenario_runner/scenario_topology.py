@@ -6,11 +6,11 @@
 #
 #  http://www.apache.org/licenses/LICENSE-2.0
 
-"""Allocate Scenario Runner network settings from xil_topology.json.
+"""Allocate Scenario Runner network settings from topology.json.
 
-The JSON file owns XIL network relationships, endpoint host slots, and legacy
-preferred addresses. Python selects one scenario-level architecture, tracks
-addresses used by the current scenario, and generates the required env values.
+The JSON file owns ROS 2 XIL network relationships, endpoint host slots, and
+legacy preferred addresses. Python tracks addresses used by the current
+scenario and generates the required env values.
 """
 
 from copy import deepcopy
@@ -19,11 +19,10 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
 
-OVERRIDE_DIR = Path(__file__).resolve().parent / "compose_overrides"
 TOPOLOGY_CONFIG_PATH = (
-    Path(__file__).resolve().parent / "config" / "xil_topology.json"
+    Path(__file__).resolve().parent / "config" / "topology.json"
 )
-DEFAULT_SCENARIO_ARCHITECTURE = "ros1_ros2"
+SUPPORTED_ARCHITECTURE = "ros2"
 DEFAULT_DATA_OUTPUT = {
     "output_directory": "/opt/carma-simulation/tests/output/scenario_runner",
     "collect": {
@@ -42,7 +41,6 @@ def load_topology_config(path: Path = TOPOLOGY_CONFIG_PATH) -> Dict[str, Any]:
         topology = json.load(topology_file)
 
     required = {
-        "architectures",
         "networks",
         "allocation",
         "shared_services",
@@ -60,17 +58,10 @@ class ScenarioTopologyAllocator:
     def __init__(
         self,
         topology: Optional[Mapping[str, Any]] = None,
-        architecture: str = DEFAULT_SCENARIO_ARCHITECTURE,
     ):
         self.config = (
             deepcopy(topology) if topology is not None else load_topology_config()
         )
-        if architecture not in self.config["architectures"]:
-            raise ValueError(
-                f"Unknown scenario architecture {architecture!r}; expected one of "
-                f"{', '.join(self.config['architectures'])}"
-            )
-        self.architecture = architecture
 
         allocation = self.config["allocation"]
         self.private_pool = range(
@@ -117,9 +108,6 @@ class ScenarioTopologyAllocator:
         }
 
         for service in self.config["shared_services"].values():
-            supported = service.get("architectures")
-            if supported and self.architecture not in supported:
-                continue
             for interface in service["interfaces"]:
                 network_key = interface["network"]
                 host = interface["host"]
@@ -198,24 +186,25 @@ class ScenarioTopologyAllocator:
 
     def _allocate_component(self, name: str, index: int) -> Dict[str, str]:
         component = self.config["components"][name]
-        endpoints = component["architectures"][self.architecture]
         network = self._private_network(component, index)
         return {
             "PRIVATE_NETWORK_NAME": network["name"],
             "VEHICLE_SUBNET": network["subnet"],
             **self._endpoint_allocations(
-                endpoints["private_endpoints"], index, network["subnet"]
+                component["private_endpoints"], index, network["subnet"]
             ),
-            **self._endpoint_allocations(endpoints["simulation_endpoints"], index),
+            **self._endpoint_allocations(
+                component["simulation_endpoints"], index
+            ),
         }
 
     def allocate_vehicle(self, index: int) -> Dict[str, str]:
-        """Allocate one Platform vehicle for the scenario architecture."""
+        """Allocate one ROS 2 Platform vehicle."""
 
         return self._allocate_component("platform", index)
 
     def allocate_messenger(self, index: int) -> Dict[str, str]:
-        """Allocate one Messenger vehicle for the scenario architecture."""
+        """Allocate one ROS 2 Messenger vehicle."""
 
         return self._allocate_component("messenger", index)
 
@@ -255,23 +244,31 @@ def _spawn_point(settings):
         )
 
 
+def _validate_ros2_architecture(configured, owner):
+    if configured not in (None, SUPPORTED_ARCHITECTURE):
+        raise ValueError(
+            f"Unsupported {owner} architecture {configured!r}; "
+            "Scenario Runner supports ROS 2 only"
+        )
+
+
 def apply_scenario_topology(
     case: Dict[str, Any], topology_path: Path = TOPOLOGY_CONFIG_PATH
 ) -> Dict[str, Any]:
-    """Add one scenario-level architecture and its topology allocations."""
+    """Add ROS 2 topology allocations to one scenario."""
 
     result = deepcopy(case)
-    architecture = result.get("architecture", DEFAULT_SCENARIO_ARCHITECTURE)
+    _validate_ros2_architecture(result.get("architecture"), "scenario")
     env_settings = result["env_settings"]
+    vehicles = env_settings.get("vehicles", [])
     data_output = _data_output(result.get("data_output"))
     result["data_output"] = data_output
-    topology = ScenarioTopologyAllocator(
-        load_topology_config(topology_path), architecture=architecture
-    )
+    topology = ScenarioTopologyAllocator(load_topology_config(topology_path))
 
     vehicle_indexes = {"platform": 0, "messenger": 0}
-    for vehicle in env_settings.get("vehicles", []):
+    for vehicle in vehicles:
         component = vehicle.get("COMPONENT", "platform")
+        _validate_ros2_architecture(vehicle.get("architecture"), "vehicle")
         if component not in vehicle_indexes:
             raise ValueError(f"Unknown vehicle component: {component}")
         vehicle_indexes[component] += 1
@@ -296,11 +293,6 @@ def apply_scenario_topology(
                 **allocation,
             }
         )
-        if component == "platform" and architecture == "ros1_ros2":
-            vehicle["INTERNAL_COMPOSE_OVERRIDES"] = [
-                str(OVERRIDE_DIR / "basic-simulation-vehicle.cdasim.yml")
-            ]
-
     for index, street in enumerate(env_settings.get("streets", []), 1):
         settings = street["settings"]
         allocation = topology.allocate_street(
@@ -325,9 +317,9 @@ def apply_scenario_topology(
         )
 
     cdasim = env_settings["cdasim"]
-    default_services = ["cdasim", "carma-cloud", "carla-sensor-lib"]
-    if architecture == "ros2":
-        default_services.append("xml_rpc_server")
+    default_services = [
+        "cdasim", "carma-cloud", "carla-sensor-lib", "xml_rpc_server"
+    ]
     cdasim["SERVICES"] = cdasim.get("SERVICES", default_services)
     cdasim["settings"].update(
         {

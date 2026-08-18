@@ -4,9 +4,7 @@
 
 test_cases:
   - label: town10_two_vehicle_xil
-    # One architecture applies to CDASim, Platform, and Messenger components.
-    # Supported values: ros1_ros2, ros2
-    architecture: ros1_ros2
+    # Scenario Runner supports ROS 2 components only.
     runtime_seconds: 90
 
     env_settings:
@@ -24,18 +22,21 @@ test_cases:
 
       vehicles:
         - PROJECT_NAME: platform_vehicle_1
-          # Build or publish this configuration image before a production run.
-          CONFIG_IMAGE_FULL: usdotfhwastoldev/carma-config:develop-basic-simulation-vehicle
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.13.0-SNAPSHOT-xil-Town10
           CONFIG_COMPOSE_PATH: /opt/carma/vehicle/config/docker-compose.yml
           CONFIG_IMAGE_PULL_POLICY: missing
           COMPOSE_OVERRIDES: []
+          SERVICES:
+            - platform_ros2
+            - carma-carla-integration
+            - vehicle_registration_service
+            - v2x_ros_driver
           settings:
             VEHICLE_ID: carma_1
-            CARMA_BASE_IMAGE: usdotfhwastol/carma-base:carma-system-4.10.0-noetic
             CARMA_PLATFORM_IMAGE: usdotfhwastol/carma-platform:carma-system-4.10.0
-            CARMA_MSGS_IMAGE: usdotfhwastol/carma-msgs:carma-system-4.10.0
             CARMA_CARLA_INTEGRATION_IMAGE: usdotfhwastoldev/carma-carla-integration:develop
-            NS3_ADAPTER_IMAGE: usdotfhwastol/carma-ns3-adapter:develop-noetic
+            V2X_ROS_DRIVER_IMAGE: usdotfhwastol/v2x-ros-driver:carma-system-4.11.0
+            VEHICLE_REGISTRATION_IMAGE: usdotfhwastoldev/carma-ns3-adapter:develop
             SELECTED_ROUTE: Town10_loop_official
             START_DELAY_IN_SECONDS: 30
             SPAWN_POINT:
@@ -47,17 +48,21 @@ test_cases:
               yaw: 180.0
 
         - PROJECT_NAME: platform_vehicle_2
-          CONFIG_IMAGE_FULL: usdotfhwastoldev/carma-config:develop-basic-simulation-vehicle
+          CONFIG_IMAGE_FULL: usdotfhwastol/carma-config:carma-system-4.13.0-SNAPSHOT-xil-Town10
           CONFIG_COMPOSE_PATH: /opt/carma/vehicle/config/docker-compose.yml
           CONFIG_IMAGE_PULL_POLICY: missing
           COMPOSE_OVERRIDES: []
+          SERVICES:
+            - platform_ros2
+            - carma-carla-integration
+            - vehicle_registration_service
+            - v2x_ros_driver
           settings:
             VEHICLE_ID: carma_2
-            CARMA_BASE_IMAGE: usdotfhwastol/carma-base:carma-system-4.10.0-noetic
             CARMA_PLATFORM_IMAGE: usdotfhwastol/carma-platform:carma-system-4.10.0
-            CARMA_MSGS_IMAGE: usdotfhwastol/carma-msgs:carma-system-4.10.0
             CARMA_CARLA_INTEGRATION_IMAGE: usdotfhwastoldev/carma-carla-integration:develop
-            NS3_ADAPTER_IMAGE: usdotfhwastol/carma-ns3-adapter:develop-noetic
+            V2X_ROS_DRIVER_IMAGE: usdotfhwastol/v2x-ros-driver:carma-system-4.11.0
+            VEHICLE_REGISTRATION_IMAGE: usdotfhwastoldev/carma-ns3-adapter:develop
             SELECTED_ROUTE: Town10_loop_official
             START_DELAY_IN_SECONDS: 35
             SPAWN_POINT:
