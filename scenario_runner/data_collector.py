@@ -32,7 +32,10 @@ class DataCollector:
         out_dir = Path(data_output["output_directory"])
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        case_dir = out_dir / data_output.get("rename_format", "test_{index}").format(index=index)
+        label = config.get("label", f"scenario_{index}")
+        case_dir = out_dir / data_output.get(
+            "rename_format", "{label}"
+        ).format(index=index, label=label)
         case_dir.mkdir(parents=True, exist_ok=True)
 
         collect_cfg = data_output.get("collect", {})

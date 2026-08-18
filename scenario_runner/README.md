@@ -26,6 +26,7 @@ The system automatically:
 | Component | Role |
 |------------|------|
 | **ScenarioRunner** | Main orchestrator. Loads scenarios from YAML, runs them sequentially, and manages the generator and collector. |
+| **ScenarioTopologyAllocator** | Loads `topology.json` and assigns collision-free XIL networks and service addresses. |
 | **ScenarioGenerator** | Builds `.env` files, extracts `docker-compose.yml` from configuration images, and creates shell scripts for start/stop. |
 | **DataCollector** | Collects simulation output data and organizes it by test case. |
 | **sim_start.sh / sim_stop.sh** | Generated shell scripts used to bring containers up and down. |
@@ -40,6 +41,8 @@ The system automatically:
    - Each test case includes runtime duration, environment settings, and output configuration.
 
 2. **Generate Scenario Environment**
+   - `ScenarioTopologyAllocator` loads `topology.json` and adds the internal network and IP allocations. These values are not configured in `parameters.yaml`.
+   - `ScenarioTopologyAllocator` assigns the ROS 2 endpoints required by each component.
    - For each test case, `ScenarioRunner` writes a temporary `parameter.yaml`.
    - This is passed to `ScenarioGenerator`, which dynamically generates:
      - `.env` files for each component (`cdasim`, vehicles, streets)
@@ -64,11 +67,13 @@ The system automatically:
 
 ## Key YAML Fields
 
-Each test case in `parameters.yaml` defines simulation settings under `env_settings`, with the following key fields for every component (cdasim, vehicle, street):
+Scenario Runner supports ROS 2 components only. The entries under
+`env_settings` use these component fields:
 
 | Field | Description |
 |--------|--------------|
 | **`PROJECT_NAME`** | A unique name for this simulation component (used as the Docker project name). |
+| **`COMPONENT`** | Optional vehicle entry type: `platform` (default) or `messenger`. |
 | **`RUNTIME_IMAGE_ORG`** | The Docker organization or namespace that owns the runtime images (e.g., `usdotfhwastol`). |
 | **`RUNTIME_IMAGE_TAG`** | The version tag for the runtime image. Defines which CARMA or CDASim build version to execute. |
 | **`CONFIG_IMAGE_FULL`** | The full image name (including tag) of the configuration image that contains the embedded `docker-compose.yml` used to define how the component runs. |
@@ -83,7 +88,13 @@ Each test case in `parameters.yaml` defines simulation settings under `env_setti
   ```
 
 - **`CONFIG_IMAGE_FULL`** specifies a configuration image that contains the `docker-compose.yml` file.  
-  The Scenario Generator temporarily runs this image, extracts the compose file from inside it, and uses it to define the simulation stack.
+  The Scenario Generator temporarily runs this image, extracts the Compose file from inside it, and uses it to define the simulation stack.
+
+When an extracted legacy Compose file uses instance suffixes such as
+`platform_ros2_1`, Scenario Generator removes the suffix and updates its direct
+`depends_on`, `network_mode`, and `volumes_from` service references before
+applying the local overrides. This compatibility step is limited to extracted
+Compose structure; topology endpoint names remain canonical.
 
 Together, they decouple **what image to run** from **how it is configured**, providing flexible version control and easier upgrades.
 
@@ -122,6 +133,7 @@ Scenario 1 complete.
 ```
 project_root/
 ├── config/
+│   ├── topology.json
 │   ├── templates/
 │   │   ├── sim_start_template.sh.j2
 │   │   └── sim_stop_template.sh.j2
@@ -132,10 +144,10 @@ project_root/
 ├── data_collector.py
 ├── tmp/                # temporary environment files
 └── results/
-    ├── test_1/
+    ├── town10_two_vehicle_xil/
     │   ├── mosaic_logs/
     │   └── rosbags/
-    └── test_2/
+    └── another_scenario_label/
 ```
 
 ---
@@ -149,3 +161,17 @@ project_root/
 - Reproducible multi-case testing workflow
 
 ---
+
+## Compose Override Support
+
+Each component can use a configuration image through `CONFIG_IMAGE_FULL` or a
+repository Compose file through `COMPOSE_FILE`. Files listed in
+`COMPOSE_OVERRIDES` are applied after the base Compose file, followed by the
+Scenario Runner managed override.
+
+Scenario Runner creates the shared XIL networks, starts instance-specific
+configuration containers for BusyBox configuration images, and then launches
+all Compose projects. The configuration containers remain available so CARMA
+services can read files such as `VehicleConfigParams.yaml` through
+`volumes_from`. Scenario Runner recursively copies the complete configuration
+tree into each config volume, including configuration subdirectories.
