@@ -11,7 +11,7 @@ services:
     command: []
     network_mode: !reset null
     networks:
-      cloud_private:
+      cloud_network:
         ipv4_address: "${CARMA_CLOUD_PRIVATE_IP}"
       sim_external:
         ipv4_address: "${CARMA_CLOUD_SIM_IP}"
@@ -20,7 +20,7 @@ services:
       - "${CARMA_CLOUD_WORK_ROOT}/carmacloud/xodr:/opt/tomcat/work/carmacloud/xodr"
 
 networks:
-  cloud_private:
+  cloud_network:
     external: true
     name: "${CLOUD_NETWORK_NAME}"
   sim_external:
