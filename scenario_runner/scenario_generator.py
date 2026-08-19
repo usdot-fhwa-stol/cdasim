@@ -313,6 +313,23 @@ class ScenarioGenerator:
             'street_net': None
         })
 
+        # CARMA Cloud
+        cloud = es.get('carma_cloud')
+        if cloud:
+            compose_files = self._compose_files(
+                cloud, cloud['PROJECT_NAME']
+            )
+            env_file = str(self.tmp_dir / '.env.carma_cloud')
+            scenario.append({
+                'PROJECT_NAME': cloud['PROJECT_NAME'],
+                'compose_file': compose_files[0],
+                'compose_files': compose_files,
+                'env_file': env_file,
+                'services': cloud.get('SERVICES', []),
+                'platform_net': None,
+                'street_net': None
+            })
+
         # Vehicles
         for i, v in enumerate(es.get('vehicles', []), 1):
             compose_files = self._compose_files(v, v['PROJECT_NAME'])
@@ -387,6 +404,8 @@ class ScenarioGenerator:
 
         # Generate .env files
         self.generate_env_file('.env.cdasim', es['cdasim'])
+        if es.get('carma_cloud'):
+            self.generate_env_file('.env.carma_cloud', es['carma_cloud'])
         for i, v in enumerate(es.get('vehicles', []), 1):
             self.generate_env_file(f'.env.vehicle_{i}', v)
         for i, s in enumerate(es.get('streets', []), 1):

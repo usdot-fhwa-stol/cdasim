@@ -324,9 +324,28 @@ def apply_scenario_topology(
     cdasim["settings"].update(
         {
             "CDASIM_LOG_ROOT": data_output["collect"]["mosaic_logs"],
-            "CARMA_CLOUD_LOG_ROOT": data_output["collect"]["carmacloud_logs"],
             **topology.core,
         }
     )
+
+    carma_cloud = env_settings.get("carma_cloud")
+    if carma_cloud:
+        carma_cloud["SERVICES"] = carma_cloud.get(
+            "SERVICES", ["carma-cloud"]
+        )
+        cloud_settings = carma_cloud.setdefault("settings", {})
+        cloud_settings.setdefault(
+            "CARMA_CLOUD_WORK_ROOT",
+            "/opt/carma-simulation/carma-cloud/work",
+        )
+        cloud_settings.update(
+            {
+                "CARMA_CLOUD_LOG_ROOT": data_output["collect"][
+                    "carmacloud_logs"
+                ],
+                **topology.core,
+            }
+        )
+
     env_settings["runner_networks"] = topology.networks
     return result

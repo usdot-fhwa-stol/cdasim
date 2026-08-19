@@ -17,8 +17,16 @@ test_cases:
         settings:
           MOSAIC_SCENARIO: Town10
           CDASIM_IMAGE: usdotfhwastoldev/cdasim:develop
-          CARMA_CLOUD_IMAGE: usdotfhwastol/carma-cloud:carma-system-4.6.1
           CARLA_SENSOR_LIB_IMAGE: usdotfhwastol/carla-sensor-lib:carma-system-4.13.0
+
+      carma_cloud:
+        PROJECT_NAME: carma_cloud
+        COMPOSE_FILE: ../../../../carma-cloud/docker-compose.yml
+        COMPOSE_OVERRIDES: []
+        INTERNAL_COMPOSE_OVERRIDES:
+          - ../compose/carma-cloud.cdasim.yml
+        settings:
+          CARMA_CLOUD_IMAGE: usdotfhwastol/carma-cloud:carma-system-4.6.1
 
       vehicles:
         - PROJECT_NAME: platform_vehicle_1

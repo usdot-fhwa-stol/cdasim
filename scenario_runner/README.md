@@ -45,7 +45,7 @@ The system automatically:
    - `ScenarioTopologyAllocator` assigns the ROS 2 endpoints required by each component.
    - For each test case, `ScenarioRunner` writes a temporary `parameter.yaml`.
    - This is passed to `ScenarioGenerator`, which dynamically generates:
-     - `.env` files for each component (`cdasim`, vehicles, streets)
+     - `.env` files for each component (`cdasim`, CARMA Cloud, vehicles, streets)
      - Extracted `docker-compose.yml` files from the specified config images
      - Two shell scripts: `sim_start.sh` and `sim_stop.sh`
 
@@ -77,6 +77,7 @@ Scenario Runner supports ROS 2 components only. The entries under
 | **`RUNTIME_IMAGE_ORG`** | The Docker organization or namespace that owns the runtime images (e.g., `usdotfhwastol`). |
 | **`RUNTIME_IMAGE_TAG`** | The version tag for the runtime image. Defines which CARMA or CDASim build version to execute. |
 | **`CONFIG_IMAGE_FULL`** | The full image name (including tag) of the configuration image that contains the embedded `docker-compose.yml` used to define how the component runs. |
+| **`COMPOSE_FILE`** | A repository-local base Compose file used instead of `CONFIG_IMAGE_FULL`. |
 | **`settings`** | Component-specific runtime parameters such as route, map, sensors, and spawn positions. |
 
 ### How these image fields interact
@@ -168,6 +169,13 @@ Each component can use a configuration image through `CONFIG_IMAGE_FULL` or a
 repository Compose file through `COMPOSE_FILE`. Files listed in
 `COMPOSE_OVERRIDES` are applied after the base Compose file, followed by the
 Scenario Runner managed override.
+
+The `carma_cloud` component follows the same repository-local model as CARMA
+Street. Clone `carma-cloud` beside `cdasim`, point `COMPOSE_FILE` to its base
+`docker-compose.yml`, and retain the Runner-owned
+`config/compose/carma-cloud.cdasim.yml` internal override. To use a CARMA Cloud
+configuration image later, replace `COMPOSE_FILE` with `CONFIG_IMAGE_FULL` and
+`CONFIG_COMPOSE_PATH`; the same override can still be applied.
 
 Scenario Runner creates the shared XIL networks, starts instance-specific
 configuration containers for BusyBox configuration images, and then launches
