@@ -30,6 +30,11 @@ class ScenarioGenerator:
     CONFIG_INIT_COMMAND = (
         "cp -a /root/vehicle/config/. /opt/carma/vehicle/config/"
     )
+    MESSENGER_V2X_PARAMS_TARGET = (
+        "/opt/carma/install/v2x_ros_driver/share/"
+        "v2x_ros_driver/config/params.yaml"
+    )
+    PLATFORM_V2X_PARAMS_TARGET = MESSENGER_V2X_PARAMS_TARGET
     LEGACY_SERVICE_ALIASES = {
         "carma-simulation": "cdasim",
         "platform": "platform_ros1",
@@ -292,6 +297,132 @@ class ScenarioGenerator:
 
         return compose_files
 
+    def _generate_cdasim_network_override(
+        self, vehicles: List[Dict[str, Any]]
+    ) -> Optional[str]:
+        """Attach CDASim to every Platform and Messenger private network."""
+
+        service_networks = {}
+        networks = {}
+        for index, vehicle in enumerate(vehicles, 1):
+            settings = vehicle["settings"]
+            component = vehicle.get("COMPONENT", "platform")
+            ip_key = (
+                "CDASIM_MESSENGER_IP"
+                if component == "messenger"
+                else "CDASIM_VEHICLE_IP"
+            )
+            network_key = f"vehicle_private_{index}"
+            service_networks[network_key] = {
+                "ipv4_address": settings[ip_key]
+            }
+            networks[network_key] = {
+                "external": True,
+                "name": settings["PRIVATE_NETWORK_NAME"],
+            }
+
+        if not networks:
+            return None
+
+        override_path = self.tmp_dir / "cdasim-private-networks.yml"
+        override_path.write_text(
+            yaml.safe_dump(
+                {
+                    "services": {
+                        "cdasim": {"networks": service_networks}
+                    },
+                    "networks": networks,
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        return str(override_path)
+
+    def _generate_messenger_v2x_override(
+        self, vehicle: Dict[str, Any], index: int
+    ) -> str:
+        """Generate instance-specific V2X parameters for one Messenger."""
+
+        settings = vehicle["settings"]
+        params_path = self.tmp_dir / f"messenger-v2x-{index}-params.yaml"
+        params_path.write_text(
+            yaml.safe_dump(
+                {
+                    "v2x_radio_address": settings["CDASIM_MESSENGER_IP"],
+                    "v2x_radio_listening_port": 3601,
+                    "listening_port": 3501,
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+
+        override_path = self.tmp_dir / f"messenger-v2x-{index}-override.yml"
+        override_path.write_text(
+            yaml.safe_dump(
+                {
+                    "services": {
+                        "messenger_v2x_ros_driver": {
+                            "volumes": [
+                                {
+                                    "type": "bind",
+                                    "source": str(params_path),
+                                    "target": self.MESSENGER_V2X_PARAMS_TARGET,
+                                    "read_only": True,
+                                }
+                            ]
+                        }
+                    }
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        return str(override_path)
+
+    def _generate_platform_v2x_override(
+        self, vehicle: Dict[str, Any], index: int
+    ) -> str:
+        """Generate instance-specific V2X parameters for one Platform."""
+
+        settings = vehicle["settings"]
+        params_path = self.tmp_dir / f"platform-v2x-{index}-params.yaml"
+        params_path.write_text(
+            yaml.safe_dump(
+                {
+                    "v2x_radio_address": settings["CDASIM_VEHICLE_IP"],
+                    "v2x_radio_listening_port": 1516,
+                    "listening_port": 2500,
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+
+        override_path = self.tmp_dir / f"platform-v2x-{index}-override.yml"
+        override_path.write_text(
+            yaml.safe_dump(
+                {
+                    "services": {
+                        "v2x_ros_driver": {
+                            "volumes": [
+                                {
+                                    "type": "bind",
+                                    "source": str(params_path),
+                                    "target": self.PLATFORM_V2X_PARAMS_TARGET,
+                                    "read_only": True,
+                                }
+                            ]
+                        }
+                    }
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        return str(override_path)
+
     # --------------------------------------------------------------------- #
     # 4. Build scenario data ONCE
     # --------------------------------------------------------------------- #
@@ -302,6 +433,11 @@ class ScenarioGenerator:
         # CDASim
         cd = es['cdasim']
         compose_files = self._compose_files(cd, cd['PROJECT_NAME'])
+        private_network_override = self._generate_cdasim_network_override(
+            es.get('vehicles', [])
+        )
+        if private_network_override:
+            compose_files.append(private_network_override)
         env_file = str(self.tmp_dir / '.env.cdasim')
         scenario.append({
             'PROJECT_NAME': cd['PROJECT_NAME'],
@@ -333,6 +469,14 @@ class ScenarioGenerator:
         # Vehicles
         for i, v in enumerate(es.get('vehicles', []), 1):
             compose_files = self._compose_files(v, v['PROJECT_NAME'])
+            if v.get('COMPONENT', 'platform') == 'messenger':
+                compose_files.append(
+                    self._generate_messenger_v2x_override(v, i)
+                )
+            else:
+                compose_files.append(
+                    self._generate_platform_v2x_override(v, i)
+                )
             env_file = str(self.tmp_dir / f'.env.vehicle_{i}')
             scenario.append({
                 'PROJECT_NAME': v['PROJECT_NAME'],

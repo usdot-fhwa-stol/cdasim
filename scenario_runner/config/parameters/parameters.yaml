@@ -81,6 +81,21 @@ test_cases:
               pitch: 0.0
               yaw: 180.0
 
+        - PROJECT_NAME: messenger_vehicle_1
+          COMPONENT: messenger
+          CONFIG_IMAGE_FULL: usdotfhwastoldev/carma-config:develop-basic-simulation-messenger-vehicle
+          CONFIG_COMPOSE_PATH: /opt/carma/vehicle/config/docker-compose.yml
+          CONFIG_IMAGE_PULL_POLICY: missing
+          COMPOSE_OVERRIDES: []
+          settings:
+            VEHICLE_ID: msger_1
+            CARMA_MESSENGER_CORE_IMAGE: usdotfhwastol/carma-messenger-core:carma-system-4.10.0
+            CARMA_MESSENGER_BRIDGE_IMAGE: usdotfhwastol/carma-messenger-bridge:carma-system-4.9.0
+            V2X_ROS_DRIVER_IMAGE: usdotfhwastol/v2x-ros-driver:carma-system-4.11.0
+            VEHICLE_REGISTRATION_IMAGE: usdotfhwastoldev/carma-ns3-adapter:develop
+            MESSENGER_VEHICLE_PLUGIN_IMAGE: usdotfhwastoldev/cdasim:develop
+            TRACI_ORDER_NUM: 3
+
       streets:
         - PROJECT_NAME: street_1
           COMPOSE_FILE: ../../../../carma-streets/docker-compose.yml

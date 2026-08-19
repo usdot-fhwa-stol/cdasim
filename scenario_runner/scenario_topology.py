@@ -23,6 +23,13 @@ TOPOLOGY_CONFIG_PATH = (
     Path(__file__).resolve().parent / "config" / "topology.json"
 )
 SUPPORTED_ARCHITECTURE = "ros2"
+DEFAULT_MESSENGER_SERVICES = [
+    "messenger_ros2",
+    "carma_messenger_bridge",
+    "messenger_v2x_ros_driver",
+    "messenger_vehicle_registration_service",
+    "carma-messenger-vehicle-plugin",
+]
 DEFAULT_DATA_OUTPUT = {
     "output_directory": "/opt/carma-simulation/tests/output/scenario_runner",
     "collect": {
@@ -293,6 +300,21 @@ def apply_scenario_topology(
                 **allocation,
             }
         )
+        if component == "messenger":
+            messenger_root = f"/opt/carma-messenger/{settings['VEHICLE_ID']}"
+            vehicle["SERVICES"] = vehicle.get(
+                "SERVICES", list(DEFAULT_MESSENGER_SERVICES)
+            )
+            settings.setdefault(
+                "MESSENGER_LOG_ROOT",
+                f"{data_output['collect']['rosbags'].rstrip('/')}/"
+                f"{settings['VEHICLE_ID']}",
+            )
+            settings.setdefault("MESSENGER_ROS_ROOT", f"{messenger_root}/.ros")
+            settings.setdefault(
+                "MESSENGER_ROUTE_ROOT", f"{messenger_root}/routes"
+            )
+            settings.setdefault("RMW_IMPLEMENTATION", "rmw_cyclonedds_cpp")
     for index, street in enumerate(env_settings.get("streets", []), 1):
         settings = street["settings"]
         allocation = topology.allocate_street(
