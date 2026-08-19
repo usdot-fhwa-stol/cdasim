@@ -318,7 +318,7 @@ def apply_scenario_topology(
 
     cdasim = env_settings["cdasim"]
     default_services = [
-        "cdasim", "carma-cloud", "carla-sensor-lib", "xml_rpc_server"
+        "cdasim", "carla-sensor-lib", "xml_rpc_server"
     ]
     cdasim["SERVICES"] = cdasim.get("SERVICES", default_services)
     cdasim["settings"].update(
