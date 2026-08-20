@@ -26,7 +26,7 @@ The system automatically:
 | Component | Role |
 |------------|------|
 | **ScenarioRunner** | Main orchestrator. Loads scenarios from YAML, runs them sequentially, and manages the generator and collector. |
-| **ScenarioTopologyAllocator** | Loads `topology.json` and assigns collision-free XIL networks and service addresses. |
+| **ScenarioTopologyAllocator** | Loads `network_topology_template.json` and assigns XIL networks, service hostnames, and required network-scoped DNS aliases. |
 | **ScenarioGenerator** | Builds `.env` files, extracts `docker-compose.yml` from configuration images, and creates shell scripts for start/stop. |
 | **DataCollector** | Collects simulation output data and organizes it by test case. |
 | **sim_start.sh / sim_stop.sh** | Generated shell scripts used to bring containers up and down. |
@@ -41,7 +41,7 @@ The system automatically:
    - Each test case includes runtime duration, environment settings, and output configuration.
 
 2. **Generate Scenario Environment**
-   - `ScenarioTopologyAllocator` loads `topology.json` and adds the internal network and IP allocations. These values are not configured in `parameters.yaml`.
+   - `ScenarioTopologyAllocator` loads `network_topology_template.json` and adds internal networks, Docker service hostnames, and only the instance-specific DNS aliases required to distinguish repeated endpoints. These values are not configured in `parameters.yaml`.
    - `ScenarioTopologyAllocator` assigns the ROS 2 endpoints required by each component.
    - For each test case, `ScenarioRunner` writes a temporary `parameter.yaml`.
    - This is passed to `ScenarioGenerator`, which dynamically generates:
@@ -114,6 +114,15 @@ pip install pyyaml jinja2
 python3 scenario_runner.py
 ```
 
+### Generate files without running the scenario
+```bash
+python3 scenario_runner.py --generate-only
+```
+
+This generates the environment files, runtime Compose overrides, and matching
+`sim_start.sh` and `sim_stop.sh` files. It does not execute either script, wait
+for `runtime_seconds`, collect runtime data, or remove `tmp/` afterward.
+
 ### Output example
 ```
 === Scenario 1: intersection_basic ===
@@ -134,7 +143,7 @@ Scenario 1 complete.
 ```
 project_root/
 ├── config/
-│   ├── topology.json
+│   ├── network_topology_template.json
 │   ├── templates/
 │   │   ├── sim_start_template.sh.j2
 │   │   └── sim_stop_template.sh.j2
