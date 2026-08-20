@@ -120,6 +120,24 @@ class ScenarioGenerator:
         base_name = re.sub(r"_\d+$", "", name)
         return cls.LEGACY_SERVICE_ALIASES.get(base_name, base_name)
 
+    @classmethod
+    def _config_init_command(cls, compose_path: Optional[str]) -> str:
+        """Build the config-volume initialization command from its /opt path."""
+
+        if not compose_path:
+            return cls.CONFIG_INIT_COMMAND
+
+        config_dir = Path(compose_path).parent
+        if config_dir == Path("/opt/carma/vehicle/config"):
+            return cls.CONFIG_INIT_COMMAND
+        try:
+            config_relative_path = config_dir.relative_to("/opt")
+        except ValueError:
+            return cls.CONFIG_INIT_COMMAND
+
+        source_dir = Path("/root") / config_relative_path
+        return f"cp -a {source_dir}/. {config_dir}/"
+
     @staticmethod
     def _service_reference(value: str, renames: Dict[str, str]) -> str:
         # Normalize service references in "service:NAME" or "container:NAME" format
@@ -207,6 +225,7 @@ class ScenarioGenerator:
 
         cname = f"inspect-{project_name}-{os.urandom(4).hex()}"
         print(f"Starting inspection container: {cname}")
+        init_command = self._config_init_command(compose_path)
 
         try:
             if compose_path:
@@ -216,7 +235,7 @@ class ScenarioGenerator:
                     [
                         "docker", "run", "--name", cname,
                         "--entrypoint", "sh", full_image,
-                        "-c", self.CONFIG_INIT_COMMAND
+                        "-c", init_command
                     ],
                     check=True
                 )
@@ -260,7 +279,7 @@ class ScenarioGenerator:
             self._config_containers[project_name] = {
                 'name': f'{project_name}-config',
                 'image': full_image,
-                'init_command': self.CONFIG_INIT_COMMAND
+                'init_command': init_command
             }
             print(f"Extracted {src} → {dest}")
             return str(dest)
@@ -306,16 +325,8 @@ class ScenarioGenerator:
         networks = {}
         for index, vehicle in enumerate(vehicles, 1):
             settings = vehicle["settings"]
-            component = vehicle.get("COMPONENT", "platform")
-            ip_key = (
-                "CDASIM_MESSENGER_IP"
-                if component == "messenger"
-                else "CDASIM_VEHICLE_IP"
-            )
             network_key = f"vehicle_private_{index}"
-            service_networks[network_key] = {
-                "ipv4_address": settings[ip_key]
-            }
+            service_networks[network_key] = {}
             networks[network_key] = {
                 "external": True,
                 "name": settings["PRIVATE_NETWORK_NAME"],
@@ -339,6 +350,79 @@ class ScenarioGenerator:
         )
         return str(override_path)
 
+    @staticmethod
+    def _replace_cloud_init_param(xml: str, name: str, value: str) -> str:
+        """Replace one CARMA Cloud servlet init-param value."""
+
+        pattern = re.compile(
+            rf"(<param-name>\s*{re.escape(name)}\s*</param-name>\s*"
+            rf"<param-value>).*?(</param-value>)",
+            re.DOTALL,
+        )
+        updated, count = pattern.subn(rf"\g<1>{value}\g<2>", xml, count=1)
+        if count != 1:
+            raise ValueError(f"CARMA Cloud web.xml has no {name!r} init-param")
+        return updated
+
+    def _generate_cloud_web_xml_override(
+        self, cloud: Dict[str, Any]
+    ) -> Optional[str]:
+        """Generate a DNS-based CARMA Cloud simulation configuration."""
+
+        configured_source = cloud.get("WEB_XML_FILE")
+        if configured_source:
+            source = Path(self._resolve_compose_path(configured_source))
+        elif cloud.get("COMPOSE_FILE"):
+            compose_path = Path(self._resolve_compose_path(cloud["COMPOSE_FILE"]))
+            source = compose_path.parent / "carma-cloud-config" / "web.xml"
+        else:
+            # A config-image deployment may already provide its own DNS-ready
+            # web.xml and can supply an explicit WEB_XML_FILE when it does not.
+            return None
+
+        if not source.is_file():
+            raise FileNotFoundError(f"CARMA Cloud web.xml not found: {source}")
+
+        settings = cloud["settings"]
+        xml = source.read_text(encoding="utf-8")
+        xml = self._replace_cloud_init_param(xml, "simulation", "true")
+        xml = self._replace_cloud_init_param(
+            xml, "ambassador", settings["CDASIM_SIM_HOST"]
+        )
+        callback = (
+            f"http://{settings['CARMA_CLOUD_SIM_HOST']}:8080/"
+            "carmacloud/simulation"
+        )
+        xml = self._replace_cloud_init_param(xml, "url", callback)
+
+        generated_xml = self.tmp_dir / "carma-cloud-web.xml"
+        generated_xml.write_text(xml, encoding="utf-8")
+        override_path = self.tmp_dir / "carma-cloud-web-override.yml"
+        override_path.write_text(
+            yaml.safe_dump(
+                {
+                    "services": {
+                        "carma-cloud": {
+                            "volumes": [
+                                {
+                                    "type": "bind",
+                                    "source": str(generated_xml),
+                                    "target": (
+                                        "/opt/tomcat/webapps/carmacloud/ROOT/"
+                                        "WEB-INF/web.xml"
+                                    ),
+                                    "read_only": True,
+                                }
+                            ]
+                        }
+                    }
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        return str(override_path)
+
     def _generate_messenger_v2x_override(
         self, vehicle: Dict[str, Any], index: int
     ) -> str:
@@ -349,7 +433,7 @@ class ScenarioGenerator:
         params_path.write_text(
             yaml.safe_dump(
                 {
-                    "v2x_radio_address": settings["CDASIM_MESSENGER_IP"],
+                    "v2x_radio_address": settings["CDASIM_MESSENGER_HOST"],
                     "v2x_radio_listening_port": 3601,
                     "listening_port": 3501,
                 },
@@ -391,7 +475,7 @@ class ScenarioGenerator:
         params_path.write_text(
             yaml.safe_dump(
                 {
-                    "v2x_radio_address": settings["CDASIM_VEHICLE_IP"],
+                    "v2x_radio_address": settings["CDASIM_VEHICLE_HOST"],
                     "v2x_radio_listening_port": 1516,
                     "listening_port": 2500,
                 },
@@ -455,6 +539,9 @@ class ScenarioGenerator:
             compose_files = self._compose_files(
                 cloud, cloud['PROJECT_NAME']
             )
+            cloud_web_override = self._generate_cloud_web_xml_override(cloud)
+            if cloud_web_override:
+                compose_files.append(cloud_web_override)
             env_file = str(self.tmp_dir / '.env.carma_cloud')
             scenario.append({
                 'PROJECT_NAME': cloud['PROJECT_NAME'],

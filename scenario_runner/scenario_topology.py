@@ -6,12 +6,7 @@
 #
 #  http://www.apache.org/licenses/LICENSE-2.0
 
-"""Allocate Scenario Runner network settings from topology.json.
-
-The JSON file owns ROS 2 XIL network relationships, endpoint host slots, and
-legacy preferred addresses. Python tracks addresses used by the current
-scenario and generates the required env values.
-"""
+"""Resolve network names and DNS hostnames from the topology template."""
 
 from copy import deepcopy
 import json
@@ -20,7 +15,9 @@ from typing import Any, Dict, Mapping, Optional
 
 
 TOPOLOGY_CONFIG_PATH = (
-    Path(__file__).resolve().parent / "config" / "topology.json"
+    Path(__file__).resolve().parent
+    / "config"
+    / "network_topology_template.json"
 )
 SUPPORTED_ARCHITECTURE = "ros2"
 DEFAULT_MESSENGER_SERVICES = [
@@ -49,7 +46,6 @@ def load_topology_config(path: Path = TOPOLOGY_CONFIG_PATH) -> Dict[str, Any]:
 
     required = {
         "networks",
-        "allocation",
         "shared_services",
         "components",
     }
@@ -60,7 +56,7 @@ def load_topology_config(path: Path = TOPOLOGY_CONFIG_PATH) -> Dict[str, Any]:
 
 
 class ScenarioTopologyAllocator:
-    """Allocate unique XIL private octets and shared simulation hosts."""
+    """Resolve service names and required aliases for scenario components."""
 
     def __init__(
         self,
@@ -70,125 +66,54 @@ class ScenarioTopologyAllocator:
             deepcopy(topology) if topology is not None else load_topology_config()
         )
 
-        allocation = self.config["allocation"]
-        self.private_pool = range(
-            allocation["private_octet_pool"]["start"],
-            allocation["private_octet_pool"]["end"] + 1,
-        )
-        self.simulation_pool = range(
-            allocation["simulation_host_pool"]["start"],
-            allocation["simulation_host_pool"]["end"] + 1,
-        )
-        self.reserved_private_octets = set(
-            allocation["reserved_private_octets"]
-        )
-        self.reserved_sim_hosts = set(allocation["reserved_simulation_hosts"])
-        self.used_private_octets = {
-            network["fixed_octet"] for network in self.config["networks"].values()
-        }
-        self.used_sim_hosts = set()
         self.networks = [
             {
                 "name": network["name"],
                 "driver": "bridge",
-                "subnet": network["subnet"],
             }
             for network in self.config["networks"].values()
         ]
         self.core = self._shared_service_allocations()
-
-    @staticmethod
-    def _address(subnet: str, host: int) -> str:
-        """Build a known XIL 172.X.0.HOST address from its /16 subnet."""
-
-        prefix = subnet.split("/", 1)[0].rsplit(".", 1)[0]
-        return f"{prefix}.{host}"
 
     def _shared_service_allocations(self) -> Dict[str, str]:
         simulation = self.config["networks"]["simulation"]
         cloud = self.config["networks"]["cloud"]
         result = {
             "SIM_NETWORK_NAME": simulation["name"],
-            "SIM_SUBNET": simulation["subnet"],
             "CLOUD_NETWORK_NAME": cloud["name"],
-            "CLOUD_SUBNET": cloud["subnet"],
         }
 
         for service in self.config["shared_services"].values():
             for interface in service["interfaces"]:
-                network_key = interface["network"]
-                host = interface["host"]
-                if network_key == "simulation":
-                    if host in self.used_sim_hosts:
-                        raise ValueError(f"Duplicate fixed simulation host: {host}")
-                    self.used_sim_hosts.add(host)
-                network = self.config["networks"][network_key]
-                result[interface["env"]] = self._address(network["subnet"], host)
+                result[interface["env"]] = interface["host"]
         return result
-
-    def _allocate_private_octet(self, preferred: Optional[int]) -> int:
-        if preferred is not None and preferred not in self.used_private_octets:
-            self.used_private_octets.add(preferred)
-            return preferred
-
-        for octet in self.private_pool:
-            if (
-                octet not in self.used_private_octets
-                and octet not in self.reserved_private_octets
-            ):
-                self.used_private_octets.add(octet)
-                return octet
-        raise RuntimeError("No unused private network octet is available")
-
-    def _allocate_sim_host(self, preferred: Optional[int]) -> int:
-        if preferred is not None and preferred not in self.used_sim_hosts:
-            self.used_sim_hosts.add(preferred)
-            return preferred
-
-        for host in self.simulation_pool:
-            if host not in self.used_sim_hosts and host not in self.reserved_sim_hosts:
-                self.used_sim_hosts.add(host)
-                return host
-        raise RuntimeError("No unused simulation network host is available")
 
     def _private_network(
         self, component: Mapping[str, Any], index: int
     ) -> Dict[str, str]:
-        preferred = component.get("preferred_private_octets", {}).get(str(index))
-        octet = self._allocate_private_octet(preferred)
         network = {
             "name": component["network_name_template"].format(index=index),
-            "subnet": component["subnet_template"].format(octet=octet),
         }
-        self.networks.append(
-            {"name": network["name"], "driver": "bridge", "subnet": network["subnet"]}
-        )
+        self.networks.append({"name": network["name"], "driver": "bridge"})
         return network
 
-    def _endpoint_allocations(
-        self,
+    @staticmethod
+    def _endpoint_hosts(
         endpoints: Mapping[str, Any],
         index: int,
-        private_subnet: Optional[str] = None,
         conditions: Optional[Mapping[str, bool]] = None,
     ) -> Dict[str, str]:
         result = {}
         conditions = conditions or {}
-        simulation_subnet = self.config["networks"]["simulation"]["subnet"]
         for endpoint in endpoints.values():
             condition = endpoint.get("conditional")
             if condition and not conditions.get(condition, False):
                 continue
-            if private_subnet:
-                host = endpoint["host"]
-                subnet = private_subnet
+            if "alias_template" in endpoint:
+                host = endpoint["alias_template"].format(index=index)
             else:
-                preferred = endpoint.get("preferred_instance_hosts", {}).get(
-                    str(index)
-                )
-                host = self._allocate_sim_host(preferred)
-                subnet = simulation_subnet
-            result[endpoint["env"]] = self._address(subnet, host)
+                host = endpoint["host"]
+            result[endpoint["env"]] = host
         return result
 
     def _allocate_component(self, name: str, index: int) -> Dict[str, str]:
@@ -196,13 +121,8 @@ class ScenarioTopologyAllocator:
         network = self._private_network(component, index)
         return {
             "PRIVATE_NETWORK_NAME": network["name"],
-            "VEHICLE_SUBNET": network["subnet"],
-            **self._endpoint_allocations(
-                component["private_endpoints"], index, network["subnet"]
-            ),
-            **self._endpoint_allocations(
-                component["simulation_endpoints"], index
-            ),
+            **self._endpoint_hosts(component["private_endpoints"], index),
+            **self._endpoint_hosts(component["simulation_endpoints"], index),
         }
 
     def allocate_vehicle(self, index: int) -> Dict[str, str]:
@@ -223,12 +143,11 @@ class ScenarioTopologyAllocator:
         conditions = {"evc_enabled": evc_enabled}
         return {
             "PRIVATE_NETWORK_NAME": network["name"],
-            "STREET_SUBNET": network["subnet"],
-            **self._endpoint_allocations(
-                street["private_endpoints"], index, network["subnet"], conditions
+            **self._endpoint_hosts(
+                street["private_endpoints"], index, conditions
             ),
-            **self._endpoint_allocations(
-                street["simulation_endpoints"], index, conditions=conditions
+            **self._endpoint_hosts(
+                street["simulation_endpoints"], index, conditions
             ),
         }
 
@@ -296,7 +215,7 @@ def apply_scenario_topology(
                 "DOCKER_TAG": "scenario-runner-placeholder",
                 "CARLA_HOST": "carla-server",
                 "SIM_NETWORK_NAME": topology.core["SIM_NETWORK_NAME"],
-                "CDASIM_SIM_IP": topology.core["CDASIM_SIM_IP"],
+                "CDASIM_SIM_HOST": topology.core["CDASIM_SIM_HOST"],
                 **allocation,
             }
         )
@@ -324,7 +243,8 @@ def apply_scenario_topology(
             {
                 "STREET_ID": f"street_{index}",
                 "SIMULATION_MODE": True,
-                "SIMULATION_IP": topology.core["CDASIM_SIM_IP"],
+                "SIMULATION_HOST": topology.core["CDASIM_SIM_HOST"],
+                "SIMULATION_IP": topology.core["CDASIM_SIM_HOST"],
                 "SIMULATION_REGISTRATION_PORT": 1615,
                 "TIME_SYNC_PORT": 7575,
                 "SIM_V2X_PORT": 1517,
@@ -332,8 +252,14 @@ def apply_scenario_topology(
                 "V2X_PORT": 8686,
                 "V2XHUB_LOG_ROOT": data_output["collect"]["v2xhub_logs"],
                 "SIM_NETWORK_NAME": topology.core["SIM_NETWORK_NAME"],
-                "INFRASTRUCTURE_IP": allocation["STREET_INFRASTRUCTURE_IP"],
-                "V2XHUB_IP": allocation["V2XHUB_SIM_IP"],
+                "INFRASTRUCTURE_HOST": allocation[
+                    "STREET_INFRASTRUCTURE_HOST"
+                ],
+                "V2XHUB_HOST": allocation["V2XHUB_SIM_HOST"],
+                "INFRASTRUCTURE_IP": allocation[
+                    "STREET_INFRASTRUCTURE_HOST"
+                ],
+                "V2XHUB_IP": allocation["V2XHUB_SIM_HOST"],
                 **allocation,
             }
         )

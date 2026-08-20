@@ -24,7 +24,7 @@ cleanup() {
 trap cleanup ERR
 
 {% for network in networks %}
-docker network create --driver {{ network.driver }} --subnet {{ network.subnet }} {{ network.name }} 2>/dev/null || true
+docker network create --driver {{ network.driver }}{% if network.subnet is defined %} --subnet {{ network.subnet }}{% endif %} {{ network.name }} 2>/dev/null || true
 {% endfor %}
 
 {% for config_container in config_containers %}
