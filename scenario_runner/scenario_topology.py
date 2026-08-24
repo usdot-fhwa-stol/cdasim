@@ -6,8 +6,6 @@
 #
 #  http://www.apache.org/licenses/LICENSE-2.0
 
-"""Resolve network names and DNS hostnames from the topology template."""
-
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -19,7 +17,6 @@ TOPOLOGY_CONFIG_PATH = (
     / "config"
     / "network_topology_template.json"
 )
-SUPPORTED_ARCHITECTURE = "ros2"
 DEFAULT_DATA_OUTPUT = {
     "output_directory": "/opt/carma-simulation/tests/output/scenario_runner",
     "collect": {
@@ -40,7 +37,7 @@ def load_topology_config(path: Path = TOPOLOGY_CONFIG_PATH) -> Dict[str, Any]:
     required = {
         "networks",
         "shared_services",
-        "components",
+        "instance_topology_templates",
     }
     missing = required - topology.keys()
     if missing:
@@ -49,7 +46,7 @@ def load_topology_config(path: Path = TOPOLOGY_CONFIG_PATH) -> Dict[str, Any]:
 
 
 class ScenarioTopologyAllocator:
-    """Resolve service names and required aliases for scenario components."""
+    """Resolve network values for repeatable scenario instances."""
 
     def __init__(
         self,
@@ -82,10 +79,10 @@ class ScenarioTopologyAllocator:
         return result
 
     def _private_network(
-        self, component: Mapping[str, Any], index: int
+        self, template: Mapping[str, Any], index: int
     ) -> Dict[str, str]:
         network = {
-            "name": component["network_name_template"].format(index=index),
+            "name": template["network_name_template"].format(index=index),
         }
         self.networks.append({"name": network["name"], "driver": "bridge"})
         return network
@@ -109,38 +106,38 @@ class ScenarioTopologyAllocator:
             result[endpoint["env"]] = host
         return result
 
-    def _allocate_component(self, name: str, index: int) -> Dict[str, str]:
-        component = self.config["components"][name]
-        network = self._private_network(component, index)
+    def _allocate_instance(self, name: str, index: int) -> Dict[str, str]:
+        template = self.config["instance_topology_templates"][name]
+        network = self._private_network(template, index)
         return {
             "PRIVATE_NETWORK_NAME": network["name"],
-            **self._endpoint_hosts(component["private_endpoints"], index),
-            **self._endpoint_hosts(component["simulation_endpoints"], index),
+            **self._endpoint_hosts(template["private_endpoints"], index),
+            **self._endpoint_hosts(template["simulation_endpoints"], index),
         }
 
     def allocate_vehicle(self, index: int) -> Dict[str, str]:
         """Allocate one ROS 2 Platform vehicle."""
 
-        return self._allocate_component("platform", index)
+        return self._allocate_instance("platform", index)
 
     def allocate_messenger(self, index: int) -> Dict[str, str]:
         """Allocate one ROS 2 Messenger vehicle."""
 
-        return self._allocate_component("messenger", index)
+        return self._allocate_instance("messenger", index)
 
     def allocate_street(self, index: int, evc_enabled: bool) -> Dict[str, str]:
         """Allocate one Street/V2X Hub instance."""
 
-        street = self.config["components"]["street"]
-        network = self._private_network(street, index)
+        template = self.config["instance_topology_templates"]["street"]
+        network = self._private_network(template, index)
         conditions = {"evc_enabled": evc_enabled}
         return {
             "PRIVATE_NETWORK_NAME": network["name"],
             **self._endpoint_hosts(
-                street["private_endpoints"], index, conditions
+                template["private_endpoints"], index, conditions
             ),
             **self._endpoint_hosts(
-                street["simulation_endpoints"], index, conditions
+                template["simulation_endpoints"], index, conditions
             ),
         }
 
@@ -163,21 +160,12 @@ def _spawn_point(settings):
         )
 
 
-def _validate_ros2_architecture(configured, owner):
-    if configured not in (None, SUPPORTED_ARCHITECTURE):
-        raise ValueError(
-            f"Unsupported {owner} architecture {configured!r}; "
-            "Scenario Runner supports ROS 2 only"
-        )
-
-
 def apply_scenario_topology(
     case: Dict[str, Any], topology_path: Path = TOPOLOGY_CONFIG_PATH
 ) -> Dict[str, Any]:
     """Add ROS 2 topology allocations to one scenario."""
 
     result = deepcopy(case)
-    _validate_ros2_architecture(result.get("architecture"), "scenario")
     env_settings = result["env_settings"]
     vehicles = env_settings.get("vehicles", [])
     data_output = _data_output(result.get("data_output"))
@@ -187,7 +175,6 @@ def apply_scenario_topology(
     vehicle_indexes = {"platform": 0, "messenger": 0}
     for vehicle in vehicles:
         component = vehicle.get("COMPONENT", "platform")
-        _validate_ros2_architecture(vehicle.get("architecture"), "vehicle")
         if component not in vehicle_indexes:
             raise ValueError(f"Unknown vehicle component: {component}")
         vehicle_indexes[component] += 1

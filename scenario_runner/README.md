@@ -21,7 +21,7 @@ The system automatically:
 
 ## Architecture
 
-### Components
+### Runner components
 
 | Component | Role |
 |------------|------|
@@ -30,7 +30,18 @@ The system automatically:
 | **ScenarioGenerator** | Builds `.env` files, extracts `docker-compose.yml` from configuration images, and creates shell scripts for start/stop. |
 | **DataCollector** | Collects simulation output data and organizes it by test case. |
 | **sim_start.sh / sim_stop.sh** | Generated shell scripts used to bring containers up and down. |
-| **parameters.yaml** | Central configuration file defining test cases, components, images, and data output rules. |
+| **parameters.yaml** | Central configuration file defining test cases, deployment entries, images, and data output rules. |
+
+### Network topology template
+
+`config/network_topology_template.json` describes only the network relationships
+between Compose projects. Its top-level sections are:
+
+| Section | Purpose |
+|---------|---------|
+| **`networks`** | Names the scenario-wide Docker networks, such as the simulation and cloud networks. |
+| **`shared_services`** | Defines stable network hostnames for services shared across the scenario, such as CDASim and CARMA Cloud. |
+| **`instance_topology_templates`** | Defines reusable network and endpoint patterns for repeatable Platform, Messenger, and Street instances. The allocator applies the appropriate template for each configured instance and substitutes its instance index where required. |
 
 ---
 
@@ -42,10 +53,10 @@ The system automatically:
 
 2. **Generate Scenario Environment**
    - `ScenarioTopologyAllocator` loads `network_topology_template.json` and adds internal networks, Docker service hostnames, and only the instance-specific DNS aliases required to distinguish repeated endpoints. These values are not configured in `parameters.yaml`.
-   - `ScenarioTopologyAllocator` assigns the ROS 2 endpoints required by each component.
+   - `ScenarioTopologyAllocator` applies the appropriate network template to each configured instance.
    - For each test case, `ScenarioRunner` writes a temporary `parameter.yaml`.
    - This is passed to `ScenarioGenerator`, which dynamically generates:
-     - `.env` files for each component (`cdasim`, CARMA Cloud, vehicles, streets)
+     - `.env` files for each Compose project (`cdasim`, CARMA Cloud, vehicles, streets)
      - Extracted `docker-compose.yml` files from the specified config images
      - Two shell scripts: `sim_start.sh` and `sim_stop.sh`
 
@@ -67,18 +78,19 @@ The system automatically:
 
 ## Key YAML Fields
 
-Scenario Runner supports ROS 2 components only. The entries under
-`env_settings` use these component fields:
+Scenario Runner supports ROS 2 deployments only. Each item under
+`env_settings` describes a Compose deployment entry. The following fields
+configure those entries:
 
 | Field | Description |
 |--------|--------------|
-| **`PROJECT_NAME`** | A unique name for this simulation component (used as the Docker project name). |
-| **`COMPONENT`** | Optional vehicle entry type: `platform` (default) or `messenger`. |
+| **`PROJECT_NAME`** | A unique Docker Compose project name for this deployment entry. |
+| **`COMPONENT`** | Vehicle entries only: selects the `platform` or `messenger` instance topology template. The default is `platform`. Do not set this field on Street entries. |
 | **`RUNTIME_IMAGE_ORG`** | The Docker organization or namespace that owns the runtime images (e.g., `usdotfhwastol`). |
 | **`RUNTIME_IMAGE_TAG`** | The version tag for the runtime image. Defines which CARMA or CDASim build version to execute. |
-| **`CONFIG_IMAGE_FULL`** | The full image name (including tag) of the configuration image that contains the embedded `docker-compose.yml` used to define how the component runs. |
+| **`CONFIG_IMAGE_FULL`** | The full image name (including tag) of the configuration image containing the deployment's embedded `docker-compose.yml`. |
 | **`COMPOSE_FILE`** | A repository-local base Compose file used instead of `CONFIG_IMAGE_FULL`. |
-| **`settings`** | Component-specific runtime parameters such as route, map, sensors, and spawn positions. |
+| **`settings`** | Deployment-specific runtime parameters such as route, map, sensors, and spawn positions. |
 
 ### How these image fields interact
 
@@ -174,12 +186,12 @@ project_root/
 
 ## Compose Override Support
 
-Each component can use a configuration image through `CONFIG_IMAGE_FULL` or a
+Each deployment entry can use a configuration image through `CONFIG_IMAGE_FULL` or a
 repository Compose file through `COMPOSE_FILE`. Files listed in
 `COMPOSE_OVERRIDES` are applied after the base Compose file, followed by the
 Scenario Runner managed override.
 
-The `carma_cloud` component follows the same repository-local model as CARMA
+The `carma_cloud` deployment entry follows the same repository-local model as CARMA
 Street. Clone `carma-cloud` beside `cdasim`, point `COMPOSE_FILE` to its base
 `docker-compose.yml`, and retain the Runner-owned
 `config/compose/carma-cloud.cdasim.yml` internal override. To use a CARMA Cloud

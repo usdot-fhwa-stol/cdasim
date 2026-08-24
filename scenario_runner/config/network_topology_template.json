@@ -50,7 +50,7 @@
       ]
     }
   },
-  "components": {
+  "instance_topology_templates": {
     "platform": {
       "network_name_template": "xil_carma_{index}_net",
       "private_endpoints": {
