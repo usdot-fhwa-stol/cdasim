@@ -36,7 +36,7 @@ docker compose \
 {% for compose_file in c.compose_files %}               -f "{{ compose_file }}" \
 {% endfor %}               --env-file "{{ c.env_file }}" \
                -p "{{ c.PROJECT_NAME }}" \
-               up -d{% for service in c.services %} "{{ service }}"{% endfor %}
+               up -d
 {% endfor %}
 
 echo "Scenario started."

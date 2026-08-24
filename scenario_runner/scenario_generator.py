@@ -528,7 +528,6 @@ class ScenarioGenerator:
             'compose_file': compose_files[0],
             'compose_files': compose_files,
             'env_file': env_file,
-            'services': cd.get('SERVICES', []),
             'platform_net': None,
             'street_net': None
         })
@@ -548,7 +547,6 @@ class ScenarioGenerator:
                 'compose_file': compose_files[0],
                 'compose_files': compose_files,
                 'env_file': env_file,
-                'services': cloud.get('SERVICES', []),
                 'platform_net': None,
                 'street_net': None
             })
@@ -570,7 +568,6 @@ class ScenarioGenerator:
                 'compose_file': compose_files[0],
                 'compose_files': compose_files,
                 'env_file': env_file,
-                'services': v.get('SERVICES', []),
                 'platform_net': f"{v['PROJECT_NAME']}_platform_net",
                 'street_net': None
             })
@@ -584,7 +581,6 @@ class ScenarioGenerator:
                 'compose_file': compose_files[0],
                 'compose_files': compose_files,
                 'env_file': env_file,
-                'services': s.get('SERVICES', []),
                 'platform_net': None,
                 'street_net': f"{s['PROJECT_NAME']}_street_net"
             })

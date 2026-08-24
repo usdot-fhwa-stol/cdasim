@@ -20,13 +20,6 @@ TOPOLOGY_CONFIG_PATH = (
     / "network_topology_template.json"
 )
 SUPPORTED_ARCHITECTURE = "ros2"
-DEFAULT_MESSENGER_SERVICES = [
-    "messenger_ros2",
-    "carma_messenger_bridge",
-    "messenger_v2x_ros_driver",
-    "messenger_vehicle_registration_service",
-    "carma-messenger-vehicle-plugin",
-]
 DEFAULT_DATA_OUTPUT = {
     "output_directory": "/opt/carma-simulation/tests/output/scenario_runner",
     "collect": {
@@ -221,9 +214,6 @@ def apply_scenario_topology(
         )
         if component == "messenger":
             messenger_root = f"/opt/carma-messenger/{settings['VEHICLE_ID']}"
-            vehicle["SERVICES"] = vehicle.get(
-                "SERVICES", list(DEFAULT_MESSENGER_SERVICES)
-            )
             settings.setdefault(
                 "MESSENGER_LOG_ROOT",
                 f"{data_output['collect']['rosbags'].rstrip('/')}/"
@@ -265,10 +255,6 @@ def apply_scenario_topology(
         )
 
     cdasim = env_settings["cdasim"]
-    default_services = [
-        "cdasim", "carla-sensor-lib", "xml_rpc_server"
-    ]
-    cdasim["SERVICES"] = cdasim.get("SERVICES", default_services)
     cdasim["settings"].update(
         {
             "CDASIM_LOG_ROOT": data_output["collect"]["mosaic_logs"],
@@ -278,9 +264,6 @@ def apply_scenario_topology(
 
     carma_cloud = env_settings.get("carma_cloud")
     if carma_cloud:
-        carma_cloud["SERVICES"] = carma_cloud.get(
-            "SERVICES", ["carma-cloud"]
-        )
         cloud_settings = carma_cloud.setdefault("settings", {})
         cloud_settings.setdefault(
             "CARMA_CLOUD_WORK_ROOT",
