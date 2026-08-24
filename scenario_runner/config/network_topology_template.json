@@ -122,14 +122,7 @@
         },
         "zookeeper": {
           "env": "STREET_INFRASTRUCTURE_HOST",
-          "host": "zookeeper",
-          "shares_network_namespace_with": [
-            "kafka",
-            "kowl",
-            "intersection_model",
-            "tsc_service",
-            "sensor_data_sharing_service"
-          ]
+          "host": "zookeeper"
         },
         "econolite-virtual-controller": {
           "env": "EVC_PRIVATE_HOST",
