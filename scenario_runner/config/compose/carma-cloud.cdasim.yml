@@ -5,10 +5,6 @@
 services:
   carma-cloud:
     image: "${CARMA_CLOUD_IMAGE}"
-    entrypoint:
-      - /opt/tomcat/bin/catalina.sh
-      - run
-    command: []
     network_mode: !reset null
     networks:
       - cloud_network
