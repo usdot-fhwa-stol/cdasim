@@ -12,18 +12,27 @@
 #  License for the specific language governing permissions and limitations under
 #  the License.
 
+import argparse
 import yaml
 import subprocess
 import shutil
+import time
 from pathlib import Path
 from scenario_generator import ScenarioGenerator
 from data_collector import DataCollector
+from scenario_topology import apply_scenario_topology
+
 
 class ScenarioRunner:
     """Run every scenario defined in parameters.yaml."""
 
-    def __init__(self, parameters_path: str = "config/parameters/parameters.yaml"):
+    def __init__(
+        self,
+        parameters_path: str = "config/parameters/parameters.yaml",
+        generate_only: bool = False,
+    ):
         self.parameters_path = Path(parameters_path)
+        self.generate_only = generate_only
         self.test_cases = []
         self.tmp_dir = Path("tmp").resolve()
         self.collector = DataCollector()
@@ -39,6 +48,7 @@ class ScenarioRunner:
         print(f"Loaded {len(self.test_cases)} scenario(s)")
 
     def _run_one(self, idx: int, case: dict):
+        case = apply_scenario_topology(case)
         label = case.get("label", f"scenario_{idx}")
         print(f"\n=== Scenario {idx}: {label} ===")
 
@@ -54,28 +64,36 @@ class ScenarioRunner:
         print(f"Generated {param_path}")
 
         # 3. Generate scripts
-        gen = ScenarioGenerator(config_path=str(param_path))
+        gen = ScenarioGenerator(
+            config_path=str(param_path),
+            compose_root=self.parameters_path.parent,
+        )
         scripts = gen.generate()
         start_sh = scripts["start_script"]
         stop_sh = scripts["stop_script"]
 
+        if self.generate_only:
+            print(
+                f"Scenario {idx} generated. "
+                f"Inspect files in {self.tmp_dir}.\n"
+            )
+            return
+
         # 4. Start
         print(f"Launching: {start_sh}")
-        proc = subprocess.Popen(["bash", start_sh])
+        subprocess.run(["bash", start_sh], check=True)
 
         # 5. Wait
         runtime = case.get("runtime_seconds", 60)
         print(f"Running for {runtime} seconds...")
         try:
-            proc.wait(timeout=runtime)
-        except subprocess.TimeoutExpired:
-            print("Timeout — stopping.")
+            time.sleep(runtime)
         finally:
             # 6. Stop
             print(f"Stopping: {stop_sh}")
-            ## check=True: blocks until the shell script is fully done
+            # check=True: blocks until the shell script is fully done
             subprocess.run(["bash", stop_sh], check=True)
-        
+
         print("Collecting data outputs...")
         self.collector.collect(idx, case)
 
@@ -94,9 +112,20 @@ class ScenarioRunner:
                 self._run_one(i, case)
             except Exception as e:
                 print(f"Scenario {i} failed: {e}")
-                if self.tmp_dir.exists():
+                if not self.generate_only and self.tmp_dir.exists():
                     shutil.rmtree(self.tmp_dir)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run CDASim scenarios")
+    parser.add_argument(
+        "--generate-only",
+        action="store_true",
+        help="Generate environment and start/stop files without executing them",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    ScenarioRunner().run()
+    args = parse_args()
+    ScenarioRunner(generate_only=args.generate_only).run()

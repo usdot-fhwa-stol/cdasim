@@ -32,20 +32,23 @@ class DataCollector:
         out_dir = Path(data_output["output_directory"])
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        case_dir = out_dir / data_output.get("rename_format", "test_{index}").format(index=index)
+        label = config.get("label", f"scenario_{index}")
+        case_dir = out_dir / data_output.get(
+            "rename_format", "{label}"
+        ).format(index=index, label=label)
         case_dir.mkdir(parents=True, exist_ok=True)
 
         collect_cfg = data_output.get("collect", {})
 
         for key, value in collect_cfg.items():
             print(key, value)
-            self._collect_folder(Path(value), case_dir / key)
+            self._collect_folder(Path(value), case_dir / key, key == "mosaic_logs")
 
-    def _collect_folder(self, src_base: Path, dest: Path):
-        latest = self.latest_subdir(src_base)
-        print(latest)
-        if latest:
-            shutil.copytree(latest, dest, dirs_exist_ok=True, symlinks=True)
-            print(f"Copied {latest} → {dest}")
+    def _collect_folder(self, src_base: Path, dest: Path, latest_only: bool = False):
+        src = (self.latest_subdir(src_base) or src_base) if latest_only else src_base
+        print(src)
+        if src and src.exists():
+            shutil.copytree(src, dest, dirs_exist_ok=True, symlinks=True)
+            print(f"Copied {src} → {dest}")
         else:
             print(f"No logs found in: {src_base}")

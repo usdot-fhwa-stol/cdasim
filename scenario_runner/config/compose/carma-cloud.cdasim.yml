@@ -1,0 +1,22 @@
+# CDASim/Scenario Runner overlay for the repository-local CARMA Cloud Compose.
+# The base repository supplies the application configuration files; this file
+# supplies XIL networking and scenario output paths.
+
+services:
+  carma-cloud:
+    image: "${CARMA_CLOUD_IMAGE}"
+    network_mode: !reset null
+    networks:
+      - cloud_network
+      - sim_external
+    volumes:
+      - "${CARMA_CLOUD_LOG_ROOT}:/opt/tomcat/logs"
+      - "${CARMA_CLOUD_WORK_ROOT}/carmacloud/xodr:/opt/tomcat/work/carmacloud/xodr"
+
+networks:
+  cloud_network:
+    external: true
+    name: "${CLOUD_NETWORK_NAME}"
+  sim_external:
+    external: true
+    name: "${SIM_NETWORK_NAME}"

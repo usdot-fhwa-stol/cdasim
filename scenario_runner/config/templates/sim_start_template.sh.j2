@@ -14,33 +14,29 @@
 #  the License.
 
 CURRENT_DIR=$(pwd)
-PROJECT_NAMES=()
 
 cleanup() {
     echo "Cleaning up..."
-    for p in "${PROJECT_NAMES[@]}"; do
-        [ -n "$p" ] && docker compose -p "$p" down
-    done
-    docker network rm sim_net 2>/dev/null || true
-    rm -rf "{{ temp_dir }}" 2>/dev/null || true
+    bash "{{ temp_dir }}/sim_stop.sh" 2>/dev/null || true
     cd "$CURRENT_DIR" || exit 1
     exit 1
 }
 trap cleanup ERR
 
-docker network create sim_net 2>/dev/null || true
+{% for network in networks %}
+docker network create --driver {{ network.driver }}{% if network.subnet is defined %} --subnet {{ network.subnet }}{% endif %} {{ network.name }} 2>/dev/null || true
+{% endfor %}
+
+{% for config_container in config_containers %}
+docker run --name "{{ config_container.name }}" --entrypoint sh "{{ config_container.image }}" -c '{{ config_container.init_command }}'
+{% endfor %}
 
 {% for c in scenario %}
-{% if c.platform_net %}
-docker network create {{ c.platform_net }} 2>/dev/null || true
-{% elif c.street_net %}
-docker network create {{ c.street_net }} 2>/dev/null || true
-{% endif %}
-
-docker compose -f "{{ c.compose_file }}" \
-               --env-file "{{ c.env_file }}" \
+docker compose \
+{% for compose_file in c.compose_files %}               -f "{{ compose_file }}" \
+{% endfor %}               --env-file "{{ c.env_file }}" \
                -p "{{ c.PROJECT_NAME }}" \
-               up -d && PROJECT_NAMES+=("{{ c.PROJECT_NAME }}")
+               up -d
 {% endfor %}
 
 echo "Scenario started."

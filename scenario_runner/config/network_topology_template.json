@@ -1,0 +1,146 @@
+{
+  "networks": {
+    "simulation": {
+      "name": "xil_sim_net"
+    },
+    "cloud": {
+      "name": "xil_cloud_net"
+    }
+  },
+  "shared_services": {
+    "cdasim": {
+      "interfaces": [
+        {
+          "network": "simulation",
+          "env": "CDASIM_SIM_HOST",
+          "host": "cdasim"
+        }
+      ]
+    },
+    "carla-sensor-lib": {
+      "interfaces": [
+        {
+          "network": "simulation",
+          "env": "CARLA_SENSOR_SIM_HOST",
+          "host": "carla-sensor-lib"
+        }
+      ]
+    },
+    "carma-cloud": {
+      "interfaces": [
+        {
+          "network": "cloud",
+          "env": "CARMA_CLOUD_PRIVATE_HOST",
+          "host": "carma-cloud"
+        },
+        {
+          "network": "simulation",
+          "env": "CARMA_CLOUD_SIM_HOST",
+          "host": "carma-cloud"
+        }
+      ]
+    },
+    "xml_rpc_server": {
+      "interfaces": [
+        {
+          "network": "simulation",
+          "env": "XML_RPC_SERVER_SIM_HOST",
+          "host": "xml_rpc_server"
+        }
+      ]
+    }
+  },
+  "instance_topology_templates": {
+    "platform": {
+      "network_name_template": "xil_carma_{index}_net",
+      "private_endpoints": {
+        "cdasim": {
+          "env": "CDASIM_VEHICLE_HOST",
+          "host": "cdasim"
+        },
+        "platform_ros2": {
+          "env": "PLATFORM_ROS2_HOST",
+          "host": "platform_ros2"
+        },
+        "carma-carla-integration": {
+          "env": "CARLA_BRIDGE_ROS_HOST",
+          "host": "carma-carla-integration"
+        },
+        "v2x_ros_driver": {
+          "env": "V2X_ROS_DRIVER_HOST",
+          "alias_template": "platform-v2x-{index}"
+        },
+        "vehicle_registration_service": {
+          "env": "VEHICLE_REGISTRATION_HOST",
+          "host": "vehicle_registration_service"
+        }
+      },
+      "simulation_endpoints": {
+        "carma-carla-integration": {
+          "env": "CARLA_BRIDGE_SIM_HOST",
+          "host": "carma-carla-integration"
+        }
+      }
+    },
+    "messenger": {
+      "network_name_template": "xil_messenger_{index}_net",
+      "private_endpoints": {
+        "messenger_ros2": {
+          "env": "MESSENGER_ROS2_HOST",
+          "host": "messenger_ros2"
+        },
+        "cdasim": {
+          "env": "CDASIM_MESSENGER_HOST",
+          "host": "cdasim"
+        },
+        "carma_messenger_bridge": {
+          "env": "MESSENGER_BRIDGE_HOST",
+          "alias_template": "messenger-bridge-{index}"
+        },
+        "messenger_v2x_ros_driver": {
+          "env": "MESSENGER_V2X_ROS_DRIVER_HOST",
+          "alias_template": "messenger-v2x-{index}"
+        },
+        "messenger_vehicle_registration_service": {
+          "env": "MESSENGER_VEHICLE_REGISTRATION_HOST",
+          "host": "messenger_vehicle_registration_service"
+        }
+      },
+      "simulation_endpoints": {
+        "carma-messenger-vehicle-plugin": {
+          "env": "MESSENGER_VEHICLE_PLUGIN_SIM_HOST",
+          "host": "carma-messenger-vehicle-plugin"
+        }
+      }
+    },
+    "street": {
+      "network_name_template": "xil_street_{index}_net",
+      "private_endpoints": {
+        "v2xhub": {
+          "env": "V2XHUB_PRIVATE_HOST",
+          "host": "v2xhub"
+        },
+        "zookeeper": {
+          "env": "STREET_INFRASTRUCTURE_HOST",
+          "host": "zookeeper"
+        },
+        "econolite-virtual-controller": {
+          "env": "EVC_PRIVATE_HOST",
+          "host": "econolite-virtual-controller",
+          "conditional": "evc_enabled"
+        }
+      },
+      "simulation_endpoints": {
+        "v2xhub": {
+          "env": "V2XHUB_SIM_HOST",
+          "alias_template": "v2xhub-{index}-sim"
+        },
+        "econolite-virtual-controller": {
+          "env": "EVC_SIM_HOST",
+          "alias_template": "evc-{index}-sim",
+          "conditional": "evc_enabled"
+        }
+      }
+    }
+  }
+}
