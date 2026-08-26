@@ -2,7 +2,7 @@
     "updateInterval": 100,
     "carlaUE4Path": "/opt/carma-simulation/",
     "carlaCDASimAdapterUrl":"null",
-    "carlaActorLibRPCUrl": "http://172.2.0.12:8090/RPC2",
-    "carlaSensorLibRPCUrl": "http://172.2.0.5:8091/RPC2",
+    "carlaActorLibRPCUrl": "http://xml_rpc_server:8090/RPC2",
+    "carlaSensorLibRPCUrl": "http://carla-sensor-lib:8091/RPC2",
     "sumoNetXmlPath": "/opt/carma-simulation/scenarios/Town10/sumo/Town10.net.xml"
 }
