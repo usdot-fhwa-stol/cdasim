@@ -79,6 +79,24 @@ The federate implements the following tick-loop integration pattern:
 
 ## Configuration
 
+### Sensor Coordinate Frame
+
+Detector registrations use CARLA coordinates by default for backward
+compatibility. Set `sensorCoordinateFrame` to `SUMO` to express detector
+locations and orientations in the SUMO coordinate frame:
+
+```json
+{
+  "sumoNetXmlPath": "/path/to/Town10.net.xml",
+  "sensorCoordinateFrame": "SUMO"
+}
+```
+
+The CARLA ambassador reads the `netOffset` from the configured SUMO network
+and converts each detector immediately before creating it in CARLA. The
+conversion preserves Z, flips the Y axis, applies the network offset, and
+converts yaw from SUMO to CARLA. Supported values are `CARLA` and `SUMO`.
+
 ### Basic Configuration
 ```json
 {

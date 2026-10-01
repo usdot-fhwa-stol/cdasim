@@ -62,6 +62,14 @@ public class CarlaConfiguration implements Serializable {
     public String sumoNetXmlPath;
 
     /**
+     * Coordinate frame used by detector locations and orientations received in
+     * {@code DetectorRegistration} interactions. Supported values are
+     * {@code CARLA} and {@code SUMO}. The default preserves the existing behavior
+     * of forwarding detector coordinates directly to CARLA.
+     */
+    public String sensorCoordinateFrame = "CARLA";
+
+    /**
      * Default CARLA vehicle blueprint to spawn for SUMO vehicles.
      * Example: "vehicle.tesla.model3".
      */
