@@ -229,17 +229,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         if (carlaConfig.updateInterval <= 0) {
             throw new RuntimeException("Invalid carla interval, should be >0");
         }
-        validateSensorCoordinateFrame();
-    }
-
-    private void validateSensorCoordinateFrame() {
-        if (!"CARLA".equalsIgnoreCase(carlaConfig.sensorCoordinateFrame)
-                && !"SUMO".equalsIgnoreCase(carlaConfig.sensorCoordinateFrame)) {
-            throw new RuntimeException(
-                    "Invalid sensorCoordinateFrame '" + carlaConfig.sensorCoordinateFrame
-                            + "'. Supported values are CARLA and SUMO."
-            );
-        }
     }
 
     /**
@@ -950,51 +939,6 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
     }
 
     /**
-     * Converts a detector registration expressed in the SUMO coordinate frame
-     * to the CARLA coordinate frame. Unlike vehicle conversion, detector
-     * positions represent a fixed point and therefore require no vehicle extent
-     * adjustment.
-     */
-    private DetectorRegistration detectorRegistrationForCarla(DetectorRegistration registration) {
-        validateSensorCoordinateFrame();
-        if ("CARLA".equalsIgnoreCase(carlaConfig.sensorCoordinateFrame)) {
-            return registration;
-        }
-
-        Detector detector = registration.getDetector();
-        CartesianPoint sumoLocation = detector.getLocation();
-        Orientation sumoOrientation = detector.getOrientation();
-
-        double carlaX = sumoLocation.getX() - sumoNetOffsetXY[0];
-        double carlaY = -(sumoLocation.getY() - sumoNetOffsetXY[1]);
-        double carlaYaw = sumoOrientation.getYaw() - 90.0;
-        while (carlaYaw > 180.0) {
-            carlaYaw -= 360.0;
-        }
-        while (carlaYaw < -180.0) {
-            carlaYaw += 360.0;
-        }
-
-        Detector carlaDetector = new Detector(
-                detector.getSensorId(),
-                detector.getType(),
-                new Orientation(carlaYaw, sumoOrientation.getPitch(), sumoOrientation.getRoll()),
-                CartesianPoint.xyz(carlaX, carlaY, sumoLocation.getZ())
-        );
-
-        log.info(
-                "Converted detector '{}' from SUMO location ({}, {}, {}) to CARLA location ({}, {}, {})",
-                detector.getSensorId(),
-                sumoLocation.getX(), sumoLocation.getY(), sumoLocation.getZ(),
-                carlaX, carlaY, sumoLocation.getZ()
-        );
-
-        return new DetectorRegistration(
-                registration.getTime(), carlaDetector, registration.getInfrastructureId()
-        );
-    }
-
-    /**
      * Convert CARLA actor information to VehicleData for SUMO synchronization.
      * This method extracts position, velocity, and other vehicle properties from CARLA actor data
      * and converts them to the SUMO coordinate system.
@@ -1338,7 +1282,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-            sensorClient.createSensor(detectorRegistrationForCarla(interaction));
+            sensorClient.createSensor(interaction);
             registeredDetectors.add(interaction);
         }
         catch(XmlRpcException e) {

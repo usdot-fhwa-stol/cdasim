@@ -4,6 +4,5 @@
     "carlaCDASimAdapterUrl":"null",
     "carlaActorLibRPCUrl": "http://xml-rpc-server:8090/RPC2",
     "carlaSensorLibRPCUrl": "http://carla-sensor-lib:8091/RPC2",
-    "sumoNetXmlPath": "/opt/carma-simulation/scenarios/Town10/sumo/Town10.net.xml",
-    "sensorCoordinateFrame": "SUMO"
+    "sumoNetXmlPath": "/opt/carma-simulation/scenarios/Town10/sumo/Town10.net.xml"
 }

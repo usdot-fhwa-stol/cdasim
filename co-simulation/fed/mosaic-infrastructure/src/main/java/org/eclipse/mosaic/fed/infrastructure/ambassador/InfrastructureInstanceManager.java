@@ -63,9 +63,10 @@ public class InfrastructureInstanceManager {
      * already present.
      * 
      * @param registration The InfrastructureRegistrationMessage to be registered.
+     * @param location     The infrastructure location in MOSAIC's local Cartesian frame.
      * 
      */
-    public void onNewRegistration(InfrastructureRegistrationMessage registration) {
+    public void onNewRegistration(InfrastructureRegistrationMessage registration, CartesianPoint location) {
         if (!managedInstances.containsKey(registration.getInfrastructureId())) {
             try {
                 newInfrastructureInstance(
@@ -74,7 +75,7 @@ public class InfrastructureInstanceManager {
                         registration.getRxMessagePort(),
                         registration.getTimeSyncPort(),
                         registration.getSimulatedInteractionPort(),
-                        registration.getLocation(),
+                        location,
                         registration.getSensors());
 
             } catch (UnknownHostException e) {
