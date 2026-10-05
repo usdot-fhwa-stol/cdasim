@@ -204,9 +204,9 @@ public class InfrastructureMessageAmbassadorTest {
     }
 
     @Test
-    public void testCarlaToMosaicLocation() {
-        CartesianPoint mosaicLocation = InfrastructureMessageAmbassador.carlaToMosaicLocation(
-                CartesianPoint.xyz(-46.0, 127.1, 10.0),
+    public void testOsmToMosaicLocation() {
+        CartesianPoint mosaicLocation = InfrastructureMessageAmbassador.osmToMosaicLocation(
+                CartesianPoint.xyz(-46.0, -127.1, 10.0),
                 CartesianPoint.xy(109.34, 135.96)
         );
 
@@ -251,7 +251,7 @@ public class InfrastructureMessageAmbassadorTest {
         // Loop through registration messages given message ambassador 
         for (InfrastructureRegistrationMessage registrationMessage : registrationMessages) {
             CartesianPoint expectedMosaicLocation =
-                    InfrastructureMessageAmbassador.carlaToMosaicLocation(
+                    InfrastructureMessageAmbassador.osmToMosaicLocation(
                             registrationMessage.getLocation(), CartesianPoint.ORIGO
                     );
             verify(instanceManagerMock).onNewRegistration(

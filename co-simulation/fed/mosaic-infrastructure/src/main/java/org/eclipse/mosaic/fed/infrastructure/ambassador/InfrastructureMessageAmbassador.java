@@ -276,16 +276,15 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
-     * Converts a CARLA location into MOSAIC's local Cartesian frame. CARLA and
-     * the projected map use opposite Y-axis directions, while MOSAIC also applies
-     * the scenario's configured Cartesian offset.
+     * Converts an OSM projected location into MOSAIC's local Cartesian frame by
+     * applying the scenario's configured Cartesian offset.
      */
-    static CartesianPoint carlaToMosaicLocation(
-            CartesianPoint carlaLocation, CartesianPoint cartesianOffset) {
+    static CartesianPoint osmToMosaicLocation(
+            CartesianPoint osmLocation, CartesianPoint cartesianOffset) {
         return CartesianPoint.xyz(
-                carlaLocation.getX() + cartesianOffset.getX(),
-                -carlaLocation.getY() + cartesianOffset.getY(),
-                carlaLocation.getZ()
+                osmLocation.getX() + cartesianOffset.getX(),
+                osmLocation.getY() + cartesianOffset.getY(),
+                osmLocation.getZ()
         );
     }
 
@@ -312,14 +311,14 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
                 log.info("Processing new registration request for  {}.", reg.getInfrastructureId());
-                CartesianPoint mosaicLocation = carlaToMosaicLocation(
+                CartesianPoint mosaicLocation = osmToMosaicLocation(
                         reg.getLocation(), GeoProjection.getInstance().getCartesianOffset()
                 );
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg, mosaicLocation);
                 // Process registration requests for RSUs and DSRCs
                 onRsuRegistrationRequest(reg.getInfrastructureId(), mosaicLocation.toGeo());
-                log.info("Converted CARLA RSU location for {} from ({}, {}, {}) to MOSAIC ({}, {}, {}).",
+                log.info("Converted OSM RSU location for {} from ({}, {}, {}) to MOSAIC ({}, {}, {}).",
                                             reg.getInfrastructureId(),
                                             reg.getLocation().getX(),
                                             reg.getLocation().getY(),
