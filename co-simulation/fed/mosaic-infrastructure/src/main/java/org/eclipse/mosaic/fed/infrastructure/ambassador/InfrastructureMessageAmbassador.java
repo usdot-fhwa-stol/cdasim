@@ -289,6 +289,19 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
+     * Creates a detector whose OSM projected location is converted into
+     * MOSAIC's local Cartesian frame.
+     */
+    static Detector osmToMosaicDetector(Detector detector, CartesianPoint cartesianOffset) {
+        return new Detector(
+                detector.getSensorId(),
+                detector.getType(),
+                detector.getOrientation(),
+                osmToMosaicLocation(detector.getLocation(), cartesianOffset)
+        );
+    }
+
+    /**
      * This method is called by the AbstractFederateAmbassador when the RTI grants a
      * time advance to the federate. Any unprocessed interactions are forwarded to
      * the federate using the processInteraction method before this call is made.
@@ -331,8 +344,13 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 if (reg.getSensors() != null ) {
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
                     for (Detector sensor : reg.getSensors()) {
+                        Detector mosaicSensor = osmToMosaicDetector(
+                                sensor, GeoProjection.getInstance().getCartesianOffset()
+                        );
                         // Trigger Sensor registrations for all listed sensors.
-                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
+                        this.rti.triggerInteraction(
+                                new DetectorRegistration(time, mosaicSensor, reg.getInfrastructureId())
+                        );
                     }
                 } 
                 else {

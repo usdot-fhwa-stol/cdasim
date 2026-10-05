@@ -1282,8 +1282,27 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         }
 
         try {
-            sensorClient.createSensor(interaction);
-            registeredDetectors.add(interaction);
+            Detector detector = interaction.getDetector();
+            CartesianPoint mosaicLocation = detector.getLocation();
+            Transform carlaTransform = carlaTransformFromSumo(
+                    mosaicLocation.getX(),
+                    mosaicLocation.getY(),
+                    mosaicLocation.getZ(),
+                    null,
+                    null,
+                    null
+            );
+            Detector carlaDetector = new Detector(
+                    detector.getSensorId(),
+                    detector.getType(),
+                    detector.getOrientation(),
+                    CartesianPoint.xyz(carlaTransform.x, carlaTransform.y, carlaTransform.z)
+            );
+            DetectorRegistration carlaRegistration = new DetectorRegistration(
+                    interaction.getTime(), carlaDetector, interaction.getInfrastructureId()
+            );
+            sensorClient.createSensor(carlaRegistration);
+            registeredDetectors.add(carlaRegistration);
         }
         catch(XmlRpcException e) {
             log.error("Error occurred attempting to create sensor : {}\n{}", interaction.getDetector(), e);

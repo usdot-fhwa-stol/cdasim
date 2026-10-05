@@ -216,6 +216,28 @@ public class InfrastructureMessageAmbassadorTest {
     }
 
     @Test
+    public void testOsmToMosaicDetector() {
+        Orientation orientation = new Orientation(10.0, 20.0, 30.0);
+        Detector detector = new Detector(
+                "sensor1",
+                DetectorType.SEMANTIC_LIDAR,
+                orientation,
+                CartesianPoint.xyz(-46.0, -127.1, 10.0)
+        );
+
+        Detector mosaicDetector = InfrastructureMessageAmbassador.osmToMosaicDetector(
+                detector, CartesianPoint.xy(109.34, 135.96)
+        );
+
+        assertEquals(detector.getSensorId(), mosaicDetector.getSensorId());
+        assertEquals(detector.getType(), mosaicDetector.getType());
+        assertEquals(orientation, mosaicDetector.getOrientation());
+        assertEquals(63.34, mosaicDetector.getLocation().getX(), 0.001);
+        assertEquals(8.86, mosaicDetector.getLocation().getY(), 0.001);
+        assertEquals(10.0, mosaicDetector.getLocation().getZ(), 0.001);
+    }
+
+    @Test
     public void testProcessTimeAdvanceGrant() throws InternalFederateException, IllegalValueException, NoSuchFieldException, SecurityException {
         //Test processTimeAdvanceGrant for Infrastructure Registration
         ambassador.processTimeAdvanceGrant(100);
