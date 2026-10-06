@@ -47,11 +47,11 @@ public class TrafficLightAddProgramTest extends AbstractTraciCommandTest {
         simulateStep.execute(traci.getTraciConnection(), 10 * TIME.SECOND);
 
         String currentState = new TrafficLightGetState().execute(traci.getTraciConnection(), "2");
-        assertEquals("ggggggggggg", currentState);
+        assertEquals("rrrrrrrrrrr", currentState);
 
         simulateStep.execute(traci.getTraciConnection(), 20 * TIME.SECOND);
         currentState = new TrafficLightGetState().execute(traci.getTraciConnection(), "2");
-        assertEquals("rrrrrrrrrrr", currentState);
+        assertEquals("ggggggggggg", currentState);
     }
 
 }
