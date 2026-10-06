@@ -35,6 +35,7 @@ import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
@@ -43,6 +44,7 @@ import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
+import org.eclipse.mosaic.lib.transform.GeoProjection;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -274,6 +276,32 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
     }
 
     /**
+     * Converts an OSM projected location into MOSAIC's local Cartesian frame by
+     * applying the scenario's configured Cartesian offset.
+     */
+    static CartesianPoint osmToMosaicLocation(
+            CartesianPoint osmLocation, CartesianPoint cartesianOffset) {
+        return CartesianPoint.xyz(
+                osmLocation.getX() + cartesianOffset.getX(),
+                osmLocation.getY() + cartesianOffset.getY(),
+                osmLocation.getZ()
+        );
+    }
+
+    /**
+     * Creates a detector whose OSM projected location is converted into
+     * MOSAIC's local Cartesian frame.
+     */
+    static Detector osmToMosaicDetector(Detector detector, CartesianPoint cartesianOffset) {
+        return new Detector(
+                detector.getSensorId(),
+                detector.getType(),
+                detector.getOrientation(),
+                osmToMosaicLocation(detector.getLocation(), cartesianOffset)
+        );
+    }
+
+    /**
      * This method is called by the AbstractFederateAmbassador when the RTI grants a
      * time advance to the federate. Any unprocessed interactions are forwarded to
      * the federate using the processInteraction method before this call is made.
@@ -296,22 +324,33 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
                 log.info("Processing new registration request for  {}.", reg.getInfrastructureId());
+                CartesianPoint mosaicLocation = osmToMosaicLocation(
+                        reg.getLocation(), GeoProjection.getInstance().getCartesianOffset()
+                );
                 // Store new instance registration to infrastructure instance manager
-                infrastructureInstanceManager.onNewRegistration(reg);
+                infrastructureInstanceManager.onNewRegistration(reg, mosaicLocation);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
-                log.info("RSU Registration for {} @ x, y, z: ( {}, {}, {}) .", 
+                onRsuRegistrationRequest(reg.getInfrastructureId(), mosaicLocation.toGeo());
+                log.info("Converted OSM RSU location for {} from ({}, {}, {}) to MOSAIC ({}, {}, {}).",
                                             reg.getInfrastructureId(),
                                             reg.getLocation().getX(),
-                                            reg.getLocation().getY(), 
-                                            reg.getLocation().getZ());
+                                            reg.getLocation().getY(),
+                                            reg.getLocation().getZ(),
+                                            mosaicLocation.getX(),
+                                            mosaicLocation.getY(),
+                                            mosaicLocation.getZ());
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
                 // Check for empty list of sensors which is valid
                 if (reg.getSensors() != null ) {
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
                     for (Detector sensor : reg.getSensors()) {
+                        Detector mosaicSensor = osmToMosaicDetector(
+                                sensor, GeoProjection.getInstance().getCartesianOffset()
+                        );
                         // Trigger Sensor registrations for all listed sensors.
-                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
+                        this.rti.triggerInteraction(
+                                new DetectorRegistration(time, mosaicSensor, reg.getInfrastructureId())
+                        );
                     }
                 } 
                 else {

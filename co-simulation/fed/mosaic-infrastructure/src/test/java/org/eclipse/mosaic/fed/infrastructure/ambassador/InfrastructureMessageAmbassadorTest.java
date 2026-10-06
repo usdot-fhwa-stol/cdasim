@@ -204,6 +204,40 @@ public class InfrastructureMessageAmbassadorTest {
     }
 
     @Test
+    public void testOsmToMosaicLocation() {
+        CartesianPoint mosaicLocation = InfrastructureMessageAmbassador.osmToMosaicLocation(
+                CartesianPoint.xyz(-46.0, -127.1, 10.0),
+                CartesianPoint.xy(109.34, 135.96)
+        );
+
+        assertEquals(63.34, mosaicLocation.getX(), 0.001);
+        assertEquals(8.86, mosaicLocation.getY(), 0.001);
+        assertEquals(10.0, mosaicLocation.getZ(), 0.001);
+    }
+
+    @Test
+    public void testOsmToMosaicDetector() {
+        Orientation orientation = new Orientation(10.0, 20.0, 30.0);
+        Detector detector = new Detector(
+                "sensor1",
+                DetectorType.SEMANTIC_LIDAR,
+                orientation,
+                CartesianPoint.xyz(-46.0, -127.1, 10.0)
+        );
+
+        Detector mosaicDetector = InfrastructureMessageAmbassador.osmToMosaicDetector(
+                detector, CartesianPoint.xy(109.34, 135.96)
+        );
+
+        assertEquals(detector.getSensorId(), mosaicDetector.getSensorId());
+        assertEquals(detector.getType(), mosaicDetector.getType());
+        assertEquals(orientation, mosaicDetector.getOrientation());
+        assertEquals(63.34, mosaicDetector.getLocation().getX(), 0.001);
+        assertEquals(8.86, mosaicDetector.getLocation().getY(), 0.001);
+        assertEquals(10.0, mosaicDetector.getLocation().getZ(), 0.001);
+    }
+
+    @Test
     public void testProcessTimeAdvanceGrant() throws InternalFederateException, IllegalValueException, NoSuchFieldException, SecurityException {
         //Test processTimeAdvanceGrant for Infrastructure Registration
         ambassador.processTimeAdvanceGrant(100);
@@ -238,6 +272,13 @@ public class InfrastructureMessageAmbassadorTest {
         int sensor_registration_index = 0;
         // Loop through registration messages given message ambassador 
         for (InfrastructureRegistrationMessage registrationMessage : registrationMessages) {
+            CartesianPoint expectedMosaicLocation =
+                    InfrastructureMessageAmbassador.osmToMosaicLocation(
+                            registrationMessage.getLocation(), CartesianPoint.ORIGO
+                    );
+            verify(instanceManagerMock).onNewRegistration(
+                    registrationMessage, expectedMosaicLocation
+            );
             // For each registration message, confirm that all the sensors in the regisration message
             // trigger sensor registration calls.
             for (Detector detector: registrationMessage.getSensors()) {
@@ -250,7 +291,7 @@ public class InfrastructureMessageAmbassadorTest {
             AdHocCommunicationConfiguration adhocConfig = capturedAdHocCommunicationConfiguration.get(rsu_registration_index);
             assertEquals(registrationMessage.getInfrastructureId(), registration.getMapping().getName());
             assertTrue(
-                registrationMessage.getLocation().toVector3d().isFuzzyEqual(
+                expectedMosaicLocation.toVector3d().isFuzzyEqual(
                    registration.getMapping().getPosition().toCartesian().toVector3d()
                 )
             );

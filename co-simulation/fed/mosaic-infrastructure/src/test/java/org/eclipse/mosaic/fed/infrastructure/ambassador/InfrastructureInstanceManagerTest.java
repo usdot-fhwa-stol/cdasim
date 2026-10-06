@@ -100,7 +100,7 @@ public class InfrastructureInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(registration);
+        manager.onNewRegistration(registration, registration.getLocation());
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
