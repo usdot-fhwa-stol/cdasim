@@ -11,6 +11,7 @@ case "${CARLA_RENDER_OFFSCREEN,,}" in
     CARLA_LAUNCH_ARGS+=(-RenderOffScreen)
     ;;
   false|0|no)
+    CARLA_LAUNCH_ARGS+=(-windowed -ResX=800 -ResY=600)
     ;;
   *)
     echo "Error: CARLA_RENDER_OFFSCREEN must be true or false, got '$CARLA_RENDER_OFFSCREEN'."
