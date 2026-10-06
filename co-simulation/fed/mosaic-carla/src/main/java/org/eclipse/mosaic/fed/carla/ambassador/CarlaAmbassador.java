@@ -1669,6 +1669,9 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 final String                  tlGroupId     = updatedTrafficLights.getKey();
                 final TrafficLightGroupInfo   tlGroupInfo   = updatedTrafficLights.getValue();
                 final long                    nextSwitchNs  = tlGroupInfo.getAssumedTimeOfNextSwitch();
+                final double                  timeToNextSwitchSeconds = (nextSwitchNs > grantTimeNs)
+                        ? (double) (nextSwitchNs - grantTimeNs) / 1e9
+                        : 0.0;
                 final List<TrafficLightState> states        = tlGroupInfo.getCurrentState();
                 final List<String>            carlaIds      = tlLogicLinkSignals.get(tlGroupId);
 
@@ -1685,11 +1688,10 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     }
 
                     if (multiXmlRpcManager != null) {
-                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(carlaId, 
-                            (nextSwitchNs > grantTimeNs) ? (nextSwitchNs - grantTimeNs) / (long)1e9 : 0L);
+                        multiXmlRpcManager.getClient(CarlaXmlRpcClient.ServerType.ACTOR_LIB).setTrafficLightTimer(
+                                carlaId, timeToNextSwitchSeconds);
                     } else if (carlaXmlRpcClient != null) {
-                        carlaXmlRpcClient.setTrafficLightTimer(carlaId, 
-                            (nextSwitchNs > grantTimeNs) ? (nextSwitchNs - grantTimeNs) / (long)1e9 : 0L);
+                        carlaXmlRpcClient.setTrafficLightTimer(carlaId, timeToNextSwitchSeconds);
                     }
                 }
             }
