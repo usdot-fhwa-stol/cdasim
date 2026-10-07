@@ -502,10 +502,14 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                         nodesToUpdate.add(new NodeDataContainer(id, projectedPosition));
                     } else if (newVirtualVehicles.containsKey(vi.getName())) {
                         // Node was not yet added to simulation, so update its entry in the virtual node list
-                        newVirtualVehicles.get(vi.getName()).position = projectedPosition;
+                        VirtualNodeContainer nc = newVirtualVehicles.get(vi.getName());
+                        nc.position = projectedPosition;
                         if (this.log.isDebugEnabled()) {
                             log.debug("UpdateNode (still virtual) : ID[int={}]", vi.getName());
                             log.debug("Pos: x({}) y({}) Point2D.Double: {}", projectedPosition.getX(), projectedPosition.getY(), geoPosition);
+                        }
+                        if (nc.configAdHoc != null) {
+                            addVehicleToSimulation(vi.getName(), interaction.getTime());
                         }
                     } else {
                         this.log.warn("Node ID[int={}] is not simulated", vi.getName());

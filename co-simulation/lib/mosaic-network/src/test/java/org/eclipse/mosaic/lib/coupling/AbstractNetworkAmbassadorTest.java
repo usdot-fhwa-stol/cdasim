@@ -88,6 +88,7 @@ public class AbstractNetworkAmbassadorTest {
         when(ambassadorFederateChannelMock.writeInitBody(anyLong(), anyLong())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeAddNodeMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeAddRsuNodeMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
+        when(ambassadorFederateChannelMock.writeUpdatePositionsMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeConfigMessage(
                 anyLong(),
                 anyInt(),
@@ -205,6 +206,32 @@ public class AbstractNetworkAmbassadorTest {
         // Assert
         verify(ambassadorFederateChannelMock, times(1)).writeAddNodeMessage(eq(2 * TIME.SECOND), anyList());
         verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(2 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
+    }
+
+    @Test
+    public void vehicleRegisteredConfiguredThenUpdated_configurationMessageSent() throws Exception {
+        // Setup
+        networkAmbassador.initialize(0, 1000);
+
+        // Run
+        final Interaction vehicleRegistration = new VehicleRegistration(1 * TIME.SECOND, "veh_0", "vehicle", Lists.newArrayList(), null, null);
+        networkAmbassador.processInteraction(vehicleRegistration);
+
+        final AdHocConfiguration adHocConfiguration = new AdHocConfiguration.Builder("veh_0").create();
+        final Interaction adHocCommunicationConfiguration = new AdHocCommunicationConfiguration(2 * TIME.SECOND, adHocConfiguration);
+        networkAmbassador.processInteraction(adHocCommunicationConfiguration);
+
+        final Interaction vehicleUpdates = new VehicleUpdates(
+                3 * TIME.SECOND,
+                Lists.newArrayList(),
+                Lists.newArrayList(createVehicleInfo("veh_0")),
+                Lists.newArrayList()
+        );
+        networkAmbassador.processInteraction(vehicleUpdates);
+
+        // Assert
+        verify(ambassadorFederateChannelMock, times(1)).writeAddNodeMessage(eq(3 * TIME.SECOND), anyList());
+        verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(3 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
     }
 
     @Test
