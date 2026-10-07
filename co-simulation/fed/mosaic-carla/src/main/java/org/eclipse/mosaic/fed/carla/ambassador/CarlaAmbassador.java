@@ -555,7 +555,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         // Log detailed information about added actors
                         for (java.util.Map<String, Object> actorInfo : addedActors) {
                             String actorId = actorInfo.get("id") != null ? actorInfo.get("id").toString() : "unknown";
-                            log.info("EXTERNAL VEHICLE ADDED: Actor ID={}, Info={}", actorId, actorInfo);
+                            log.info("CDAS_EVENT event=carla_external_vehicle_added actor_id={} info={}",
+                                    actorId, actorInfo);
                         }
                         
                         // Log detailed information about updated actors
@@ -609,7 +610,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                                     
                                     // Trigger the interaction
                                     this.rti.triggerInteraction(assignment);
-                                    log.info("CARLA->SUMO SYNC: Triggered VehicleFederateAssignment for external vehicle '{}' (type: {})", 
+                                    log.info("CDAS_EVENT event=carla_vehicle_assignment_published actor_id={} vehicle_type={}",
                                         actorId, vehicleTypeId);
                                 } catch (Exception e) {
                                     log.warn("Failed to trigger VehicleFederateAssignment for external vehicle '{}': {}", actorId, e.getMessage());
@@ -696,7 +697,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         if (!addedVehicleData.isEmpty() || !updatedVehicleData.isEmpty() || !removedActors.isEmpty()) {
                             VehicleUpdates vehicleUpdates = new VehicleUpdates(time, addedVehicleData, updatedVehicleData, removedActors);
                             this.rti.triggerInteraction(vehicleUpdates);
-                            log.info("CARLA->SUMO SYNC: Published VehicleUpdates to SUMO - added={}, updated={}, removed={}", 
+                            log.info("CDAS_EVENT event=carla_vehicle_updates_published added={} updated={} removed={}",
                                 addedVehicleData.size(), updatedVehicleData.size(), removedActors.size());
                         }
 
@@ -725,7 +726,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 
                 nextTimeStep += carlaConfig.updateInterval * TIME.MILLI_SECOND;
                 rti.requestAdvanceTime(nextTimeStep , 0, (byte) 2);
-                log.info("Next time step: {}", nextTimeStep);
+                log.info("CDAS_EVENT event=carla_next_timestep time_ns={}", nextTimeStep);
             
         } 
         catch (IllegalValueException e) {
@@ -1234,7 +1235,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             this.receiveInteraction((VehicleUpdates) interaction);
         }
         else if (interaction.getTypeId().equals(TrafficLightUpdates.TYPE_ID)) {
-            log.info("Processing TrafficLightUpdates interaction - this should forward traffic light commands to CARLA");
+            log.info("CDAS_EVENT event=carla_traffic_light_updates_received time_ns={}", interaction.getTime());
             this.receiveInteraction((TrafficLightUpdates) interaction);
         }
         else if (interaction.getTypeId().equals(DetectorRegistration.TYPE_ID)) {
@@ -1316,7 +1317,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
      * - Destroy CARLA actors for SUMO removed vehicles
      */
     private void receiveInteraction(VehicleUpdates interaction) {
-        log.info("Received VehicleUpdates interaction at time {}: added={}, updated={}, removed={}", 
+        log.info("CDAS_EVENT event=carla_vehicle_updates_received time_ns={} added={} updated={} removed={}",
                 interaction.getTime(), 
                 interaction.getAdded() != null ? interaction.getAdded().size() : 0,
                 interaction.getUpdated() != null ? interaction.getUpdated().size() : 0,
@@ -1325,16 +1326,16 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
         boolean actorConnected = false;
         if (multiXmlRpcManager != null) {
             actorConnected = multiXmlRpcManager.isConnected(CarlaXmlRpcClient.ServerType.ACTOR_LIB);
-            log.info("Multi-XML-RPC manager actor connection status: {}", actorConnected);
+            log.info("CDAS_EVENT event=carla_actor_connection_status mode=multi connected={}", actorConnected);
         } else if (carlaXmlRpcClient != null && carlaXmlRpcClient.getServerType() == CarlaXmlRpcClient.ServerType.ACTOR_LIB) {
             actorConnected = carlaXmlRpcClient.isConnected();
-            log.info("Single XML-RPC client actor connection status: {}", actorConnected);
+            log.info("CDAS_EVENT event=carla_actor_connection_status mode=single connected={}", actorConnected);
         } else {
             log.warn("No XML-RPC client configured for ACTOR_LIB");
         }
 
         if (!actorConnected) {
-            log.warn("Actor server not connected; skip SUMO->CARLA sync. multiXmlRpcManager={}, carlaXmlRpcClient={}", 
+            log.warn("CDAS_EVENT event=carla_vehicle_sync_skipped reason=actor_server_disconnected multi_client={} single_client={}",
                     multiXmlRpcManager != null, carlaXmlRpcClient != null);
             return;
         }
@@ -1353,7 +1354,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
             int numAdded = interaction.getAdded() != null ? interaction.getAdded().size() : 0;
             int numUpdated = interaction.getUpdated() != null ? interaction.getUpdated().size() : 0;
             int numRemoved = interaction.getRemovedNames() != null ? interaction.getRemovedNames().size() : 0;
-            log.info("Starting SUMO->CARLA vehicle sync: added={}, updated={}, removed={}", numAdded, numUpdated, numRemoved);
+            log.info("CDAS_EVENT event=carla_vehicle_sync_started added={} updated={} removed={}",
+                    numAdded, numUpdated, numRemoved);
 
             // Ensure we have up-to-date list of CARLA actors (excluding SUMO-managed vehicles)
             java.util.Map<String, java.util.Map<String, Object>> actors = actorClient.getAllActorsExcludingSumo(sumoToCarlaIdMapping);
@@ -1435,7 +1437,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                 
                 // Check if vehicle already exists in mapping - if so, skip spawn and move to update
                 if (sumoToCarlaIdMapping.containsKey(id)) {
-                    log.debug("SUMO vehicle '{}' already exists in mapping with CARLA ID '{}', skipping spawn", id, sumoToCarlaIdMapping.get(id));
+                    log.debug("CDAS_EVENT event=carla_spawn_skipped vehicle_id={} carla_id={} reason=existing_mapping",
+                            id, sumoToCarlaIdMapping.get(id));
                     // Move this vehicle to update list instead of spawning
                     actorsToUpdate.add(vd);
                     continue; // Skip the spawn process
@@ -1536,7 +1539,7 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                         // Create mapping after successful spawn
                         sumoToCarlaIdMapping.put(id, carlaId);
                         newlySpawnedActors.add(id);
-                        log.info("Successfully spawned CARLA actor for SUMO vehicle '{}' with CARLA ID '{}' at ({}, {}) yaw {} speed {}", 
+                        log.info("CDAS_EVENT event=carla_sumo_vehicle_spawned vehicle_id={} carla_id={} x={} y={} yaw={} speed={}",
                                 id, carlaId, finalLocation.get(0), finalLocation.get(1), rotation.get(1), speed);
                     } else {
                         log.error("Failed to spawn CARLA actor for SUMO vehicle {} - XML-RPC call returned null", id);
@@ -1601,7 +1604,8 @@ public class CarlaAmbassador extends AbstractFederateAmbassador {
                     }
                     
                     if (transformOk) {
-                        log.debug("Successfully updated CARLA actor '{}' (SUMO: '{}') transform (speed: {} m/s)", carlaId, id, speed);
+                        log.debug("CDAS_EVENT event=carla_actor_updated carla_id={} vehicle_id={} speed_mps={}",
+                                carlaId, id, speed);
                     }
                 } else {
                     log.warn("No CARLA ID found for SUMO vehicle '{}' during update", id);

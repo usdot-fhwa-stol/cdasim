@@ -187,10 +187,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (!infrastructureInstanceManager.checkIfRegistered(rsuId)) {
             // Abort early as we only are concerned with CARMA Platform vehicles
 
-            log.info("Abort V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
+            log.info("CDAS_EVENT event=v2x_reception_ignored receiver={} message_id={} sender={} reason=unregistered_receiver",
+                    interaction.getReceiverName(), interaction.getMessageId(), interaction.getSenderId());
             return;
         }
-        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
+        log.info("CDAS_EVENT event=v2x_reception_processing receiver={} message_id={} sender={}",
+                interaction.getReceiverName(), interaction.getMessageId(), interaction.getSenderId());
 
         int messageId = interaction.getMessageId();
         log.info("Querying v2x message cache for message id: {}", messageId);
@@ -202,7 +204,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
             infrastructureInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), rsuId);
-            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
+            log.info("CDAS_EVENT event=v2x_reception_forwarded receiver={} message_id={} size_bytes={}",
+                    interaction.getReceiverName(), interaction.getMessageId(), msg2.getPayLoad().getBytes().length);
         } else {
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }

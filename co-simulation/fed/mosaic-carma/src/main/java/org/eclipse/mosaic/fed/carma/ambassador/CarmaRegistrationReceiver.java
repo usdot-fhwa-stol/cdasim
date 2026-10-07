@@ -62,7 +62,7 @@ public class CarmaRegistrationReceiver extends CommonRegistrationReceiver<CarmaR
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                log.info("New CARMA instance '{}' received with CARMA Registration Receiver.", parsedMessage.getVehicleId());
+                log.info("CDAS_EVENT event=carma_instance_received instance_id={}", parsedMessage.getVehicleId());
                 rxQueue.add(parsedMessage);
             }
        }

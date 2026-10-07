@@ -75,7 +75,7 @@ public class CarmaV2xMessageReceiver implements Runnable {
     public void init() {
         try {
             listenSocket = new DatagramSocket(listenPort);
-            log.info("CarmaV2xMessageReceiver started listening on UDP port: {}.", listenPort);
+            log.info("CDAS_EVENT event=v2x_receiver_started port={}", listenPort);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }

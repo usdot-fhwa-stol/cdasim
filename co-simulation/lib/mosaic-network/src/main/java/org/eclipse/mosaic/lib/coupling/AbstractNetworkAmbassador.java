@@ -314,7 +314,8 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                                     rcvMsgContainer.msgId,
                                     rcvMsgContainer.receiverInformation
                             );
-                            log.info("Receive V2XMessage : Id({}) on Node {} at Time={}", msg.getMessageId(), msg.getReceiverName(), msg.getTime());
+                            log.info("CDAS_EVENT event=v2x_message_received message_id={} receiver={} time_ns={}",
+                                    msg.getMessageId(), msg.getReceiverName(), msg.getTime());
                             this.rti.triggerInteraction(msg);  // Hand the received message to the RTI and thus the other federates
                         }
                         break;
@@ -602,7 +603,7 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
 
             if (sourceId != null) {
                 log.info(
-                        "insertV2XMessage: id={} from node ID[int={} , ext={}] channel:{} time={}",
+                        "CDAS_EVENT event=v2x_message_inserted message_id={} sender={} external_id={} channel={} time_ns={}",
                         interaction.getMessageId(),
                         sac.getSourceName(), sourceId, dac.getAdhocChannelId(), interaction.getTime()
                 ); // Write the message onto the channel and to the federate

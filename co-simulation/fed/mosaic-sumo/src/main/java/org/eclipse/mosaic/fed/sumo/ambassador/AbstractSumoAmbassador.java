@@ -372,6 +372,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
 
             // disable Nagle's algorithm (TcpNoDelay Flag) to decrease latency even further
             socket.setTcpNoDelay(true);
+            log.info("CDAS_EVENT event=sumo_connection_established host={} port={}", host, port);
             log.debug("Created TraCI Connection with the following specs: ");
             log.debug("    Receive Buffer Size: " + socket.getReceiveBufferSize());
             log.debug("    Send Buffer Size: " + socket.getSendBufferSize());
@@ -381,7 +382,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             log.error("Unknown host: {}", ex.getMessage(), ex);
             // Socket connection failed, but retry logic in IOException handler will attempt to reconnect
         } catch (IOException ex) {
-            log.warn("Error while connecting to SUMO. Retrying.");
+            log.warn("CDAS_EVENT event=sumo_connection_retry host={} port={} attempts_remaining={}",
+                    host, port, connectionAttempts);
             if (connectionAttempts-- > 0) {
                 try {
                     Thread.sleep(SLEEP_AFTER_ATTEMPT);
@@ -477,7 +479,8 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         interactionList.add(interaction);
 
         if (log.isTraceEnabled()) {
-            log.trace("Got new interaction {} with time {} ns", interaction.getTypeId(), interaction.getTime());
+            log.trace("CDAS_EVENT event=sumo_interaction_received interaction_type={} time_ns={}",
+                    interaction.getTypeId(), interaction.getTime());
         }
     }
 
@@ -570,7 +573,7 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
             String vehicleId = addedVehicle.getName();
             if (!externalVehicleMap.containsKey(vehicleId)) {
                 // No explicit VehicleFederateAssignment was received for this vehicle; skip
-                log.warn("Ignoring added external vehicle '{}' from {} without prior VehicleFederateAssignment",
+                log.warn("CDAS_EVENT event=sumo_external_vehicle_ignored vehicle_id={} sender={} reason=missing_assignment",
                         vehicleId, vehicleUpdates.getSenderId());
                 continue;
             }
@@ -1233,7 +1236,10 @@ public abstract class AbstractSumoAmbassador extends AbstractFederateAmbassador 
         if (!receivedSimulationStep && firstAttemptToAdvanceToNextStep)
         {
             long millis = System.currentTimeMillis();
-            log.info("Simulation Time: {} where current system time is: {} and nextTimeStep: {} and ambasador id: {}", (int) (time/1e6), millis, nextTimeStep, getId());
+            log.info("CDAS_EVENT event=sumo_simulation_time time_ms={} wall_time_ms={} next_time_ns={} ambassador_id={}",
+                    (int) (time / 1e6), millis, nextTimeStep, getId());
+            log.info("Simulation Time: {} where current system time is: {} and nextTimeStep: {} and ambasador id: {}",
+                    (int) (time / 1e6), millis, nextTimeStep, getId());
             firstAttemptToAdvanceToNextStep = false;
         }
 

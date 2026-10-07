@@ -60,7 +60,8 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
             }
         } else {
             // log warning
-            log.warn("Received duplicate registration for vehicle " + registration.getVehicleRole());
+            log.warn("CDAS_EVENT event=common_registration_duplicate instance_id={}",
+                    registration.getVehicleRole());
         }
     }
 
@@ -68,7 +69,7 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
         CommonInstance tmp = new CommonInstance(VehId, RoleName, targetAddress, v2xPort, timeSyncPort);
         try {
             tmp.bind();
-            log.info("New Common instance '{}' registered with CARMA Instance Manager.", RoleName);
+            log.info("CDAS_EVENT event=common_instance_registered instance_id={}", RoleName);
         } catch (IOException e) {
             log.error("Failed to bind Common instance with ID '{}' to its RX message socket: {}",
             RoleName, e.getMessage());
@@ -131,7 +132,7 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
             Gson gson = new Gson();
             byte[] bytes = gson.toJson(message).getBytes();
             for (T currentInstance : managedInstances.values()) {
-                log.debug("Sending Common instance {} at {}:{} time sync message for time {}!" ,
+                log.debug("CDAS_EVENT event=common_time_sync_sent instance_id={} target={} port={} time_ns={}",
                     currentInstance.getVehicleId(), 
                     currentInstance.getTargetAddress(), 
                     currentInstance.getTimeSyncPort(), 
