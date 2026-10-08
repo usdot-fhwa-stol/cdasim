@@ -43,7 +43,7 @@ public class CarmaInstanceManager extends CommonInstanceManager<CarmaInstance, C
         CarmaInstance tmp = new CarmaInstance(carmaVehId, carlaRoleName, targetAddress, v2xPort, timeSyncPort);
         try {
             tmp.bind();
-            log.info("New CARMA instance '{}' registered with CARMA Instance Manager.", carlaRoleName);
+            log.info("CDAS_EVENT event=carma_instance_registered instance_id={}", carlaRoleName);
         } catch (IOException e) {
             log.error("Failed to bind CARMA instance with ID '{}' to its RX message socket: {}",
             carlaRoleName, e.getMessage());

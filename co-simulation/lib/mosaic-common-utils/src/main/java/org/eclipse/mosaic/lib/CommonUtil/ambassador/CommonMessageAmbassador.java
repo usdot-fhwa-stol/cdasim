@@ -235,7 +235,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
             // Abort early as we only are concerned with CARMA Platform vehicles
             return;
         }
-        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId());
+        log.info("CDAS_EVENT event=v2x_reception_processing receiver={} message_id={}",
+                interaction.getReceiverName(), interaction.getMessageId());
 
         int messageId = interaction.getMessageId();
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
@@ -243,7 +244,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
             commonInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
-            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
+            log.info("CDAS_EVENT event=v2x_reception_forwarded receiver={} message_id={} size_bytes={}",
+                    interaction.getReceiverName(), interaction.getMessageId(), msg2.getPayLoad().getBytes().length);
         } else {
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
