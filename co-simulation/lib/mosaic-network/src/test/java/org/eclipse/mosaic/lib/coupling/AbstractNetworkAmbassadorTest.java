@@ -15,6 +15,7 @@
 
 package org.eclipse.mosaic.lib.coupling;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -26,6 +27,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
@@ -42,6 +45,7 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,6 +75,8 @@ public class AbstractNetworkAmbassadorTest {
     public ClientServerChannel federateAmbassadorChannelMock;
 
     private AbstractNetworkAmbassador networkAmbassador;
+    private ch.qos.logback.classic.Logger networkAmbassadorLogger;
+    private ListAppender<ILoggingEvent> logAppender;
 
     @Before
     public void setup() throws IOException {
@@ -85,6 +91,11 @@ public class AbstractNetworkAmbassadorTest {
         };
         networkAmbassador.connectToFederate(null, -1);
 
+        networkAmbassadorLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(networkAmbassador.getClass());
+        logAppender = new ListAppender<>();
+        logAppender.start();
+        networkAmbassadorLogger.addAppender(logAppender);
+
         when(ambassadorFederateChannelMock.writeInitBody(anyLong(), anyLong())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeAddNodeMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeAddRsuNodeMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
@@ -95,6 +106,11 @@ public class AbstractNetworkAmbassadorTest {
                 anyInt(),
                 isA(AdHocConfiguration.class))
         ).thenReturn(ClientServerChannel.CMD.SUCCESS);
+    }
+
+    @After
+    public void tearDown() {
+        networkAmbassadorLogger.detachAppender(logAppender);
     }
 
     @Test
@@ -179,6 +195,7 @@ public class AbstractNetworkAmbassadorTest {
         // Assert
         verify(ambassadorFederateChannelMock, times(1)).writeAddNodeMessage(eq(2 * TIME.SECOND), anyList());
         verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(2 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
+        assertNetworkNodeAddedEvent("veh_0", "vehicle", 2 * TIME.SECOND);
     }
 
     @Test
@@ -271,6 +288,26 @@ public class AbstractNetworkAmbassadorTest {
         // Assert
         verify(ambassadorFederateChannelMock, times(1)).writeAddRsuNodeMessage(eq(2 * TIME.SECOND), anyList());
         verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(2 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
+        assertNetworkNodeAddedEvent("rsu_0", "rsu", 2 * TIME.SECOND);
+    }
+
+    private void assertNetworkNodeAddedEvent(String nodeId, String nodeType, long time) {
+        String eventPrefix = String.format(
+                "CDAS_EVENT event=network_node_added node_id=%s node_type=%s external_id=",
+                nodeId,
+                nodeType
+        );
+        String eventSuffix = " time_ns=" + time;
+
+        assertTrue(
+                logAppender.list.stream()
+                        .map(ILoggingEvent::getFormattedMessage)
+                        .anyMatch(message -> message.startsWith(eventPrefix)
+                                && message.contains(" x=")
+                                && message.contains(" y=")
+                                && message.contains(" z=")
+                                && message.endsWith(eventSuffix))
+        );
     }
 
     private VehicleData createVehicleInfo(String string) {
