@@ -687,6 +687,7 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                         "Added RSU ID[int= {}, ext={}] at projected position= {} time={}",
                         idTransformer.fromExternalId(id), id, nc.position, time
                 );
+                logNetworkNodeAdded(nodeId, "rsu", id, nc.position, time);
                 log.debug("Sending saved AdHocCommunicationConfiguration message");
                 sendAdHocCommunicationConfiguration(nc.configAdHoc, time);
             }
@@ -709,14 +710,13 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             if (idTransformer.containsInternalId(nodeId)) {
                 this.log.warn("Vehicle with id(int={}) couldn't be added: name already exists ", nodeId);
                 return;
-            } else {
-                int id = idTransformer.toExternalId(nodeId);
-                nodesToAdd.add(new NodeDataContainer(id, nc.position));
-                this.log.info(
-                        "Adding vehicle ID[int={}, ext={}] at projected_position={} time={}",
-                        idTransformer.fromExternalId(id), id, nc.position, time
-                );
             }
+            int externalId = idTransformer.toExternalId(nodeId);
+            nodesToAdd.add(new NodeDataContainer(externalId, nc.position));
+            this.log.info(
+                    "Adding vehicle ID[int={}, ext={}] at projected_position={} time={}",
+                    idTransformer.fromExternalId(externalId), externalId, nc.position, time
+            );
             this.newVirtualVehicles.remove(nodeId);
 
             if (CMD.SUCCESS != ambassadorFederateChannel.writeAddNodeMessage(time, nodesToAdd)) {
@@ -725,6 +725,7 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                         "Error in " + this.federateName + ": " + this.federateAmbassadorChannel.getLastStatusMessage()
                 );
             }
+            logNetworkNodeAdded(nodeId, "vehicle", externalId, nc.position, time);
             this.log.info("All vehicles were successfully added");
             log.debug("Sending a saved AdHocCommunicationConfiguration message...");
             sendAdHocCommunicationConfiguration(nc.configAdHoc, time);
@@ -732,6 +733,25 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             this.log.error(e.getMessage(), e);
             throw new InternalFederateException("Could not add new vehicle.", e);
         }
+    }
+
+    private void logNetworkNodeAdded(
+            String nodeId,
+            String nodeType,
+            int externalId,
+            CartesianPoint position,
+            long time
+    ) {
+        this.log.info(
+                "CDAS_EVENT event=network_node_added node_id={} node_type={} external_id={} x={} y={} z={} time_ns={}",
+                nodeId,
+                nodeType,
+                externalId,
+                position.getX(),
+                position.getY(),
+                position.getZ(),
+                time
+        );
     }
 
     /**

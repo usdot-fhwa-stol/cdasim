@@ -18,6 +18,7 @@ The prefix makes the events easy to inspect manually:
 rg 'CDAS_EVENT' Carla.log
 rg 'CDAS_EVENT event=carla_external_vehicle_added' Carla.log
 rg 'CDAS_EVENT event=v2x_message_(inserted|received)' CommunicationDetails.log
+rg 'CDAS_EVENT event=network_node_added' CommunicationDetails.log
 ```
 
 ## Event catalog
@@ -52,6 +53,7 @@ rg 'CDAS_EVENT event=v2x_message_(inserted|received)' CommunicationDetails.log
 | `carma_instance_received` | `instance_id` |
 | `carma_instance_registered` | `instance_id` |
 | `common_time_sync_sent` | `instance_id`, `target`, `port`, `time_ns` |
+| `network_node_added` | `node_id`, `node_type` (`vehicle` or `rsu`), `external_id`, `x`, `y`, `z`, `time_ns` |
 | `v2x_message_inserted` | `message_id`, `sender`, `external_id`, `channel`, `time_ns` |
 | `v2x_message_received` | `message_id`, `receiver`, `time_ns` |
 | `v2x_reception_processing` | `receiver`, `message_id`, optional `sender` |
