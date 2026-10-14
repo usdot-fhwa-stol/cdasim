@@ -123,7 +123,14 @@ public class CarmaV2xMessage {
      */
     private void parseV2xMessage(byte[] buf)  {
         String rawMsg = new String(buf);
-        String msg = rawMsg.substring(rawMsg.indexOf("Version"), rawMsg.length());
+        int versionIdx = rawMsg.indexOf("Version");
+        if (versionIdx < 0) {
+            // indexOf returns -1 here, and substring(-1, ...) raises
+            // StringIndexOutOfBoundsException, which is not an
+            // IllegalArgumentException and so escapes the receiver's handler.
+            throw new IllegalArgumentException("No \"Version\" field in CarmaV2xMessage");
+        }
+        String msg = rawMsg.substring(versionIdx, rawMsg.length());
 
         // Modeled after Stackoverflow answer by user Eritrean: https://stackoverflow.com/users/5176992/eritrean
         // On Question: https://stackoverflow.com/questions/61029164/how-to-split-string-by-comma-and-newline-n-in-java
