@@ -263,12 +263,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * Performs registration of a new infrastructure instance and sets up
      * communication interfaces
      */
-    private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
+    private void onRsuRegistrationRequest(String infrastructureId, CartesianPoint projectedLocation) {
 
         // Register the new infrastructure instance to the RTI as an RSU
-        log.info("Attemtping to register RSU ID: " + infrastructureId + " @ " + location.toString());
+        log.info("Attemtping to register RSU ID: " + infrastructureId + " @ " + projectedLocation.toString());
         RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, infrastructureId, "",
-                Collections.emptyList(), location);
+                Collections.emptyList(), projectedLocation.toGeo(), projectedLocation);
         try {
             // Trigger RTI interaction to MOSAIC
             this.rti.triggerInteraction(rsuRegistration);
@@ -333,7 +333,7 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                 // Store new instance registration to infrastructure instance manager
                 infrastructureInstanceManager.onNewRegistration(reg, mosaicLocation);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg.getInfrastructureId(), mosaicLocation.toGeo());
+                onRsuRegistrationRequest(reg.getInfrastructureId(), mosaicLocation);
                 log.info("Converted OSM RSU location for {} from ({}, {}, {}) to MOSAIC ({}, {}, {}).",
                                             reg.getInfrastructureId(),
                                             reg.getLocation().getX(),
