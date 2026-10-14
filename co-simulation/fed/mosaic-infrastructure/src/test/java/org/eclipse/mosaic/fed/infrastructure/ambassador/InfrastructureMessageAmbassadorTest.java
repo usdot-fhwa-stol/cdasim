@@ -292,7 +292,7 @@ public class InfrastructureMessageAmbassadorTest {
             assertEquals(registrationMessage.getInfrastructureId(), registration.getMapping().getName());
             assertTrue(
                 expectedMosaicLocation.toVector3d().isFuzzyEqual(
-                   registration.getMapping().getPosition().toCartesian().toVector3d()
+                   registration.getMapping().getProjectedPosition().toVector3d()
                 )
             );
             assertEquals(300.0, adhocConfig.getConfiguration().getConf0().getRadius(), 0.01);

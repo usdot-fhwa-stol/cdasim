@@ -410,7 +410,10 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             return;
         }
         // Put the new RSU into our list of virtually added RSUs with no AdHoc configuration yet
-        newVirtualRsus.put(ar.getName(), new VirtualNodeContainer(null, ar.getPosition().toCartesian()));
+        CartesianPoint projectedPosition = ar.getProjectedPosition() != null
+                ? ar.getProjectedPosition()
+                : ar.getPosition().toCartesian();
+        newVirtualRsus.put(ar.getName(), new VirtualNodeContainer(null, projectedPosition));
     }
 
     /**

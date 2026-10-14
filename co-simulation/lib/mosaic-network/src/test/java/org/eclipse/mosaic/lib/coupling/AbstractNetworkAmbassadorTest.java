@@ -15,6 +15,7 @@
 
 package org.eclipse.mosaic.lib.coupling;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -50,12 +51,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 @SuppressWarnings({"unchecked"})
 @RunWith(MockitoJUnitRunner.class)
@@ -277,7 +280,15 @@ public class AbstractNetworkAmbassadorTest {
         networkAmbassador.initialize(0, 1000);
 
         // Run
-        final Interaction rsuRegistration = new RsuRegistration(1 * TIME.SECOND, "rsu_0", "rsu", Lists.newArrayList(), GeoPoint.latLon(52.0, 13.5));
+        final CartesianPoint projectedPosition = CartesianPoint.xy(63.34, 8.86);
+        final Interaction rsuRegistration = new RsuRegistration(
+                1 * TIME.SECOND,
+                "rsu_0",
+                "rsu",
+                Lists.newArrayList(),
+                GeoPoint.latLon(52.0, 13.5),
+                projectedPosition
+        );
         networkAmbassador.processInteraction(rsuRegistration);
 
         final AdHocConfiguration adHocConfiguration = new AdHocConfiguration.Builder("rsu_0").create();
@@ -286,7 +297,10 @@ public class AbstractNetworkAmbassadorTest {
         networkAmbassador.processInteraction(adHocCommunicationConfiguration);
 
         // Assert
-        verify(ambassadorFederateChannelMock, times(1)).writeAddRsuNodeMessage(eq(2 * TIME.SECOND), anyList());
+        ArgumentCaptor<List<ClientServerChannel.NodeDataContainer>> rsusCaptor = ArgumentCaptor.forClass(List.class);
+        verify(ambassadorFederateChannelMock, times(1))
+                .writeAddRsuNodeMessage(eq(2 * TIME.SECOND), rsusCaptor.capture());
+        assertEquals(projectedPosition, rsusCaptor.getValue().get(0).pos);
         verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(2 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
         assertNetworkNodeAddedEvent("rsu_0", "rsu", 2 * TIME.SECOND);
     }
