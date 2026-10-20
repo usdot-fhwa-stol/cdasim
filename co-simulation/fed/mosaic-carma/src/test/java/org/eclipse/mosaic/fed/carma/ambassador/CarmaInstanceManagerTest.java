@@ -17,6 +17,7 @@ package org.eclipse.mosaic.fed.carma.ambassador;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,7 +87,7 @@ public class CarmaInstanceManagerTest {
     }
 
     @Test
-    public void testOnNewRegistration() {
+    public void testOnNewRegistration() throws UnknownHostException {
         // Set up the registration object
         String infrastructureId = "infrastructure-123";
         int rxMessagePort = 1234;

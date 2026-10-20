@@ -45,19 +45,15 @@ public class CommonInstanceManager<T extends CommonInstance, R extends CommonReg
     private int TARGET_PORT = 5374;
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public void onNewRegistration(R registration) {
+    public void onNewRegistration(R registration) throws UnknownHostException {
         if (!managedInstances.containsKey(registration.getVehicleRole())) {
-            try {
-                newCommonInstance(
-                    registration.getVehicleId(),
-                    registration.getVehicleRole(),
-                    InetAddress.getByName(registration.getRxMessageIpAddress()),
-                    registration.getRxMessagePort(),
-                    registration.getRxTimeSyncPort()
-                );
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
+            newCommonInstance(
+                registration.getVehicleId(),
+                registration.getVehicleRole(),
+                InetAddress.getByName(registration.getRxMessageIpAddress()),
+                registration.getRxMessagePort(),
+                registration.getRxTimeSyncPort()
+            );
         } else {
             // log warning
             log.warn("CDAS_EVENT event=common_registration_duplicate instance_id={}",

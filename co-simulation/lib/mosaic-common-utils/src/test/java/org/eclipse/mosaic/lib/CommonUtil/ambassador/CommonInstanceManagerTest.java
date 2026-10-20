@@ -17,6 +17,7 @@ package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,7 +88,7 @@ public class CommonInstanceManagerTest {
     }
 
     @Test
-    public void testOnNewRegistration() {
+    public void testOnNewRegistration() throws UnknownHostException {
         // Set up the registration object
         String infrastructureId = "infrastructure-123";
         int rxMessagePort = 1234;
@@ -111,6 +112,18 @@ public class CommonInstanceManagerTest {
         assertTrue( manager.checkIfRegistered(infrastructureId) );
         // Ensure checkIfRegistered returns false for other Ids
         assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
+    }
+
+    @Test(expected = UnknownHostException.class)
+    public void testOnNewRegistrationWithUnresolvedHost() throws UnknownHostException {
+        CommonRegistrationMessage registration = new CommonRegistrationMessage(
+                "vehicle-1",
+                "vehicle-1",
+                "invalid host name",
+                1234,
+                5678);
+
+        manager.onNewRegistration(registration);
     }
 
     @Test
