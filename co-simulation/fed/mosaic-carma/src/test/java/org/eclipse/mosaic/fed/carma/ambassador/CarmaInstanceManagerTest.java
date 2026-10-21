@@ -28,6 +28,7 @@ import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,7 +88,7 @@ public class CarmaInstanceManagerTest {
     }
 
     @Test
-    public void testOnNewRegistration() throws UnknownHostException {
+    public void testOnNewRegistration() {
         // Set up the registration object
         String infrastructureId = "infrastructure-123";
         int rxMessagePort = 1234;
@@ -105,7 +106,11 @@ public class CarmaInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(registration);
+        try {
+            manager.onNewRegistration(registration);
+        } catch (UnknownHostException e) {
+            fail("Registration unexpectedly failed for a valid host: " + e.getMessage());
+        }
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
