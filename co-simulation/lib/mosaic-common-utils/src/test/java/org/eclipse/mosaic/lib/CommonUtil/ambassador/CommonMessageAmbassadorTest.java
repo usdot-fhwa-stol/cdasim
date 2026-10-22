@@ -17,6 +17,8 @@ package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.Collections;
 
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.util.junit.TestFileRule;
@@ -31,7 +33,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +61,8 @@ public class CommonMessageAmbassadorTest {
     public void setup() throws IOException {
 
         rtiMock = mock(RtiAmbassador.class);
+
+        instanceManager = mock(CommonInstanceManager.class);
 
         FederateDescriptor handleMock = mock(FederateDescriptor.class);
 
@@ -84,6 +91,39 @@ public class CommonMessageAmbassadorTest {
         ambassador.initialize(0, 100 * TIME.SECOND);
         // ASSERT
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
+    }
+
+    @Test
+    public void processesRepeatedRegistrationAfterDnsResolutionFailure() throws Exception {
+        CommonRegistrationMessage registration = new CommonRegistrationMessage(
+                "carma_1",
+                "carma_1",
+                "platform-v2x-1",
+                2500,
+                2501);
+        CommonRegistrationReceiver registrationReceiver = mock(CommonRegistrationReceiver.class);
+        when(registrationReceiver.getReceivedMessages())
+                .thenReturn(Collections.singletonList(registration))
+                .thenReturn(Collections.emptyList())
+                .thenReturn(Collections.singletonList(registration));
+        when(instanceManager.checkIfRegistered("carma_1")).thenReturn(false);
+        doThrow(new UnknownHostException("platform-v2x-1"))
+                .doNothing()
+                .when(instanceManager).onNewRegistration(registration);
+
+        ambassador = spy(ambassador);
+        ambassador.commonRegistrationReceiver = registrationReceiver;
+        doNothing().when(ambassador).onDsrcRegistrationRequest("carma_1");
+
+        ambassador.processMessageNewRegistrations();
+        verify(instanceManager, times(1)).onNewRegistration(registration);
+
+        ambassador.processMessageNewRegistrations();
+        verify(instanceManager, times(1)).onNewRegistration(registration);
+
+        ambassador.processMessageNewRegistrations();
+        verify(instanceManager, times(2)).onNewRegistration(registration);
+        verify(ambassador, times(1)).onDsrcRegistrationRequest("carma_1");
     }
     
 }
