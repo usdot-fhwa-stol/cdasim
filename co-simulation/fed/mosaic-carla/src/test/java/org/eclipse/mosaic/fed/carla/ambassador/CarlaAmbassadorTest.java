@@ -42,6 +42,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import static org.junit.Assert.assertEquals;
@@ -51,6 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 
 
 
@@ -117,6 +119,33 @@ public class CarlaAmbassadorTest {
         verify(rtiMock, times(1)).requestAdvanceTime(eq(0L), eq(0L), eq((byte) 1));
         
 
+    }
+
+    @Test
+    public void processDetectorRegistrationConvertsLocationToCarla() throws Exception {
+        FieldSetter.setField(
+                ambassador,
+                ambassador.getClass().getDeclaredField("sumoNetOffsetXY"),
+                new double[]{109.34, 135.96}
+        );
+        Orientation orientation = new Orientation(10.0, 20.0, 30.0);
+        Detector detector = new Detector(
+                "sensorID1",
+                DetectorType.SEMANTIC_LIDAR,
+                orientation,
+                CartesianPoint.xyz(63.34, 8.86, 10.0)
+        );
+
+        ambassador.processInteraction(new DetectorRegistration(0, detector, "rsu_1"));
+
+        ArgumentCaptor<DetectorRegistration> registrationCaptor =
+                ArgumentCaptor.forClass(DetectorRegistration.class);
+        verify(carlaXmlRpcClientMock).createSensor(registrationCaptor.capture());
+        Detector carlaDetector = registrationCaptor.getValue().getDetector();
+        assertEquals(-46.0, carlaDetector.getLocation().getX(), 0.001);
+        assertEquals(127.1, carlaDetector.getLocation().getY(), 0.001);
+        assertEquals(10.0, carlaDetector.getLocation().getZ(), 0.001);
+        assertEquals(orientation, carlaDetector.getOrientation());
     }
 
     @Test

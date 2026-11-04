@@ -314,7 +314,8 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                                     rcvMsgContainer.msgId,
                                     rcvMsgContainer.receiverInformation
                             );
-                            log.info("Receive V2XMessage : Id({}) on Node {} at Time={}", msg.getMessageId(), msg.getReceiverName(), msg.getTime());
+                            log.info("CDAS_EVENT event=v2x_message_received message_id={} receiver={} time_ns={}",
+                                    msg.getMessageId(), msg.getReceiverName(), msg.getTime());
                             this.rti.triggerInteraction(msg);  // Hand the received message to the RTI and thus the other federates
                         }
                         break;
@@ -409,7 +410,10 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             return;
         }
         // Put the new RSU into our list of virtually added RSUs with no AdHoc configuration yet
-        newVirtualRsus.put(ar.getName(), new VirtualNodeContainer(null, ar.getPosition().toCartesian()));
+        CartesianPoint projectedPosition = ar.getProjectedPosition() != null
+                ? ar.getProjectedPosition()
+                : ar.getPosition().toCartesian();
+        newVirtualRsus.put(ar.getName(), new VirtualNodeContainer(null, projectedPosition));
     }
 
     /**
@@ -502,10 +506,14 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                         nodesToUpdate.add(new NodeDataContainer(id, projectedPosition));
                     } else if (newVirtualVehicles.containsKey(vi.getName())) {
                         // Node was not yet added to simulation, so update its entry in the virtual node list
-                        newVirtualVehicles.get(vi.getName()).position = projectedPosition;
+                        VirtualNodeContainer nc = newVirtualVehicles.get(vi.getName());
+                        nc.position = projectedPosition;
                         if (this.log.isDebugEnabled()) {
                             log.debug("UpdateNode (still virtual) : ID[int={}]", vi.getName());
                             log.debug("Pos: x({}) y({}) Point2D.Double: {}", projectedPosition.getX(), projectedPosition.getY(), geoPosition);
+                        }
+                        if (nc.configAdHoc != null) {
+                            addVehicleToSimulation(vi.getName(), interaction.getTime());
                         }
                     } else {
                         this.log.warn("Node ID[int={}] is not simulated", vi.getName());
@@ -598,7 +606,7 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
 
             if (sourceId != null) {
                 log.info(
-                        "insertV2XMessage: id={} from node ID[int={} , ext={}] channel:{} time={}",
+                        "CDAS_EVENT event=v2x_message_inserted message_id={} sender={} external_id={} channel={} time_ns={}",
                         interaction.getMessageId(),
                         sac.getSourceName(), sourceId, dac.getAdhocChannelId(), interaction.getTime()
                 ); // Write the message onto the channel and to the federate
@@ -682,6 +690,7 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                         "Added RSU ID[int= {}, ext={}] at projected position= {} time={}",
                         idTransformer.fromExternalId(id), id, nc.position, time
                 );
+                logNetworkNodeAdded(nodeId, "rsu", id, nc.position, time);
                 log.debug("Sending saved AdHocCommunicationConfiguration message");
                 sendAdHocCommunicationConfiguration(nc.configAdHoc, time);
             }
@@ -704,14 +713,13 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             if (idTransformer.containsInternalId(nodeId)) {
                 this.log.warn("Vehicle with id(int={}) couldn't be added: name already exists ", nodeId);
                 return;
-            } else {
-                int id = idTransformer.toExternalId(nodeId);
-                nodesToAdd.add(new NodeDataContainer(id, nc.position));
-                this.log.info(
-                        "Adding vehicle ID[int={}, ext={}] at projected_position={} time={}",
-                        idTransformer.fromExternalId(id), id, nc.position, time
-                );
             }
+            int externalId = idTransformer.toExternalId(nodeId);
+            nodesToAdd.add(new NodeDataContainer(externalId, nc.position));
+            this.log.info(
+                    "Adding vehicle ID[int={}, ext={}] at projected_position={} time={}",
+                    idTransformer.fromExternalId(externalId), externalId, nc.position, time
+            );
             this.newVirtualVehicles.remove(nodeId);
 
             if (CMD.SUCCESS != ambassadorFederateChannel.writeAddNodeMessage(time, nodesToAdd)) {
@@ -720,6 +728,7 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
                         "Error in " + this.federateName + ": " + this.federateAmbassadorChannel.getLastStatusMessage()
                 );
             }
+            logNetworkNodeAdded(nodeId, "vehicle", externalId, nc.position, time);
             this.log.info("All vehicles were successfully added");
             log.debug("Sending a saved AdHocCommunicationConfiguration message...");
             sendAdHocCommunicationConfiguration(nc.configAdHoc, time);
@@ -727,6 +736,25 @@ public abstract class AbstractNetworkAmbassador extends AbstractFederateAmbassad
             this.log.error(e.getMessage(), e);
             throw new InternalFederateException("Could not add new vehicle.", e);
         }
+    }
+
+    private void logNetworkNodeAdded(
+            String nodeId,
+            String nodeType,
+            int externalId,
+            CartesianPoint position,
+            long time
+    ) {
+        this.log.info(
+                "CDAS_EVENT event=network_node_added node_id={} node_type={} external_id={} x={} y={} z={} time_ns={}",
+                nodeId,
+                nodeType,
+                externalId,
+                position.getX(),
+                position.getY(),
+                position.getZ(),
+                time
+        );
     }
 
     /**

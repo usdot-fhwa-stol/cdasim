@@ -17,6 +17,7 @@ package org.eclipse.mosaic.interactions.mapping;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.objects.mapping.RsuMapping;
 import org.eclipse.mosaic.rti.api.Interaction;
@@ -56,8 +57,25 @@ public final class RsuRegistration extends Interaction {
     public RsuRegistration(final long time, final String name,
                            final String group, final List<String> applications,
                            final GeoPoint position) {
+        this(time, name, group, applications, position, null);
+    }
+
+    /**
+     * Constructor which preserves both representations of an RSU position.
+     *
+     * @param time              Timestamp of this interaction, unit: [ns]
+     * @param name              The name of the RSU.
+     * @param group             Group identifier
+     * @param applications      Installed applications of the RSU.
+     * @param position          Geographic position of the RSU.
+     * @param projectedPosition Position of the RSU in the scenario's Cartesian frame, or {@code null}
+     *                          if it has not been provided by the registering federate.
+     */
+    public RsuRegistration(final long time, final String name,
+                           final String group, final List<String> applications,
+                           final GeoPoint position, final CartesianPoint projectedPosition) {
         super(time);
-        this.rsuMapping = new RsuMapping(name, group, applications, position);
+        this.rsuMapping = new RsuMapping(name, group, applications, position, projectedPosition);
     }
 
     public RsuMapping getMapping() {

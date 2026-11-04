@@ -438,15 +438,7 @@ class CarlaXMLRPCServer:
             self.actor_types[actor_id] = actor_type
             self.actor_blueprints[actor_id] = bp
             
-            # Only switch spectator to the first spawned actor
-            if len(self.actors) == 1:  # Only for the first vehicle
-                try:
-                    self._set_spectator_to_actor_object(actor, 'follow', 8.0, 3.0, -20.0)
-                    logger.info("========Spectator switched to follow first actor: %s========", actor_id)
-                except Exception as e:
-                    logger.error("Failed to switch spectator to first actor %s: %s", actor_id, e)
-            else:
-                logger.info("========Actor %s spawned (spectator not moved)========", actor_id)
+            logger.info("========Actor %s spawned (spectator not moved)========", actor_id)
             
             logger.info("========spawn_actor success========")
             return str(actor.id)
@@ -571,8 +563,14 @@ class CarlaXMLRPCServer:
                         if not hasattr(actor, 'get_transform'):
                             continue
                         
-                        # Use alias if available, otherwise use actor ID as key
-                        actor_key = actor_id_to_alias.get(actor.id, str(actor.id))
+                        # XML-RPC-spawned actors use their tracked alias. Actors spawned
+                        # by CARMA-CARLA integration are matched by their CARLA role name
+                        # so MOSAIC and NS-3 receive the same vehicle ID (for example,
+                        # carma_1) instead of CARLA's numeric actor ID.
+                        actor_key = actor_id_to_alias.get(actor.id)
+                        if actor_key is None:
+                            role_name = actor.attributes.get('role_name', '').strip()
+                            actor_key = role_name if role_name and role_name not in out else str(actor.id)
                         
                         # Get transform
                         t = actor.get_transform()

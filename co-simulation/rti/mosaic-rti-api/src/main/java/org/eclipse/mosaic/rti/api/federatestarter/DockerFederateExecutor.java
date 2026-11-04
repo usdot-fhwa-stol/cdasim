@@ -56,9 +56,24 @@ public class DockerFederateExecutor implements FederateExecutor {
      */
     public DockerFederateExecutor(String image, String sharedDirectoryPath, String imageVolume) {
         this.image = image;
-        this.containerName = StringUtils.substringBefore(image, ":");
+        this.containerName = deriveContainerName(image);
         this.sharedDirectoryPath = sharedDirectoryPath;
         this.imageVolume = imageVolume;
+    }
+
+    private static String deriveContainerName(String image) {
+        String name = StringUtils.substringAfterLast(image, "/");
+        name = StringUtils.substringBeforeLast(name, ":");
+        name = StringUtils.substringBefore(name, "@");
+        name = name.replaceAll("[^a-zA-Z0-9_.-]", "-");
+
+        if (StringUtils.isBlank(name)) {
+            return "federate";
+        }
+        if (!Character.isLetterOrDigit(name.charAt(0))) {
+            return "federate-" + name;
+        }
+        return name;
     }
 
     /**

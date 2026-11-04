@@ -68,7 +68,7 @@ public class CarmaMessengerBridgeRegistrationReceiver implements Runnable{
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                log.info("New Common instance '{}' received with Common Registration Receiver.", parsedMessage.getVehicleRole());
+                log.info("CDAS_EVENT event=common_instance_received instance_id={}", parsedMessage.getVehicleRole());
                 rxQueue.add(parsedMessage);
             }
        }

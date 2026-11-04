@@ -79,6 +79,11 @@ public class Proj4Projection extends GeoProjection {
     }
 
     @Override
+    public CartesianPoint getCartesianOffset() {
+        return CartesianPoint.xy(x_offset, y_offset);
+    }
+
+    @Override
     public Vector3d geographicToVector(GeoPoint geographic, Vector3d result){
         getGeoCalculator().distanceBetween(geoOrigin, geographic, result);
         return result;

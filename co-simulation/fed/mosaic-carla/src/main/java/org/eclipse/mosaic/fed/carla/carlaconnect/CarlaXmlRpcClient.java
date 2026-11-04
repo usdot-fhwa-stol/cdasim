@@ -191,7 +191,7 @@ public class CarlaXmlRpcClient {
                     if (result instanceof Boolean && (Boolean) result) {
                         connected = true;
                         isConnected = true;
-                        log.info("Successfully connected to CARLA XML-RPC server");
+                        log.info("CDAS_EVENT event=carla_xmlrpc_connected connected=true");
 
                         // Input frame configuration removed on server; assuming CARLA-frame inputs
                     } else {
@@ -546,7 +546,7 @@ public class CarlaXmlRpcClient {
     public String spawnActor(String actorType, String actorId, List<Double> location, 
                              List<Double> rotation, Map<String, Object> attributes) {
         try {
-            log.info("XML-RPC spawn_actor call: type={}, id={}, location={}, rotation={}, attributes={}", 
+            log.info("CDAS_EVENT event=carla_spawn_request actor_type={} actor_id={} location={} rotation={} attributes={}",
                     actorType, actorId, location, rotation, attributes);
             
             Object[] params = new Object[]{actorType, actorId, location, rotation, attributes != null ? attributes : new HashMap<>()};
@@ -554,20 +554,23 @@ public class CarlaXmlRpcClient {
             
             if (result instanceof String) {
                 String carlaId = (String) result;
-                log.info("XML-RPC spawn_actor result: CARLA ID={} (String)", carlaId);
+                log.info("CDAS_EVENT event=carla_spawn_result actor_id={} carla_id={} result_type=String accepted=true",
+                        actorId, carlaId);
                 return carlaId;
             } else if (result instanceof Number) {
                 // Handle integer ID from server
                 String carlaId = String.valueOf(result);
-                log.info("XML-RPC spawn_actor result: CARLA ID={} (converted from {})", carlaId, result.getClass().getSimpleName());
+                log.info("CDAS_EVENT event=carla_spawn_result actor_id={} carla_id={} result_type={} accepted=true",
+                        actorId, carlaId, result.getClass().getSimpleName());
                 return carlaId;
             } else if (result instanceof Boolean && (Boolean) result) {
                 // Fallback: if server still returns boolean true, return the actorId as the internal ID
-                log.info("XML-RPC spawn_actor result: boolean true, using actorId as CARLA ID");
+                log.info("CDAS_EVENT event=carla_spawn_result actor_id={} carla_id={} result_type=Boolean accepted=true",
+                        actorId, actorId);
                 return actorId;
             } else {
-                log.warn("XML-RPC spawn_actor result: unexpected type {} with value {}", 
-                        result != null ? result.getClass().getSimpleName() : "null", result);
+                log.warn("CDAS_EVENT event=carla_spawn_result actor_id={} result_type={} accepted=false value={}",
+                        actorId, result != null ? result.getClass().getSimpleName() : "null", result);
                 return null;
             }
         } catch (Exception e) {
@@ -1073,7 +1076,7 @@ public class CarlaXmlRpcClient {
                 // This ensures all actors are tracked even if conversion fails
                 if (!previousActorStates.containsKey(actorId)) {
                     // New actor
-                    log.debug("New actor detected: {}", actorId);
+                    log.debug("CDAS_EVENT event=carla_actor_detected actor_id={}", actorId);
                     added.add(currentStateMap);
                 } else {
                     // Existing actor - add to updated list

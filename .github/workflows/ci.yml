@@ -8,27 +8,41 @@ on:
       - master
       - "release/*"
 jobs:          
-  sonar: # sonar job is to setup and run sonar scan analysis on telematic cloud messaging code
+  sonar: 
     runs-on: ubuntu-latest  
+
     steps:
-      - uses: actions/checkout@v7
-      - name: Set up JDK 11 (Default) and 17 (Sonar)
-        uses: actions/setup-java@v5 # The setup-java action provides the functionality for GitHub Actions runners for Downloading and setting up a requested version of Java
+      - name: Checkout repository
+        uses: actions/checkout@v7
         with:
-          # Last java version is default and set for JAVA_HOME
+          fetch-depth: 0
+
+      - name: Set up JDK 11 and 21
+        uses: actions/setup-java@v5
+        with:
           java-version: |
-            17
+            21
             11
           distribution: "temurin"        
+
       - name: Build and analyze
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
-        # Build and package application using Java 8
-        # Run sonar plugin using Java 17
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           cd co-simulation
+
+          # Build, run unit tests, and generate coverage using Java 11
           export JAVA_HOME=$JAVA_HOME_11_X64
-          mvn -e -X clean org.jacoco:jacoco-maven-plugin:prepare-agent package -Dlicense.skip -Dmaven.test.failure.ignore=false  -Pcoverage jacoco:report 
-          export JAVA_HOME=$JAVA_HOME_17_X64
-          mvn sonar:sonar -Dsonar.java.jdkHome=${JAVA_17_X64} -Dsonar.projectKey=usdot-fhwa-stol_carma-simulation -Dsonar.projectName=carma-simulation -Dsonar.organization=usdot-fhwa-stol -Dsonar.host.url=https://sonarcloud.io 
+          export PATH=$JAVA_HOME/bin:$PATH
+
+          mvn -e clean verify \
+            -Pcoverage \
+            -Dlicense.skip \
+            -Dmaven.test.failure.ignore=false
+
+          # Run SonarCloud analysis using Java 21
+          export JAVA_HOME=$JAVA_HOME_21_X64
+          export PATH=$JAVA_HOME/bin:$PATH
+
+          mvn sonar:sonar

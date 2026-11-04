@@ -15,6 +15,7 @@
 
 package org.eclipse.mosaic.lib.objects.mapping;
 
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 
 import java.util.List;
@@ -30,6 +31,8 @@ public final class RsuMapping extends UnitMapping {
 
     private final GeoPoint position;
 
+    private final CartesianPoint projectedPosition;
+
     /**
      * Creates a new RSU.
      * @param name The name of the RSU.
@@ -38,12 +41,31 @@ public final class RsuMapping extends UnitMapping {
      * @param position The static position of the RSU.
      */
     public RsuMapping(final String name, final String group, final List<String> applications, final GeoPoint position) {
+        this(name, group, applications, position, null);
+    }
+
+    /**
+     * Creates a new RSU.
+     *
+     * @param name The name of the RSU.
+     * @param group The group name of the RSU.
+     * @param applications The list of applications the RSU is equipped with.
+     * @param position The static geographic position of the RSU.
+     * @param projectedPosition The static position of the RSU in the scenario's Cartesian frame, or {@code null}
+     *                          if it has not been provided by the registering federate.
+     */
+    public RsuMapping(final String name, final String group, final List<String> applications,
+                      final GeoPoint position, final CartesianPoint projectedPosition) {
         super(name, group, applications);
         this.position = position;
+        this.projectedPosition = projectedPosition;
     }
 
     public GeoPoint getPosition() {
         return position;
     }
-}
 
+    public CartesianPoint getProjectedPosition() {
+        return projectedPosition;
+    }
+}

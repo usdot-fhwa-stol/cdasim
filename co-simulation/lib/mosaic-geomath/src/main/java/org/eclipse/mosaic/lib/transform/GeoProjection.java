@@ -48,6 +48,17 @@ public abstract class GeoProjection {
         GeoProjection.instance = geoProjection;
     }
 
+    /**
+     * Returns the offset between projected map coordinates and MOSAIC's local
+     * Cartesian coordinates.
+     *
+     * @return the configured Cartesian offset, or the origin when the projection
+     *         does not use a separate map offset
+     */
+    public CartesianPoint getCartesianOffset() {
+        return CartesianPoint.ORIGO;
+    }
+
     private GeoCalculator geoCalculator = null;
 
     public GeoProjection setGeoCalculator(GeoCalculator geoCalculator) {
@@ -219,4 +230,3 @@ public abstract class GeoProjection {
 
 
 }
-

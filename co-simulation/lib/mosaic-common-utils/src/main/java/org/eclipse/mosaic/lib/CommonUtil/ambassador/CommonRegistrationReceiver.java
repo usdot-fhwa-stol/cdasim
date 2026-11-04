@@ -70,7 +70,7 @@ public class CommonRegistrationReceiver<T extends CommonRegistrationMessage> imp
 
             // Enqueue message for processing on main thread
             synchronized (rxQueue) {
-                log.info("New Common instance '{}' received with Common Registration Receiver.", parsedMessage.getVehicleId());
+                log.info("CDAS_EVENT event=common_instance_received instance_id={}", parsedMessage.getVehicleId());
                 rxQueue.add(parsedMessage);
             }
        }

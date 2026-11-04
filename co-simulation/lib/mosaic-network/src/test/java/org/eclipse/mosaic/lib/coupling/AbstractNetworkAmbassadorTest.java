@@ -15,6 +15,8 @@
 
 package org.eclipse.mosaic.lib.coupling;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -26,6 +28,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.eclipse.mosaic.interactions.communication.AdHocCommunicationConfiguration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.interactions.mapping.VehicleRegistration;
@@ -42,16 +46,19 @@ import org.eclipse.mosaic.rti.api.Interaction;
 import org.eclipse.mosaic.rti.api.parameters.AmbassadorParameter;
 
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 @SuppressWarnings({"unchecked"})
 @RunWith(MockitoJUnitRunner.class)
@@ -71,6 +78,8 @@ public class AbstractNetworkAmbassadorTest {
     public ClientServerChannel federateAmbassadorChannelMock;
 
     private AbstractNetworkAmbassador networkAmbassador;
+    private ch.qos.logback.classic.Logger networkAmbassadorLogger;
+    private ListAppender<ILoggingEvent> logAppender;
 
     @Before
     public void setup() throws IOException {
@@ -85,15 +94,26 @@ public class AbstractNetworkAmbassadorTest {
         };
         networkAmbassador.connectToFederate(null, -1);
 
+        networkAmbassadorLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(networkAmbassador.getClass());
+        logAppender = new ListAppender<>();
+        logAppender.start();
+        networkAmbassadorLogger.addAppender(logAppender);
+
         when(ambassadorFederateChannelMock.writeInitBody(anyLong(), anyLong())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeAddNodeMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeAddRsuNodeMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
+        when(ambassadorFederateChannelMock.writeUpdatePositionsMessage(anyLong(), anyList())).thenReturn(ClientServerChannel.CMD.SUCCESS);
         when(ambassadorFederateChannelMock.writeConfigMessage(
                 anyLong(),
                 anyInt(),
                 anyInt(),
                 isA(AdHocConfiguration.class))
         ).thenReturn(ClientServerChannel.CMD.SUCCESS);
+    }
+
+    @After
+    public void tearDown() {
+        networkAmbassadorLogger.detachAppender(logAppender);
     }
 
     @Test
@@ -178,6 +198,7 @@ public class AbstractNetworkAmbassadorTest {
         // Assert
         verify(ambassadorFederateChannelMock, times(1)).writeAddNodeMessage(eq(2 * TIME.SECOND), anyList());
         verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(2 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
+        assertNetworkNodeAddedEvent("veh_0", "vehicle", 2 * TIME.SECOND);
     }
 
     @Test
@@ -208,6 +229,32 @@ public class AbstractNetworkAmbassadorTest {
     }
 
     @Test
+    public void vehicleRegisteredConfiguredThenUpdated_configurationMessageSent() throws Exception {
+        // Setup
+        networkAmbassador.initialize(0, 1000);
+
+        // Run
+        final Interaction vehicleRegistration = new VehicleRegistration(1 * TIME.SECOND, "veh_0", "vehicle", Lists.newArrayList(), null, null);
+        networkAmbassador.processInteraction(vehicleRegistration);
+
+        final AdHocConfiguration adHocConfiguration = new AdHocConfiguration.Builder("veh_0").create();
+        final Interaction adHocCommunicationConfiguration = new AdHocCommunicationConfiguration(2 * TIME.SECOND, adHocConfiguration);
+        networkAmbassador.processInteraction(adHocCommunicationConfiguration);
+
+        final Interaction vehicleUpdates = new VehicleUpdates(
+                3 * TIME.SECOND,
+                Lists.newArrayList(),
+                Lists.newArrayList(createVehicleInfo("veh_0")),
+                Lists.newArrayList()
+        );
+        networkAmbassador.processInteraction(vehicleUpdates);
+
+        // Assert
+        verify(ambassadorFederateChannelMock, times(1)).writeAddNodeMessage(eq(3 * TIME.SECOND), anyList());
+        verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(3 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
+    }
+
+    @Test
     public void rsuAdded_noConfigurationMessageSent() throws Exception {
         // Setup
         networkAmbassador.initialize(0, 1000);
@@ -233,7 +280,15 @@ public class AbstractNetworkAmbassadorTest {
         networkAmbassador.initialize(0, 1000);
 
         // Run
-        final Interaction rsuRegistration = new RsuRegistration(1 * TIME.SECOND, "rsu_0", "rsu", Lists.newArrayList(), GeoPoint.latLon(52.0, 13.5));
+        final CartesianPoint projectedPosition = CartesianPoint.xy(63.34, 8.86);
+        final Interaction rsuRegistration = new RsuRegistration(
+                1 * TIME.SECOND,
+                "rsu_0",
+                "rsu",
+                Lists.newArrayList(),
+                GeoPoint.latLon(52.0, 13.5),
+                projectedPosition
+        );
         networkAmbassador.processInteraction(rsuRegistration);
 
         final AdHocConfiguration adHocConfiguration = new AdHocConfiguration.Builder("rsu_0").create();
@@ -242,8 +297,31 @@ public class AbstractNetworkAmbassadorTest {
         networkAmbassador.processInteraction(adHocCommunicationConfiguration);
 
         // Assert
-        verify(ambassadorFederateChannelMock, times(1)).writeAddRsuNodeMessage(eq(2 * TIME.SECOND), anyList());
+        ArgumentCaptor<List<ClientServerChannel.NodeDataContainer>> rsusCaptor = ArgumentCaptor.forClass(List.class);
+        verify(ambassadorFederateChannelMock, times(1))
+                .writeAddRsuNodeMessage(eq(2 * TIME.SECOND), rsusCaptor.capture());
+        assertEquals(projectedPosition, rsusCaptor.getValue().get(0).pos);
         verify(ambassadorFederateChannelMock, times(1)).writeConfigMessage(eq(2 * TIME.SECOND), anyInt(), anyInt(), eq(adHocConfiguration));
+        assertNetworkNodeAddedEvent("rsu_0", "rsu", 2 * TIME.SECOND);
+    }
+
+    private void assertNetworkNodeAddedEvent(String nodeId, String nodeType, long time) {
+        String eventPrefix = String.format(
+                "CDAS_EVENT event=network_node_added node_id=%s node_type=%s external_id=",
+                nodeId,
+                nodeType
+        );
+        String eventSuffix = " time_ns=" + time;
+
+        assertTrue(
+                logAppender.list.stream()
+                        .map(ILoggingEvent::getFormattedMessage)
+                        .anyMatch(message -> message.startsWith(eventPrefix)
+                                && message.contains(" x=")
+                                && message.contains(" y=")
+                                && message.contains(" z=")
+                                && message.endsWith(eventSuffix))
+        );
     }
 
     private VehicleData createVehicleInfo(String string) {

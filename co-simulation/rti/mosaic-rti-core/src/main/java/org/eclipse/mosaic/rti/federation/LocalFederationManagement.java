@@ -84,12 +84,12 @@ public class LocalFederationManagement implements FederationManagement {
 
     @Override
     public void createFederation() {
-        this.log.info("Start federation with id '{}'", federation.getFederationId());
+        this.log.info("CDAS_EVENT event=federation_started federation_id={}", federation.getFederationId());
     }
 
     @Override
     public void addFederate(FederateDescriptor descriptor) throws Exception {
-        this.log.info("Add ambassador/federate with id '{}'", descriptor.getId());
+        this.log.info("CDAS_EVENT event=federate_added federate_id={}", descriptor.getId());
         if (descriptor.isToDeployAndUndeploy()) {
             this.deployFederate(descriptor);
         }

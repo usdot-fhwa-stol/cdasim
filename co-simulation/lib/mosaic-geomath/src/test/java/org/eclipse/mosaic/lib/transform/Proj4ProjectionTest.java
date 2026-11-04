@@ -39,6 +39,8 @@ public class Proj4ProjectionTest {
         MutableCartesianPoint cartesianOffset = new MutableCartesianPoint(200.00, 300.00, 0);
         GeoProjection transform = new Proj4Projection(GeoPoint.latLon(0.0, 0.0), cartesianOffset.getX(), cartesianOffset.getY(), georeference);
 
+        assertEquals(cartesianOffset, transform.getCartesianOffset());
+
         MutableCartesianPoint testCartesianPoint = new MutableCartesianPoint(400.00, 600.00, 0);
         GeoPoint actualGeoPoint = transform.cartesianToGeographic(testCartesianPoint);
 

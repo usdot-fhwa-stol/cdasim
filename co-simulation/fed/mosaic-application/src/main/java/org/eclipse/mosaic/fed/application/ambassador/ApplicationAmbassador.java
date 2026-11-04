@@ -650,7 +650,7 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                     .getUnitFromId(vehicleData.getName());
             // we don't simulate vehicles without an application
             if (simulationUnit == null) {
-                log.info("Add vehicle will not be processed without simulation unit.");
+                log.info("CDAS_EVENT event=application_vehicle_ignored action=add reason=missing_simulation_unit");
                 continue;
             }
             final Event event = new Event(vehicleData.getTime(), simulationUnit, vehicleData,
@@ -665,7 +665,7 @@ public class ApplicationAmbassador extends AbstractFederateAmbassador implements
                     .getUnitFromId(vehicleData.getName());
             // we don't simulate vehicles without an application
             if (simulationUnit == null) {
-                log.info("Update vehicle will not be processed without simulation unit.");
+                log.info("CDAS_EVENT event=application_vehicle_ignored action=update reason=missing_simulation_unit");
                 continue;
             }
             final Event event = new Event(vehicleData.getTime(), simulationUnit, vehicleData,

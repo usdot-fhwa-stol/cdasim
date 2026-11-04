@@ -35,6 +35,7 @@ import org.eclipse.mosaic.interactions.detector.DetectedObjectInteraction;
 import org.eclipse.mosaic.interactions.detector.DetectorRegistration;
 import org.eclipse.mosaic.interactions.mapping.RsuRegistration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
+import org.eclipse.mosaic.lib.geo.CartesianPoint;
 import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
@@ -43,6 +44,7 @@ import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
 import org.eclipse.mosaic.lib.objects.detector.Detector;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
+import org.eclipse.mosaic.lib.transform.GeoProjection;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -185,10 +187,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (!infrastructureInstanceManager.checkIfRegistered(rsuId)) {
             // Abort early as we only are concerned with CARMA Platform vehicles
 
-            log.info("Abort V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
+            log.info("CDAS_EVENT event=v2x_reception_ignored receiver={} message_id={} sender={} reason=unregistered_receiver",
+                    interaction.getReceiverName(), interaction.getMessageId(), interaction.getSenderId());
             return;
         }
-        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " from sender " + interaction.getSenderId());
+        log.info("CDAS_EVENT event=v2x_reception_processing receiver={} message_id={} sender={}",
+                interaction.getReceiverName(), interaction.getMessageId(), interaction.getSenderId());
 
         int messageId = interaction.getMessageId();
         log.info("Querying v2x message cache for message id: {}", messageId);
@@ -200,7 +204,8 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
             infrastructureInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), rsuId);
-            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
+            log.info("CDAS_EVENT event=v2x_reception_forwarded receiver={} message_id={} size_bytes={}",
+                    interaction.getReceiverName(), interaction.getMessageId(), msg2.getPayLoad().getBytes().length);
         } else {
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
@@ -258,12 +263,12 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
      * Performs registration of a new infrastructure instance and sets up
      * communication interfaces
      */
-    private void onRsuRegistrationRequest(String infrastructureId, GeoPoint location) {
+    private void onRsuRegistrationRequest(String infrastructureId, CartesianPoint projectedLocation) {
 
         // Register the new infrastructure instance to the RTI as an RSU
-        log.info("Attemtping to register RSU ID: " + infrastructureId + " @ " + location.toString());
+        log.info("Attemtping to register RSU ID: " + infrastructureId + " @ " + projectedLocation.toString());
         RsuRegistration rsuRegistration = new RsuRegistration(currentSimulationTime, infrastructureId, "",
-                Collections.emptyList(), location);
+                Collections.emptyList(), projectedLocation.toGeo(), projectedLocation);
         try {
             // Trigger RTI interaction to MOSAIC
             this.rti.triggerInteraction(rsuRegistration);
@@ -271,6 +276,32 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             // Log error message if there was an issue with the RTI interaction
             log.error(e.getMessage());
         }
+    }
+
+    /**
+     * Converts an OSM projected location into MOSAIC's local Cartesian frame by
+     * applying the scenario's configured Cartesian offset.
+     */
+    static CartesianPoint osmToMosaicLocation(
+            CartesianPoint osmLocation, CartesianPoint cartesianOffset) {
+        return CartesianPoint.xyz(
+                osmLocation.getX() + cartesianOffset.getX(),
+                osmLocation.getY() + cartesianOffset.getY(),
+                osmLocation.getZ()
+        );
+    }
+
+    /**
+     * Creates a detector whose OSM projected location is converted into
+     * MOSAIC's local Cartesian frame.
+     */
+    static Detector osmToMosaicDetector(Detector detector, CartesianPoint cartesianOffset) {
+        return new Detector(
+                detector.getSensorId(),
+                detector.getType(),
+                detector.getOrientation(),
+                osmToMosaicLocation(detector.getLocation(), cartesianOffset)
+        );
     }
 
     /**
@@ -296,22 +327,33 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
                     .getReceivedMessages();
             for (InfrastructureRegistrationMessage reg : newRegistrations) {
                 log.info("Processing new registration request for  {}.", reg.getInfrastructureId());
+                CartesianPoint mosaicLocation = osmToMosaicLocation(
+                        reg.getLocation(), GeoProjection.getInstance().getCartesianOffset()
+                );
                 // Store new instance registration to infrastructure instance manager
-                infrastructureInstanceManager.onNewRegistration(reg);
+                infrastructureInstanceManager.onNewRegistration(reg, mosaicLocation);
                 // Process registration requests for RSUs and DSRCs
-                onRsuRegistrationRequest(reg.getInfrastructureId(), reg.getLocation().toGeo());
-                log.info("RSU Registration for {} @ x, y, z: ( {}, {}, {}) .", 
+                onRsuRegistrationRequest(reg.getInfrastructureId(), mosaicLocation);
+                log.info("Converted OSM RSU location for {} from ({}, {}, {}) to MOSAIC ({}, {}, {}).",
                                             reg.getInfrastructureId(),
                                             reg.getLocation().getX(),
-                                            reg.getLocation().getY(), 
-                                            reg.getLocation().getZ());
+                                            reg.getLocation().getY(),
+                                            reg.getLocation().getZ(),
+                                            mosaicLocation.getX(),
+                                            mosaicLocation.getY(),
+                                            mosaicLocation.getZ());
                 onDsrcRegistrationRequest(reg.getInfrastructureId());
                 // Check for empty list of sensors which is valid
                 if (reg.getSensors() != null ) {
                     log.debug("Sending SensorRegistration interactions for sensor : {}", reg.getSensors());
                     for (Detector sensor : reg.getSensors()) {
+                        Detector mosaicSensor = osmToMosaicDetector(
+                                sensor, GeoProjection.getInstance().getCartesianOffset()
+                        );
                         // Trigger Sensor registrations for all listed sensors.
-                        this.rti.triggerInteraction(new DetectorRegistration(time,sensor,reg.getInfrastructureId()));
+                        this.rti.triggerInteraction(
+                                new DetectorRegistration(time, mosaicSensor, reg.getInfrastructureId())
+                        );
                     }
                 } 
                 else {
@@ -325,8 +367,11 @@ public class InfrastructureMessageAmbassador extends AbstractFederateAmbassador 
             } else {
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
-                    log.info("Processing new V2X transmit event of type {}.", msg.getB().getType());
                     V2xMessageTransmission msgInt = infrastructureInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
+                    log.info(
+                            "CDAS_EVENT event=v2x_transmission_processing sender={} source_address={} message_type={} message_id={}",
+                            msgInt.getSourceName(), msg.getA().getHostAddress(), msg.getB().getType(),
+                            msgInt.getMessageId());
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     log.info("Inserted message ID {} into v2xmessage cache.", msgInt.getMessageId());
                     this.rti.triggerInteraction(msgInt);

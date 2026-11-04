@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ns3>
+
+    <!-- ================= LOG ================= -->
+    <LogLevel>
+
+        <component name="*" value="error|prefix_level|prefix_time|prefix_func"/>
+
+        <component name="MainClass"             value="error|warn|info"/>
+        <component name="MosaicSimulatorImpl"   value="error|warn|info"/>
+        <component name="MosaicNs3Bridge"       value="error|warn|info"/>
+        <component name="MosaicNodeManager"     value="error|warn|info"/>
+        <component name="MosaicProxyApp"        value="error|warn|info|prefix_node"/>
+        <component name="ClientServerChannel"   value="error|warn|info"/>
+
+        <!-- Network -->
+        <component name="UdpSocketImpl"         value="error|warn"/>
+        <component name="Ipv4L3Protocol"        value="error|warn"/>
+        <component name="Ipv4StaticRouting"     value="error|warn"/>
+
+        <!-- NR -->
+        <component name="NrHelper"              value="error|warn"/>
+        <component name="NrUeNetDevice"         value="error|warn"/>
+        <component name="NrUeMac"               value="error|warn"/>
+        <component name="NrUePhy"               value="error|warn"/>
+
+        <!-- Sidelink -->
+        <component name="NrSlHelper"            value="error|warn"/>
+
+    </LogLevel>
+
+    <!-- ================= GLOBAL ================= -->
+    <global name="RngSeed" value="1"/>
+
+    <!-- ================= MOSAIC ================= -->
+    <default name="ns3::MosaicProxyApp::Port" value="8010"/>
+    <default name="ns3::MosaicNodeManager::numExtraRadioNodes" value="20"/>
+
+    <!-- ================= NR BASIC ================= -->
+    <default name="ns3::MosaicNodeManager::nrCentralFrequencyHz" value="5900000000"/>
+    <default name="ns3::MosaicNodeManager::nrTxPowerDbm" value="33"/>
+    <default name="ns3::MosaicNodeManager::nrShadowingEnabled" value="false"/>
+    <default name="ns3::MosaicNodeManager::nrBandwidthHz" value="40000000"/>
+    <default name="ns3::MosaicNodeManager::nrNumerology" value="1"/>
+    <default name="ns3::MosaicNodeManager::slMcs" value="20"/>
+
+    <default name="ns3::MosaicNodeManager::slMaxNumPerReserve" value="1"/>
+    <default name="ns3::MosaicNodeManager::slSubchannelSize" value="10"/>
+
+    <!-- <default name="ns3::MosaicNodeManager::slSensingWindowMs" value="1100"/> -->
+    <!-- <default name="ns3::MosaicNodeManager::slSelectionWindow" value="20"/> -->
+    <default name="ns3::MosaicNodeManager::slFreqResourcePscch" value="10"/>
+    <default name="ns3::MosaicNodeManager::slReservePeriodMs" value="20"/>
+    <default name="ns3::MosaicNodeManager::slHarqEnabled" value="false"/>
+    
+    <!-- UE antenna -->
+    <default name="ns3::MosaicNodeManager::nrUeAntennaRows" value="1"/>
+    <default name="ns3::MosaicNodeManager::nrUeAntennaColumns" value="1"/>
+
+    <!-- ================= LTE/NR shared ================= -->
+    <default name="ns3::LteRlcUm::MaxTxBufferSize" value="100000"/>
+
+    <!-- ================= NETWORK ================= -->
+    <default name="ns3::ArpCache::PendingQueueSize" value="100"/>
+
+    <!-- ================= PROPAGATION ================= -->
+    <default name="ns3::FriisPropagationLossModel::Frequency" value="5900000000"/>
+
+</ns3>

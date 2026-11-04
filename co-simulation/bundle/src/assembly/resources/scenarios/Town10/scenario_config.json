@@ -1,7 +1,7 @@
 {
     "simulation": {
         "id": "Town10",
-        "duration": "600s",
+        "duration": "9999s",
         "randomSeed": 212323853,
         "projection": {
             "centerCoordinates": {

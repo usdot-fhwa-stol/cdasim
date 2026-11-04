@@ -89,10 +89,11 @@
     <properties>
         <java.version>11</java.version>
         <!-- Sonar Properties Properties -->
-
+        <sonar.projectKey>usdot-fhwa-stol_carma-simulation</sonar.projectKey>
+        <sonar.projectName>carma-simulation</sonar.projectName>
         <sonar.organization>usdot-fhwa-stol</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.java.jdkHome>${env.JAVA_HOME_17_X64}</sonar.java.jdkHome>
+        <sonar.java.jdkHome>${env.JAVA_HOME_11_X64}</sonar.java.jdkHome>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -568,25 +569,6 @@
                 <version>2.22.2</version>
             </plugin>
             <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.6</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <!-- Even though this is a report plugin, we need to add it to the build plugins as well in order
                 to specify the checkstyle-version. report plugins do not allow to change versions of plugin dependencies.-->
                 <groupId>org.apache.maven.plugins</groupId>
@@ -606,7 +588,7 @@
             <plugin>
                    <groupId>org.jacoco</groupId>
                    <artifactId>jacoco-maven-plugin</artifactId>
-                   <version>0.8.6</version>
+                   <version>${jacoco.version}</version>
                    <configuration>
                        <skip>${skip.coverage}</skip>
                    </configuration>

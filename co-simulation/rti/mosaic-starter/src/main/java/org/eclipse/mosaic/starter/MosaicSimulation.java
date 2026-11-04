@@ -387,7 +387,7 @@ public class MosaicSimulation {
         final FederateAmbassador ambassador = descriptor.getAmbassador();
         final CLocalHost host = descriptor.getHost();
 
-        log.info("Federate {} is initializing", descriptor.getId());
+        log.info("CDAS_EVENT event=federate_initializing federate_id={}", descriptor.getId());
         if (descriptor.isToStartAndStop()) {
 
             log.info("Federate {} is to start and stop", descriptor.getId());

@@ -193,6 +193,8 @@ public class TraciClient implements TraciConnection {
         if (currentVersion == null) {
             try {
                 SimulationGetVersion.CurrentVersion actualVersion = commandRegister.getOrCreate(SimulationGetVersion.class).execute(this);
+                log.info("CDAS_EVENT event=sumo_api_version api_version={} sumo_version={}",
+                        actualVersion.apiVersion, actualVersion.sumoVersion);
                 this.currentVersion = SumoVersion.getSumoVersion(actualVersion.sumoVersion);
                 if (currentVersion == SumoVersion.UNKNOWN && actualVersion.apiVersion == SumoVersion.HIGHEST.getApiVersion()) {
                     log.warn("This SUMO Version {} is currently not supported (but might work anyhow).",

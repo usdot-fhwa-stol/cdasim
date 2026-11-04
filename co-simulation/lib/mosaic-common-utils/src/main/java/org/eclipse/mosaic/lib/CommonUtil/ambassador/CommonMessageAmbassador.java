@@ -19,9 +19,9 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -34,28 +34,13 @@ import org.eclipse.mosaic.interactions.mapping.advanced.ExternalVehicleRegistrat
 import org.eclipse.mosaic.interactions.traffic.VehicleUpdates;
 import org.eclipse.mosaic.lib.CommonUtil.configuration.CommonConfiguration;
 import org.eclipse.mosaic.lib.enums.AdHocChannel;
-import org.eclipse.mosaic.lib.enums.DriveDirection;
-import org.eclipse.mosaic.lib.geo.CartesianPoint;
-import org.eclipse.mosaic.lib.geo.GeoPoint;
 import org.eclipse.mosaic.lib.misc.Tuple;
 import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import org.eclipse.mosaic.lib.objects.communication.AdHocConfiguration;
 import org.eclipse.mosaic.lib.objects.communication.InterfaceConfiguration;
-import org.eclipse.mosaic.lib.objects.road.IRoadPosition;
-import org.eclipse.mosaic.lib.objects.road.SimpleRoadPosition;
 import org.eclipse.mosaic.lib.objects.v2x.ExternalV2xMessage;
 import org.eclipse.mosaic.lib.objects.v2x.V2xMessage;
-import org.eclipse.mosaic.lib.objects.vehicle.Consumptions;
-import org.eclipse.mosaic.lib.objects.vehicle.Emissions;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleBatteryState;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleConsumptions;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleData;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleEmissions;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleSensors;
-import org.eclipse.mosaic.lib.objects.vehicle.VehicleSignals;
 import org.eclipse.mosaic.lib.objects.vehicle.VehicleType;
-import org.eclipse.mosaic.lib.objects.vehicle.sensor.DistanceSensor;
-import org.eclipse.mosaic.lib.objects.vehicle.sensor.RadarSensor;
 import org.eclipse.mosaic.lib.util.objects.ObjectInstantiation;
 import org.eclipse.mosaic.rti.TIME;
 import org.eclipse.mosaic.rti.api.AbstractFederateAmbassador;
@@ -85,6 +70,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
     protected int timeSyncSeq = 0;
     protected Class<T> messageClass;
     protected Class<C> configClass;
+    private final Set<String> unresolvedRegistrationWarnings = new HashSet<>();
     
     @Override
     public boolean isTimeRegulating() {
@@ -155,10 +141,23 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
         List<T> newRegistrations = commonRegistrationReceiver.getReceivedMessages();
         for (T reg : newRegistrations) {
             try {
+                if (commonInstanceManager.checkIfRegistered(reg.getVehicleRole())) {
+                    log.debug("Ignoring duplicate registration for vehicle {}", reg.getVehicleRole());
+                    unresolvedRegistrationWarnings.remove(reg.getVehicleRole());
+                    continue;
+                }
                 commonInstanceManager.onNewRegistration(reg);
                 onDsrcRegistrationRequest(reg.getVehicleRole());
+                unresolvedRegistrationWarnings.remove(reg.getVehicleRole());
             } catch (UnknownHostException e) {
-                log.error("Failed to process registration request for vehicle role: " + reg.getVehicleRole(), e);
+                if (unresolvedRegistrationWarnings.add(reg.getVehicleRole())) {
+                    log.warn(
+                            "CDAS_EVENT event=common_registration_ignored instance_id={} host={} reason=dns_unresolved",
+                            reg.getVehicleRole(), reg.getRxMessageIpAddress());
+                } else {
+                    log.debug("Ignoring registration for {} while host {} is unresolved",
+                            reg.getVehicleRole(), reg.getRxMessageIpAddress());
+                }
             }
         }
     }
@@ -186,7 +185,10 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                     V2xMessageTransmission msgInt = commonInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
-                    log.debug("Generated a message with ID: {}", msgInt.getMessageId());
+                    log.info(
+                            "CDAS_EVENT event=v2x_transmission_processing sender={} source_address={} message_type={} message_id={}",
+                            msgInt.getSourceName(), msg.getA().getHostAddress(), msg.getB().getType(),
+                            msgInt.getMessageId());
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     rti.triggerInteraction(msgInt);
                 }
@@ -248,7 +250,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
             // Abort early as we only are concerned with CARMA Platform vehicles
             return;
         }
-        log.info("Processing V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId());
+        log.info("CDAS_EVENT event=v2x_reception_processing receiver={} message_id={}",
+                interaction.getReceiverName(), interaction.getMessageId());
 
         int messageId = interaction.getMessageId();
         V2xMessage msg = lookupV2xMsgIdInBuffer(messageId);
@@ -256,7 +259,8 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
         if (msg != null && msg instanceof ExternalV2xMessage) {
             ExternalV2xMessage msg2 = (ExternalV2xMessage) msg;
             commonInstanceManager.onV2XMessageRx(DatatypeConverter.parseHexBinary(msg2.getMessage()), carlaRoleName);
-            log.info("Sending V2X message reception event for " + interaction.getReceiverName() + " of msg id " + interaction.getMessageId() + " of size " + msg2.getPayLoad().getBytes().length);
+            log.info("CDAS_EVENT event=v2x_reception_forwarded receiver={} message_id={} size_bytes={}",
+                    interaction.getReceiverName(), interaction.getMessageId(), msg2.getPayLoad().getBytes().length);
         } else {
             log.warn("Message with id " + interaction.getMessageId() + " received by " + interaction.getReceiverName() + " is no longer in the message buffer to be retrieved! Message transmission failed!!!");
         }
@@ -278,69 +282,6 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
             // Log error message if there was an issue with the RTI interaction
             log.error(e.getMessage());
         }
-
-        VehicleSignals tmpSignals  = new VehicleSignals(
-                false,
-                false,
-                false,
-                false,
-                false);
-
-        VehicleEmissions tmpEmissions = new VehicleEmissions(
-                new Emissions(
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0
-                ),
-                new Emissions(
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0
-                ));
-
-        VehicleBatteryState tmpBattery = new VehicleBatteryState("", currentSimulationTime);
-        IRoadPosition tmpPos = new SimpleRoadPosition("", 0, 0.0, 0.0);
-        VehicleSensors tmpSensors = new VehicleSensors(
-                new DistanceSensor(0.0,
-                        0.0,
-                        0.0,
-                        0.0),
-                new RadarSensor(0.0));
-        VehicleConsumptions tmpConsumptions = new VehicleConsumptions(
-                new Consumptions(0.0, 0.0),
-                new Consumptions(0.0, 0.0));
-        VehicleData tmpVehicle = new VehicleData.Builder(currentSimulationTime, vehicleId)
-                .position(GeoPoint.ORIGO, CartesianPoint.ORIGO)
-                .movement(0.0, 0.0, 0.0)
-                .consumptions(tmpConsumptions)
-                .emissions(tmpEmissions)
-                .electric(tmpBattery)
-                .laneArea("")
-                .sensors(tmpSensors)
-                .road(tmpPos)
-                .signals(tmpSignals)
-                .orientation(DriveDirection.FORWARD, 0.0, 0.0)
-                .stopped(false)
-                .route("")
-                .create();
-        VehicleUpdates tempUpdates = new VehicleUpdates(
-                currentSimulationTime,
-                new ArrayList<>(Arrays.asList(tmpVehicle)),
-                new ArrayList<>(),
-                new ArrayList<>());
-
-        try {
-            // Trigger RTI interaction to MOSAIC to exchange the Ad-Hoc configuration
-            this.rti.triggerInteraction(tempUpdates);
-        } catch (InternalFederateException | IllegalValueException e) {
-            // Log error message if there was an issue with the RTI interaction
-            log.error(e.getMessage());
-        }
-
 
         // Create an InterfaceConfiguration object to represent the configuration of the
         // Ad-Hoc interface
