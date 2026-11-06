@@ -17,6 +17,7 @@ package org.eclipse.mosaic.lib.CommonUtil.ambassador;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +28,7 @@ import org.eclipse.mosaic.lib.objects.addressing.IpResolver;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -105,12 +107,28 @@ public class CommonInstanceManagerTest {
         assertFalse( manager.checkIfRegistered(infrastructureId) );
 
         // Call the onNewRegistration method with the mocked registration object
-        manager.onNewRegistration(registration);
+        try {
+            manager.onNewRegistration(registration);
+        } catch (UnknownHostException e) {
+            fail("Registration unexpectedly failed for a valid host: " + e.getMessage());
+        }
 
         // Verify that the infrastructure instance was added to the manager
         assertTrue( manager.checkIfRegistered(infrastructureId) );
         // Ensure checkIfRegistered returns false for other Ids
         assertFalse( manager.checkIfRegistered(infrastructureId + "something") );
+    }
+
+    @Test(expected = UnknownHostException.class)
+    public void testOnNewRegistrationWithUnresolvedHost() throws UnknownHostException {
+        CommonRegistrationMessage registration = new CommonRegistrationMessage(
+                "vehicle-1",
+                "vehicle-1",
+                "invalid host name",
+                1234,
+                5678);
+
+        manager.onNewRegistration(registration);
     }
 
     @Test

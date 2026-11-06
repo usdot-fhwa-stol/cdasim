@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -68,6 +70,7 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
     protected int timeSyncSeq = 0;
     protected Class<T> messageClass;
     protected Class<C> configClass;
+    private final Set<String> unresolvedRegistrationWarnings = new HashSet<>();
     
     @Override
     public boolean isTimeRegulating() {
@@ -140,12 +143,21 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
             try {
                 if (commonInstanceManager.checkIfRegistered(reg.getVehicleRole())) {
                     log.debug("Ignoring duplicate registration for vehicle {}", reg.getVehicleRole());
+                    unresolvedRegistrationWarnings.remove(reg.getVehicleRole());
                     continue;
                 }
                 commonInstanceManager.onNewRegistration(reg);
                 onDsrcRegistrationRequest(reg.getVehicleRole());
+                unresolvedRegistrationWarnings.remove(reg.getVehicleRole());
             } catch (UnknownHostException e) {
-                log.error("Failed to process registration request for vehicle role: " + reg.getVehicleRole(), e);
+                if (unresolvedRegistrationWarnings.add(reg.getVehicleRole())) {
+                    log.warn(
+                            "CDAS_EVENT event=common_registration_ignored instance_id={} host={} reason=dns_unresolved",
+                            reg.getVehicleRole(), reg.getRxMessageIpAddress());
+                } else {
+                    log.debug("Ignoring registration for {} while host {} is unresolved",
+                            reg.getVehicleRole(), reg.getRxMessageIpAddress());
+                }
             }
         }
     }
@@ -173,7 +185,10 @@ public class CommonMessageAmbassador<M extends CommonInstanceManager,
                 List<Tuple<InetAddress, CarmaV2xMessage>> newMessages = v2xMessageReceiver.getReceivedMessages();
                 for (Tuple<InetAddress, CarmaV2xMessage> msg : newMessages) {
                     V2xMessageTransmission msgInt = commonInstanceManager.onV2XMessageTx(msg.getA(), msg.getB(), currentSimulationTime);
-                    log.debug("Generated a message with ID: {}", msgInt.getMessageId());
+                    log.info(
+                            "CDAS_EVENT event=v2x_transmission_processing sender={} source_address={} message_type={} message_id={}",
+                            msgInt.getSourceName(), msg.getA().getHostAddress(), msg.getB().getType(),
+                            msgInt.getMessageId());
                     SimulationKernel.SimulationKernel.getV2xMessageCache().putItem(currentSimulationTime, msgInt.getMessage());
                     rti.triggerInteraction(msgInt);
                 }
