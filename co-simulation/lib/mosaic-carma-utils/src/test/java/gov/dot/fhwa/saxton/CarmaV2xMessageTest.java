@@ -163,4 +163,26 @@ public class CarmaV2xMessageTest {
         assert(test != null);
     }
 
+
+    /**
+     * A datagram with no "Version" marker must be rejected as malformed.
+     *
+     * indexOf returned -1 and substring(-1, len) raised
+     * StringIndexOutOfBoundsException. CarmaV2xMessageReceiver.run() only
+     * catches IllegalArgumentException, so that escaped and ended the
+     * receiver thread for the rest of the simulation.
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testMessageWithoutVersionField() {
+        new CarmaV2xMessage("hello, not a v2x message\n".getBytes());
+    }
+
+    /**
+     * The receiver hands the whole reused 1536 byte buffer to the parser, so
+     * an empty or zero filled datagram reaches it too.
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testMessageFromEmptyBuffer() {
+        new CarmaV2xMessage(new byte[1536]);
+    }
 }
